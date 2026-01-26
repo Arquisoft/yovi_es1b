@@ -3,6 +3,7 @@
 [![Release — Test, Build, Publish, Deploy](https://github.com/arquisoft/yovi_es1b/actions/workflows/release-deploy.yml/badge.svg)](https://github.com/arquisoft/yovi_es1b/actions/workflows/release-deploy.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=Arquisoft_yovi_es1b&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=Arquisoft_yovi_es1b)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=Arquisoft_yovi_es1b&metric=coverage)](https://sonarcloud.io/summary/new_code?id=Arquisoft_yovi_es1b)
+[![CodeScene Average Code Health](https://codescene.io/projects/76241/status-badges/average-code-health)](https://codescene.io/projects/76241)
 
 This project is a template with some basic functionality for the ASW labs.
 
