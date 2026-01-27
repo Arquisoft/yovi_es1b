@@ -13,6 +13,7 @@ This project is a template with some basic functionality for the ASW labs.
 - Diego Abeijon Rodriguez, UO295689
 - Moisés Montes Iglesias, UO296102
 - Eva Menéndez Hernández, UO300181
+- Hugo Tejedor Arcoitza, UO295339
 
 ## Project Structure
 
