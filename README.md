@@ -10,6 +10,7 @@ This project is a template with some basic functionality for the ASW labs.
 # Contributors
 
 - Nahiara Sánchez García, UO295645
+- Diego Abeijon Rodriguez, UO295689
 
 ## Project Structure
 
