@@ -1,3 +1,5 @@
+// Node.js Server
+
 const express = require('express');
 const app = express();
 const port = 3000;
@@ -10,12 +12,13 @@ const metricsMiddleware = promBundle({includeMethod: true});
 app.use(metricsMiddleware);
 
 try {
-  const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8'));
+  const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 } catch (e) {
   console.log(e);
 }
 
+// CORS --> The server accepts requests from any origin (*)
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
@@ -26,6 +29,7 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+// ACTION --> Someone sends a Name and we respond with a Welcome Message
 app.post('/createuser', async (req, res) => {
   const username = req.body && req.body.username;
   try {
@@ -40,7 +44,24 @@ app.post('/createuser', async (req, res) => {
 });
 
 
+  app.get('/prueba-rust', async (req, res) => {
+    try {
+      // Node.js makes a request to the Rust server
+      const response = await fetch('http://localhost:8080/prueba-rust');
+      // If the Rust server responds, we send it to the web client
+      const data = await response.json();
+      res.json({
+        message: "Node.js says hello",
+        responseFromRust: data
+      });
+    } catch (error) {
+      res.status(500).json({error: 'Error communicating with Rust server'});
+    }
+  });
+
+
 if (require.main === module) {
+
   app.listen(port, () => {
     console.log(`User Service listening at http://localhost:${port}`)
   })

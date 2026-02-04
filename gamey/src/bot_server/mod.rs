@@ -1,3 +1,5 @@
+// This module defines how the server works when there are visitors.
+
 //! HTTP server for Y game bots.
 //!
 //! This module provides an Axum-based REST API for querying Y game bots.
@@ -30,6 +32,8 @@ pub use error::ErrorResponse;
 pub use version::*;
 
 use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
+use axum::Json;
+use serde_json::{json, Value};
 
 /// Creates the Axum router with the given state.
 ///
@@ -37,6 +41,7 @@ use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .route("/status", axum::routing::get(status))
+        .route("/prueba-rust", axum::routing::get(prueba_tablero))
         .route(
             "/{api_version}/ybot/choose/{bot_id}",
             axum::routing::post(choose::choose),
@@ -89,4 +94,13 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
 /// Returns "OK" to indicate the server is running.
 pub async fn status() -> impl IntoResponse {
     "OK"
+}
+
+
+pub async fn prueba_tablero() -> impl IntoResponse {
+    // 0 = empty, 1 = X, 2 = 0
+    let tablero = vec![0, 1, 0, 0, 0, 2, 1, 0, 0];
+
+    // Transform the Rust vector into a JSON array
+    Json(json!(tablero))
 }
