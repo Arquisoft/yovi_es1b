@@ -31,9 +31,19 @@ pub use choose::MoveResponse;
 pub use error::ErrorResponse;
 pub use version::*;
 
-use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
+use crate::{GameYError, RandomBot, YBotRegistry, state::AppState, yen};
 use axum::Json;
 use serde_json::{json, Value};
+
+use crate::core::game::GameY; // Import GameY
+use serde::Deserialize;
+
+
+// This helps Rust to understand the JSON that receive from Node
+#[derive(Deserialize)]
+pub struct MoveRequest {
+    pub index: u32
+}
 
 /// Creates the Axum router with the given state.
 ///
@@ -42,6 +52,8 @@ pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .route("/status", axum::routing::get(status))
         .route("/prueba-rust", axum::routing::get(prueba_tablero))
+        .route("/execute-move", axum::routing::post(realizar_movimiento))
+        .route("/reset", axum::routing::post(reiniciar_juego))
         .route(
             "/{api_version}/ybot/choose/{bot_id}",
             axum::routing::post(choose::choose),
@@ -97,10 +109,88 @@ pub async fn status() -> impl IntoResponse {
 }
 
 
-pub async fn prueba_tablero() -> impl IntoResponse {
-    // 0 = empty, 1 = X, 2 = 0
-    let tablero = vec![0, 1, 0, 0, 0, 2, 1, 0, 0];
+pub async fn prueba_tablero(
+    axum::extract::State(state): axum::extract::State<AppState>
+) -> impl IntoResponse {
+    // 1. Create the game with a size of 5
+    let game = state.game.lock().unwrap(); // Lock the mutex to access the game state
 
-    // Transform the Rust vector into a JSON array
-    Json(json!(tablero))
+    // 2. Convert the game to a YEN representation (JSON)
+    let yen_data: crate::YEN = (&*game).into();
+
+    // 3. Send it to Node
+    axum::Json(yen_data)
+}
+
+
+pub async fn realizar_movimiento (
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<MoveRequest>
+) -> impl IntoResponse {
+
+    // 1. Bloqueamos el Mutex
+    let mut game = state.game.lock().unwrap();
+
+    // 2. Movimiento Humano (Azul)
+    let b_size = game.board_size();
+    let coords = crate::Coordinates::from_index(payload.index, b_size);
+    
+    let human_movement = crate::Movement::Placement { 
+        player: crate::PlayerId::new(0),
+        coords,
+    };
+
+    // Intentamos añadir el movimiento
+    if let Err(e) = game.add_move(human_movement) {
+        println!("Aviso: Movimiento humano no válido: {:?}", e);
+    }
+
+    // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
+    if !game.check_game_over() {
+        if let Some(bot) = state.bots().find("random_bot") {
+        // Desreferenciamos el mutex guard con &*game
+        if let Some(bot_coords) = bot.choose_move(&*game) {
+            let bot_move = crate::Movement::Placement {
+                player: crate::PlayerId::new(1),
+                coords: bot_coords,
+            };
+            let _ = game.add_move(bot_move);
+        }
+    }
+    }
+    
+
+    // 4. Extraer el ganador
+    let winner_id = match game.status() {
+        &crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
+        _ => None,
+    };
+
+    if winner_id.is_some() {
+        println!("¡Tenemos un ganador!: {:?}", winner_id);
+    }
+
+    // 5. Respuesta (Convertimos a YEN)
+    let yen_data: crate::YEN = (&*game).into();
+    
+    axum::Json(serde_json::json!({
+        "board": yen_data,
+        "winner": winner_id
+    }))
+}
+
+
+pub async fn reiniciar_juego(
+    axum::extract::State(state): axum::extract::State<AppState>
+) -> impl IntoResponse {
+
+    let mut game = state.game.lock().unwrap();
+
+    // Reiniciamos el juego creando una nueva instancia de GameY
+    *game = crate::core::game::GameY::new(5);
+
+    println!("--> Juego reiniciado.");
+
+    let yen_data: crate::YEN = (&*game).into();
+    axum::Json(yen_data)
 }

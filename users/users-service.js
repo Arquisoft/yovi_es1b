@@ -44,20 +44,62 @@ app.post('/createuser', async (req, res) => {
 });
 
 
-  app.get('/prueba-rust', async (req, res) => {
-    try {
-      // Node.js makes a request to the Rust server
-      const response = await fetch('http://localhost:8080/prueba-rust');
-      // If the Rust server responds, we send it to the web client
-      const data = await response.json();
-      res.json({
-        message: "Node.js says hello",
-        responseFromRust: data
-      });
-    } catch (error) {
-      res.status(500).json({error: 'Error communicating with Rust server'});
+app.get('/prueba-rust', async (req, res) => {
+  try {
+    // Node.js makes a request to the Rust server
+    const response = await fetch('http://localhost:8080/prueba-rust');
+    // If the Rust server responds, we send it to the web client
+    const data = await response.json();
+    res.json({
+      message: "Node.js says hello",
+      responseFromRust: data
+    });
+  } catch (error) {
+    res.status(500).json({error: 'Error communicating with Rust server'});
+  }
+});
+
+
+app.post('/move', async (req, res) => {
+  const { cellIndex } = req.body;
+
+  try {
+    const rustResponse = await fetch('http://localhost:8080/execute-move', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ index: cellIndex})
+    });
+
+    if (!rustResponse.ok) {
+       const text = await rustResponse.text();
+       console.error("Error desde Rust:", text);
+       return res.status(500).send(text);
     }
-  });
+
+    const newBoard = await rustResponse.json();
+    res.json({ 
+      responseFromRust: newBoard.board,
+      winner: newBoard.winner
+    });
+  }
+  catch (e) {
+    res.status(500).json({error: 'Error communicating with Rust server'});
+  }
+});
+
+
+app.post('/reset', async (req, res) => {
+  try {
+    const rustResponse = await fetch('http://localhost:8080/reset', {
+      method: 'POST',
+    });
+    const newBoard = await rustResponse.json();
+    res.json({ responseFromRust: newBoard});
+  }
+  catch (e) {
+    res.status(500).json({error: 'Error communicating with Rust server'});
+  }
+});
 
 
 if (require.main === module) {

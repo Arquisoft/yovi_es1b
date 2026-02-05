@@ -1,18 +1,83 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import RegisterForm from './RegisterForm';
 import reactLogo from './assets/react.svg'
+
+// Defines how is the Rust object that we receive
+interface GameYData {
+  size: number;
+  turn: number;
+  players: string[];
+  layout: string;
+}
+
 
 function App() {
   // New
   const [connectionStatus, setConnectionStatus] = useState("Without connection"); // State to see the servers response
   const [username, setUsername] = useState(''); // To save the username
   const [isGameStarted, setIsGameStarted] = useState(false); // To know the screen to show (register or game)
-  const [board, setBoard] = useState<number[] | null>(null); // To save what Rust returns
+  const [boardData, setBoardData] = useState<GameYData | null>(null); // To save what Rust returns
+  const [winner, setWinner] = useState<number | null>(null); // To save the winner (if any)
 
-  const handleStart = () => {
+  useEffect(() => {
+    if (isGameStarted) {
+      tryUnion(); // Carga el tablero automáticamente al empezar
+    }
+  }, [isGameStarted]);
+
+  const handleStart = async () => {
     if (username.trim() !== "") {
-      setIsGameStarted(true);
+      setConnectionStatus("Iniciando nueva partida...");
+      try {
+        // Reset
+        const response = await fetch('http://localhost:3000/reset', {
+          method: 'POST',
+        });
+
+        const data = await response.json();
+
+        if (data.responseFromRust) {
+          setBoardData(data.responseFromRust);
+          setIsGameStarted(true);
+          setConnectionStatus("Partida iniciada!");
+        }
+      }
+      catch (error) {
+        console.error("Error starting the game:", error);
+        setIsGameStarted(true);
+      }
+    }
+  }
+
+  const handleCellClick = async (index: number) => {
+    if (winner !== null) return; // There is a winner
+    
+    setConnectionStatus(`Moviendo a la posición ${index}...`);
+    try {
+      const response = await fetch(`http://localhost:3000/move`, {
+        method: 'POST',
+        headers: { 'Content-Type' : 'application/json' },
+        body: JSON.stringify({ cellIndex: index, player: username})
+      });
+
+      const data = await response.json();
+
+      if (data.responseFromRust) {
+        setBoardData(data.responseFromRust);
+        setWinner(data.winner);
+
+        if (data.winner !== null) {
+          setConnectionStatus(data.winner === 0 ? "¡Has ganado!" : "¡Ha ganado el bot!");
+        }
+        else {
+          setConnectionStatus("Movimiento realizado!");
+        }
+        
+      }
+    }
+    catch (error) {
+      setConnectionStatus("Error realizando el movimiento");
     }
   }
 
@@ -26,7 +91,7 @@ function App() {
       console.log("Data from Node:", data);
 
       if (data.responseFromRust) {
-        setBoard(data.responseFromRust); // Save Rust response in state
+        setBoardData(data.responseFromRust); // Save Rust response in state
         setConnectionStatus("Board loaded!");
       } else {
         setConnectionStatus("Node responded, but no board data found.");
@@ -78,39 +143,35 @@ function App() {
       
           <h2>Jugador: {username}</h2>
           {/* CONTENEDOR DEL TABLERO */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 100px)', // 3 columnas de 100px
-            gridTemplateRows: 'repeat(3, 100px)',    // 3 filas de 100px
-            gap: '10px',                             // Espacio entre casillas
-            justifyContent: 'center',
-            margin: '20px auto',
-            backgroundColor: '#444',                 // Color de fondo de las "grietas"
-            padding: '10px',
-            borderRadius: '8px',
-            width: '320px'
-          }}>
-            {board && board.map((casilla, index) => (
-              <div key={index} style={{
-                backgroundColor: '#242424',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '2.5rem',
-                fontWeight: 'bold',
-                color: casilla === 1 ? '#646cff' : '#ff4646', // Azul para X, Rojo para O
-                border: '1px solid #555',
-                cursor: 'pointer'
-              }}>
-                {/* Dibujamos X si es 1, O si es 2, o nada si es 0 */}
-                {casilla === 1 ? 'X' : casilla === 2 ? 'O' : ''}
-              </div>
-            ))}
+          <div className="board-container">
+            {boardData ? (() => {
+              let globalIndex = 0; // Counter to know the global index of the cell
+              return boardData?.layout.split('/').map((row, rowIndex) => (
+                <div key={rowIndex} className="board-row">
+                  {row.split('').map((cell, cellIndex) => {
+                    const currentIndex = globalIndex++; // Assign and increment the global index
+                    return (
+                      <div
+                        key={cellIndex}
+                        className={`cell ${cell === 'B' ? 'blue' : cell === 'R' ? 'red' : 'empty'}`}
+                        onClick={() => cell === '.' && handleCellClick(currentIndex)}  // Only allow clicking on empty cells
+                      >
+                        {cell !== '.' ? cell : ''}
+                      </div>
+                    );
+                  })}
+                </div>
+              ));
+            })() : <p>Carga el tablero para comenzar</p>}
+          </div>
+                    
+
+          <div className="game-controls">
+            <button onClick={tryUnion}>Actualizar desde Rust</button>
+            <p className="status-text">{connectionStatus}</p>
+            <button className="exit-button" onClick={() => setIsGameStarted(false)}>Salir</button>
           </div>
 
-          <button onClick={tryUnion}>Actualizar desde Rust</button>
-          <p>{connectionStatus}</p>
-          <button onClick={() => setIsGameStarted(false)}>Salir</button>
         </div>
       )}
     </div>
