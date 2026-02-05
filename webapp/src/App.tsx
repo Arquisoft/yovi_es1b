@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './App.css'
 import RegisterForm from './RegisterForm';
 import reactLogo from './assets/react.svg'

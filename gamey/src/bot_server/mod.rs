@@ -31,11 +31,8 @@ pub use choose::MoveResponse;
 pub use error::ErrorResponse;
 pub use version::*;
 
-use crate::{GameYError, RandomBot, YBotRegistry, state::AppState, yen};
-use axum::Json;
-use serde_json::{json, Value};
+use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
 
-use crate::core::game::GameY; // Import GameY
 use serde::Deserialize;
 
 
