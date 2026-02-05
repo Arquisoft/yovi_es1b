@@ -45,15 +45,16 @@ pub struct MoveRequest {
     pub index: u32
 }
 
+
+// Routes
 /// Creates the Axum router with the given state.
 ///
 /// This is useful for testing the API without binding to a network port.
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .route("/status", axum::routing::get(status))
-        .route("/prueba-rust", axum::routing::get(prueba_tablero))
-        .route("/execute-move", axum::routing::post(realizar_movimiento))
-        .route("/reset", axum::routing::post(reiniciar_juego))
+        .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
+        .route("/reset", axum::routing::post(reiniciar_juego)) // new
         .route(
             "/{api_version}/ybot/choose/{bot_id}",
             axum::routing::post(choose::choose),
@@ -109,20 +110,8 @@ pub async fn status() -> impl IntoResponse {
 }
 
 
-pub async fn prueba_tablero(
-    axum::extract::State(state): axum::extract::State<AppState>
-) -> impl IntoResponse {
-    // 1. Create the game with a size of 5
-    let game = state.game.lock().unwrap(); // Lock the mutex to access the game state
-
-    // 2. Convert the game to a YEN representation (JSON)
-    let yen_data: crate::YEN = (&*game).into();
-
-    // 3. Send it to Node
-    axum::Json(yen_data)
-}
-
-
+// New
+// This endpoint handles the move made by the human player and then triggers the bot's response.
 pub async fn realizar_movimiento (
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>
@@ -180,6 +169,8 @@ pub async fn realizar_movimiento (
 }
 
 
+// New
+// This endpoint resets the game to its initial state.
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>
 ) -> impl IntoResponse {

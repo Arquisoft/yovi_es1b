@@ -29,6 +29,10 @@ app.use((req, res, next) => {
 
 app.use(express.json());
 
+
+// --- ENDPOINTS ---
+
+
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
 app.post('/createuser', async (req, res) => {
   const username = req.body && req.body.username;
@@ -44,27 +48,13 @@ app.post('/createuser', async (req, res) => {
 });
 
 
-app.get('/prueba-rust', async (req, res) => {
-  try {
-    // Node.js makes a request to the Rust server
-    const response = await fetch('http://localhost:8080/prueba-rust');
-    // If the Rust server responds, we send it to the web client
-    const data = await response.json();
-    res.json({
-      message: "Node.js says hello",
-      responseFromRust: data
-    });
-  } catch (error) {
-    res.status(500).json({error: 'Error communicating with Rust server'});
-  }
-});
-
-
+// New
+// Executes a move in the game
 app.post('/move', async (req, res) => {
   const { cellIndex } = req.body;
 
   try {
-    const rustResponse = await fetch('http://localhost:8080/execute-move', {
+    const rustResponse = await fetch('http://localhost:8080/execute-move', { // LLama al endpoint de Rust para ejecutar el movimiento
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ index: cellIndex})
@@ -88,9 +78,11 @@ app.post('/move', async (req, res) => {
 });
 
 
+// New
+// Resets the game
 app.post('/reset', async (req, res) => {
   try {
-    const rustResponse = await fetch('http://localhost:8080/reset', {
+    const rustResponse = await fetch('http://localhost:8080/reset', { // LLama al endpoint de Rust para resetear el juego
       method: 'POST',
     });
     const newBoard = await rustResponse.json();

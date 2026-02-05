@@ -20,18 +20,13 @@ function App() {
   const [boardData, setBoardData] = useState<GameYData | null>(null); // To save what Rust returns
   const [winner, setWinner] = useState<number | null>(null); // To save the winner (if any)
 
-  useEffect(() => {
-    if (isGameStarted) {
-      tryUnion(); // Carga el tablero automáticamente al empezar
-    }
-  }, [isGameStarted]);
 
   const handleStart = async () => {
     if (username.trim() !== "") {
       setConnectionStatus("Iniciando nueva partida...");
       try {
         // Reset
-        const response = await fetch('http://localhost:3000/reset', {
+        const response = await fetch('http://localhost:3000/reset', {   // Llama al endpoint de reset (/users) para iniciar una nueva partida
           method: 'POST',
         });
 
@@ -39,6 +34,7 @@ function App() {
 
         if (data.responseFromRust) {
           setBoardData(data.responseFromRust);
+          setWinner(null);
           setIsGameStarted(true);
           setConnectionStatus("Partida iniciada!");
         }
@@ -46,16 +42,18 @@ function App() {
       catch (error) {
         console.error("Error starting the game:", error);
         setIsGameStarted(true);
+        setWinner(null);
       }
     }
   }
 
+  // New: Function to handle cell clicks and send the move to Rust
   const handleCellClick = async (index: number) => {
     if (winner !== null) return; // There is a winner
     
     setConnectionStatus(`Moviendo a la posición ${index}...`);
     try {
-      const response = await fetch(`http://localhost:3000/move`, {
+      const response = await fetch(`http://localhost:3000/move`, { // Llama al endpoint de move (/users) para realizar un movimiento
         method: 'POST',
         headers: { 'Content-Type' : 'application/json' },
         body: JSON.stringify({ cellIndex: index, player: username})
@@ -81,31 +79,14 @@ function App() {
     }
   }
 
-  // New: Function to call to the Node bridge
-  const tryUnion = async () => {
-    setConnectionStatus("Connecting...");
-    try {
-      const response = await fetch('http://localhost:3000/prueba-rust');
-      const data = await response.json();
 
-      console.log("Data from Node:", data);
-
-      if (data.responseFromRust) {
-        setBoardData(data.responseFromRust); // Save Rust response in state
-        setConnectionStatus("Board loaded!");
-      } else {
-        setConnectionStatus("Node responded, but no board data found.");
-      }
-    }catch (error) {
-        console.error("Error fetching from Node:", error);
-        setConnectionStatus("Error connecting to Node server");
-      }
-  };
-
+  // VIEW
   return (
     <div className="App">
       {!isGameStarted ? (
         // SCREEN 1: Register 
+
+        // Images
         <div className="register-screen">
           <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
             <img src="/vite.svg" className="logo" alt="Vite logo" />
@@ -117,6 +98,7 @@ function App() {
         <h2>Welcome to the Software Arquitecture 2025-2026 course</h2>
         <RegisterForm />
 
+        {/* To try the game without registering, just for testing purposes. */}
         <div>
           <h3>Quick Access (Simulated Login)</h3>
           <input
@@ -131,6 +113,7 @@ function App() {
       </div>
       
       ) : (
+
         // SCREEN 2: Game (just an example, you can change it)
         <div className="game-screen">
 
@@ -142,6 +125,7 @@ function App() {
           </a>
       
           <h2>Jugador: {username}</h2>
+
           {/* CONTENEDOR DEL TABLERO */}
           <div className="board-container">
             {boardData ? (() => {
@@ -167,7 +151,6 @@ function App() {
                     
 
           <div className="game-controls">
-            <button onClick={tryUnion}>Actualizar desde Rust</button>
             <p className="status-text">{connectionStatus}</p>
             <button className="exit-button" onClick={() => setIsGameStarted(false)}>Salir</button>
           </div>

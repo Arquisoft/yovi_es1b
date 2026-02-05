@@ -98,8 +98,6 @@
 
 /* --- ESTILOS DEL TABLERO DE JUEGO (GAME OF Y) --- */
 
-/* --- ESTILO LIMPIO Y CLARO (FONDO BLANCO) --- */
-
 /* Forzamos que toda la pantalla sea blanca */
 body {
   background-color: #ffffff !important;
@@ -111,12 +109,12 @@ body {
 }
 
 .board-container {
-  background-color: #f8f9fa; /* Gris muy clarito para el área del tablero */
+  background-color: #f8f9fa;
   padding: 40px;
   border-radius: 20px;
   display: inline-block;
   margin: 20px auto;
-  border: 1px solid #eee; /* Un borde sutil */
+  border: 1px solid #eee; 
 }
 
 .board-row {
@@ -135,7 +133,7 @@ body {
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  background-color: white; /* Celdas blancas por defecto */
+  background-color: white;
   transition: all 0.2s ease;
 }
 
@@ -159,7 +157,7 @@ body {
   color: white;
 }
 
-/* BOTÓN BLANCO ESTILO PROFESIONAL */
+
 .game-controls button, .exit-button {
   background-color: #ffffff;
   color: #333;
@@ -174,11 +172,12 @@ body {
 
 .game-controls button:hover {
   background-color: #f8f9fa;
+  color: black;
   border-color: #333;
 }
 
 .exit-button {
-  color: #dc3545; /* Texto rojo para el botón de salir */
+  color: #dc3545; 
   border-color: #dc3545;
 }
 
