@@ -135,13 +135,19 @@ function App() {
                   {row.split('').map((cell, cellIndex) => {
                     const currentIndex = globalIndex++; // Assign and increment the global index
                     return (
-                      <div
+                      <button
                         key={cellIndex}
+                        type="button"
                         className={`cell ${cell === 'B' ? 'blue' : cell === 'R' ? 'red' : 'empty'}`}
-                        onClick={() => cell === '.' && handleCellClick(currentIndex)}  // Only allow clicking on empty cells
+                        // Only allow clicking on empty cells and if there is no winner
+                        onClick={() => cell === '.' && winner === null && handleCellClick(currentIndex)}
+                        // Disable the button if it's not empty or if there is a winner
+                        disabled={cell !== '.' || winner !== null}
+                        // Show information 
+                        aria-label={`Celda ${currentIndex}, ${cell === 'B' ? 'ocupada por azul' : cell === 'R' ? 'ocupada por rojo' : 'vacía'}`}
                       >
-                        {cell !== '.' ? cell : ''}
-                      </div>
+                        {cell !== '.' ? cell : ''} {/* Show the cell content (B or R) or nothing if it's empty */}
+                      </button>
                     );
                   })}
                 </div>
