@@ -2,7 +2,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-solution-strategy]]
 == Solution Strategy
-
+Hola buenas, estoy probando a escribir en la documentacion
 
 ifdef::arc42help[]
 [role="arc42help"]
