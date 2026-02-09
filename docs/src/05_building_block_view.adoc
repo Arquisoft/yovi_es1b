@@ -3,7 +3,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-building-block-view]]
 
 
-== Building Block View
+== Vista de Bloques
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -42,7 +42,7 @@ See https://docs.arc42.org/section-5/[Building Block View] in the arc42 document
 ****
 endif::arc42help[]
 
-=== Whitebox Overall System
+=== Caja blanca del Sistema General
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -71,11 +71,24 @@ _**<Overview Diagram>**_
 
 Motivation::
 
-_<text explanation>_
+La aplicación YGame tiene la estructura básica para jugar el juego y online contra distintos bots, u otros jugadores.
+Aparte de eso tambíen guarda y carga partidas previas y chatear cuando juegas cotra otro usuario
 
 
-Contained Building Blocks::
-_<Description of contained building block (black boxes)>_
+Bloques de Construcción de Contenidos::
+[cols="1,2" options="header"]
+|===
+|Nombre| Descripción
+|*Usuario*
+|Usuario de la aplicación que interactua con ella
+|*Webapp*
+|Ofrece la interfaz gráfica para que el usuario se registre y reciba la respuesta del backend.
+|*Users Service*
+|Aplicación principal de backend que gestiona la creación de usuarios a través de un endpoint REST. Actúa como caja negra que será detallada en las descomposiciones posteriores.
+|*GameY Engine*
+|Motor del juego Y y de los bots, implementado en Rust. En esta versión del sistema no está integrado con el resto de servicios, pero se considera un componente propio que se detallará en niveles inferiores.
+|*External Web Browser*
+|Agente externo mediante el cual los usuarios acceden a la Webapp. No forma parte del sistema, pero es imprescindible para su operación (contexto de ejecución).
 
 Important Interfaces::
 _<Description of important interfaces>_
