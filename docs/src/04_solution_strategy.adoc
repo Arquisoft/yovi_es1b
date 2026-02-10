@@ -16,8 +16,8 @@ Esta separación de responsabilidades reduce el acoplamiento, mejora mantenibili
 .**Decisiones tecnológicas**
 - **Frontend**: **React** + **Vite** + **TypeScript**. Utilizados ya que son un buen soporte de herramientas y permite interfaces interactivas y fáciles de mantener
 - **Backend**: **Node.js** + **Express**. Son simples y útiles para APIs REST sencillas
-- **Motor de juego**: Rust + Cargo. Buen rendimiento, muy seguro y una buena gestión de concurrencia. Estas son características importantes para un motor de juego.
-- **Uso de contenedores**: Docker y Docker Compose. Simplifican instalación, ejecución y pruebas del sistema
+- **Motor de juego**: **Rust** + **Cargo**. Buen rendimiento, muy seguro y una buena gestión de concurrencia. Estas son características importantes para un motor de juego.
+- **Uso de contenedores**: **Docker** y **Docker Compose**. Simplifican instalación, ejecución y pruebas del sistema
 
 .**Decisiones relacionadas con atributos de calidad**
 - **Mantenibilidad**: Empleamos código separado en módulos, separación de responsabilidades y uso de pruebas automáticas
