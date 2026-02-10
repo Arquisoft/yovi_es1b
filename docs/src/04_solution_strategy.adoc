@@ -4,12 +4,6 @@ ifndef::imagesdir[:imagesdir: ../images]
 == Solution Strategy
 
 === **Introducción**
-El proyecto ifndef::imagesdir[:imagesdir: ../images]
-
-[[section-solution-strategy]]
-== Solution Strategy
-
-=== **Introducción**
 El proyecto **yovi_es1b** ha sido diseñado empleando una **arquitectura modular y distribuida**, en el que tenemos diferenciado la UI o **interfaz de usuario**, la **lógica de negocio** y el **motor del juego**, además de una **aplicación web**. Esta separación, va a permitir un **desarrollo incremental**, facilitando **mantenimiento** y **escalabilidad** del sistema. Las decisiones se han tomado teniendo en cuenta los **objetivos de calidad** que se mencionarán más adelante.
 
 === **Decisiones arquitectónicas claves**
