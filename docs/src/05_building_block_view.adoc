@@ -89,6 +89,7 @@ Bloques de Construcción de Contenidos::
 |Motor del juego Y y de los bots, implementado en Rust. En esta versión del sistema no está integrado con el resto de servicios, pero se considera un componente propio que se detallará en niveles inferiores.
 |*External Web Browser*
 |Agente externo mediante el cual los usuarios acceden a la Webapp. No forma parte del sistema, pero es imprescindible para su operación (contexto de ejecución).
+|===
 
 Important Interfaces::
 _<Description of important interfaces>_
