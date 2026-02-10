@@ -3,14 +3,14 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-solution-strategy]]
 == Solution Strategy
 
-=== Introducción
+=== .Introducción
 El proyecto yovi_es1b ha sido diseñado empleando una arquitectura modular y distribuido, en el que tenemos diferenciado
 la UI o interfaz de usuario, la lógica de negocio y el motor del juego, además de una aplicación web.
 Esta separación, va a permitir un desarrollo incremental, facilitando mantenimiento y escalabilidad del sistema.
 Las decisiones se han tomado teniendo en cuenta los objetivos de calidad que se mencionarán más adelante.
 
-==== Decisiones arquitectónicas claves
-===== Descomposición de alto nivel
+=== .Decisiones arquitectónicas claves
+==== .Descomposición de alto nivel
 
 - Webapp: Aplicación frontend
 - Users Service: Servicio backend para gestión de usuarios
@@ -18,7 +18,7 @@ Las decisiones se han tomado teniendo en cuenta los objetivos de calidad que se 
 Esta separación de responsabilidades reduce el acoplamiento, mejora mantenibilidad, y permite escalar o sustituir
 componentes sin que genere problemas en otras partes del sistema.
 
-==== Decisiones tecnológicas
+==== .Decisiones tecnológicas
 
 - Frontend: React + Vite + TypeScript. Utilizados ya que son un buen soporte de herramientas y permite interfaces interactivas y fáciles de mantener
 - Backend: Node.js + Express. Son simples y útiles para APIs REST sencillas
@@ -26,7 +26,7 @@ componentes sin que genere problemas en otras partes del sistema.
 para un motor de juego.
 - Uso de contenedores: Docker y Docker Compose. Simplifican instalación, ejecución y pruebas del sistema
 
-==== Decisiones relacionadas con atributos de calidad
+==== .Decisiones relacionadas con atributos de calidad
 
 - Mantenibilidad: Empleamos código separado en módulos, separación de responsabilidades y uso de pruebas automáticas
 - Escalabilidad: Nuestros servicios se pueden ir actualizando y mejorando de forma independiente
@@ -34,7 +34,7 @@ para un motor de juego.
 - Calidad del código: SonarCloud y CodeScene ayudan a mantener el código limpio, seguro y fácil de mantener, asegurando que sigan estándares de calidad.
 Son herramientas que se utilizan para vigilar el código de forma automática mientras se desarrolla.
 
-==== Decisiones organizativas
+==== .Decisiones organizativas
 
 - Utilizamos GitHub como flujo de trabajo, que nos permite integrar de forma continua los nuevos cambios que hemos realizado y 
 un despliegue automático
