@@ -23,9 +23,11 @@ pub enum Movement {
     },
 }
 
+// Display is a Trait, similar to an interface in other languages.
+// It requires the implementation of the fmt function.
 impl Display for Movement {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
+        match self { // Like a switch but mandatory. Include here all the enum variants.
             Movement::Placement { player, coords } => {
                 write!(f, "Player {} places at {}", player, coords)
             }

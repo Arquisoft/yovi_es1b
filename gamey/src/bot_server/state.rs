@@ -1,5 +1,7 @@
 use crate::YBotRegistry;
 use std::sync::Arc;
+use crate::core::game::GameY;
+use std::sync::Mutex;
 
 /// Shared application state for the bot server.
 ///
@@ -10,6 +12,7 @@ use std::sync::Arc;
 pub struct AppState {
     /// The registry of available bots, wrapped in Arc for thread-safe sharing.
     bots: Arc<YBotRegistry>,
+    pub game: Arc<Mutex<GameY>>, // NEW: The actual game state, wrapped in Arc and Mutex for safe concurrent access
 }
 
 impl AppState {
@@ -17,6 +20,7 @@ impl AppState {
     pub fn new(bots: YBotRegistry) -> Self {
         Self {
             bots: Arc::new(bots),
+            game: Arc::new(Mutex::new(GameY::new(5))) // NEW: Initialize the game state with a new GameY instance of size 5
         }
     }
 
