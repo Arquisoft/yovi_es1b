@@ -2,7 +2,37 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-design-decisions]]
 == Architecture Decisions
+[cols = "1,2,1", options="header"]
+|===
+|Clave |Decisión de diseño |Justificación y suposiciones
 
+|Lenguaje de programación
+|
+|
+
+|BB.DD 
+|
+|
+
+|React
+|
+|
+
+|Microservicios
+|
+|
+
+|Docker
+|
+|
+
+|LLMs empleados
+|
+|
+
+|Plantilla Arc42
+|
+|
 
 ifdef::arc42help[]
 [role="arc42help"]
