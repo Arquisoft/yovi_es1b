@@ -1338,7 +1338,7 @@ building block instances depicted in this diagram.&gt;</em></p>
 </div>
 </div>
 <div class="sect1">
-<h2 id="section-deployment-view">7. Deployment View</h2>
+<h2 id="section-deployment-view">7. Vista de despliegue</h2>
 <div class="sectionbody">
 <div class="sidebarblock arc42help">
 <div class="content">
@@ -1395,7 +1395,7 @@ when your infrastructure is more complex.</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_infrastructure_level_1">7.1. Infrastructure Level 1</h3>
+<h3 id="_infraestructura_de_nivel_1">7.1. Infraestructura de Nivel 1</h3>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1423,27 +1423,72 @@ when your infrastructure is more complex.</p>
 </div>
 </div>
 <div class="paragraph">
-<p><em><strong>&lt;Overview Diagram&gt;</strong></em></p>
+<p>En este apartado se describe la infraestructura global de <strong>YOVI</strong>, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/deployment-diagram.png" alt="deployment diagram" width="1184" height="414">
+</div>
 </div>
 <div class="dlist">
 <dl>
-<dt class="hdlist1">Motivation</dt>
+<dt class="hdlist1">Motivación</dt>
 <dd>
-<p><em>&lt;explanation in text form&gt;</em></p>
+<p>La infraestructura se basa en la contenerización con Docker para resolver la necesidad de ejecutar dos entornos distintos (Node.js y Rust). El despliegue en la nube garantiza que la aplicación sea accesible publicamente, cumpliendo con el requisito de disponibilidad para usuarios y bots externos.
+Así, una parte se encarga de la web y los usuarios (Node.js) y otra exclusivamente de las reglas del juego (Rust).</p>
 </dd>
-<dt class="hdlist1">Quality and/or Performance Features</dt>
+<dt class="hdlist1">Características de Calidad y Rendimiento</dt>
 <dd>
-<p><em>&lt;explanation in text form&gt;</em></p>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Rapidez:</strong> Al tener la lógica del juego en Rust, las jugadas se calculan de manera casi inmediata.</p>
+</li>
+<li>
+<p><strong>Fiabilidad:</strong> Como se usan contenedores, el sistema funcionará igual de bien en los ordenadores donde se desarrolla que en los del servidor final.</p>
+</li>
+<li>
+<p><strong>Seguridad:</strong> Los datos viajan protegidos por internet para mantener las partidas privadas.</p>
+</li>
+</ul>
+</div>
 </dd>
-<dt class="hdlist1">Mapping of Building Blocks to Infrastructure</dt>
-<dd>
-<p><em>&lt;description of the mapping&gt;</em></p>
-</dd>
+<dt class="hdlist1">Mapeo de piezas a la infraestructura</dt>
 </dl>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">¿Qué se ha programado?</th>
+<th class="tableblock halign-left valign-top">¿Dónde se ejecuta?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>La interfaz Web</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">En el ordenador o móvil donde la persona juega.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>La API y gestión de usuarios</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">En el contenedor principal del servidor.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Las reglas y estrategias del juego</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">En el contenedor principal de Rust.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>El historial de partidas</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">En el servidor de base de datos.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect2">
-<h3 id="_infrastructure_level_2">7.2. Infrastructure Level 2</h3>
+<h3 id="_infraestructura_de_nivel_2">7.2. Infraestructura de Nivel 2</h3>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1455,24 +1500,49 @@ when your infrastructure is more complex.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_infrastructure_element_1">7.2.1. <em>&lt;Infrastructure Element 1&gt;</em></h4>
+<h4 id="_servidor_en_la_nube_docker_host">7.2.1. Servidor en la Nube (Docker Host)</h4>
 <div class="paragraph">
-<p><em>&lt;diagram + explanation&gt;</em></p>
+<p>Es el servidor principal donde ocurre todo lo relativo al backend.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/level2-server.png" alt="level2 server" width="646" height="253">
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Explicación:</strong>
+Dentro del servidor, los contenedores están conectados por una red "invisible" para el resto del mundo. Esto hace que el motor de <strong>Rust</strong> y los datos estén seguros, ya que nadie puede entrar en ellos directamente desde internet.
+Solo se puede pasar a través de la aplicación web desarrollada.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_infrastructure_element_2">7.2.2. <em>&lt;Infrastructure Element 2&gt;</em></h4>
+<h4 id="_cliente">7.2.2. Cliente</h4>
 <div class="paragraph">
-<p><em>&lt;diagram + explanation&gt;</em></p>
+<p>Es el dispositivo (PC o móvil) de la persona que utiliza la aplicación.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/level2-client.png" alt="level2 client" width="509" height="124">
+</div>
 </div>
 <div class="paragraph">
-<p>&#8230;&#8203;</p>
+<p><strong>Explicación:</strong>
+Cuando alguien accede a la web, su navegador descarga la parte visual (React). El código se ejecuta directamente en su ordenador, usando su propia memoria para que el juego se vea fluido y rápido.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_infrastructure_element_n">7.2.3. <em>&lt;Infrastructure Element n&gt;</em></h4>
+<h4 id="_base_de_datos_persistencia">7.2.3. Base de Datos (Persistencia)</h4>
 <div class="paragraph">
-<p><em>&lt;diagram + explanation&gt;</em></p>
+<p>Es el lugar donde se almacena la información. De esta manera no se perderá la información al reiniciar los contenedores.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/level2-db.png" alt="level2 db" width="642" height="123">
+</div>
+</div>
+<div class="paragraph">
+<p><strong>Explicación:</strong>
+Se utiliza lo que se denomina "volumen" de Docker. Esto significa que, aunque el contenedor de la base de datos se detenga o se actualice, la información de los usuarios y las partidas se queda grabada en el disco duro del servidor, como si estuviera almacenado en un USB.</p>
 </div>
 <div style="page-break-after: always;"></div>
 </div>
