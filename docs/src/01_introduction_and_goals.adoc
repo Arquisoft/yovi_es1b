@@ -3,99 +3,59 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-introduction-and-goals]]
 == Introduction and Goals
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Describes the relevant requirements and the driving forces that software architects and development team must consider. 
-These include
+El proyecto **yovi_es1b** es una iniciativa llevada a cabo en la Universidad de Oviedo, dentro del marco de la asignatura de Ingeniería del Software. El propósito es desarrollar, integrar y desplegar una versión digital del juego de estrategia abstracta "Juego Y" (Game of Y).
 
-* underlying business goals, 
-* essential features, 
-* essential functional requirements, 
-* quality goals for the architecture and
-* relevant stakeholders and their expectations
-****
-endif::arc42help[]
+El equipo comprometido con este desarrollo está formado por:
+
+* Diego Abeijon Rodriguez
+* Hugo Tejedor Arcoitza
+* Nahiara Sanchez Garcia
+* Eva Menéndez Hernández
+* Moisés Montes Iglesias
+
+En la aplicación, los usuarios podrán jugar al "Juego Y" en dos modalidades principales: enfrentamiento contra otro jugador (local) o contra un Bot (IA), haciendo uso de un núcleo lógico preexistente.
 
 === Requirements Overview
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-.Contents
-Short description of the functional requirements, driving forces, extract (or abstract)
-of requirements. Link to (hopefully existing) requirements documents
-(with version number and information where to find it).
+La funcionalidad principal se basa en la integración de componentes y la correcta ejecución del juego.
 
-.Motivation
-From the point of view of the end users a system is created or modified to
-improve support of a business activity and/or improve the quality.
-
-.Form
-Short textual description, probably in tabular use-case format.
-If requirements documents exist this overview should refer to these documents.
-
-Keep these excerpts as short as possible. Balance readability of this document with potential redundancy w.r.t to requirements documents.
-
-
-.Further Information
-
-See https://docs.arc42.org/section-1/[Introduction and Goals] in the arc42 documentation.
-
-****
-endif::arc42help[]
+.Requisitos Funcionales Clave
+* **Modos de Juego:** Soporte para partidas Humano vs Humano y Humano vs Bot.
+* **Integración del Núcleo:** La aplicación utiliza una librería externa (Kernel) para la validación de movimientos y detección de victoria, asegurando que las reglas oficiales se cumplen estrictamente.
+* **Interfaz de Usuario:** Visualización clara del tablero triangular, permitiendo interactuar con las celdas para colocar fichas de manera intuitiva.
+* **Despliegue y Ejecución:** El sistema está configurado para iniciarse correctamente en los entornos de laboratorio, gestionando las dependencias necesarias automáticamente.
+* **Ciclo de la Partida:** Gestión completa del flujo de juego: inicio, turnos alternos, detección de fin de partida y opción de reinicio.
 
 === Quality Goals
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-.Contents
-The top three (max five) quality goals for the architecture whose fulfillment is of highest importance to the major stakeholders. 
-We really mean quality goals for the architecture. Don't confuse them with project goals.
-They are not necessarily identical.
-
-Consider this overview of potential topics (based upon the ISO 25010 standard):
-
-image::01_2_iso-25010-topics-EN.drawio.png["Categories of Quality Requirements"]
-
-.Motivation
-You should know the quality goals of your most important stakeholders, since they will influence fundamental architectural decisions. 
-Make sure to be very concrete about these qualities, avoid buzzwords.
-If you as an architect do not know how the quality of your work will be judged...
-
-.Form
-A table with quality goals and concrete scenarios, ordered by priorities
-****
-endif::arc42help[]
-
-=== Stakeholders
-
-ifdef::arc42help[]
-[role="arc42help"]
-****
-.Contents
-Explicit overview of stakeholders of the system, i.e. all person, roles or organizations that
-
-* should know the architecture
-* have to be convinced of the architecture
-* have to work with the architecture or with code
-* need the documentation of the architecture for their work
-* have to come up with decisions about the system or its development
-
-.Motivation
-You should know all parties involved in development of the system or affected by the system.
-Otherwise, you may get nasty surprises later in the development process.
-These stakeholders determine the extent and the level of detail of your work and its results.
-
-.Form
-Table with role names, person names, and their expectations with respect to the architecture and its documentation.
-****
-endif::arc42help[]
+Los objetivos de calidad se centran en la arquitectura de integración y la facilidad de puesta en marcha del software.
 
 [options="header",cols="1,2,2"]
 |===
-|Role/Name|Contact|Expectations
-| _<Role-1>_ | _<Contact-1>_ | _<Expectation-1>_
-| _<Role-2>_ | _<Contact-2>_ | _<Expectation-2>_
+|Prioridad |Meta de Calidad |Escenario
+| 1 | **Desplegabilidad (Deployability)** | El proyecto debe poder clonarse y ejecutarse en los equipos del laboratorio con una configuración mínima, evitando errores de rutas o dependencias faltantes.
+| 2 | **Interoperabilidad** | La interfaz gráfica debe comunicarse con el núcleo lógico (backend/kernel) sin errores de formato, respetando la API proporcionada.
+| 3 | **Usabilidad** | Un jugador nuevo debe poder identificar fácilmente de quién es el turno, dónde puede colocar una ficha y si ha ganado o perdido, sin consultar un manual.
+| 4 | **Mantenibilidad** | La arquitectura debe separar claramente el código de la vista del código de la lógica, facilitando futuras actualizaciones del núcleo o cambios en la interfaz.
+|===
+
+=== Stakeholders
+
+Personas y roles involucrados en el desarrollo y evaluación del sistema.
+
+[options="header",cols="1,2,2"]
+|===
+|Rol/Nombre |Contacto |Expectativas
+
+| **Equipo de desarrollo**
+| Diego Abeijon, Hugo Tejedor, Nahiara Sanchez, Eva Menéndez, Moisés Montes
+| Integrar correctamente el sistema, documentar la arquitectura (arc42) y superar la evaluación de la asignatura mediante un despliegue exitoso.
+
+| **Usuarios Finales**
+| Jugadores del Juego Y
+| Una experiencia de juego fluida, poder jugar contra la máquina o un amigo sin que la aplicación se cierre inesperadamente.
+
+| **Evaluadores (Profesores)**
+| Jose Emilio Labra Gayo, Pablo González, Irene Cid Rico, Diego Martín Fernández
+| Verificar que el despliegue es reproducible, que se respeta la arquitectura propuesta y que la documentación refleja fielmente el sistema construido.
 |===
