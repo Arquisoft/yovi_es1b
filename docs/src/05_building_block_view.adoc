@@ -67,15 +67,46 @@ In the best case you will get away with examples or simple signatures.
 ****
 endif::arc42help[]
 
-_**<Overview Diagram>**_
+@startuml
+' Diagrama de componentes YOVI (formato estilo WiChat)
+
+actor a as "Usuario"
+
+component web as "WEBAPP" #LightGray
+component u as "USERS" #2aa198
+component g as "GAMEY" #268bd2
+
+a -> web: Interactúa
+web -> u: Autenticación y perfiles
+web -> g: Operaciones del juego
+g -> u: Validación de identidad (opcional)
+
+legend
+|<back:#LightGray>   </back>| Interfaz web (frontend) |
+|<back:#2aa198>      </back>| Servicio de usuarios (identidad) |
+|<back:#268bd2>      </back>| Lógica de juego (backend) |
+endlegend
+@enduml
 
 Motivation::
 
-_<text explanation>_
+La aplicación YGame tiene la estructura básica para jugar el juego y online contra distintos bots, u otros jugadores.
+Aparte de eso tambíen guarda y carga partidas previas y chatear cuando juegas cotra otro usuario
 
 
-Contained Building Blocks::
-_<Description of contained building block (black boxes)>_
+Bloques de Construcción de Contenidos::
+[cols="1,2" options="header"]
+|===
+|Nombre| Descripción
+|*Usuario*
+|Usuario de la aplicación que interactua con ella
+|*Webapp*
+|Ofrece la interfaz gráfica para que el usuario se registre y reciba la respuesta del backend.
+|*Users*
+|Aplicación principal de backend que gestiona la creación y autenticación de usuarios.
+|*Gamey*
+|Backend que implementa la lógica del juego Y y de los bots, implementado en Rust.
+|===
 
 Important Interfaces::
 _<Description of important interfaces>_
