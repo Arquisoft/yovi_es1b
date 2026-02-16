@@ -1,8 +1,9 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-architecture-constraints]]
-== Architecture Constraints
+== Restricciones Arquitectónicas
 
+En este apartado se describen los límites que condicionan las decisiones de diseño e implementación del equipo de desarrollo. Estos factores son innegociables y deben ser respatados por todo el equipo durante el desarrollo.
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -27,3 +28,34 @@ See https://docs.arc42.org/section-2/[Architecture Constraints] in the arc42 doc
 
 ****
 endif::arc42help[]
+
+=== Restricciones Técnicas
+[options="header",cols="1,2"]
+|===
+| Restricción | Explicación
+| Multilenguaje | Obligación de usar TypeScript para la aplicación Web (Frontend/API) y Rust para el módulo de lógica de juego.
+| Comunicación JSON/YEN | El intercambio de datos entre los subsistemas debe realizarse exclusivamente mediante mensajes JSON, siguiendo la notación YEN.
+| Contenerización | El sistema debe administrarse mediante Docker, asegurando el funcionamiento en entornos aislados de ambos subsistemas (Web y Rust).
+| Despliegue Web | La aplicación debe ser accesible públicamente a través de una URL, es decir, debe estar desplegada en la nube.
+| Interfaz de servicios | El módulo Rust debe exponer una interfaz de servicio web básica para ser invocado por la aplicación principal.
+|===
+
+=== Restricciones Organizativas
+[options="header",cols="1,2"]
+|===
+| Restricción | Explicación
+| Curva de aprendizaje | El equipo debe adquirir competencias en Rust, Node.js y React de forma simultánea al desarrollo, ya que son tecnologías que no han empleado con anterioridad.
+| Plazos | Entrega sujeta al calendario establecido por la empresa de desarrollo de juegos Micrati.
+| Criterios de Calidad | Es obligatorio cumplir con niveles mínimos de cobertura de pruebas (Unitarias, Integración, E2E y Carga).
+|===
+
+=== Convenciones y Normas
+[options="header",cols="1,2"]
+|===
+| Restricción | Explicación
+| Estándar arc42 | La documentación técnica debe seguir la estructura y apartados del modelo arc42.
+| Notación de Coordenadas | El tablero de juego debe representarse mediante coordenadas baricéntricas (x, y, z) o índices secuenciales.
+| Gestión de Git | Uso obligatorio de issues, pull request con revisión de código y registro de decisiones arquitectónicas (ADR).
+| Observabilidad | El sistema debe incluir mecanismos de monitorización y disponibilidad.
+| Wiki y Gestión de Equipo | Se mantendrá una wiki en GitHub con las actas de las reuniones semanales realizadas por el equipo de desarrollo. Además, se incluirán apartados para desarrollar las decisiones tomadas y otros aspectos relevantes del desarrollo.
+|===

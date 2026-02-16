@@ -1,6 +1,6 @@
 // asciidoc settings for EN (English)
-// ==================================
-:toc-title: table of contents
+// =================================
+:toc-title: Tabla de contenidos
 
 // enable table-of-contents
 :toc:
