@@ -1,7 +1,7 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-introduction-and-goals]]
-== Introduction and Goals
+== Introducción y Objetivos
 
 El proyecto **yovi_es1b** es una iniciativa llevada a cabo en la Universidad de Oviedo, dentro del marco de la asignatura de Ingeniería del Software. El propósito es desarrollar, integrar y desplegar una versión digital del juego de estrategia abstracta "Juego Y" (Game of Y).
 
@@ -15,7 +15,7 @@ El equipo comprometido con este desarrollo está formado por:
 
 En la aplicación, los usuarios podrán jugar al "Juego Y" en dos modalidades principales: enfrentamiento contra otro jugador (local) o contra un Bot (IA), haciendo uso de un núcleo lógico preexistente.
 
-=== Requirements Overview
+=== Visión General de los Requisitos
 
 La funcionalidad principal se basa en la integración de componentes y la correcta ejecución del juego.
 
@@ -26,7 +26,7 @@ La funcionalidad principal se basa en la integración de componentes y la correc
 * **Despliegue y Ejecución:** El sistema está configurado para iniciarse correctamente en los entornos de laboratorio, gestionando las dependencias necesarias automáticamente.
 * **Ciclo de la Partida:** Gestión completa del flujo de juego: inicio, turnos alternos, detección de fin de partida y opción de reinicio.
 
-=== Quality Goals
+=== Objetivos de Calidad
 
 Los objetivos de calidad se centran en la arquitectura de integración y la facilidad de puesta en marcha del software.
 

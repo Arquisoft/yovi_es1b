@@ -1,7 +1,7 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-context-and-scope]]
-== Context and Scope
+== Contexto y Alcance
 
 
 ifdef::arc42help[]
@@ -30,7 +30,7 @@ See https://docs.arc42.org/section-3/[Context and Scope] in the arc42 documentat
 ****
 endif::arc42help[]
 
-=== Business Context
+=== Contexto de Negocio
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -55,7 +55,7 @@ endif::arc42help[]
 
 **<optionally: Explanation of external domain interfaces>**
 
-=== Technical Context
+=== Contexto Técnico
 
 ifdef::arc42help[]
 [role="arc42help"]
