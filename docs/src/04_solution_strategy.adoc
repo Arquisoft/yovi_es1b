@@ -32,6 +32,7 @@ Esta separación de responsabilidades reduce el acoplamiento, mejora mantenibili
 - Empleamos **arc42**, junto a **AsciiDoc** y **PlantUML** para que la documentación se genere de forma automátrica, incluyendo diagramas. Así el código y la documentación se mantienen sincronizadas, y el despliegue automático de GitHub Pages, facilita la disponibilidad y portabilidad de la documentación
 
 
+
 ifdef::arc42help[]
 [role="arc42help"]
 
