@@ -552,132 +552,64 @@ For documentation of your own system you use better the <em>plain</em> version.<
 <div class="sect1">
 <h2 id="section-introduction-and-goals">1. Introduction and Goals</h2>
 <div class="sectionbody">
-<div class="sidebarblock arc42help">
-<div class="content">
 <div class="paragraph">
-<p>Describes the relevant requirements and the driving forces that software architects and development team must consider.
-These include</p>
+<p>El proyecto <strong>yovi_es1b</strong> es una iniciativa llevada a cabo en la Universidad de Oviedo, dentro del marco de la asignatura de Ingeniería del Software. El propósito es desarrollar, integrar y desplegar una versión digital del juego de estrategia abstracta "Juego Y" (Game of Y).</p>
+</div>
+<div class="paragraph">
+<p>El equipo comprometido con este desarrollo está formado por:</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>underlying business goals,</p>
+<p>Diego Abeijon Rodriguez</p>
 </li>
 <li>
-<p>essential features,</p>
+<p>Hugo Tejedor Arcoitza</p>
 </li>
 <li>
-<p>essential functional requirements,</p>
+<p>Nahiara Sanchez Garcia</p>
 </li>
 <li>
-<p>quality goals for the architecture and</p>
+<p>Eva Menéndez Hernández</p>
 </li>
 <li>
-<p>relevant stakeholders and their expectations</p>
+<p>Moisés Montes Iglesias</p>
 </li>
 </ul>
 </div>
-</div>
+<div class="paragraph">
+<p>En la aplicación, los usuarios podrán jugar al "Juego Y" en dos modalidades principales: enfrentamiento contra otro jugador (local) o contra un Bot (IA), haciendo uso de un núcleo lógico preexistente.</p>
 </div>
 <div class="sect2">
 <h3 id="_requirements_overview">1.1. Requirements Overview</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
 <div class="paragraph">
-<div class="title">Contents</div>
-<p>Short description of the functional requirements, driving forces, extract (or abstract)
-of requirements. Link to (hopefully existing) requirements documents
-(with version number and information where to find it).</p>
+<p>La funcionalidad principal se basa en la integración de componentes y la correcta ejecución del juego.</p>
 </div>
-<div class="paragraph">
-<div class="title">Motivation</div>
-<p>From the point of view of the end users a system is created or modified to
-improve support of a business activity and/or improve the quality.</p>
-</div>
-<div class="paragraph">
-<div class="title">Form</div>
-<p>Short textual description, probably in tabular use-case format.
-If requirements documents exist this overview should refer to these documents.</p>
-</div>
-<div class="paragraph">
-<p>Keep these excerpts as short as possible. Balance readability of this document with potential redundancy w.r.t to requirements documents.</p>
-</div>
-<div class="paragraph">
-<div class="title">Further Information</div>
-<p>See <a href="https://docs.arc42.org/section-1/">Introduction and Goals</a> in the arc42 documentation.</p>
-</div>
-</div>
+<div class="ulist">
+<div class="title">Requisitos Funcionales Clave</div>
+<ul>
+<li>
+<p><strong>Modos de Juego:</strong> Soporte para partidas Humano vs Humano y Humano vs Bot.</p>
+</li>
+<li>
+<p><strong>Integración del Núcleo:</strong> La aplicación utiliza una librería externa (Kernel) para la validación de movimientos y detección de victoria, asegurando que las reglas oficiales se cumplen estrictamente.</p>
+</li>
+<li>
+<p><strong>Interfaz de Usuario:</strong> Visualización clara del tablero triangular, permitiendo interactuar con las celdas para colocar fichas de manera intuitiva.</p>
+</li>
+<li>
+<p><strong>Despliegue y Ejecución:</strong> El sistema está configurado para iniciarse correctamente en los entornos de laboratorio, gestionando las dependencias necesarias automáticamente.</p>
+</li>
+<li>
+<p><strong>Ciclo de la Partida:</strong> Gestión completa del flujo de juego: inicio, turnos alternos, detección de fin de partida y opción de reinicio.</p>
+</li>
+</ul>
 </div>
 </div>
 <div class="sect2">
 <h3 id="_quality_goals">1.2. Quality Goals</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
 <div class="paragraph">
-<div class="title">Contents</div>
-<p>The top three (max five) quality goals for the architecture whose fulfillment is of highest importance to the major stakeholders.
-We really mean quality goals for the architecture. Don&#8217;t confuse them with project goals.
-They are not necessarily identical.</p>
-</div>
-<div class="paragraph">
-<p>Consider this overview of potential topics (based upon the ISO 25010 standard):</p>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="./images/01_2_iso-25010-topics-EN.drawio.png" alt="Categories of Quality Requirements">
-</div>
-</div>
-<div class="paragraph">
-<div class="title">Motivation</div>
-<p>You should know the quality goals of your most important stakeholders, since they will influence fundamental architectural decisions.
-Make sure to be very concrete about these qualities, avoid buzzwords.
-If you as an architect do not know how the quality of your work will be judged&#8230;&#8203;</p>
-</div>
-<div class="paragraph">
-<div class="title">Form</div>
-<p>A table with quality goals and concrete scenarios, ordered by priorities</p>
-</div>
-</div>
-</div>
-</div>
-<div class="sect2">
-<h3 id="_stakeholders">1.3. Stakeholders</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<div class="title">Contents</div>
-<p>Explicit overview of stakeholders of the system, i.e. all person, roles or organizations that</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>should know the architecture</p>
-</li>
-<li>
-<p>have to be convinced of the architecture</p>
-</li>
-<li>
-<p>have to work with the architecture or with code</p>
-</li>
-<li>
-<p>need the documentation of the architecture for their work</p>
-</li>
-<li>
-<p>have to come up with decisions about the system or its development</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Motivation</div>
-<p>You should know all parties involved in development of the system or affected by the system.
-Otherwise, you may get nasty surprises later in the development process.
-These stakeholders determine the extent and the level of detail of your work and its results.</p>
-</div>
-<div class="paragraph">
-<div class="title">Form</div>
-<p>Table with role names, person names, and their expectations with respect to the architecture and its documentation.</p>
-</div>
-</div>
+<p>Los objetivos de calidad se centran en la arquitectura de integración y la facilidad de puesta en marcha del software.</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -687,21 +619,68 @@ These stakeholders determine the extent and the level of detail of your work and
 </colgroup>
 <thead>
 <tr>
-<th class="tableblock halign-left valign-top">Role/Name</th>
-<th class="tableblock halign-left valign-top">Contact</th>
-<th class="tableblock halign-left valign-top">Expectations</th>
+<th class="tableblock halign-left valign-top">Prioridad</th>
+<th class="tableblock halign-left valign-top">Meta de Calidad</th>
+<th class="tableblock halign-left valign-top">Escenario</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Role-1&gt;</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Contact-1&gt;</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Expectation-1&gt;</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Desplegabilidad (Deployability)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El proyecto debe poder clonarse y ejecutarse en los equipos del laboratorio con una configuración mínima, evitando errores de rutas o dependencias faltantes.</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Role-2&gt;</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Contact-2&gt;</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Expectation-2&gt;</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Interoperabilidad</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">La interfaz gráfica debe comunicarse con el núcleo lógico (backend/kernel) sin errores de formato, respetando la API proporcionada.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Usabilidad</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Un jugador nuevo debe poder identificar fácilmente de quién es el turno, dónde puede colocar una ficha y si ha ganado o perdido, sin consultar un manual.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Mantenibilidad</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">La arquitectura debe separar claramente el código de la vista del código de la lógica, facilitando futuras actualizaciones del núcleo o cambios en la interfaz.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_stakeholders">1.3. Stakeholders</h3>
+<div class="paragraph">
+<p>Personas y roles involucrados en el desarrollo y evaluación del sistema.</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Rol/Nombre</th>
+<th class="tableblock halign-left valign-top">Contacto</th>
+<th class="tableblock halign-left valign-top">Expectativas</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Equipo de desarrollo</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Diego Abeijon, Hugo Tejedor, Nahiara Sanchez, Eva Menéndez, Moisés Montes</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Integrar correctamente el sistema, documentar la arquitectura (arc42) y superar la evaluación de la asignatura mediante un despliegue exitoso.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Usuarios Finales</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Jugadores del Juego Y</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Una experiencia de juego fluida, poder jugar contra la máquina o un amigo sin que la aplicación se cierre inesperadamente.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Evaluadores (Profesores)</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Jose Emilio Labra Gayo, Pablo González, Irene Cid Rico, Diego Martín Fernández</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Verificar que el despliegue es reproducible, que se respeta la arquitectura propuesta y que la documentación refleja fielmente el sistema construido.</p></td>
 </tr>
 </tbody>
 </table>
@@ -841,9 +820,6 @@ together with a mapping table showing the relationships between channels and inp
 <div class="sect1">
 <h2 id="section-solution-strategy">4. Solution Strategy</h2>
 <div class="sectionbody">
-<div class="paragraph">
-<p>Hola buenas, estoy probando a escribir en la documentacion</p>
-</div>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1807,7 +1783,7 @@ more precisely down to a level of scenarios that can be discussed and evaluated.
 <div id="footer">
 <div id="footer-text">
 Version 8.2 EN<br>
-Last updated 2026-02-03 10:17:37 +0100
+Last updated 2026-02-16 09:37:09 +0100
 </div>
 </div>
 </body>
