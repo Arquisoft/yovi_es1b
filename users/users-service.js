@@ -54,7 +54,7 @@ app.post('/move', async (req, res) => {
   const { cellIndex } = req.body;
 
   try {
-    const rustResponse = await fetch('http://localhost:8080/execute-move', { // LLama al endpoint de Rust para ejecutar el movimiento
+    const rustResponse = await fetch('http://gamey:4000/execute-move', { // LLama al endpoint de Rust para ejecutar el movimiento
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ index: cellIndex})
@@ -82,7 +82,7 @@ app.post('/move', async (req, res) => {
 // Resets the game
 app.post('/reset', async (req, res) => {
   try {
-    const rustResponse = await fetch('http://localhost:8080/reset', { // LLama al endpoint de Rust para resetear el juego
+    const rustResponse = await fetch('http://gamey:4000/reset', { // LLama al endpoint de Rust para resetear el juego
       method: 'POST',
     });
     const newBoard = await rustResponse.json();

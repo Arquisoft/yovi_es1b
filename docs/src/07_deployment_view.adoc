@@ -3,7 +3,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-deployment-view]]
 
 
-== Deployment View
+== Vista de despliegue
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -44,7 +44,7 @@ See https://docs.arc42.org/section-7/[Deployment View] in the arc42 documentatio
 ****
 endif::arc42help[]
 
-=== Infrastructure Level 1
+=== Infraestructura de Nivel 1
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -60,21 +60,69 @@ For multiple environments or alternative deployments please copy and adapt this 
 ****
 endif::arc42help[]
 
-_**<Overview Diagram>**_
+En este apartado se describe la infraestructura global de **YOVI**, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto.
 
-Motivation::
+[plantuml, deployment-diagram, png]
+----
+@startuml
+skinparam actorStyle awesome
+left to right direction
 
-_<explanation in text form>_
+node "<<device>>\nCliente (Navegador)" as pc {
+    artifact "<<artifact>>\nYOVI Frontend (React/TS)" as frontend
+}
 
-Quality and/or Performance Features::
+node "<<device>>\nBot Externo" as bot_node {
+    artifact "<<artifact>>\nBot Client" as bot_app
+}
 
-_<explanation in text form>_
+node "<<device>>\nServidor Cloud (Docker Host)" as cloud {
+    
+    node "<<device>>\nContenedor Web App" as docker_node {
+        artifact "<<artifact>>\nBackend Server (Node.js)" as node_app
+    }
+    
+    node "<<device>>\nContenedor Game Logic" as docker_rust {
+        artifact "<<artifact>>\nLogic Service (Rust)" as rust_app
+    }
+    
+    node "<<device>>\nDB Server" as db_node {
+        artifact "<<artifact>>\nDatabase (PostgreSQL/Mongo)" as db
+    }
+}
 
-Mapping of Building Blocks to Infrastructure::
-_<description of the mapping>_
+' Relaciones de comunicación
+frontend -- node_app : HTTPS / JSON
+bot_app -- node_app : API REST / YEN
+node_app -- rust_app : HTTP / JSON (Interno)
+node_app -- db : TCP/IP
+@enduml
+----
+
+Motivación::
+
+La infraestructura se basa en la contenerización con Docker para resolver la necesidad de ejecutar dos entornos distintos (Node.js y Rust). El despliegue en la nube garantiza que la aplicación sea accesible publicamente, cumpliendo con el requisito de disponibilidad para usuarios y bots externos.
+Así, una parte se encarga de la web y los usuarios (Node.js) y otra exclusivamente de las reglas del juego (Rust).
+
+Características de Calidad y Rendimiento::
+
+* **Rapidez:** Al tener la lógica del juego en Rust, las jugadas se calculan de manera casi inmediata.
+* **Fiabilidad:** Como se usan contenedores, el sistema funcionará igual de bien en los ordenadores donde se desarrolla que en los del servidor final.
+* **Seguridad:** Los datos viajan protegidos por internet para mantener las partidas privadas.
+
+Mapeo de piezas a la infraestructura::
+
+[options="header",cols="1,2"]
+|===
+| ¿Qué se ha programado? | ¿Dónde se ejecuta?
+| **La interfaz Web** | En el ordenador o móvil donde la persona juega.
+| **La API y gestión de usuarios** | En el contenedor principal del servidor.
+| **Las reglas y estrategias del juego** | En el contenedor principal de Rust.
+| **El historial de partidas** | En el servidor de base de datos.
+|===
 
 
-=== Infrastructure Level 2
+=== Infraestructura de Nivel 2
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -85,16 +133,61 @@ Please copy the structure from level 1 for each selected element.
 ****
 endif::arc42help[]
 
-==== _<Infrastructure Element 1>_
+==== Servidor en la Nube (Docker Host)
 
-_<diagram + explanation>_
+Es el servidor principal donde ocurre todo lo relativo al backend.
 
-==== _<Infrastructure Element 2>_
+[plantuml, level2-server, png]
+----
+@startuml
+node "Servidor Cloud" {
+    node "Red Interna de Docker" {
+        component "Contenedor Web" as c1
+        component "Contenedor Rust" as c2
+        database "Base de Datos" as db
+    }
+}
+c1 <-> c2 : Mensajes YEN
+c1 <-> db : SQL
+@enduml
+----
 
-_<diagram + explanation>_
+**Explicación:**
+Dentro del servidor, los contenedores están conectados por una red "invisible" para el resto del mundo. Esto hace que el motor de **Rust** y los datos estén seguros, ya que nadie puede entrar en ellos directamente desde internet.
+Solo se puede pasar a través de la aplicación web desarrollada.
 
-...
+==== Cliente
 
-==== _<Infrastructure Element n>_
+Es el dispositivo (PC o móvil) de la persona que utiliza la aplicación.
 
-_<diagram + explanation>_
+[plantuml, level2-client, png]
+----
+@startuml
+node "Navegador del Usuario" {
+    artifact "Archivos de la Web (JS/HTML)" as assets
+    component "Memoria Temporal" as storage
+}
+@enduml
+----
+
+**Explicación:**
+Cuando alguien accede a la web, su navegador descarga la parte visual (React). El código se ejecuta directamente en su ordenador, usando su propia memoria para que el juego se vea fluido y rápido.
+
+
+==== Base de Datos (Persistencia)
+
+Es el lugar donde se almacena la información. De esta manera no se perderá la información al reiniciar los contenedores.
+
+[plantuml, level2-db, png]
+----
+@startuml
+node "Contenedor de Datos" {
+    database "PostgreSQL / MongoDB" as store
+    storage "Volumen de Docker (Disco)" as disk
+}
+store -> disk : Guardado permanente
+@enduml
+----
+
+**Explicación:**
+Se utiliza lo que se denomina "volumen" de Docker. Esto significa que, aunque el contenedor de la base de datos se detenga o se actualice, la información de los usuarios y las partidas se queda grabada en el disco duro del servidor, como si estuviera almacenado en un USB.
