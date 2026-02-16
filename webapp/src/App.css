@@ -93,3 +93,100 @@
 .submit-button:hover {
   background-color: #0056b3;
 }
+
+
+
+/* --- ESTILOS DEL TABLERO DE JUEGO (GAME OF Y) --- */
+
+/* Forzamos que toda la pantalla sea blanca */
+body {
+  background-color: #ffffff !important;
+  color: #333 !important;
+}
+
+#root {
+  background-color: #ffffff;
+}
+
+.board-container {
+  background-color: #f8f9fa;
+  padding: 40px;
+  border-radius: 20px;
+  display: inline-block;
+  margin: 20px auto;
+  border: 1px solid #eee; 
+}
+
+.board-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.cell {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+/* Casilla vacía con hover */
+.cell.empty:hover {
+  background-color: #f0f0f0;
+  border-color: #007bff;
+  cursor: pointer;
+}
+
+/* Fichas con colores sólidos */
+.cell.blue {
+  background-color: #007bff;
+  border-color: #0056b3;
+  color: white;
+}
+
+.cell.red {
+  background-color: #dc3545;
+  border-color: #a71d2a;
+  color: white;
+}
+
+
+.game-controls button, .exit-button {
+  background-color: #ffffff;
+  color: #333;
+  border: 1px solid #ccc;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin: 10px;
+}
+
+.game-controls button:hover {
+  background-color: #f8f9fa;
+  color: black;
+  border-color: #333;
+}
+
+.exit-button {
+  color: #dc3545; 
+  border-color: #dc3545;
+}
+
+.exit-button:hover {
+  background-color: #dc3545;
+  color: white;
+}
+
+.status-text {
+  color: #666;
+  font-size: 0.9rem;
+}
