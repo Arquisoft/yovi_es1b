@@ -13,13 +13,15 @@ pub type Result<T> = std::result::Result<T, crate::GameYError>;
 /// Y is a connection game played on a triangular board where players
 /// take turns placing pieces. The goal is to connect all three sides
 /// of the triangle with a single chain of connected pieces.
+/// 
+/// The struct wich controls the game
 #[derive(Debug, Clone)]
 pub struct GameY {
     // Size of the board (length of one side of the triangular board).
     board_size: u32,
 
     // Mapping from coordinates to identifiers of players who placed stones there.
-    board_map: HashMap<Coordinates, (SetIdx, PlayerId)>,
+    board_map: HashMap<Coordinates, (SetIdx, PlayerId)>, // Save what player is in each cell
 
     status: GameStatus,
 
@@ -447,6 +449,7 @@ fn indent(str: &mut String, level: u32) {
     str.push_str(&" ".repeat(level as usize));
 }
 
+// Implement conversion from YEN to GameY and vice versa
 impl TryFrom<YEN> for GameY {
     type Error = GameYError;
 
@@ -501,6 +504,7 @@ impl TryFrom<YEN> for GameY {
     }
 }
 
+// Converts a GameY instance into its YEN representation.
 impl From<&GameY> for YEN {
     fn from(game: &GameY) -> Self {
         let size = game.board_size;
@@ -514,13 +518,13 @@ impl From<&GameY> for YEN {
         for idx in 0..total_cells {
             let coords = Coordinates::from_index(idx, game.board_size);
             let cell_char = match game.board_map.get(&coords) {
-                Some((_, player)) if player.id() == 0 => 'B',
-                Some((_, player)) if player.id() == 1 => 'R',
-                _ => '.',
+                Some((_, player)) if player.id() == 0 => 'B', // player 0
+                Some((_, player)) if player.id() == 1 => 'R', // player 1
+                _ => '.', // empty cell
             };
             layout.push(cell_char);
             if coords.z() == 0 && coords.x() > 0 {
-                layout.push('/');
+                layout.push('/');  // separate rows with '/'
             }
         }
         YEN::new(size, turn, players, layout)

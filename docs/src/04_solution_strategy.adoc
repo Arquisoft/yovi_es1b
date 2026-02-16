@@ -2,10 +2,40 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-solution-strategy]]
 == Solution Strategy
-Hola buenas, estoy probando a escribir en la documentacion
+
+=== **Introducción**
+El proyecto **yovi_es1b** ha sido diseñado empleando una **arquitectura modular y distribuida**, en el que tenemos diferenciado la UI o **interfaz de usuario**, la **lógica de negocio** y el **motor del juego**, además de una **aplicación web**. Esta separación, va a permitir un **desarrollo incremental**, facilitando **mantenimiento** y **escalabilidad** del sistema. Las decisiones se han tomado teniendo en cuenta los **objetivos de calidad** que se mencionarán más adelante.
+
+=== **Decisiones arquitectónicas claves**
+.**Descomposición de alto nivel**
+- **Webapp**: Aplicación **frontend**
+- **Users Service**: Servicio **backend** para gestión de usuarios
+- **GameY**: **Motor de juego** y servicio de bots implementado en Rust
+Esta separación de responsabilidades reduce el acoplamiento, mejora mantenibilidad, y permite escalar o sustituir componentes sin que genere problemas en otras partes del sistema.
+
+.**Decisiones tecnológicas**
+- **Frontend**: **React** + **Vite** + **TypeScript**. Utilizados ya que son un buen soporte de herramientas y permite interfaces interactivas y fáciles de mantener
+- **Backend**: **Node.js** + **Express**. Son simples y útiles para APIs **REST** sencillas
+- **Motor de juego**: **Rust** + **Cargo**. Buen rendimiento, muy seguro y una buena gestión de concurrencia. Estas son características importantes para un motor de juego.
+- **Uso de contenedores**: **Docker** y **Docker Compose**. Simplifican instalación, ejecución y pruebas del sistema
+
+.**Decisiones relacionadas con atributos de calidad**
+- **Mantenibilidad**: Empleamos código separado en módulos, separación de responsabilidades y uso de pruebas automáticas
+- **Escalabilidad**: Nuestros servicios se pueden ir actualizando y mejorando de forma independiente
+- **Portabilidad**: El uso de **Docker**, nos permite ejecutar el sistema en varios entornos
+- **Calidad del código**: **SonarCloud** y **CodeScene** ayudan a mantener el código limpio, seguro y fácil de mantener, asegurando que sigan estándares de calidad. Son herramientas que se utilizan para vigilar el código de forma automática mientras se desarrolla.
+
+.**Decisiones organizativas**
+- Utilizamos **GitHub** como flujo de trabajo, que nos permite integrar de forma continua los nuevos cambios que hemos realizado y un despliegue automático
+- El desarrollo del proyecto es de forma incremental, trabajando desde la misma base y desde la cual, partimos cada uno con la parte que se nos sea asignada
+- La asignación se realiza distribuyendo el trabajo en componentes, y cada grupo formado internamente, se encarga del componente que se le asigne
+- Empleamos **arc42**, junto a **AsciiDoc** y **PlantUML** para que la documentación se genere de forma automátrica, incluyendo diagramas. Así el código y la documentación se mantienen sincronizadas, y el despliegue automático de GitHub Pages, facilita la disponibilidad y portabilidad de la documentación
+
+
 
 ifdef::arc42help[]
 [role="arc42help"]
+
 ****
 .Contents
 A short summary and explanation of the fundamental decisions and solution strategies, that shape system architecture. It includes
