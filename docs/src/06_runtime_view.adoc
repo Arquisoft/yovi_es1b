@@ -1,4 +1,9 @@
-=== User Registration Scenario
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-runtime-view]]
+== Vista de Ejecución
+
+=== Escenario de Registro de Usuario
 
 This scenario describes how a new user registers in the application. The Webapp captures the data and communicates with the Users Service to store the information.
 
@@ -22,7 +27,7 @@ Webapp --> User: Displays success message
 deactivate Webapp
 ----
 
-=== Game Move Calculation Scenario (GameY)
+=== Escenario de cálculo de Movimiento
 
 This scenario illustrates how the application requests a move or a game action from the GameY engine. Although the engine is built in Rust, it exposes an interface accessible via HTTP.
 

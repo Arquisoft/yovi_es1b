@@ -1,7 +1,7 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-technical-risks]]
-== Riesgos y deuda técnica
+== Riesgos y Deudas Técnicas
 
 
 ifdef::arc42help[]
