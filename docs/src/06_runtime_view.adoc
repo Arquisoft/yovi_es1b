@@ -1,3 +1,8 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-runtime-view]]
+== Vista de Ejecución
+
 === User Registration Scenario
 
 This scenario describes how a new user registers in the application. The Webapp captures the data and communicates with the Users Service to store the information.
