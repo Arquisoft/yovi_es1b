@@ -67,7 +67,26 @@ In the best case you will get away with examples or simple signatures.
 ****
 endif::arc42help[]
 
-_**<Overview Diagram>**_
+@startuml
+' Diagrama de componentes YOVI (formato estilo WiChat)
+
+actor a as "Usuario"
+
+component web as "WEBAPP" #LightGray
+component u as "USERS" #2aa198
+component g as "GAMEY" #268bd2
+
+a -> web: Interactúa
+web -> u: Autenticación y perfiles
+web -> g: Operaciones del juego
+g -> u: Validación de identidad (opcional)
+
+legend
+|<back:#LightGray>   </back>| Interfaz web (frontend) |
+|<back:#2aa198>      </back>| Servicio de usuarios (identidad) |
+|<back:#268bd2>      </back>| Lógica de juego (backend) |
+endlegend
+@enduml
 
 Motivation::
 
@@ -83,12 +102,10 @@ Bloques de Construcción de Contenidos::
 |Usuario de la aplicación que interactua con ella
 |*Webapp*
 |Ofrece la interfaz gráfica para que el usuario se registre y reciba la respuesta del backend.
-|*Users Service*
-|Aplicación principal de backend que gestiona la creación de usuarios a través de un endpoint REST. Actúa como caja negra que será detallada en las descomposiciones posteriores.
-|*GameY Engine*
-|Motor del juego Y y de los bots, implementado en Rust. En esta versión del sistema no está integrado con el resto de servicios, pero se considera un componente propio que se detallará en niveles inferiores.
-|*External Web Browser*
-|Agente externo mediante el cual los usuarios acceden a la Webapp. No forma parte del sistema, pero es imprescindible para su operación (contexto de ejecución).
+|*Users*
+|Aplicación principal de backend que gestiona la creación y autenticación de usuarios.
+|*Gamey*
+|Backend que implementa la lógica del juego Y y de los bots, implementado en Rust.
 |===
 
 Important Interfaces::

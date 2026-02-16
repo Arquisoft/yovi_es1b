@@ -25,18 +25,18 @@ See https://docs.arc42.org/section-11/[Risks and Technical Debt] in the arc42 do
 
 ****
 endif::arc42help[]
-===Riesgos
+=== Riesgos
 [cols="1,2,3" options="header"]
 |===
 | *Riesgo* | *Descripción* | *Prioridad*
 | *Tiempo* |El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo tiene otros trabajos | Medium
-| *Poca experiencia en leguajes y herramientas de programación* | El equipo de desarrollo se encuentra dificultades debido al poco 
-conocimiento de leguajes necesarios, RUST. Para mitigar este riesgo se fomenta el aprendizage, compartir información y dudas.| High
+| *Poca experiencia en RUST y Docker* | El equipo de desarrollo se encuentra dificultades debido al poco 
+conocimiento del leguaje necesario, RUST y la herramienta docker. Para mitigar este riesgo se fomenta el aprendizage, compartir información y dudas.| High
 |*Perdida de datos*|Posible perdida de datos por errores en el systema, falllos de hardware, eliminaciones accidentales.. Que podria 
 realentizar el dessarrollo del proyacto. |High
 |*Fallos de conexión a internet*|Un falllo en la conexión a internet podria interrumpir el acceso a servidores en la nube, repositorio de 
 GitHub... retrasando el progreso del proyecto|Medium
 |===
 
-===Deudas
+=== Deudas
  costo del retrabajo adicional causado por la elección de la solución más rápida en lugar de la más efectiva
