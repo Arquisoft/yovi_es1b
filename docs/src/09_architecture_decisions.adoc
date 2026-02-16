@@ -11,8 +11,8 @@ ifndef::imagesdir[:imagesdir: ../images]
 |
 
 |BB.DD 
-|
-|
+|Actualmente, no hemos decidido completamente que BB.DD utilizar, ya que todos tenemos conocimientos en MySQL, pero estamos pensando y probando MongoDB por nuestra propia cuenta. Por tanto, aún no tenemos una decisión final.
+|Estamos barajando la posibilidad de MongoDB ya que tiene una mejor compatibilidad tal y como hemos visto en teoría, con Node.js y Angular, ya que pertenecen a la misma pila/familia tecnológico. Además, tras debatirlo el grupo entero, en un principio si no nos vemos superados por el tiempo/objetivos/dificultad de uso de esta BB.DD, optaremos por esta nueva opción, ya que también es un reto para nosotros mismos.
 
 |React
 |
