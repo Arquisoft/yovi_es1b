@@ -67,26 +67,7 @@ In the best case you will get away with examples or simple signatures.
 ****
 endif::arc42help[]
 
-@startuml
-' Diagrama de componentes YOVI (formato estilo WiChat)
-
-actor a as "Usuario"
-
-component web as "WEBAPP" #LightGray
-component u as "USERS" #2aa198
-component g as "GAMEY" #268bd2
-
-a -> web: Interactúa
-web -> u: Autenticación y perfiles
-web -> g: Operaciones del juego
-g -> u: Validación de identidad (opcional)
-
-legend
-|<back:#LightGray>   </back>| Interfaz web (frontend) |
-|<back:#2aa198>      </back>| Servicio de usuarios (identidad) |
-|<back:#268bd2>      </back>| Lógica de juego (backend) |
-endlegend
-@enduml
+image::5_1-building_block.png[align="center"]
 
 Motivation::
 
