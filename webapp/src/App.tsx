@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import './App.css'
-import RegisterForm from './RegisterForm';
+import LoginForm from './LoginForm';
 import reactLogo from './assets/react.svg'
 
 // Defines how is the Rust object that we receive
@@ -96,7 +96,7 @@ function App() {
           </a>
       
         <h2>Welcome to the Software Arquitecture 2025-2026 course</h2>
-        <RegisterForm />
+        <LoginForm />
 
         {/* To try the game without registering, just for testing purposes. */}
         <div>

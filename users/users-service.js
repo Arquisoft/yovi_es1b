@@ -1,5 +1,15 @@
 // Node.js Server
 
+const mongoose = require('mongoose');
+require('dotenv').config();
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('Could not connect to MongoDB', err));
+
+const User = require('./models/user');
+
 const express = require('express');
 const app = express();
 const port = 3000;
@@ -10,6 +20,9 @@ const promBundle = require('express-prom-bundle');
 
 const metricsMiddleware = promBundle({includeMethod: true});
 app.use(metricsMiddleware);
+
+const bcrypt = require('bcryptjs');
+const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 
 try {
   const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
@@ -35,17 +48,61 @@ app.use(express.json());
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
 app.post('/createuser', async (req, res) => {
-  const username = req.body && req.body.username;
+  const { username, password } = req.body;
   try {
-    // Simulate a 1 second delay to mimic processing/network latency
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (!username || !password) {
+      return res.status(400).json({ error: "Username and password are required" });
+    }
+    
+    // Encriptar
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    const message = `Hello ${username}! welcome to the course!`;
-    res.json({ message });
+    const newUser = new User ({
+      username,
+      password: hashedPassword,
+      score: 0
+    })
+
+    // Save the new user to the database
+    await newUser.save();
+
+    res.json({ message: `Hello ${username}! Your account has been created!`
+    })
+
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: "User already exists or database error" });
   }
 });
+
+
+// ACTION --> Log in with username and password
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(401).json({ error: "Usuario no encontrado" });
+    }
+
+    // comparar contraseñas
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (isMatch) {
+      res.json({
+        message: `Welcome back, ${username}!`,
+        username: user.username,
+        score: user.score
+      });
+    } else {
+      res.status(401).json({ error: "Contraseña incorrecta" });
+    }
+      
+  } catch (err) {
+    res.status(500).json({ error: "Error del servidor" });
+  }
+})
 
 
 // New
