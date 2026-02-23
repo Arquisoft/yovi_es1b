@@ -1,8 +1,16 @@
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
   text-align: center;
+}
+
+.App {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
 }
 
 .logo {
@@ -41,20 +49,62 @@
   color: #888;
 }
 
-/* Register Form Styles */
-.register-form {
+/* Home screen */
+.home-screen {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+}
+
+.home-screen > .welcome-title {
+  display: inline-block;
+  position: relative;
+  transform: translateY(-30px);
+  z-index: 3;
+  padding: 1px 2px;
+  border-radius: 12px;
+  color: #d63a29;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  font-size: clamp(2rem, 5vw, 3rem);
+  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+}
+
+.home-screen > .choose-option {
   display: flex;
   flex-direction: column;
   gap: 15px;
-  max-width: 300px;
-  margin: 50px auto;
+  width: min(90vw, 320px);
+  margin: 0 auto;
   padding: 20px;
-  border: 1px solid #ccc;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 0.92);
+  align-items: stretch;
+  justify-content: center;
 }
 
+.home-screen > .choose-option h3 {
+  margin: 0;
+}
+
+.home-screen > .choose-option .submit-button {
+  width: 100%;
+}
+
+.home-screen > div:last-child {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 10px;
+  padding: 12px 16px;
+}
+
+/* Generic form helpers */
 .form-group {
   display: flex;
   flex-direction: column;
@@ -94,18 +144,14 @@
   background-color: #0056b3;
 }
 
-
-
-/* --- ESTILOS DEL TABLERO DE JUEGO (GAME OF Y) --- */
-
-/* Forzamos que toda la pantalla sea blanca */
+/* Game board */
 body {
-  background-color: #ffffff !important;
-  color: #333 !important;
+  background-color: transparent;
+  color: #333;
 }
 
 #root {
-  background-color: #ffffff;
+  background-color: transparent;
 }
 
 .board-container {
@@ -114,7 +160,7 @@ body {
   border-radius: 20px;
   display: inline-block;
   margin: 20px auto;
-  border: 1px solid #eee; 
+  border: 1px solid #eee;
 }
 
 .board-row {
@@ -137,14 +183,12 @@ body {
   transition: all 0.2s ease;
 }
 
-/* Casilla vacía con hover */
 .cell.empty:hover {
   background-color: #f0f0f0;
   border-color: #007bff;
   cursor: pointer;
 }
 
-/* Fichas con colores sólidos */
 .cell.blue {
   background-color: #007bff;
   border-color: #0056b3;
@@ -156,7 +200,6 @@ body {
   border-color: #a71d2a;
   color: white;
 }
-
 
 .game-controls button, .exit-button {
   background-color: #ffffff;
@@ -177,7 +220,7 @@ body {
 }
 
 .exit-button {
-  color: #dc3545; 
+  color: #dc3545;
   border-color: #dc3545;
 }
 
@@ -189,4 +232,31 @@ body {
 .status-text {
   color: #666;
   font-size: 0.9rem;
+}
+
+.menu-video-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.menu-video-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 1;
+}
+
+.menu-content {
+  position: relative;
+  z-index: 2;
+}
+
+.game-screen {
+  background-color: transparent;
+  min-height: 100vh;
 }
