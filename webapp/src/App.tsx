@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
-import RegisterForm from './home';
-import reactLogo from './assets/react.svg'
 import menuVideo from './assets/background_video.mp4';
+import HomeScreen from './screens/HomeScreen';
+import RegisterScreen from './screens/RegisterScreen';
+import LoginScreen from './screens/LoginScreen';
+import GameScreen from './screens/GameScreen';
 
 interface GameYData {
   size: number;
@@ -16,20 +18,25 @@ type Screen = 'home' | 'register' | 'login' | 'game';
 function App() {
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
   const [username, setUsername] = useState('');
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home'); // Router interno de pantallas
   const [boardData, setBoardData] = useState<GameYData | null>(null);
   const [winner, setWinner] = useState<number | null>(null);
 
-  const handleStart = async () => {
-    if (username.trim() !== '') {
+  useEffect(() => {
+    // Coloca la vista arriba al cambiar de pantalla
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [currentScreen]);
+
+  const startGameWithUser = async (playerName: string) => {
+    if (playerName.trim() !== '') {
+      setUsername(playerName.trim());
       setConnectionStatus('Iniciando nueva partida...');
       try {
+        // Solicita tablero inicial al backend
         const response = await fetch('http://localhost:3000/reset', {
           method: 'POST',
         });
-
         const data = await response.json();
-
         if (data.responseFromRust) {
           setBoardData(data.responseFromRust);
           setWinner(null);
@@ -38,17 +45,22 @@ function App() {
         }
       } catch (error) {
         console.error('Error starting the game:', error);
-        setCurrentScreen('game');
         setWinner(null);
+        setConnectionStatus('No se pudo iniciar la partida. Revisa que users-service esté levantado.');
       }
     }
-  }
+  };
+
+  const handleStart = async () => {
+    await startGameWithUser(username);
+  };
 
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
 
     setConnectionStatus(`Moviendo a la posicion ${index}...`);
     try {
+      // Envia el movimiento al backend para actualizar tablero
       const response = await fetch('http://localhost:3000/move', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,104 +87,57 @@ function App() {
   const renderScreen = () => {
     switch (currentScreen) {
       case 'home':
+        // CASE HOME: pantalla inicial con accesos a registro/login y quick access
         return (
-          <div className="home-screen">
-            <h2 className="welcome-title">Bienvenido al JuegoY</h2>
-            <RegisterForm
-              onGoToRegister={() => setCurrentScreen('register')}
-              onGoToLogin={() => setCurrentScreen('login')}
-            />
-
-            <div>
-              <h3>Quick Access (Simulated Login)</h3>
-              <input
-                type="text"
-                placeholder="Your nickname"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <button onClick={handleStart}>Start playing</button>
-            </div>
-          </div>
+          <HomeScreen
+            username={username}
+            onUsernameChange={setUsername}
+            onStart={handleStart}
+            onGoToRegister={() => setCurrentScreen('register')}
+            onGoToLogin={() => setCurrentScreen('login')}
+          />
         );
 
       case 'game':
+        // CASE GAME: pantalla del tablero y estado de la partida en curso
         return (
-          <div className="game-screen">
-            <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-              <img src="/vite.svg" className="logo" alt="Vite logo" />
-            </a>
-            <a href="https://react.dev" target="_blank" rel="noreferrer">
-              <img src={reactLogo} className="logo react" alt="React logo" />
-            </a>
-
-            <h2>Jugador: {username}</h2>
-
-            <div className="board-container">
-              {boardData ? (() => {
-                let globalIndex = 0;
-                return boardData.layout.split('/').map((row, rowIndex) => (
-                  <div key={rowIndex} className="board-row">
-                    {row.split('').map((cell, cellIndex) => {
-                      const currentIndex = globalIndex++;
-                      return (
-                        <button
-                          key={cellIndex}
-                          type="button"
-                          className={`cell ${cell === 'B' ? 'blue' : cell === 'R' ? 'red' : 'empty'}`}
-                          onClick={() => cell === '.' && winner === null && handleCellClick(currentIndex)}
-                          disabled={cell !== '.' || winner !== null}
-                          aria-label={`Celda ${currentIndex}, ${cell === 'B' ? 'ocupada por azul' : cell === 'R' ? 'ocupada por rojo' : 'vacia'}`}
-                        >
-                          {cell !== '.' ? cell : ''}
-                        </button>
-                      );
-                    })}
-                  </div>
-                ));
-              })() : <p>Carga el tablero para comenzar</p>}
-            </div>
-
-            <div className="game-controls">
-              <p className="status-text">{connectionStatus}</p>
-              <button className="exit-button" onClick={() => setCurrentScreen('home')}>Salir</button>
-            </div>
-          </div>
+          <GameScreen
+            username={username}
+            boardData={boardData}
+            winner={winner}
+            connectionStatus={connectionStatus}
+            onCellClick={handleCellClick}
+            onExit={() => setCurrentScreen('home')}
+          />
         );
 
       case 'register':
+        // CASE REGISTER: formulario de registro; si valida, inicia partida y entra a game
         return (
-          <div className="home-screen">
-            <h2 className="welcome-title">Pantalla de Registro</h2>
-            <div className="choose-option menu-content">
-              <p>Aqui ira tu formulario de registro.</p>
-              <button type="button" className="submit-button" onClick={() => setCurrentScreen('home')}>
-                Volver
-              </button>
-            </div>
-          </div>
+          <RegisterScreen
+            onBack={() => setCurrentScreen('home')}
+            onCreateAccount={startGameWithUser}
+          />
         );
 
       case 'login':
+        // CASE LOGIN: formulario de inicio de sesion; si valida, inicia partida y entra a game
         return (
-          <div className="home-screen">
-            <h2 className="welcome-title">Pantalla de Inicio de sesion</h2>
-            <div className="choose-option menu-content">
-              <p>Aqui ira tu formulario de inicio de sesion.</p>
-              <button type="button" className="submit-button" onClick={() => setCurrentScreen('home')}>
-                Volver
-              </button>
-            </div>
-          </div>
+          <LoginScreen
+            onBack={() => setCurrentScreen('home')}
+            onLogin={startGameWithUser}
+          />
         );
 
       default:
+        // CASE DEFAULT: salvaguarda por si llega un valor de pantalla no contemplado
         return null;
     }
   };
 
   return (
     <div className="App">
+      {/* Fondo de video global */}
       <video
         className="menu-video-bg"
         autoPlay
@@ -184,6 +149,7 @@ function App() {
         <source src={menuVideo} type="video/mp4" />
       </video>
       <div className="menu-video-overlay" />
+      {/* Renderiza la pantalla activa (home/register/login/game) */}
       {renderScreen()}
     </div>
   );

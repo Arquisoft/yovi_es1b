@@ -59,32 +59,34 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  padding: 24px;
+  gap: 1.125rem;
+  padding: 1.5rem;
 }
 
 .home-screen > .welcome-title {
   display: inline-block;
   position: relative;
-  transform: translateY(-30px);
+  margin-top: 0;
+  transform: translateY(-4vh);
   z-index: 3;
-  padding: 1px 2px;
-  border-radius: 12px;
+  padding: 0.0625rem 0.125rem;
+  border-radius: 0.75rem;
   color: #d63a29;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-  font-size: clamp(2rem, 5vw, 3rem);
-  text-shadow: 0 4px 14px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+  font-size: 2.4rem;
+  text-shadow: 0 0.25rem 0.875rem rgba(0, 0, 0, 0.7);
 }
 
 .home-screen > .choose-option {
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  width: min(90vw, 320px);
+  gap: 0.9375rem;
+  width: 20rem;
+  max-width: 90vw;
   margin: 0 auto;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 1.25rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
   background-color: rgba(255, 255, 255, 0.92);
   align-items: stretch;
   justify-content: center;
@@ -100,8 +102,12 @@
 
 .home-screen > div:last-child {
   background: rgba(255, 255, 255, 0.9);
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 0.625rem;
+  padding: 0.75rem 1rem;
+}
+
+.home-screen > div:last-child h3 {
+  margin: 0;
 }
 
 /* Generic form helpers */
@@ -257,6 +263,8 @@ body {
 }
 
 .game-screen {
+  position: relative;
+  z-index: 2;
   background-color: transparent;
   min-height: 100vh;
 }
