@@ -34,13 +34,27 @@ app.use(express.json());
 
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
-app.post('/createuser', async (req, res) => {
+app.post('/register', async (req, res) => {
   const username = req.body && req.body.username;
   try {
     // Simulate a 1 second delay to mimic processing/network latency
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const message = `Hello ${username}! welcome to the course!`;
+    res.json({ message });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+
+// ACTION --> Login action for existing users
+app.post('/login', async (req, res) => {
+  const username = req.body && req.body.username;
+  try {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    const message = `¡Qué bien tenerte de vuelta ${username}!`;
     res.json({ message });
   } catch (err) {
     res.status(400).json({ error: err.message });

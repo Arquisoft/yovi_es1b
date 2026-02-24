@@ -33,3 +33,32 @@ paths:
                     example: "Hello testuser! welcome to the course!"
         '400':
           description: Error creating user
+  /loginuser:
+    post:
+      summary: Logs in an existing user
+      description: Logs in a user with the given username.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+              properties:
+                username:
+                  type: string
+                  example: "testuser"
+      responses:
+        '200':
+          description: User logged in successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Welcome back testuser!"
+        '400':
+          description: Error logging in user
