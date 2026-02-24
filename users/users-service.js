@@ -48,7 +48,7 @@ app.use(express.json());
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
 app.post('/createuser', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, age, country } = req.body;
   try {
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password are required" });
@@ -60,7 +60,8 @@ app.post('/createuser', async (req, res) => {
     const newUser = new User ({
       username,
       password: hashedPassword,
-      score: 0
+      age,
+      country
     })
 
     // Save the new user to the database

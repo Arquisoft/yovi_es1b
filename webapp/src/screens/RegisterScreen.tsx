@@ -45,8 +45,33 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
     }
     setAgeError(null); // Limpia error de edad si pasa la validacion
 
-    // Si todo es valido, delega en App.tsx para continuar el flujo
-    await onCreateAccount(formData.name.trim());
+    
+    // Llamada al backend para crear cuenta e iniciar el juego
+    try {
+      const response = await fetch('http://localhost:3000/createuser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.name.trim(),
+          password: formData.password.trim(),
+          age,
+          country: formData.country.trim(),
+        }),
+      });
+      
+      const data = await response.json();
+
+      if (response.ok) {
+        // Si el servidor dice OK, se registra y se inicia el juego
+        await onCreateAccount(formData.name.trim());
+      }
+      else {
+        // Si el usuario ya existe o hay otro error
+        setFormError(data.error || 'Error al crear la cuenta.');
+      }
+    } catch (error) {
+      setFormError('Error de red al crear la cuenta.');
+    }
   };
 
   return (
