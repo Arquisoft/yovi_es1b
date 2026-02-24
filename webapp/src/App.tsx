@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import './App.css'
-import RegisterForm from './RegisterForm';
-import reactLogo from './assets/react.svg'
+import menuVideo from './assets/background_video.mp4';
+import HomeScreen from './screens/HomeScreen';
+import RegisterScreen from './screens/RegisterScreen';
+import LoginScreen from './screens/LoginScreen';
+import GameScreen from './screens/GameScreen';
 
-// Defines how is the Rust object that we receive
 interface GameYData {
   size: number;
   turn: number;
@@ -11,52 +13,58 @@ interface GameYData {
   layout: string;
 }
 
+type Screen = 'home' | 'register' | 'login' | 'game';
 
 function App() {
-  // New
-  const [connectionStatus, setConnectionStatus] = useState("Without connection"); // State to see the servers response
-  const [username, setUsername] = useState(''); // To save the username
-  const [isGameStarted, setIsGameStarted] = useState(false); // To know the screen to show (register or game)
-  const [boardData, setBoardData] = useState<GameYData | null>(null); // To save what Rust returns
-  const [winner, setWinner] = useState<number | null>(null); // To save the winner (if any)
+  const [connectionStatus, setConnectionStatus] = useState('Without connection');
+  const [username, setUsername] = useState('');
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home'); // Router interno de pantallas
+  const [boardData, setBoardData] = useState<GameYData | null>(null);
+  const [winner, setWinner] = useState<number | null>(null);
 
+  useEffect(() => {
+    // Coloca la vista arriba al cambiar de pantalla
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [currentScreen]);
 
-  const handleStart = async () => {
-    if (username.trim() !== "") {
-      setConnectionStatus("Iniciando nueva partida...");
+  const startGameWithUser = async (playerName: string) => {
+    if (playerName.trim() !== '') {
+      setUsername(playerName.trim());
+      setConnectionStatus('Iniciando nueva partida...');
       try {
-        // Reset
-        const response = await fetch('http://localhost:3000/reset', {   // Llama al endpoint de reset (/users) para iniciar una nueva partida
+        // Solicita tablero inicial al backend
+        const response = await fetch('http://localhost:3000/reset', {
           method: 'POST',
         });
-
         const data = await response.json();
-
         if (data.responseFromRust) {
           setBoardData(data.responseFromRust);
           setWinner(null);
-          setIsGameStarted(true);
-          setConnectionStatus("Partida iniciada!");
+          setCurrentScreen('game');
+          setConnectionStatus('Partida iniciada!');
         }
-      }
-      catch (error) {
-        console.error("Error starting the game:", error);
-        setIsGameStarted(true);
+      } catch (error) {
+        console.error('Error starting the game:', error);
         setWinner(null);
+        setConnectionStatus('No se pudo iniciar la partida. Revisa que users-service esté levantado.');
       }
     }
-  }
+  };
 
-  // New: Function to handle cell clicks and send the move to Rust
+  const handleStart = async () => {
+    await startGameWithUser(username);
+  };
+
   const handleCellClick = async (index: number) => {
-    if (winner !== null) return; // There is a winner
-    
-    setConnectionStatus(`Moviendo a la posición ${index}...`);
+    if (winner !== null) return;
+
+    setConnectionStatus(`Moviendo a la posicion ${index}...`);
     try {
-      const response = await fetch(`http://localhost:3000/move`, { // Llama al endpoint de move (/users) para realizar un movimiento
+      // Envia el movimiento al backend para actualizar tablero
+      const response = await fetch('http://localhost:3000/move', {
         method: 'POST',
-        headers: { 'Content-Type' : 'application/json' },
-        body: JSON.stringify({ cellIndex: index, player: username})
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cellIndex: index, player: username }),
       });
 
       const data = await response.json();
@@ -66,103 +74,83 @@ function App() {
         setWinner(data.winner);
 
         if (data.winner !== null) {
-          setConnectionStatus(data.winner === 0 ? "¡Has ganado!" : "¡Ha ganado el bot!");
+          setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
+        } else {
+          setConnectionStatus('Movimiento realizado!');
         }
-        else {
-          setConnectionStatus("Movimiento realizado!");
-        }
-        
       }
-    }
-    catch (error) {
-      setConnectionStatus("Error realizando el movimiento");
+    } catch (error) {
+      setConnectionStatus('Error realizando el movimiento');
     }
   }
 
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'home':
+        // CASE HOME: pantalla inicial con accesos a registro/login y quick access
+        return (
+          <HomeScreen
+            username={username}
+            onUsernameChange={setUsername}
+            onStart={handleStart}
+            onGoToRegister={() => setCurrentScreen('register')}
+            onGoToLogin={() => setCurrentScreen('login')}
+          />
+        );
 
-  // VIEW
+      case 'game':
+        // CASE GAME: pantalla del tablero y estado de la partida en curso
+        return (
+          <GameScreen
+            username={username}
+            boardData={boardData}
+            winner={winner}
+            connectionStatus={connectionStatus}
+            onCellClick={handleCellClick}
+            onExit={() => setCurrentScreen('home')}
+          />
+        );
+
+      case 'register':
+        // CASE REGISTER: formulario de registro; si valida, inicia partida y entra a game
+        return (
+          <RegisterScreen
+            onBack={() => setCurrentScreen('home')}
+            onCreateAccount={startGameWithUser}
+          />
+        );
+
+      case 'login':
+        // CASE LOGIN: formulario de inicio de sesion; si valida, inicia partida y entra a game
+        return (
+          <LoginScreen
+            onBack={() => setCurrentScreen('home')}
+            onLogin={startGameWithUser}
+          />
+        );
+
+      default:
+        // CASE DEFAULT: salvaguarda por si llega un valor de pantalla no contemplado
+        return null;
+    }
+  };
+
   return (
     <div className="App">
-      {!isGameStarted ? (
-        // SCREEN 1: Register 
-
-        // Images
-        <div className="register-screen">
-          <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-            <img src="/vite.svg" className="logo" alt="Vite logo" />
-          </a>
-          <a href="https://react.dev" target="_blank" rel="noreferrer">
-            <img src={reactLogo} className="logo react" alt="React logo" />
-          </a>
-      
-        <h2>Welcome to the Software Arquitecture 2025-2026 course</h2>
-        <RegisterForm />
-
-        {/* To try the game without registering, just for testing purposes. */}
-        <div>
-          <h3>Quick Access (Simulated Login)</h3>
-          <input
-            type="text"
-            placeholder="Your nickname"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
-          <button onClick={handleStart}>Start playing</button>
-        </div>
-
-      </div>
-      
-      ) : (
-
-        // SCREEN 2: Game (just an example, you can change it)
-        <div className="game-screen">
-
-          <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-            <img src="/vite.svg" className="logo" alt="Vite logo" />
-          </a>
-          <a href="https://react.dev" target="_blank" rel="noreferrer">
-            <img src={reactLogo} className="logo react" alt="React logo" />
-          </a>
-      
-          <h2>Jugador: {username}</h2>
-
-          {/* CONTENEDOR DEL TABLERO */}
-          <div className="board-container">
-            {boardData ? (() => {
-              let globalIndex = 0; // Counter to know the global index of the cell
-              return boardData?.layout.split('/').map((row, rowIndex) => (
-                <div key={rowIndex} className="board-row">
-                  {row.split('').map((cell, cellIndex) => {
-                    const currentIndex = globalIndex++; // Assign and increment the global index
-                    return (
-                      <button
-                        key={cellIndex}
-                        type="button"
-                        className={`cell ${cell === 'B' ? 'blue' : cell === 'R' ? 'red' : 'empty'}`}
-                        // Only allow clicking on empty cells and if there is no winner
-                        onClick={() => cell === '.' && winner === null && handleCellClick(currentIndex)}
-                        // Disable the button if it's not empty or if there is a winner
-                        disabled={cell !== '.' || winner !== null}
-                        // Show information 
-                        aria-label={`Celda ${currentIndex}, ${cell === 'B' ? 'ocupada por azul' : cell === 'R' ? 'ocupada por rojo' : 'vacía'}`}
-                      >
-                        {cell !== '.' ? cell : ''} {/* Show the cell content (B or R) or nothing if it's empty */}
-                      </button>
-                    );
-                  })}
-                </div>
-              ));
-            })() : <p>Carga el tablero para comenzar</p>}
-          </div>
-                    
-
-          <div className="game-controls">
-            <p className="status-text">{connectionStatus}</p>
-            <button className="exit-button" onClick={() => setIsGameStarted(false)}>Salir</button>
-          </div>
-
-        </div>
-      )}
+      {/* Fondo de video global */}
+      <video
+        className="menu-video-bg"
+        autoPlay
+        loop
+        muted
+        playsInline
+        aria-hidden="true"
+      >
+        <source src={menuVideo} type="video/mp4" />
+      </video>
+      <div className="menu-video-overlay" />
+      {/* Renderiza la pantalla activa (home/register/login/game) */}
+      {renderScreen()}
     </div>
   );
 }
