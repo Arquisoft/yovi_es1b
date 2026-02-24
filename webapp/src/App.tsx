@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+
 import menuVideo from './assets/background_video.mp4';
 import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';
