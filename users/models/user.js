@@ -11,6 +11,14 @@ const UserSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  age: {
+    type: Number,
+    required: true
+  },
+  country: {
+    type: String,
+    required: true
+  },
   score: { 
     type: Number, 
     default: 0
