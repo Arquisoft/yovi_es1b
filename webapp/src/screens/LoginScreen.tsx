@@ -29,8 +29,8 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
   };
 
   return (
-    <div className="home-screen">
-      <h2 className="welcome-title">RECUERDAME QUIEN ERES</h2>
+    <div className="register-screen">
+      <h2 className="title-log">RECUERDAME QUIEN ERES</h2>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
 
@@ -47,7 +47,7 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="login-password">Contrasena</label>
+          <label htmlFor="login-password">Contraseña</label>
           <input
             id="login-password"
             className="form-input"
@@ -70,3 +70,4 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
 }
 
 export default LoginScreen;
+

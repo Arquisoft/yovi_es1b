@@ -50,8 +50,8 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
   };
 
   return (
-    <div className="home-screen">
-      <h2 className="welcome-title">ZONA DE REGISTRO</h2>
+    <div className="register-screen">
+      <h2 className="title-log">ZONA DE REGISTRO</h2>
 
       {/* Formulario principal de registro */}
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
@@ -87,7 +87,7 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="register-country">Pais</label>
+          <label htmlFor="register-country">País</label>
           <input
             id="register-country"
             className="form-input"
@@ -99,7 +99,7 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="register-password">Contrasena</label>
+          <label htmlFor="register-password">Contraseña</label>
           <input
             id="register-password"
             className="form-input"
@@ -124,3 +124,4 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
 }
 
 export default RegisterScreen;
+

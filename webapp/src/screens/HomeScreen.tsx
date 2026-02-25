@@ -30,32 +30,17 @@ function HomeActions({ onGoToRegister, onGoToLogin }: HomeActionsProps) {
 
 // Pantalla principal (home) con acceso a auth y quick access al juego
 function HomeScreen({
-  username,
-  onUsernameChange,
-  onStart,
   onGoToRegister,
   onGoToLogin,
 }: HomeScreenProps) {
   return (
     <div className="home-screen">
-      <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
-      {/* Bloque con botones para ir a registro/login */}
-      <HomeActions
-        onGoToRegister={onGoToRegister}
-        onGoToLogin={onGoToLogin}
-      />
-
-      {/* Acceso rapido para arrancar juego sin pasar por auth */}
-      <div>
-        <h3>Quick Access (Simulated Login)</h3>
-        <input
-          type="text"
-          placeholder="Your nickname"
-          value={username}
-          onChange={(e) => onUsernameChange(e.target.value)}
+        <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
+        {/* Bloque con botones para ir a registro/login */}
+        <HomeActions
+          onGoToRegister={onGoToRegister}
+          onGoToLogin={onGoToLogin}
         />
-        <button onClick={onStart}>Start playing</button>
-      </div>
     </div>
   );
 }
