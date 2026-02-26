@@ -3,11 +3,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Could not connect to MongoDB', err));
-
 const User = require('./models/user');
 
 const express = require('express');
@@ -75,6 +70,7 @@ app.post('/createuser', async (req, res) => {
     })
 
   } catch (err) {
+    console.log("EL ERROR REAL ES:", err);
     res.status(400).json({ error: "User already exists or database error" });
   }
 });
@@ -87,7 +83,7 @@ app.post('/login', async (req, res) => {
   try {
 
     const secureUsername = String(username); // Para evitar inyecciones de codigo.
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username: secureUsername });
 
     if (!user) {
       return res.status(401).json({ error: "Usuario no encontrado" });
@@ -159,6 +155,10 @@ app.post('/reset', async (req, res) => {
 
 
 if (require.main === module) {
+
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('Could not connect to MongoDB', err));
 
   app.listen(port, () => {
     console.log(`User Service listening at http://localhost:${port}`)
