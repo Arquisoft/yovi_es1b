@@ -48,7 +48,11 @@ app.use(express.json());
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
 app.post('/createuser', async (req, res) => {
-  const { username, password, age, country } = req.body;
+  // para evitar inyecciones de codigo, convertimos a string lo que recibimos del cliente
+  const username = String(req.body.username || "");
+  const password = String(req.body.password || "");
+  const age = Number(req.body.age);
+  const country = String(req.body.country || "");
   try {
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password are required" });
@@ -81,6 +85,8 @@ app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
+
+    const secureUsername = String(username); // Para evitar inyecciones de codigo.
     const user = await User.findOne({ username });
 
     if (!user) {
