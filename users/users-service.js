@@ -70,7 +70,6 @@ app.post('/createuser', async (req, res) => {
     })
 
   } catch (err) {
-    console.log("EL ERROR REAL ES:", err);
     res.status(400).json({ error: "User already exists or database error" });
   }
 });
