@@ -3,11 +3,6 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('Could not connect to MongoDB', err));
-
 const User = require('./models/user');
 
 const express = require('express');
@@ -48,7 +43,11 @@ app.use(express.json());
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
 app.post('/createuser', async (req, res) => {
-  const { username, password } = req.body;
+  // para evitar inyecciones de codigo, convertimos a string lo que recibimos del cliente
+  const username = String(req.body.username || "");
+  const password = String(req.body.password || "");
+  const age = Number(req.body.age);
+  const country = String(req.body.country || "");
   try {
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password are required" });
@@ -60,7 +59,8 @@ app.post('/createuser', async (req, res) => {
     const newUser = new User ({
       username,
       password: hashedPassword,
-      score: 0
+      age,
+      country
     })
 
     // Save the new user to the database
@@ -80,7 +80,9 @@ app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
   try {
-    const user = await User.findOne({ username });
+
+    const secureUsername = String(username); // Para evitar inyecciones de codigo.
+    const user = await User.findOne({ username: secureUsername });
 
     if (!user) {
       return res.status(401).json({ error: "Usuario no encontrado" });
@@ -152,6 +154,10 @@ app.post('/reset', async (req, res) => {
 
 
 if (require.main === module) {
+
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('Could not connect to MongoDB', err));
 
   app.listen(port, () => {
     console.log(`User Service listening at http://localhost:${port}`)

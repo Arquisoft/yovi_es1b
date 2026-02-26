@@ -19,14 +19,12 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  score: { 
-    type: Number, 
-    default: 0
-  },
   createdAt: { 
     type: Date, 
     default: Date.now
   }
 });
 
-module.exports = mongoose.model('User', UserSchema);
+const User = mongoose.models.User || mongoose.model('User', UserSchema);
+
+module.exports = User;

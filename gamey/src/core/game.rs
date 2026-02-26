@@ -1,3 +1,4 @@
+use crate::core::topology::BoardTopology;
 use crate::core::topology::{GameEngine, TriangularTopology};
 use crate::{Coordinates, GameAction, GameYError, Movement, PlayerId, RenderOptions, YEN};
 use std::fmt::Write;
@@ -11,7 +12,7 @@ pub type Result<T> = std::result::Result<T, crate::GameYError>;
 /// Y is a connection game played on a triangular board where players
 /// take turns placing pieces. The goal is to connect all three sides
 /// of the triangle with a single chain of connected pieces.
-/// 
+///
 /// The struct wich controls the game
 #[derive(Debug, Clone)]
 pub struct GameY {
@@ -157,18 +158,18 @@ impl GameY {
                 self.available_cells.retain(|&x| x != idx);
                 self.update_status_after_placement(player, won);
                 Ok(())
-            },
+            }
             Err(e) => {
                 // Map generic engine error to specific GameYError
                 // In a real scenario, we might want to parse 'e' or have typed errors in engine
                 if e.contains("ocupada") || e.contains("occupied") {
-                     Err(GameYError::Occupied {
+                    Err(GameYError::Occupied {
                         coordinates: coords,
                         player,
                     })
                 } else {
                     // Fallback or panic? For now, treat as occupied or logic error
-                     Err(GameYError::Occupied {
+                    Err(GameYError::Occupied {
                         coordinates: coords,
                         player,
                     })
@@ -217,7 +218,7 @@ impl GameY {
         // For consistency with previous error reporting order:
         let idx = coords.to_index(self.board_size);
         if self.engine.state[idx as usize].is_some() {
-             return Err(GameYError::Occupied {
+            return Err(GameYError::Occupied {
                 coordinates: coords,
                 player,
             });
@@ -236,7 +237,8 @@ impl GameY {
     fn get_neighbors(&self, coords: &Coordinates) -> Vec<Coordinates> {
         let idx = coords.to_index(self.board_size);
         let neighbor_indices = self.engine.topology.get_neighbors(idx as usize);
-        neighbor_indices.iter()
+        neighbor_indices
+            .iter()
             .map(|&i| Coordinates::from_index(i as u32, self.board_size))
             .collect()
     }
@@ -387,7 +389,7 @@ impl From<&GameY> for YEN {
             let cell_char = match player {
                 Some(p) if p.id() == 0 => 'B', // player 0
                 Some(p) if p.id() == 1 => 'R', // player 1
-                _ => '.', // empty cell
+                _ => '.',                      // empty cell
             };
             layout.push(cell_char);
 
@@ -395,7 +397,7 @@ impl From<&GameY> for YEN {
             // This is tricky without coords, so let's compute coords
             let coords = Coordinates::from_index(idx, game.board_size);
             if coords.z() == 0 && coords.x() > 0 {
-                layout.push('/');  // separate rows with '/'
+                layout.push('/'); // separate rows with '/'
             }
         }
         YEN::new(size, turn, players, layout)
