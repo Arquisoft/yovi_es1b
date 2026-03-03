@@ -60,7 +60,7 @@ impl<T: BoardTopology> GameEngine<T> {
         self.cell_set_map[cell] = Some(new_set_idx);
 
         // 3. Conectar con vecinos del mismo jugador
-        // Clonamos los vecinos para evitar problemas de préstamo (borrow checker)
+        // Clonamos los vecinos para evitar problemas de préstamo
         let neighbors = self.topology.get_neighbors(cell).to_vec();
         let mut won = false;
 
