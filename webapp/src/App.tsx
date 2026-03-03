@@ -19,7 +19,7 @@ interface GameYData {
 
 type Screen = 'home' | 'register' | 'login' | 'game';
 type DifficultyChoice = 'facil' | 'medio' | 'dificil';
-type SizeChoice = 'Tamaño 5x5x5' | 'Tamaño 7x7x7' | 'Tamaño 9x9x9';
+type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
@@ -216,14 +216,14 @@ function App() {
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Seleccion secundaria obligatoria">
           <div className="modal-box">
             <h3>¿Con qué tamaño de tablero deseas jugar?</h3>
-            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 5x5x5')}>
-              Tamaño 5x5x5
-            </button>
-            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 7x7x7')}>
-              Tamaño 7x7x7
+            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 6x6x6')}>
+              Tamaño 6x6x6
             </button>
             <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 9x9x9')}>
               Tamaño 9x9x9
+            </button>
+            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 12x12x12')}>
+              Tamaño 12x12x12
             </button>
           </div>
         </div>
