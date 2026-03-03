@@ -175,6 +175,7 @@ function App() {
             connectionStatus={connectionStatus}
             onCellClick={handleCellClick}
             onExit={() => setCurrentScreen('home')}
+            timeLeft={timeLeft}
           />
         );
 

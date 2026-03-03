@@ -14,6 +14,7 @@ interface GameScreenProps {
   connectionStatus: string;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onExit: () => void; // Sale del juego y vuelve a home
+    timeLeft: number; // temporizador de movimiento
 }
 
 function GameScreen({
@@ -23,6 +24,7 @@ function GameScreen({
   connectionStatus,
   onCellClick,
   onExit,
+    timeLeft,
 }: GameScreenProps) {
   return (
     <div className="game-screen">
@@ -34,6 +36,9 @@ function GameScreen({
       </a>
 
       <h2>Jugador: {username}</h2>
+        <div className="timer">
+            Tiempo restante: {winner === null ? timeLeft : 0}s
+        </div>
 
       <div className="board-container">
         {boardData ? (
