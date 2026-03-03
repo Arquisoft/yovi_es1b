@@ -87,6 +87,9 @@ function App() {
         } else {
           setConnectionStatus('Movimiento realizado!');
         }
+        if (data.winner === null) {
+          startTurnTimer();
+        }
       }
     } catch (error) {
       setConnectionStatus('Error realizando el movimiento');
