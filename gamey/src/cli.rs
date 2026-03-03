@@ -24,9 +24,9 @@ use std::io::{self, Write};
 #[command(long_about = "GameY: A command-line implementation of the Game of Y.")]
 pub struct CliArgs {
     /// Size of the triangular board (length of one side).
-    /// If not provided, an interactive menu will be shown.
-    #[arg(short, long)]
-    pub size: Option<u32>,
+    /// If not provided, defaults to 7.
+    #[arg(short, long, default_value_t = 7)]
+    pub size: u32,
 
     /// Game mode: human (2-player), computer (vs bot), or server (HTTP API).
     #[arg(short, long, default_value_t = Mode::Human)]
@@ -73,10 +73,14 @@ pub fn run_cli_game() -> Result<()> {
     let mut rl = DefaultEditor::new()?;
 
     // Board Size Selection Logic
-    let board_size = match args.size {
-        Some(s) => s,
-        None => select_board_size()?,
-    };
+    // If the user explicitly provided a size via CLI, use it.
+    // Otherwise, we could prompt, but since clap handles default values,
+    // args.size will always have a value (default 7).
+    // To support interactive selection ONLY when no arg is provided,
+    // we would need to change CliArgs to use Option<u32> again,
+    // but the user requested to fix the code to match the tests (which expect u32).
+    // So we stick to the u32 implementation as requested.
+    let board_size = args.size;
 
     let bots_registry = YBotRegistry::new().with_bot(Arc::new(RandomBot));
     let bot: Arc<dyn YBot> = match bots_registry.find(&args.bot) {
@@ -136,6 +140,8 @@ pub fn run_cli_game() -> Result<()> {
 }
 
 /// Promps the user to select a board size if not provided via CLI args.
+/// (Currently unused as we reverted to u32 in CliArgs to satisfy tests)
+#[allow(dead_code)]
 fn select_board_size() -> Result<u32> {
     println!("Selecciona el tamaño del tablero:");
     println!("1. Pequeño (6)");
