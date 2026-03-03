@@ -133,7 +133,7 @@ function App() {
       // Buscar celdas vacías
       const emptyCells: number[] = [];
       for (let i = 0; i < boardData.layout.length; i++) {
-        if (boardData.layout[i] === '-') {
+        if (boardData.layout[i] === '.') {
           emptyCells.push(i);
         }
       }

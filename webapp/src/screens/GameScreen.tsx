@@ -36,7 +36,7 @@ function GameScreen({
       </a>
 
       <h2>Jugador: {username}</h2>
-        <div className="timer">
+        <div className={`timer ${timeLeft <= 5 ? 'warning' : ''}`}>
             Tiempo restante: {winner === null ? timeLeft : 0}s
         </div>
 

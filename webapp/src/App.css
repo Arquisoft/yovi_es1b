@@ -268,3 +268,13 @@ body {
   background-color: transparent;
   min-height: 100vh;
 }
+
+.timer {
+  margin: 10px 0;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.timer.warning {
+  color: red;
+}
