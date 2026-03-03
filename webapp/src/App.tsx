@@ -33,12 +33,25 @@ function App() {
 
   //constantes para el temporizador
   const [turnTimer, setTurnTimer] = useState<NodeJS.Timeout | null>(null);
+  const [turnInterval, setTurnInterval] = useState<ReturnType<typeof setInterval> | null>(null);
   const [timeLeft, setTimeLeft] = useState(30);
+  const difficultyTime: Record<DifficultyChoice, number> = {
+    facil: 45,    // más tiempo para principiantes
+    medio: 30,    // tiempo normal
+    dificil: 15,  // poco tiempo, más desafiante
+  };
 
   useEffect(() => {
     // Coloca la vista arriba al cambiar de pantalla
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [currentScreen]);
+
+  useEffect(() => {
+    return () => {
+      if (turnTimer) clearTimeout(turnTimer);
+      if (turnInterval) clearInterval(turnInterval);
+    };
+  }, [turnTimer, turnInterval]);
 
   const startGameWithUser = async (playerName: string) => {
     if (playerName.trim() !== '') {
@@ -114,6 +127,7 @@ function App() {
         }
       }
     } catch (error) {
+      console.error('Error starting the game:', error);
       setConnectionStatus('Error realizando el movimiento');
     }
   }
@@ -122,12 +136,15 @@ function App() {
   const startTurnTimer = () => {
     if (winner !== null) return;
 
-    // limpiar temporizador anterior
     if (turnTimer) clearTimeout(turnTimer);
+    if (turnInterval) clearInterval(turnInterval);
 
-    setTimeLeft(30);
+    // Tiempo según dificultad, por defecto 30
+    const maxSeconds = difficultyChoice ? difficultyTime[difficultyChoice] : 30;
 
-    let seconds = 30;
+    setTimeLeft(maxSeconds);
+
+    let seconds = maxSeconds;
 
     // contador visual
     const intervalId = setInterval(() => {
@@ -140,8 +157,9 @@ function App() {
     const timeoutId = setTimeout(() => {
       handleTimeoutMove();
       clearInterval(intervalId);
-    }, 30000);
+    }, maxSeconds * 1000);
 
+    setTurnInterval(intervalId);
     setTurnTimer(timeoutId);
   };
 
