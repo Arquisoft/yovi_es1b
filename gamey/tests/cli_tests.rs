@@ -286,13 +286,13 @@ fn test_cli_args_default_values() {
 #[test]
 fn test_cli_args_custom_size() {
     let args = CliArgs::try_parse_from(["gamey", "--size", "10"]).unwrap();
-    assert_eq!(args.size, Some(10));
+    assert_eq!(args.size, 10);
 }
 
 #[test]
 fn test_cli_args_custom_size_short() {
     let args = CliArgs::try_parse_from(["gamey", "-s", "5"]).unwrap();
-    assert_eq!(args.size, Some(5));
+    assert_eq!(args.size, 5);
 }
 
 #[test]
@@ -357,7 +357,7 @@ fn test_cli_args_combined_options() {
         "5000",
     ])
     .unwrap();
-    assert_eq!(args.size, Some(9));
+    assert_eq!(args.size, 9);
     assert_eq!(args.mode, Mode::Computer);
     assert_eq!(args.bot, "advanced_bot");
     assert_eq!(args.port, 5000);
