@@ -270,11 +270,11 @@ body {
 }
 
 .timer {
-  margin: 10px 0;
-  font-size: 1.2rem;
-  font-weight: bold;
+    margin: 10px 0;
+    font-size: 1.2rem;
+    font-weight: bold;
 }
 
 .timer.warning {
-  color: red;
+    color: red;
 }
