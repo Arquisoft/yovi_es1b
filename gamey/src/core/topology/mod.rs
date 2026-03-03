@@ -3,6 +3,8 @@
 //! Este módulo define la abstracción de un tablero (`BoardTopology`) y proporciona
 //! implementaciones concretas (como `TriangularTopology`) y un motor de juego genérico (`GameEngine`).
 
+use crate::Coordinates;
+
 pub mod engine;
 pub mod triangular;
 
@@ -29,4 +31,11 @@ pub trait BoardTopology {
 
     /// Define la combinación de regiones necesaria para ganar.
     fn winning_mask(&self) -> RegionMask;
+
+    /// Convierte coordenadas específicas de la topología a un índice de celda lineal.
+    /// Esto permite desacoplar la lógica del juego de la geometría específica.
+    fn coords_to_index(&self, coords: Coordinates) -> CellIndex;
+
+    /// Convierte un índice de celda lineal a coordenadas específicas de la topología.
+    fn index_to_coords(&self, index: CellIndex) -> Coordinates;
 }

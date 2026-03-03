@@ -24,9 +24,9 @@ use std::io::{self, Write};
 #[command(long_about = "GameY: A command-line implementation of the Game of Y.")]
 pub struct CliArgs {
     /// Size of the triangular board (length of one side).
-    /// If not provided, an interactive menu will be shown.
-    #[arg(short, long)]
-    pub size: Option<u32>,
+    /// If not provided (or 0), the user will be prompted to select a size.
+    #[arg(short, long, default_value_t = 0)]
+    pub size: u32,
 
     /// Game mode: human (2-player), computer (vs bot), or server (HTTP API).
     #[arg(short, long, default_value_t = Mode::Human)]
@@ -73,9 +73,10 @@ pub fn run_cli_game() -> Result<()> {
     let mut rl = DefaultEditor::new()?;
 
     // Board Size Selection Logic
-    let board_size = match args.size {
-        Some(s) => s,
-        None => select_board_size()?,
+    let board_size = if args.size == 0 {
+        select_board_size()?
+    } else {
+        args.size
     };
 
     let bots_registry = YBotRegistry::new().with_bot(Arc::new(RandomBot));

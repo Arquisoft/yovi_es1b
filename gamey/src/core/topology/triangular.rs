@@ -89,4 +89,12 @@ impl BoardTopology for TriangularTopology {
         // Para ganar en Y, necesitas tocar los 3 lados
         Self::SIDE_A | Self::SIDE_B | Self::SIDE_C
     }
+
+    fn coords_to_index(&self, coords: Coordinates) -> CellIndex {
+        coords.to_index(self.size) as usize
+    }
+
+    fn index_to_coords(&self, index: CellIndex) -> Coordinates {
+        Coordinates::from_index(index as u32, self.size)
+    }
 }

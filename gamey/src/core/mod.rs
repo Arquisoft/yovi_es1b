@@ -16,6 +16,7 @@ pub mod movement;
 pub mod player;
 pub mod render_options;
 pub mod topology;
+pub mod view;
 
 pub use action::*;
 pub use coord::*;
@@ -24,3 +25,4 @@ pub use movement::*;
 pub use player::*;
 pub use render_options::*;
 pub use topology::*;
+pub use view::*;
