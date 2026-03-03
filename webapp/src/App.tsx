@@ -23,6 +23,10 @@ function App() {
   const [boardData, setBoardData] = useState<GameYData | null>(null);
   const [winner, setWinner] = useState<number | null>(null);
 
+  //constantes para el temporizador
+  const [turnTimer, setTurnTimer] = useState<NodeJS.Timeout | null>(null);
+  const [timeLeft, setTimeLeft] = useState(30);
+
   useEffect(() => {
     // Coloca la vista arriba al cambiar de pantalla
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
@@ -42,6 +46,9 @@ function App() {
           setBoardData(data.responseFromRust);
           setWinner(null);
           setCurrentScreen('game');
+          setTimeout(() => {
+            startTurnTimer();
+          }, 500); //iniciando temporizador
           setConnectionStatus('Partida iniciada!');
         }
       } catch (error) {
@@ -60,6 +67,7 @@ function App() {
     if (winner !== null) return;
 
     setConnectionStatus(`Moviendo a la posicion ${index}...`);
+    if (turnTimer) clearTimeout(turnTimer);//asegurar que está en tiempo
     try {
       // Envia el movimiento al backend para actualizar tablero
       const response = await fetch('http://localhost:3000/move', {
@@ -84,6 +92,61 @@ function App() {
       setConnectionStatus('Error realizando el movimiento');
     }
   }
+
+  //metodo para iniciar el temporizador
+  const startTurnTimer = () => {
+    if (winner !== null) return;
+
+    // limpiar temporizador anterior
+    if (turnTimer) clearTimeout(turnTimer);
+
+    setTimeLeft(30);
+
+    let seconds = 30;
+
+    // contador visual
+    const intervalId = setInterval(() => {
+      seconds--;
+      setTimeLeft(seconds);
+      if (seconds <= 0) clearInterval(intervalId);
+    }, 1000);
+
+    // timeout real
+    const timeoutId = setTimeout(() => {
+      handleTimeoutMove();
+      clearInterval(intervalId);
+    }, 30000);
+
+    setTurnTimer(timeoutId);
+  };
+
+  //metodo para hacer un movimiento automático aleatorio si se acaba el tiempo
+  const handleTimeoutMove = async () => {
+    if (!boardData || winner !== null) return;
+
+    setConnectionStatus("Tiempo agotado. Haciendo movimiento automático...");
+
+    try {
+      // Buscar celdas vacías
+      const emptyCells: number[] = [];
+      for (let i = 0; i < boardData.layout.length; i++) {
+        if (boardData.layout[i] === '-') {
+          emptyCells.push(i);
+        }
+      }
+
+      if (emptyCells.length === 0) return;
+
+      const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+      await handleCellClick(randomIndex);
+
+    } catch (error) {
+      console.error("Error en movimiento automático", error);
+    }
+  };
+
+
 
   const renderScreen = () => {
     switch (currentScreen) {
