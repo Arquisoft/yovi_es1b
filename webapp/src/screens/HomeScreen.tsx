@@ -35,12 +35,12 @@ function HomeScreen({
 }: HomeScreenProps) {
   return (
     <div className="home-screen">
-      <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
-      {/* Bloque con botones para ir a registro/login */}
-      <HomeActions
-        onGoToRegister={onGoToRegister}
-        onGoToLogin={onGoToLogin}
-      />
+        <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
+        {/* Bloque con botones para ir a registro/login */}
+        <HomeActions
+          onGoToRegister={onGoToRegister}
+          onGoToLogin={onGoToLogin}
+        />
     </div>
   );
 }

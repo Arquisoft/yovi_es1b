@@ -1,5 +1,3 @@
-import reactLogo from '../assets/react.svg';
-
 interface GameYData {
   size: number;
   turn: number;
@@ -26,13 +24,6 @@ function GameScreen({
 }: GameScreenProps) {
   return (
     <div className="game-screen">
-      <a href="https://vitejs.dev" target="_blank" rel="noreferrer">
-        <img src="/vite.svg" className="logo" alt="Vite logo" />
-      </a>
-      <a href="https://react.dev" target="_blank" rel="noreferrer">
-        <img src={reactLogo} className="logo react" alt="React logo" />
-      </a>
-
       <h2>Jugador: {username}</h2>
 
       <div className="board-container">
