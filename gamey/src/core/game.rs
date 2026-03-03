@@ -1,4 +1,4 @@
-use crate::core::topology::{GameEngine, TriangularTopology};
+use crate::core::topology::{BoardTopology, GameEngine, TriangularTopology};
 use crate::{Coordinates, GameAction, GameYError, Movement, PlayerId, RenderOptions, YEN};
 use std::fmt::Write;
 use std::path::Path;
@@ -41,8 +41,8 @@ pub enum Cell {
 impl GameY {
     /// Creates a new game with the specified board size and number of players.
     pub fn new(board_size: u32) -> Self {
-        let total_cells = (board_size * (board_size + 1)) / 2;
         let topology = TriangularTopology::new(board_size);
+        let total_cells = topology.total_cells() as u32;
         let engine = GameEngine::new(topology);
 
         Self {
@@ -76,7 +76,7 @@ impl GameY {
 
     /// Returns the total number of cells on the board.
     pub fn total_cells(&self) -> u32 {
-        (self.board_size * (self.board_size + 1)) / 2
+        self.engine.topology.total_cells() as u32
     }
 
     /// Checks if the movement is made by the correct player.
@@ -380,7 +380,7 @@ impl From<&GameY> for YEN {
             GameStatus::Ongoing { next_player } => next_player.id(),
         };
         let mut layout = String::new();
-        let total_cells = (game.board_size * (game.board_size + 1)) / 2;
+        let total_cells = game.total_cells();
         let players = vec!['B', 'R'];
         for idx in 0..total_cells {
             let player = game.engine.state[idx as usize];
