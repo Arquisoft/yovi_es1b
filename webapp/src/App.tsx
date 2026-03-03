@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+
 import './css/App.css'
 import './css/Log.css'
 import './css/Game.css'
+
 import menuVideo from './assets/background_video.mp4';
 import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';

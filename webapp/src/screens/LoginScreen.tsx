@@ -16,6 +16,7 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
     password: '',
   });
   const [formError, setFormError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false); // Para bloquear el formulario mientras se procesa el login
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Evita recargar la pagina
@@ -24,8 +25,33 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
       return;
     }
     setFormError(null);
+    setIsLoading(true);
 
-    await onLogin(formData.username.trim()); // Delega en App.tsx el arranque de partida
+    // Llamada al backend para validar usuario e iniciar el juego
+    try {
+      const response = await fetch('http://localhost:3000/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username.trim(),
+          password: formData.password.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Login exitoso, inicia el juego con ese usuario
+        await onLogin(formData.username.trim());
+      } else {
+        setFormError(data.error || 'Error al iniciar sesion.');
+      }
+      
+    } catch (error) {
+      setFormError('Error de conexion al iniciar sesion.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -58,8 +84,8 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
           />
         </div>
 
-        <button type="submit" className="submit-button">
-          Iniciar sesion
+        <button type="submit" disabled={isLoading}>
+          {isLoading ? 'Iniciando sesion...' : 'Iniciar sesion'}
         </button>
         <button type="button" className="submit-button" onClick={onBack}> {/* No envia formulario */}
           Volver

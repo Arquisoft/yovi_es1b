@@ -16,6 +16,7 @@ use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 use std::fmt::Display;
 use std::sync::Arc;
+use std::io::{self, Write};
 
 /// Command-line arguments for the GameY application.
 #[derive(Parser, Debug)]
@@ -23,8 +24,9 @@ use std::sync::Arc;
 #[command(long_about = "GameY: A command-line implementation of the Game of Y.")]
 pub struct CliArgs {
     /// Size of the triangular board (length of one side).
-    #[arg(short, long, default_value_t = 7)]
-    pub size: u32,
+    /// If not provided, an interactive menu will be shown.
+    #[arg(short, long)]
+    pub size: Option<u32>,
 
     /// Game mode: human (2-player), computer (vs bot), or server (HTTP API).
     #[arg(short, long, default_value_t = Mode::Human)]
@@ -69,6 +71,13 @@ pub fn run_cli_game() -> Result<()> {
     let args = CliArgs::parse();
     let mut render_options = crate::RenderOptions::default();
     let mut rl = DefaultEditor::new()?;
+
+    // Board Size Selection Logic
+    let board_size = match args.size {
+        Some(s) => s,
+        None => select_board_size()?,
+    };
+
     let bots_registry = YBotRegistry::new().with_bot(Arc::new(RandomBot));
     let bot: Arc<dyn YBot> = match bots_registry.find(&args.bot) {
         Some(b) => b,
@@ -81,7 +90,9 @@ pub fn run_cli_game() -> Result<()> {
             return Ok(());
         }
     };
-    let mut game = game::GameY::new(args.size);
+
+    let mut game = game::GameY::new(board_size);
+
     loop {
         println!("{}", game.render(&render_options));
         let status = game.status();
@@ -122,6 +133,39 @@ pub fn run_cli_game() -> Result<()> {
         }
     }
     Ok(())
+}
+
+/// Promps the user to select a board size if not provided via CLI args.
+fn select_board_size() -> Result<u32> {
+    println!("Selecciona el tamaño del tablero:");
+    println!("1. Pequeño (6)");
+    println!("2. Mediano (9)");
+    println!("3. Grande (12)");
+    println!("4. Personalizado");
+
+    print!("Opción: ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    match input.trim() {
+        "1" => Ok(6),
+        "2" => Ok(9),
+        "3" => Ok(12),
+        "4" => {
+            print!("Introduce el tamaño deseado: ");
+            io::stdout().flush()?;
+            let mut custom_size = String::new();
+            io::stdin().read_line(&mut custom_size)?;
+            let size = custom_size.trim().parse::<u32>().unwrap_or(7); // Default to 7 on error
+            Ok(size)
+        }
+        _ => {
+            println!("Opción no válida, usando tamaño por defecto (7).");
+            Ok(7)
+        }
+    }
 }
 
 /// Processes a single line of user input and updates game state.
@@ -511,4 +555,3 @@ mod tests {
         assert!(debug.contains("5"));
     }
 }
-
