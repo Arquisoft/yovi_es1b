@@ -1,6 +1,6 @@
 use crate::core::topology::{BoardTopology, GameEngine, TriangularTopology};
+use crate::core::view::render_triangular_board;
 use crate::{Coordinates, GameAction, GameYError, Movement, PlayerId, RenderOptions, YEN};
-use std::fmt::Write;
 use std::path::Path;
 
 /// A Result type alias for game operations that may fail with a `GameYError`.
@@ -244,76 +244,8 @@ impl GameY {
     /// Renders the current state of the board as a text string.
     /// If `show_coordinates` is true, the coordinates of each cell will be displayed.
     pub fn render(&self, options: &RenderOptions) -> String {
-        let mut result = String::new();
-        let coords_size = self.board_size.to_string().len();
-        let _ = writeln!(result, "--- Game of Y (Size {}) ---", self.board_size);
-
-        let indent_multiplier = self.get_indent_multiplier(options);
-
-        for row in 0..self.board_size {
-            let x = self.board_size - 1 - row;
-            indent(&mut result, x * indent_multiplier);
-
-            for y in 0..=row {
-                let z = row - y;
-                let coords = Coordinates::new(x, y, z);
-                let cell_str = self.format_cell(coords, options, coords_size);
-                let _ = write!(result, "{}   ", cell_str);
-            }
-
-            result.push('\n');
-            if options.show_idx || options.show_3d_coords {
-                result.push('\n');
-            }
-        }
-        result
+        render_triangular_board(self.board_size, &self.engine.state, options)
     }
-
-    fn get_indent_multiplier(&self, options: &RenderOptions) -> u32 {
-        match (options.show_3d_coords, options.show_idx) {
-            (true, true) => 8,
-            (true, false) => 4,
-            (false, true) => 4,
-            (false, false) => 2,
-        }
-    }
-
-    fn format_cell(&self, coords: Coordinates, options: &RenderOptions, width: usize) -> String {
-        let idx = coords.to_index(self.board_size);
-        let player = self.engine.state[idx as usize];
-
-        // 1. Base symbol
-        let mut symbol = match player {
-            Some(p) => format!("{}", p),
-            None => ".".to_string(),
-        };
-
-        // 2. Append metadata (3D Coords / Index)
-        if options.show_3d_coords {
-            symbol.push_str(&format!(
-                "({:0w$},{:0w$},{:0w$})",
-                coords.x(),
-                coords.y(),
-                coords.z(),
-                w = width
-            ));
-        }
-        if options.show_idx {
-            let idx = coords.to_index(self.board_size);
-            symbol.push_str(&format!("({}) ", idx));
-        }
-
-        // 3. Apply colors
-        if options.show_colors {
-            symbol = apply_player_color(symbol, player);
-        }
-
-        symbol
-    }
-}
-
-fn indent(str: &mut String, level: u32) {
-    str.push_str(&" ".repeat(level as usize));
 }
 
 // Implement conversion from YEN to GameY and vice versa
@@ -408,14 +340,6 @@ fn other_player(player: PlayerId) -> PlayerId {
         PlayerId::new(1)
     } else {
         PlayerId::new(0)
-    }
-}
-
-fn apply_player_color(symbol: String, player: Option<PlayerId>) -> String {
-    match player {
-        Some(p) if p.id() == 0 => format!("\x1b[34m{}\x1b[0m", symbol), // Blue
-        Some(p) if p.id() == 1 => format!("\x1b[31m{}\x1b[0m", symbol), // Red
-        _ => symbol,
     }
 }
 
