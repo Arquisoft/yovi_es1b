@@ -39,7 +39,14 @@ use serde::Deserialize;
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize)]
 pub struct MoveRequest {
+    // Índice lineal (triangular) enviado por la UI al pulsar una celda.
     pub index: u32
+}
+
+#[derive(Deserialize)]
+pub struct ResetRequest {
+    // Tamaño de tablero solicitado por el cliente (opcional).
+    pub size: Option<u32>
 }
 
 
@@ -118,6 +125,7 @@ pub async fn realizar_movimiento (
     let mut game = state.game.lock().unwrap();
 
     // 2. Movimiento Humano (Azul)
+    // El índice se interpreta usando el tamaño REAL del juego activo en servidor.
     let b_size = game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
     
@@ -127,6 +135,7 @@ pub async fn realizar_movimiento (
     };
 
     // Intentamos añadir el movimiento
+    // Si falla (ocupada/fuera de rango/turno inválido), el tablero no cambia.
     if let Err(e) = game.add_move(human_movement) {
         println!("Aviso: Movimiento humano no válido: {:?}", e);
     }
@@ -147,6 +156,7 @@ pub async fn realizar_movimiento (
     
 
     // 4. Extraer el ganador
+    // Ganador leído desde el estado final tras aplicar jugadas válidas.
     let winner_id = match game.status() {
         &crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
         _ => None,
@@ -157,6 +167,7 @@ pub async fn realizar_movimiento (
     }
 
     // 5. Respuesta (Convertimos a YEN)
+    // Respuesta para el front: tablero actualizado + ganador.
     let yen_data: crate::YEN = (&*game).into();
     
     axum::Json(serde_json::json!({
@@ -169,13 +180,22 @@ pub async fn realizar_movimiento (
 // New
 // This endpoint resets the game to its initial state.
 pub async fn reiniciar_juego(
-    axum::extract::State(state): axum::extract::State<AppState>
+    axum::extract::State(state): axum::extract::State<AppState>,
+    payload: Option<axum::extract::Json<ResetRequest>>
 ) -> impl IntoResponse {
 
     let mut game = state.game.lock().unwrap();
+    // Tamaño efectivo del reset:
+    // - usa size enviado por cliente si existe
+    // - si no existe, usa 5
+    // - siempre acotado a [3..20]
+    let size = payload
+        .and_then(|json| json.size)
+        .unwrap_or(5)
+        .clamp(3, 20);
 
     // Reiniciamos el juego creando una nueva instancia de GameY
-    *game = crate::core::game::GameY::new(5);
+    *game = crate::core::game::GameY::new(size);
 
     println!("--> Juego reiniciado.");
 
