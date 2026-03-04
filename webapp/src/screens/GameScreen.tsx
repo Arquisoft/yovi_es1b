@@ -10,22 +10,50 @@ interface GameScreenProps {
   boardData: GameYData | null;
   winner: number | null;
   connectionStatus: string;
+  difficulty: string | null;
+  sizeLabel: string | null;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onExit: () => void; // Sale del juego y vuelve a home
+  onChangeDifficulty: () => void; // Permite cambiar la dificultad durante la partida
+  onChangeSize: () => void; // Permite cambiar el tamaño durante la partida
 }
 
 function GameScreen({
   username,
   boardData,
   winner,
-  connectionStatus,
+  difficulty,
+  sizeLabel,
   onCellClick,
   onExit,
+  onChangeDifficulty,
+  onChangeSize
 }: GameScreenProps) {
   return (
     <div className="game-screen">
-      <h2>Jugador: {username}</h2>
 
+      {/* Barra de navegación superior */}
+
+      <nav className="game-navbar">
+        <div className="nav-user-info">
+          <h2>Jugador: <span>{username}</span></h2>
+        </div>
+
+        <div className="nav-game-settings">
+          <button className="nav-btn" onClick={onChangeDifficulty}>
+            Dificultad: {difficulty || '...'}
+          </button>
+          <button className="nav-btn" onClick={onChangeSize}>
+            {sizeLabel || 'Tamaño...'}
+          </button>
+          <button className="nav-btn danger" onClick={onExit}>
+            Salir
+          </button>
+        </div>
+
+      </nav>
+
+      {/* Contenedor principal del tablero y controles */}
       <div className="board-container">
         {boardData ? (
           (() => {
@@ -57,12 +85,6 @@ function GameScreen({
         )}
       </div>
 
-      <div className="game-controls">
-        <p className="status-text">{connectionStatus}</p>
-        <button className="exit-button" onClick={onExit}>
-          Salir
-        </button>
-      </div>
     </div>
   );
 }

@@ -140,9 +140,14 @@ app.post('/move', async (req, res) => {
 // New
 // Resets the game
 app.post('/reset', async (req, res) => {
+
+  const size = req.body.size || 5;
+
   try {
     const rustResponse = await fetch('http://gamey:4000/reset', { // LLama al endpoint de Rust para resetear el juego
       method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ size: Number(size) })
     });
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard});

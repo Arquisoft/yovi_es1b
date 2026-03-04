@@ -39,11 +39,17 @@ function App() {
   const startGameWithUser = async (playerName: string) => {
     if (playerName.trim() !== '') {
       setUsername(playerName.trim());
-      setConnectionStatus('Iniciando nueva partida...');
+      setConnectionStatus('Iniciando nueva partida predeterminada...');
+
+      const defaultSize = 5;
+      const defaultDifficulty = 'facil';
+      const defaultSizeText: SizeChoice = 'Tamaño 5x5x5';
       try {
         // Solicita tablero inicial al users-service
         const response = await fetch('http://localhost:3000/reset', {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ size: defaultSize }),
         });
 
         if (!response.ok) {
@@ -51,23 +57,20 @@ function App() {
         }
 
         const data = await response.json();
+
         const board = data.responseFromRust ?? data.board ?? data;
 
-        if (board && board.layout) {
-          // Cada partida nueva exige volver a elegir dificultad y opcion secundaria
-          setDifficultyChoice(null);
-          setSizeChoice(null);
-          setShowResultModal(false);
-          setBoardData(board);
-          setWinner(null);
-          setCurrentScreen('game');
-          setConnectionStatus('Partida iniciada!');
-        } else {
-          setConnectionStatus('No se recibio un tablero valido desde /reset.');
-        }
+        // Cada partida nueva exige volver a elegir dificultad y opcion secundaria
+        setDifficultyChoice(defaultDifficulty);
+        setSizeChoice(defaultSizeText);
+        setShowResultModal(false);
+        setBoardData(board);
+        setWinner(null);
+        setCurrentScreen('game');
+        setConnectionStatus('Partida iniciada!');
+
       } catch (error) {
         console.error('Error starting the game:', error);
-        setWinner(null);
         setConnectionStatus('No se pudo iniciar la partida. Revisa que users-service este levantado.');
       }
     }
@@ -129,8 +132,12 @@ function App() {
             boardData={boardData}
             winner={winner}
             connectionStatus={connectionStatus}
+            difficulty={difficultyChoice}
+            sizeLabel={sizeChoice}
             onCellClick={handleCellClick}
             onExit={() => setCurrentScreen('home')}
+            onChangeDifficulty={() => setDifficultyChoice(null)}
+            onChangeSize={() => setSizeChoice(null)}
           />
         );
 
