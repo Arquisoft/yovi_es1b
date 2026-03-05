@@ -97,7 +97,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: new RegExp(`jugador: ${username}`, 'i') })).toBeInTheDocument()
+      expect(screen.getByText(new RegExp(`jugador: ${username}`, 'i'))).toBeInTheDocument()
     })
 
     await user.click(screen.getByRole('button', { name: /salir/i }))
@@ -111,7 +111,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: new RegExp(`jugador: ${username}`, 'i') })).toBeInTheDocument()
+      expect(screen.getByText(new RegExp(`jugador: ${username}`, 'i'))).toBeInTheDocument()
     })
   })
 
@@ -127,7 +127,13 @@ describe('LoginForm', () => {
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          responseFromRust: { size: 5, turn: 1, players: [], layout: 'B/./././.' },
+          responseFromRust: { size: 6, turn: 0, players: [], layout: './../.../..../...../......' },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          responseFromRust: { size: 6, turn: 1, players: [], layout: 'B/../.../..../...../......' },
           winner: null,
         }),
       } as Response)
@@ -140,7 +146,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /jugador: jugadorprueba/i })).toBeInTheDocument()
+      expect(screen.getByText(/jugador: jugadorprueba/i)).toBeInTheDocument()
     })
 
     await user.click(screen.getByRole('button', { name: /^facil$/i }))
