@@ -81,6 +81,17 @@ impl GameY {
         self.engine.topology.total_cells() as u32
     }
 
+    /// Returns the player occupying the cell at the given coordinates, or None if empty.
+    pub fn get_player_at(&self, coords: Coordinates) -> Option<PlayerId> {
+        let idx = coords.to_index(self.board_size);
+        // Check bounds just in case, though coords should be valid if created correctly
+        if (idx as usize) < self.engine.state.len() {
+             self.engine.state[idx as usize]
+        } else {
+            None
+        }
+    }
+
     /// Checks if the movement is made by the correct player.
     ///
     /// Returns an error if it's not the specified player's turn.
