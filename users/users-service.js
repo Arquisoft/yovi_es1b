@@ -125,6 +125,9 @@ app.post('/move', async (req, res) => {
        return res.status(500).send(text);
     }
 
+    // Rust responde con { board, winner }; aquí lo adaptamos al formato que consume el front:
+    // - responseFromRust: estado del tablero actualizado
+    // - winner: ganador actual (null si la partida sigue)
     const newBoard = await rustResponse.json();
     res.json({ 
       responseFromRust: newBoard.board,
@@ -140,9 +143,22 @@ app.post('/move', async (req, res) => {
 // New
 // Resets the game
 app.post('/reset', async (req, res) => {
+
+  const size = req.body.size || 5;
+
   try {
+    const requestedSize = Number(req.body?.size);
+    // Normaliza y valida el tamaño solicitado por el cliente:
+    // solo aceptamos enteros entre 3 y 20; si no, usamos 5 por defecto.
+    const safeSize =
+      Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
+        ? Math.floor(requestedSize)
+        : 5;
+
     const rustResponse = await fetch('http://gamey:4000/reset', { // LLama al endpoint de Rust para resetear el juego
       method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ size: safeSize }),
     });
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard});

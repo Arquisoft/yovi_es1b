@@ -7,13 +7,15 @@
 //! - [`YBotRegistry`] - A registry for managing multiple bot implementations
 //! - [`RandomBot`] - A simple bot that makes random valid moves
 
+pub mod blocker_bot;
+pub mod greedy_bot;
+pub mod pro_bot;
 pub mod random;
 pub mod ybot;
 pub mod ybot_registry;
-pub mod greedy_bot;
-pub mod blocker_bot;
+pub use blocker_bot::*;
+pub use greedy_bot::*;
+pub use pro_bot::*;
 pub use random::*;
 pub use ybot::*;
 pub use ybot_registry::*;
-pub use greedy_bot::*;
-pub use blocker_bot::*;
