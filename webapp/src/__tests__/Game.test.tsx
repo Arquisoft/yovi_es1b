@@ -40,7 +40,6 @@ const baseProps = (overrides?: {
   onChangeDifficulty: vi.fn(),
   onChangeSize: vi.fn(),
   onCellClick: vi.fn(),
-  onStartGame: vi.fn(),
   onEndGame: vi.fn(),
   onResetGame: vi.fn(),
   onExit: vi.fn(),
@@ -53,12 +52,14 @@ describe('Game UI', () => {
 
     render(<GameScreen {...props} />)
 
-    await user.click(screen.getByRole('button', { name: /nueva partida/i }))
-    await user.click(screen.getByRole('button', { name: /terminar partida/i }))
+    await user.click(screen.getByRole('button', { name: /dificultad/i }))
+    await user.click(screen.getByRole('button', { name: /tamaño/i }))
+    await user.click(screen.getByRole('button', { name: /rendirse/i }))
     await user.click(screen.getByRole('button', { name: /reiniciar partida/i }))
     await user.click(screen.getByRole('button', { name: /salir/i }))
 
-    expect(props.onStartGame).toHaveBeenCalledTimes(1)
+    expect(props.onChangeDifficulty).toHaveBeenCalledTimes(1)
+    expect(props.onChangeSize).toHaveBeenCalledTimes(1)
     expect(props.onEndGame).toHaveBeenCalledTimes(1)
     expect(props.onResetGame).toHaveBeenCalledTimes(1)
     expect(props.onExit).toHaveBeenCalledTimes(1)
@@ -82,9 +83,8 @@ describe('Game UI', () => {
 
     render(<GameScreen {...props} />)
 
-    await user.click(screen.getByRole('button', { name: /celda 0/i }))
-
-    expect(props.onCellClick).not.toHaveBeenCalled()
+    const cell0 = screen.getByRole('button', { name: /celda 0/i })
+    expect(cell0).toBeDisabled()
   })
 
   test.each([
