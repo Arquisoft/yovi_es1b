@@ -244,15 +244,18 @@ impl GameY {
     }
 
     /// Returns the neighboring coordinates for a given cell.
-    /// Used mainly for tests now, delegating to topology
-    #[cfg(test)]
-    fn get_neighbors(&self, coords: &Coordinates) -> Vec<Coordinates> {
+    pub fn get_neighbors(&self, coords: &Coordinates) -> Vec<Coordinates> {
         let idx = coords.to_index(self.board_size);
         let neighbor_indices = self.engine.topology.get_neighbors(idx as usize);
         neighbor_indices
             .iter()
             .map(|&i| Coordinates::from_index(i as u32, self.board_size))
             .collect()
+    }
+
+    pub fn get_cell_regions(&self, coords: Coordinates) -> u32 {
+        let idx = coords.to_index(self.board_size);
+        self.engine.topology.get_cell_regions(idx as usize)
     }
 
     /// Renders the current state of the board as a text string.

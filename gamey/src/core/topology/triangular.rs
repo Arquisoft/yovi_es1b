@@ -70,6 +70,18 @@ impl TriangularTopology {
             regions,
         }
     }
+
+    pub fn side_a() -> u32 {
+        Self::SIDE_A
+    }
+
+    pub fn side_b() -> u32 {
+        Self::SIDE_B
+    }
+
+    pub fn side_c() -> u32 {
+        Self::SIDE_C
+    }
 }
 
 impl BoardTopology for TriangularTopology {
