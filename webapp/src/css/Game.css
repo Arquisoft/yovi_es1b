@@ -1,3 +1,7 @@
+* {
+  box-sizing: border-box;
+}
+
 body {
   background-color: transparent;
   color: #333;
@@ -213,4 +217,68 @@ body {
     width: min(92vw, 22rem);
     justify-content: center;
   }
+}
+
+/* Barra de navegación */
+
+.game-navbar {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 40px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px); /* Efecto cristalizado */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  margin-bottom: 30px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+}
+
+.nav-user-info h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 300;
+}
+
+.nav-user-info span {
+  color: #dcfd8b; /* Color verde lima destacado */
+  font-weight: bold;
+}
+
+.nav-game-settings {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+/* Botones pequeños para el menú */
+.nav-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover {
+  background: #bc84ee; /* Morado suave al pasar el ratón */
+  transform: translateY(-2px);
+  border-color: white;
+}
+
+.nav-btn.danger {
+  border-color: rgba(220, 53, 69, 0.5);
+}
+
+.nav-btn.danger:hover {
+  background: #dc3545;
+}
+
+/* Ajuste para el contenedor principal */
+.game-screen {
+  padding-top: 0; /* Quitamos padding para que la nav pegue arriba */
 }

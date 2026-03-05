@@ -89,31 +89,28 @@ function App() {
     // Permite iniciar partida forzando tamaño (desde Game) o limpiando selecciones (desde Home/Login).
     const requestedDimension = options?.dimension ?? null;
     const shouldResetChoices = options?.resetChoices ?? true;
+
     if (playerName.trim() !== '') {
       setUsername(playerName.trim());
-      setConnectionStatus('Iniciando nueva partida...');
-      try {
-        // Solicita tablero inicial al users-service
-        const board = await requestResetBoard(requestedDimension);
+      setConnectionStatus('Iniciando nueva partida predeterminada...');
 
-        if (board && board.layout) {
-          // Cada partida nueva desde home/login/register exige volver a elegir opciones
-          if (shouldResetChoices) {
-            setDifficultyChoice(null);
-            setSizeChoice(null);
-          }
-          setShowResultModal(false);
-          setBoardData(board);
-          setWinner(null);
-          setCurrentScreen('game');
-          setConnectionStatus('Partida iniciada!');
-        } else {
-          setConnectionStatus('No se recibio un tablero valido desde /reset.');
+      try {
+        const board = await requestResetBoard(requestedDimension ?? 6);
+// SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
+        // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
+        if (shouldResetChoices) {
+          setDifficultyChoice('facil');
+          setSizeChoice('Tamaño 6x6x6');
         }
+
+        setShowResultModal(false);
+        setBoardData(board);
+        setWinner(null);
+        setCurrentScreen('game');
+        setConnectionStatus('¡Partida lista!');
       } catch (error) {
         console.error('Error starting the game:', error);
-        setWinner(null);
-        setConnectionStatus('No se pudo iniciar la partida. Revisa que users-service este levantado.');
+        setConnectionStatus('Error al conectar con el servidor.');
       }
     }
   };
@@ -174,13 +171,6 @@ function App() {
   }
 
 
-  const handleStartFromGame = () => {
-    setShowResultModal(false);
-    setWinner(null);
-    setDifficultyChoice(null);
-    setSizeChoice(null);
-    setConnectionStatus('Selecciona dificultad y tamano para una nueva partida.');
-  };
 
   const handleResetFromGame = async () => {
     const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
@@ -223,11 +213,14 @@ function App() {
             boardData={boardData}
             winner={winner}
             connectionStatus={connectionStatus}
+            difficulty={difficultyChoice}
+            sizeLabel={sizeChoice}
             onCellClick={handleCellClick}
-            onStartGame={handleStartFromGame}
+            onExit={handleExitFromGame}
+            onChangeDifficulty={() => setDifficultyChoice(null)}
+            onChangeSize={() => setSizeChoice(null)}
             onEndGame={handleEndFromGame}
             onResetGame={handleResetFromGame}
-            onExit={handleExitFromGame}
           />
         );
 

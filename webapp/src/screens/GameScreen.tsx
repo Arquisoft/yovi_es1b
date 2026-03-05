@@ -12,11 +12,14 @@ interface GameScreenProps {
   boardData: GameYData | null;
   winner: number | null;
   connectionStatus: string;
+  difficulty: string | null;
+  sizeLabel: string | null;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
-  onStartGame: () => void; // Inicia una nueva partida con el usuario actual
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
   onExit: () => void; // Sale del juego y vuelve a home
+  onChangeDifficulty: () => void; // Permite cambiar la dificultad durante la partida
+  onChangeSize: () => void; // Permite cambiar el tamaño durante la partida
 }
 
 function GameScreen({
@@ -25,25 +28,22 @@ function GameScreen({
   selectedBoardDimension,
   boardData,
   winner,
-  connectionStatus,
+  difficulty,
+  sizeLabel,
   onCellClick,
-  onStartGame,
   onEndGame,
   onResetGame,
   onExit,
+  onChangeDifficulty,
+  onChangeSize
 }: GameScreenProps) {
-  const botName =
-    difficultyChoice === 'facil'
-      ? 'Bot Player (fácil)'
-      : difficultyChoice === 'medio'
-        ? 'Bot Player (medio)'
-        : difficultyChoice === 'dificil'
-          ? 'Bot Player (difícil)'
-          : 'Bot Player';
 
-  const fallbackDimension =
-    boardData?.size && Number.isFinite(boardData.size) && boardData.size > 0 ? boardData.size : 5;
-  const boardDimension = selectedBoardDimension ?? fallbackDimension ?? 5;
+  const botName =
+    difficultyChoice === 'facil' ? 'Bot Player (fácil)' :
+    difficultyChoice === 'medio' ? 'Bot Player (medio)' :
+    difficultyChoice === 'dificil' ? 'Bot Player (difícil)' : 'Bot Player';
+
+  const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
 
   const rawLayout = boardData?.layout ?? '';
   const expectedTotalCells = (boardDimension * (boardDimension + 1)) / 2;
@@ -67,22 +67,37 @@ function GameScreen({
 
   return (
     <div className="game-screen">
-      <h2 className="game-title">Partida personalizada contra un bot</h2>
-      <div className="game-layout">
-        <aside className="game-actions-panel" aria-label="Acciones de partida">
-          <button type="button" className="submit-button" onClick={onStartGame}>
-            Nueva partida
+
+      {/* Barra de navegación superior */}
+
+      <nav className="game-navbar">
+        <div className="nav-user-info">
+          <h2>Jugador: <span>{username}</span></h2>
+        </div>
+
+        <div className="nav-game-settings">
+          <button className="nav-btn" onClick={onChangeDifficulty}>
+            Dificultad: {difficulty || '...'}
           </button>
-          <button type="button" className="submit-button" onClick={onEndGame}>
-            Terminar partida
+          <button className="nav-btn" onClick={onChangeSize}>
+            {sizeLabel || 'Tamaño...'}
           </button>
-          <button type="button" className="submit-button" onClick={onResetGame}>
-            Reiniciar partida
+          <button className="nav-btn" onClick={onResetGame}>
+            Reiniciar Partida
           </button>
-          <button type="button" className="submit-button" onClick={onExit}>
+          <button className="nav-btn danger" onClick={onEndGame}>
+            Rendirse
+          </button>
+          <button className="nav-btn danger" onClick={onExit}>
             Salir
           </button>
-        </aside>
+        </div>
+
+      </nav>
+
+      {/* Contenedor principal del tablero y controles */}
+
+      <h2 className="game-title">Partida personalizada contra un bot</h2>
 
         <div className="game-main-content">
           <div className="board-area">
@@ -126,12 +141,8 @@ function GameScreen({
             </div>
           </div>
 
-          <div className="game-controls">
-            <p className="status-text">{connectionStatus}</p>
-          </div>
         </div>
       </div>
-    </div>
   );
 }
 

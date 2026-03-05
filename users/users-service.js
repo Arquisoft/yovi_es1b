@@ -143,6 +143,9 @@ app.post('/move', async (req, res) => {
 // New
 // Resets the game
 app.post('/reset', async (req, res) => {
+
+  const size = req.body.size || 5;
+
   try {
     const requestedSize = Number(req.body?.size);
     // Normaliza y valida el tamaño solicitado por el cliente:

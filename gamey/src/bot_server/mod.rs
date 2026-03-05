@@ -26,29 +26,33 @@ pub mod error;
 pub mod state;
 pub mod version;
 use axum::response::IntoResponse;
-use std::sync::Arc;
 pub use choose::MoveResponse;
 pub use error::ErrorResponse;
+use std::sync::Arc;
 pub use version::*;
 
 use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
 
 use serde::Deserialize;
 
-
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize)]
 pub struct MoveRequest {
-    // Índice lineal (triangular) enviado por la UI al pulsar una celda.
-    pub index: u32
+    pub index: u32,
 }
 
+/*
+ * Para pasar el tamaño del tablero desde Node hasta Rust.
+ *
+ * #[derive(Deserialize)] --> Convierte el JSON recibido a esta estructura de Rust
+ *
+ * pub size: usize -->  Tamaño del tablero
+ *
+ */
 #[derive(Deserialize)]
 pub struct ResetRequest {
-    // Tamaño de tablero solicitado por el cliente (opcional).
-    pub size: Option<u32>
+    pub size: Option<u32>,
 }
-
 
 // Routes
 /// Creates the Axum router with the given state.
@@ -90,11 +94,12 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let app = create_router(state);
 
     let addr = format!("0.0.0.0:{}", port);
-    let listener = tokio::net::TcpListener::bind(&addr)
-        .await
-        .map_err(|e| GameYError::ServerError {
-            message: format!("Failed to bind to {}: {}", addr, e),
-        })?;
+    let listener =
+        tokio::net::TcpListener::bind(&addr)
+            .await
+            .map_err(|e| GameYError::ServerError {
+                message: format!("Failed to bind to {}: {}", addr, e),
+            })?;
 
     println!("Server mode: Listening on http://{}", addr);
     axum::serve(listener, app)
@@ -113,14 +118,12 @@ pub async fn status() -> impl IntoResponse {
     "OK"
 }
 
-
 // New
 // This endpoint handles the move made by the human player and then triggers the bot's response.
-pub async fn realizar_movimiento (
+pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
-    axum::extract::Json(payload): axum::extract::Json<MoveRequest>
+    axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
 ) -> impl IntoResponse {
-
     // 1. Bloqueamos el Mutex
     let mut game = state.game.lock().unwrap();
 
@@ -128,8 +131,8 @@ pub async fn realizar_movimiento (
     // El índice se interpreta usando el tamaño REAL del juego activo en servidor.
     let b_size = game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
-    
-    let human_movement = crate::Movement::Placement { 
+
+    let human_movement = crate::Movement::Placement {
         player: crate::PlayerId::new(0),
         coords,
     };
@@ -143,17 +146,16 @@ pub async fn realizar_movimiento (
     // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
     if !game.check_game_over() {
         if let Some(bot) = state.bots().find("random_bot") {
-        // Desreferenciamos el mutex guard con &*game
-        if let Some(bot_coords) = bot.choose_move(&*game) {
-            let bot_move = crate::Movement::Placement {
-                player: crate::PlayerId::new(1),
-                coords: bot_coords,
-            };
-            let _ = game.add_move(bot_move);
+            // Desreferenciamos el mutex guard con &*game
+            if let Some(bot_coords) = bot.choose_move(&*game) {
+                let bot_move = crate::Movement::Placement {
+                    player: crate::PlayerId::new(1),
+                    coords: bot_coords,
+                };
+                let _ = game.add_move(bot_move);
+            }
         }
     }
-    }
-    
 
     // 4. Extraer el ganador
     // Ganador leído desde el estado final tras aplicar jugadas válidas.
@@ -169,32 +171,29 @@ pub async fn realizar_movimiento (
     // 5. Respuesta (Convertimos a YEN)
     // Respuesta para el front: tablero actualizado + ganador.
     let yen_data: crate::YEN = (&*game).into();
-    
+
     axum::Json(serde_json::json!({
         "board": yen_data,
         "winner": winner_id
     }))
 }
 
-
-// New
-// This endpoint resets the game to its initial state.
+/*
+ * Para reiniciar el juego a su estado inicial, creando una nueva instancia de GameY con el tamaño especificado.
+ *
+ *
+ */
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
-    payload: Option<axum::extract::Json<ResetRequest>>
+    payload: Option<axum::extract::Json<ResetRequest>>,
 ) -> impl IntoResponse {
-
     let mut game = state.game.lock().unwrap();
     // Tamaño efectivo del reset:
     // - usa size enviado por cliente si existe
     // - si no existe, usa 5
     // - siempre acotado a [3..20]
-    let size = payload
-        .and_then(|json| json.size)
-        .unwrap_or(5)
-        .clamp(3, 20);
+    let size = payload.and_then(|json| json.size).unwrap_or(5).clamp(3, 20);
 
-    // Reiniciamos el juego creando una nueva instancia de GameY
     *game = crate::core::game::GameY::new(size);
 
     println!("--> Juego reiniciado.");
