@@ -52,8 +52,9 @@ describe('Game UI', () => {
 
     render(<GameScreen {...props} />)
 
-    await user.click(screen.getByRole('button', { name: /nueva partida/i }))
-    await user.click(screen.getByRole('button', { name: /terminar partida/i }))
+    await user.click(screen.getByRole('button', { name: /dificultad/i }))
+    await user.click(screen.getByRole('button', { name: /tamaño/i }))
+    await user.click(screen.getByRole('button', { name: /rendirse/i }))
     await user.click(screen.getByRole('button', { name: /reiniciar partida/i }))
     await user.click(screen.getByRole('button', { name: /salir/i }))
 
