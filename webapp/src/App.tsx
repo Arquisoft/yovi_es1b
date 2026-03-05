@@ -171,13 +171,6 @@ function App() {
   }
 
 
-  const handleStartFromGame = () => {
-    setShowResultModal(false);
-    setWinner(null);
-    setDifficultyChoice(null);
-    setSizeChoice(null);
-    setConnectionStatus('Selecciona dificultad y tamano para una nueva partida.');
-  };
 
   const handleResetFromGame = async () => {
     const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
@@ -226,7 +219,6 @@ function App() {
             onExit={handleExitFromGame}
             onChangeDifficulty={() => setDifficultyChoice(null)}
             onChangeSize={() => setSizeChoice(null)}
-            onStartGame={handleStartFromGame}
             onEndGame={handleEndFromGame}
             onResetGame={handleResetFromGame}
           />

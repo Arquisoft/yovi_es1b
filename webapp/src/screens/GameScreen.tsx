@@ -15,7 +15,6 @@ interface GameScreenProps {
   difficulty: string | null;
   sizeLabel: string | null;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
-  onStartGame: () => void; // Inicia una nueva partida con el usuario actual
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
   onExit: () => void; // Sale del juego y vuelve a home
@@ -32,25 +31,19 @@ function GameScreen({
   difficulty,
   sizeLabel,
   onCellClick,
-  onStartGame,
   onEndGame,
   onResetGame,
   onExit,
   onChangeDifficulty,
   onChangeSize
 }: GameScreenProps) {
-  const botName =
-    difficultyChoice === 'facil'
-      ? 'Bot Player (fácil)'
-      : difficultyChoice === 'medio'
-        ? 'Bot Player (medio)'
-        : difficultyChoice === 'dificil'
-          ? 'Bot Player (difícil)'
-          : 'Bot Player';
 
-  const fallbackDimension =
-    boardData?.size && Number.isFinite(boardData.size) && boardData.size > 0 ? boardData.size : 5;
-  const boardDimension = selectedBoardDimension ?? fallbackDimension ?? 5;
+  const botName =
+    difficultyChoice === 'facil' ? 'Bot Player (fácil)' :
+    difficultyChoice === 'medio' ? 'Bot Player (medio)' :
+    difficultyChoice === 'dificil' ? 'Bot Player (difícil)' : 'Bot Player';
+
+  const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
 
   const rawLayout = boardData?.layout ?? '';
   const expectedTotalCells = (boardDimension * (boardDimension + 1)) / 2;
@@ -89,6 +82,12 @@ function GameScreen({
           <button className="nav-btn" onClick={onChangeSize}>
             {sizeLabel || 'Tamaño...'}
           </button>
+          <button className="nav-btn" onClick={onResetGame}>
+            Reiniciar Partida
+          </button>
+          <button className="nav-btn danger" onClick={onEndGame}>
+            Rendirse
+          </button>
           <button className="nav-btn danger" onClick={onExit}>
             Salir
           </button>
@@ -97,53 +96,8 @@ function GameScreen({
       </nav>
 
       {/* Contenedor principal del tablero y controles */}
-      <div className="board-container">
-        {boardData ? (
-          (() => {
-            let globalIndex = 0;
-            // Convierte el layout "fila/fila/fila" a una rejilla de botones
-            return boardData.layout.split('/').map((row, rowIndex) => (
-              <div key={rowIndex} className="board-row">
-                {row.split('').map((cell, cellIndex) => {
-                  const currentIndex = globalIndex++;
-                  return (
-                    <button
-                      key={cellIndex}
-                      type="button"
-                      className={`cell ${cell === 'B' ? 'blue' : cell === 'R' ? 'red' : 'empty'}`}
-                      onClick={() => cell === '.' && winner === null && onCellClick(currentIndex)} // Solo permite celdas vacias
-                      disabled={cell !== '.' || winner !== null} // Bloquea celdas ocupadas o partida terminada
-                      aria-label={`Celda ${currentIndex}, ${cell === 'B' ? 'ocupada por azul' : cell === 'R' ? 'ocupada por rojo' : 'vacia'}`}
-                    >
-                      {cell !== '.' ? cell : ''}
-                    </button>
-                  );
-                })}
-              </div>
-            ));
-          })()
-        ) : (
-          // Mensaje mostrado si todavia no llego tablero desde /reset
-          <p>Carga el tablero para comenzar</p>
-        )}
-      </div>
 
       <h2 className="game-title">Partida personalizada contra un bot</h2>
-      <div className="game-layout">
-        <aside className="game-actions-panel" aria-label="Acciones de partida">
-          <button type="button" className="submit-button" onClick={onStartGame}>
-            Nueva partida
-          </button>
-          <button type="button" className="submit-button" onClick={onEndGame}>
-            Terminar partida
-          </button>
-          <button type="button" className="submit-button" onClick={onResetGame}>
-            Reiniciar partida
-          </button>
-          <button type="button" className="submit-button" onClick={onExit}>
-            Salir
-          </button>
-        </aside>
 
         <div className="game-main-content">
           <div className="board-area">
@@ -189,7 +143,6 @@ function GameScreen({
 
         </div>
       </div>
-    </div>
   );
 }
 
