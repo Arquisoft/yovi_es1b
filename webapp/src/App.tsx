@@ -19,7 +19,38 @@ interface GameYData {
 
 type Screen = 'home' | 'register' | 'login' | 'game';
 type DifficultyChoice = 'facil' | 'medio' | 'dificil';
-type SizeChoice = 'Tamaño 5x5x5' | 'Tamaño 7x7x7' | 'Tamaño 9x9x9';
+type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
+
+const getBoardDimensionFromSizeChoice = (choice: SizeChoice | null): number | null => {
+  if (!choice) return null;
+  if (choice.includes('6x6x6')) return 6;
+  if (choice.includes('9x9x9')) return 9;
+  if (choice.includes('12x12x12')) return 12;
+  return null;
+};
+
+const patchTriangularLayoutCell = (
+  layout: string,
+  size: number,
+  index: number,
+  value: 'B' | 'R'
+): string => {
+  if (!Number.isFinite(size) || size <= 0) return layout;
+  const totalCells = (size * (size + 1)) / 2;
+  if (index < 0 || index >= totalCells) return layout;
+
+  const flat = layout.replaceAll('/', '').padEnd(totalCells, '.').slice(0, totalCells).split('');
+  flat[index] = value;
+
+  const rows: string[] = [];
+  let cursor = 0;
+  // Reconstruye el layout con filas triangulares: 1,2,3...N celdas.
+  for (let rowLen = 1; rowLen <= size; rowLen += 1) {
+    rows.push(flat.slice(cursor, cursor + rowLen).join(''));
+    cursor += rowLen;
+  }
+  return rows.join('/');
+};
 
 function App() {
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
@@ -36,42 +67,50 @@ function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [currentScreen]);
 
-  const startGameWithUser = async (playerName: string) => {
+  const requestResetBoard = async (dimension: number | null): Promise<GameYData | null> => {
+    const response = await fetch('http://localhost:3000/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ size: dimension ?? 5 }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Reset failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.responseFromRust ?? data.board ?? data;
+  };
+
+  const startGameWithUser = async (
+    playerName: string,
+    options?: { dimension?: number | null; resetChoices?: boolean }
+  ) => {
+    // Permite iniciar partida forzando tamaño (desde Game) o limpiando selecciones (desde Home/Login).
+    const requestedDimension = options?.dimension ?? null;
+    const shouldResetChoices = options?.resetChoices ?? true;
+
     if (playerName.trim() !== '') {
       setUsername(playerName.trim());
       setConnectionStatus('Iniciando nueva partida predeterminada...');
 
-      const defaultSize = 5;
-      const defaultDifficulty = 'facil';
-      const defaultSizeText: SizeChoice = 'Tamaño 5x5x5';
       try {
-        // Solicita tablero inicial al users-service
-        const response = await fetch('http://localhost:3000/reset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ size: defaultSize }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`Reset failed with status ${response.status}`);
+        const board = await requestResetBoard(requestedDimension ?? 6);
+// SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
+        // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
+        if (shouldResetChoices) {
+          setDifficultyChoice('facil');
+          setSizeChoice('Tamaño 6x6x6');
         }
 
-        const data = await response.json();
-
-        const board = data.responseFromRust ?? data.board ?? data;
-
-        // Cada partida nueva exige volver a elegir dificultad y opcion secundaria
-        setDifficultyChoice(defaultDifficulty);
-        setSizeChoice(defaultSizeText);
         setShowResultModal(false);
         setBoardData(board);
         setWinner(null);
         setCurrentScreen('game');
-        setConnectionStatus('Partida iniciada!');
-
+        setConnectionStatus('¡Partida lista!');
       } catch (error) {
         console.error('Error starting the game:', error);
-        setConnectionStatus('No se pudo iniciar la partida. Revisa que users-service este levantado.');
+        setConnectionStatus('Error al conectar con el servidor.');
       }
     }
   };
@@ -80,6 +119,7 @@ function App() {
     await startGameWithUser(username);
   };
 
+  //Funcionamiento de celdas y juego
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
 
@@ -95,7 +135,27 @@ function App() {
       const data = await response.json();
 
       if (data.responseFromRust) {
-        setBoardData(data.responseFromRust);
+        const serverBoard = data.responseFromRust as GameYData;
+        const chosenDimension = getBoardDimensionFromSizeChoice(sizeChoice);
+        const boardSize =
+          serverBoard?.size && Number.isFinite(serverBoard.size) && serverBoard.size > 0
+            ? serverBoard.size
+            : (chosenDimension ?? 5);
+        const serverFlatLayout = (serverBoard?.layout ?? '').replaceAll('/', '');
+        const shouldPatchClickedCell =
+          index >= 0 &&
+          index < (boardSize * (boardSize + 1)) / 2 &&
+          serverFlatLayout[index] === '.';
+
+        setBoardData(
+          shouldPatchClickedCell
+            ? {
+                ...serverBoard,
+                size: boardSize,
+                layout: patchTriangularLayoutCell(serverBoard.layout ?? '', boardSize, index, 'B'),
+              }
+            : serverBoard
+        );
         setWinner(data.winner);
 
         if (data.winner !== null) {
@@ -110,6 +170,32 @@ function App() {
     }
   }
 
+
+  const handleStartFromGame = () => {
+    setShowResultModal(false);
+    setWinner(null);
+    setDifficultyChoice(null);
+    setSizeChoice(null);
+    setConnectionStatus('Selecciona dificultad y tamano para una nueva partida.');
+  };
+
+  const handleResetFromGame = async () => {
+    const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
+    await startGameWithUser(username, { dimension: selectedDimension, resetChoices: false });
+  };
+
+  const handleEndFromGame = () => {
+    setWinner(1);
+    setShowResultModal(true);
+    setConnectionStatus('Has perdido!');
+  };
+
+  const handleExitFromGame = () => {
+    setShowResultModal(false);
+    setCurrentScreen('home');
+  };
+
+  //Permite ir cambiando entre pantallas, randerizando la vista
   const renderScreen = () => {
     switch (currentScreen) {
       case 'home':
@@ -129,15 +215,20 @@ function App() {
         return (
           <GameScreen
             username={username}
+            difficultyChoice={difficultyChoice}
+            selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
             boardData={boardData}
             winner={winner}
             connectionStatus={connectionStatus}
             difficulty={difficultyChoice}
             sizeLabel={sizeChoice}
             onCellClick={handleCellClick}
-            onExit={() => setCurrentScreen('home')}
+            onExit={handleExitFromGame}
             onChangeDifficulty={() => setDifficultyChoice(null)}
             onChangeSize={() => setSizeChoice(null)}
+            onStartGame={handleStartFromGame}
+            onEndGame={handleEndFromGame}
+            onResetGame={handleResetFromGame}
           />
         );
 
@@ -165,21 +256,31 @@ function App() {
     }
   };
 
+  //Cambia la dificultad según elección
   const handleDifficultyChoice = (choice: DifficultyChoice) => {
     setDifficultyChoice(choice);
   };
 
+  //Cambia el tamaño de tablero según hemos elegido y deja un mensaje
   const handleSecondaryChoice = (choice: SizeChoice) => {
     setSizeChoice(choice);
-  };
+    const selectedDimension = getBoardDimensionFromSizeChoice(choice);
+    if (selectedDimension === null) return;
 
-  const handlePlayAgain = async () => {
-    await startGameWithUser(username);
-  };
-
-  const handleGoHomeFromResult = () => {
-    setShowResultModal(false);
-    setCurrentScreen('home');
+    setConnectionStatus(`Cargando tablero ${selectedDimension}x${selectedDimension}...`);
+    requestResetBoard(selectedDimension)
+      .then((board) => {
+        if (board && board.layout) {
+          setBoardData(board);
+          setWinner(null);
+          setConnectionStatus(`Tablero ${selectedDimension}x${selectedDimension} cargado`);
+        } else {
+          setConnectionStatus('No se recibio un tablero valido para el tamano elegido.');
+        }
+      })
+      .catch(() => {
+        setConnectionStatus('No se pudo cambiar el tamano del tablero.');
+      });
   };
 
   const handleCloseResultModal = () => {
@@ -223,14 +324,14 @@ function App() {
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Seleccion secundaria obligatoria">
           <div className="modal-box">
             <h3>¿Con qué tamaño de tablero deseas jugar?</h3>
-            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 5x5x5')}>
-              Tamaño 5x5x5
-            </button>
-            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 7x7x7')}>
-              Tamaño 7x7x7
+            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 6x6x6')}>
+              Tamaño 6x6x6
             </button>
             <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 9x9x9')}>
               Tamaño 9x9x9
+            </button>
+            <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 12x12x12')}>
+              Tamaño 12x12x12
             </button>
           </div>
         </div>
@@ -239,16 +340,10 @@ function App() {
       {currentScreen === 'game' && winner !== null && showResultModal && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Resultado de la partida">
           <div className="modal-box">
-            <h3>{winner === 0 ? 'Has ganado la partida!' : 'Has perdido la partida.'}</h3>
+            <h3>{winner === 0 ? 'Has ganado' : 'Has perdido'}</h3>
             <div className="modal-actions">
-              <button type="button" className="submit-button" onClick={handlePlayAgain}>
-                Jugar otra vez
-              </button>
-              <button type="button" className="submit-button" onClick={handleGoHomeFromResult}>
-                Volver al inicio
-              </button>
               <button type="button" className="submit-button" onClick={handleCloseResultModal}>
-                Cerrar ventana
+                Aceptar
               </button>
             </div>
           </div>

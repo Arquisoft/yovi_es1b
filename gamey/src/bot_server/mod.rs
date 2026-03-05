@@ -41,6 +41,19 @@ pub struct MoveRequest {
     pub index: u32,
 }
 
+/*
+ * Para pasar el tamaño del tablero desde Node hasta Rust.
+ *
+ * #[derive(Deserialize)] --> Convierte el JSON recibido a esta estructura de Rust
+ *
+ * pub size: usize -->  Tamaño del tablero
+ *
+ */
+#[derive(Deserialize)]
+pub struct ResetRequest {
+    pub size: Option<u32>,
+}
+
 // Routes
 /// Creates the Axum router with the given state.
 ///
@@ -115,6 +128,7 @@ pub async fn realizar_movimiento(
     let mut game = state.game.lock().unwrap();
 
     // 2. Movimiento Humano (Azul)
+    // El índice se interpreta usando el tamaño REAL del juego activo en servidor.
     let b_size = game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
 
@@ -124,6 +138,7 @@ pub async fn realizar_movimiento(
     };
 
     // Intentamos añadir el movimiento
+    // Si falla (ocupada/fuera de rango/turno inválido), el tablero no cambia.
     if let Err(e) = game.add_move(human_movement) {
         println!("Aviso: Movimiento humano no válido: {:?}", e);
     }
@@ -143,6 +158,7 @@ pub async fn realizar_movimiento(
     }
 
     // 4. Extraer el ganador
+    // Ganador leído desde el estado final tras aplicar jugadas válidas.
     let winner_id = match game.status() {
         &crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
         _ => None,
@@ -153,6 +169,7 @@ pub async fn realizar_movimiento(
     }
 
     // 5. Respuesta (Convertimos a YEN)
+    // Respuesta para el front: tablero actualizado + ganador.
     let yen_data: crate::YEN = (&*game).into();
 
     axum::Json(serde_json::json!({
@@ -162,30 +179,22 @@ pub async fn realizar_movimiento(
 }
 
 /*
- * Para pasar el tamaño del tablero desde Node hasta Rust.
- *
- * #[derive(Deserialize)] --> Convierte el JSON recibido a esta estructura de Rust
- *
- * pub size: usize -->  Tamaño del tablero
- *
- */
-#[derive(Deserialize)]
-pub struct ResetRequest {
-    pub size: u32,
-}
-
-/*
  * Para reiniciar el juego a su estado inicial, creando una nueva instancia de GameY con el tamaño especificado.
  *
  *
  */
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
-    axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
+    payload: Option<axum::extract::Json<ResetRequest>>,
 ) -> impl IntoResponse {
     let mut game = state.game.lock().unwrap();
+    // Tamaño efectivo del reset:
+    // - usa size enviado por cliente si existe
+    // - si no existe, usa 5
+    // - siempre acotado a [3..20]
+    let size = payload.and_then(|json| json.size).unwrap_or(5).clamp(3, 20);
 
-    *game = crate::core::game::GameY::new(payload.size);
+    *game = crate::core::game::GameY::new(size);
 
     println!("--> Juego reiniciado.");
 

@@ -16,7 +16,7 @@ body {
   padding: 40px;
   border-radius: 20px;
   display: inline-block;
-  margin: 20px auto;
+  margin: 0 auto;
   border: 1px solid #eee;
 }
 
@@ -40,6 +40,29 @@ body {
   transition: all 0.2s ease;
 }
 
+.board-container.board-size-6 {
+  padding: 28px;
+}
+
+.board-container.board-size-6 .cell {
+  width: 50px;
+  height: 50px;
+}
+
+.board-container.board-size-9 .cell {
+  width: 40px;
+  height: 40px;
+}
+
+.board-container.board-size-12 {
+  padding: 24px;
+}
+
+.board-container.board-size-12 .cell {
+  width: 30px;
+  height: 30px;
+}
+
 .cell.empty:hover {
   background-color: #f0f0f0;
   border-color: #007bff;
@@ -58,35 +81,6 @@ body {
   color: white;
 }
 
-.game-controls button,
-.exit-button {
-  background-color: #ffffff;
-  color: #333;
-  border: 1px solid #ccc;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin: 10px;
-}
-
-.game-controls button:hover {
-  background-color: #f8f9fa;
-  color: black;
-  border-color: #333;
-}
-
-.exit-button {
-  color: #dc3545;
-  border-color: #dc3545;
-}
-
-.exit-button:hover {
-  background-color: #dc3545;
-  color: white;
-}
-
 .status-text {
   color: #666;
   font-size: 0.9rem;
@@ -96,7 +90,133 @@ body {
   position: relative;
   z-index: 2;
   background-color: transparent;
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 1rem 1.5rem;
+}
+
+.game-title {
+  display: inline-block;
+  position: relative;
+  width: fit-content;
+  margin: 0 auto 0.75rem;
+  padding: 0.0625rem 0.125rem;
+  border-radius: 0.75rem;
+  color: #d63a29;
+  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
+  font-size: 2.4rem;
+  text-shadow: 0 0.25rem 0.875rem rgba(0, 0, 0, 0.7);
+  text-transform: uppercase;
+}
+
+.game-layout {
+  width: 100%;
+  height: calc(100vh - 8rem);
+  display: grid;
+  grid-template-columns: minmax(9rem, 12rem) 1fr minmax(9rem, 12rem);
+  align-items: center;
+}
+
+.game-actions-panel {
+  width: min(10rem, 90%);
+  max-width: 10rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 0.5rem 1.2rem rgba(0, 0, 0, 0.18);
+  justify-self: center;
+  align-self: center;
+  grid-column: 1;
+}
+
+.game-actions-panel .submit-button {
+  width: 100%;
+}
+
+.game-main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  justify-self: center;
+  align-self: center;
+  grid-column: 2;
+  width: fit-content;
+}
+
+.board-area {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.player-slot {
+  min-width: 11rem;
+  display: flex;
+}
+
+.player-slot-left {
+  justify-content: flex-start;
+}
+
+.player-slot-right {
+  justify-content: flex-end;
+}
+
+.game-controls {
+  background: rgba(255, 255, 255, 0.88);
+  border-radius: 0.5rem;
+  padding: 0.45rem 0.85rem;
+}
+
+.player-label {
+  margin: 0;
+  padding: 0.35rem 0.7rem;
+  border-radius: 0.5rem;
+  background: rgba(255, 255, 255, 0.88);
+  color: #222;
+  font-weight: 600;
+}
+
+.player-label-blue {
+  background: #007bff;
+  color: #fff;
+}
+
+.player-label-red {
+  background: #dc3545;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .game-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 0.9rem;
+  }
+
+  .game-actions-panel {
+    width: min(92vw, 22rem);
+    max-width: none;
+    order: 2;
+  }
+
+  .game-main-content {
+    order: 1;
+  }
+
+  .board-area {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .player-slot {
+    width: min(92vw, 22rem);
+    justify-content: center;
+  }
 }
 
 /* Barra de navegación */
