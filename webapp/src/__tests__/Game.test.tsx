@@ -78,7 +78,6 @@ describe('Game UI', () => {
   })
 
   test('si la partida esta terminada, no permite pulsar celdas', async () => {
-    const user = userEvent.setup()
     const props = baseProps({ winner: 1 })
 
     render(<GameScreen {...props} />)
