@@ -62,6 +62,7 @@ pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
+        .route("/history", axum::routing::get(obtener_historial))
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
         .route(
             "/{api_version}/ybot/choose/{bot_id}",
@@ -70,6 +71,7 @@ pub fn create_router(state: AppState) -> axum::Router {
         .with_state(state)
 }
 
+/*
 /// Creates the default application state with the standard bot registry.
 ///
 /// The default state includes the `RandomBot` which selects moves randomly.
@@ -77,6 +79,7 @@ pub fn create_default_state() -> AppState {
     let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
     AppState::new(bots)
 }
+*/
 
 /// Starts the bot server on the specified port.
 ///
@@ -90,7 +93,23 @@ pub fn create_default_state() -> AppState {
 /// - The TCP port cannot be bound (e.g., port already in use, permission denied)
 /// - The server encounters an error while running
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
-    let state = create_default_state();
+    // Leer la URI de MongoDB desde el .env
+    let uri = std::env::var("MONGODB_URI")
+        .expect("La variable MONGODB_URI no está configurada en el entorno.");
+
+    // Conectar a la BBDD
+    let client = mongodb::Client::with_uri_str(uri)
+        .await
+        .map_err(|e| GameYError::ServerError {
+            message: format!("Error conectando a Mongo: {}", e),
+        })?;
+
+    let db = client.database("gamey_db");
+
+    // Crar el estado pasando la DB
+    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+
+    let state = AppState::new(bots, db);
     let app = create_router(state);
 
     let addr = format!("0.0.0.0:{}", port);
@@ -200,4 +219,23 @@ pub async fn reiniciar_juego(
 
     let yen_data: crate::YEN = (&*game).into();
     axum::Json(yen_data)
+}
+
+pub async fn obtener_historial(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    // 1. Aquí te conectarías a la colección de partidas en Mongo
+    // 2. Harías un find() para traer todas las partidas
+
+    // De momento, devolvemos un JSON de prueba para que veas que el "puente" funciona:
+    axum::Json(serde_json::json!([
+        {
+            "id": "1",
+            "date": "2026-03-06T15:00:00Z",
+            "opponent": "RandomBot",
+            "board_size": 6,
+            "difficulty": "facil",
+            "result": "Victoria"
+        }
+    ]))
 }
