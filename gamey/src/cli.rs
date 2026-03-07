@@ -7,8 +7,8 @@
 //! - Server: Run as an HTTP server for bot API
 
 use crate::{
-    BlockerBot, Coordinates, GameAction, GreedyBot, Movement, ProBot, RandomBot, RenderOptions,
-    YBot, YBotRegistry, game, BotDifficulty,
+    Coordinates, GameAction, Movement, RenderOptions,
+    YBot, YBotRegistry, game, BotDifficulty, create_default_registry, RandomBot,
 };
 use crate::{GameStatus, GameY, PlayerId};
 use anyhow::Result;
@@ -81,11 +81,7 @@ pub fn run_cli_game() -> Result<()> {
         args.size
     };
 
-    let bots_registry = YBotRegistry::new()
-        .with_bot(Arc::new(RandomBot))
-        .with_bot(Arc::new(GreedyBot))
-        .with_bot(Arc::new(BlockerBot))
-        .with_bot(Arc::new(ProBot));
+    let bots_registry = create_default_registry();
 
     let difficulty = BotDifficulty::from_str(&args.bot).unwrap_or(BotDifficulty::Easy);
     let mut bot: Arc<dyn YBot> = bots_registry.get_random_bot_by_difficulty(difficulty)

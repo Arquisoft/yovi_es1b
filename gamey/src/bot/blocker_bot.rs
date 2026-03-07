@@ -104,12 +104,25 @@ impl YBot for BlockerBot {
         let mut max_score = i32::MIN;
 
         for &candidate in &candidates {
+            // Check if candidate is occupied by any player
+            if board.get_player_at(candidate).is_some() {
+                continue;
+            }
             let score = evaluate_block(candidate, &opponent_cells, board, &missing_sides, opponent_regions_mask);
             // Nos quedamos con el candidato que tenga la mayor puntuación.
             if score > max_score {
                 max_score = score;
                 best_candidate = Some(candidate);
             }
+        }
+
+        // If no valid candidate found after filtering, pick a random available cell
+        if best_candidate.is_none() {
+             if !available_cells.is_empty() {
+                 let idx = available_cells[0];
+                 return Some(Coordinates::from_index(idx, size));
+            }
+            return None;
         }
 
         best_candidate

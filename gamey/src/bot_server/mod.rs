@@ -28,10 +28,9 @@ pub mod version;
 use axum::response::IntoResponse;
 pub use choose::MoveResponse;
 pub use error::ErrorResponse;
-use std::sync::Arc;
 pub use version::*;
 
-use crate::{GameYError, RandomBot, YBotRegistry, state::AppState, BotDifficulty, GreedyBot, BlockerBot, ProBot};
+use crate::{GameYError, state::AppState, BotDifficulty, create_default_registry};
 
 use serde::Deserialize;
 use std::str::FromStr;
@@ -77,11 +76,7 @@ pub fn create_router(state: AppState) -> axum::Router {
 ///
 /// The default state includes the `RandomBot` which selects moves randomly.
 pub fn create_default_state() -> AppState {
-    let bots = YBotRegistry::new()
-        .with_bot(Arc::new(RandomBot))
-        .with_bot(Arc::new(GreedyBot))
-        .with_bot(Arc::new(BlockerBot))
-        .with_bot(Arc::new(ProBot));
+    let bots = create_default_registry();
     AppState::new(bots)
 }
 
