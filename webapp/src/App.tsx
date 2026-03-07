@@ -80,7 +80,7 @@ function App() {
     const response = await fetch('http://localhost:3000/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ size: dimension ?? 5, difficulty: difficulty }),
+      body: JSON.stringify({ size: dimension, difficulty: difficulty }),
     });
 
     if (!response.ok) {
@@ -279,7 +279,12 @@ function App() {
     // Actualizar en el backend también si ya estamos en juego
     const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
     requestResetBoard(selectedDimension, choice).then(board => {
-        if(board) setBoardData(board);
+        if(board) {
+            setBoardData(board);
+            setWinner(null);
+            setShowResultModal(false);
+            setConnectionStatus(`Dificultad cambiada a ${choice}`);
+        }
     });
   };
 
