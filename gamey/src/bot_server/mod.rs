@@ -13,6 +13,7 @@
 //! ```no_run
 //! use gamey::run_bot_server;
 //!
+//!
 //! #[tokio::main]
 //! async fn main() {
 //!     if let Err(e) = run_bot_server(3000).await {
@@ -27,9 +28,11 @@ pub mod state;
 pub mod version;
 use axum::response::IntoResponse;
 pub use choose::MoveResponse;
+use chrono::Utc;
 pub use error::ErrorResponse;
+use futures::stream::StreamExt; // Para manegar la lista de resultados de Mongo
 use std::sync::Arc;
-pub use version::*;
+pub use version::*; // Para poner la fecha actual
 
 use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
 
@@ -185,6 +188,29 @@ pub async fn realizar_movimiento(
 
     if winner_id.is_some() {
         println!("¡Tenemos un ganador!: {:?}", winner_id);
+
+        // Guardar la partida en MongoDB
+        let db = state.db.clone();
+        let b_size_clone = b_size;
+        let res_text = if winner_id == Some(0) {
+            "Victoria"
+        } else {
+            "Derrota"
+        };
+
+        // Guardar en un hilo para no ralentizar
+        tokio::spawn(async move {
+            let collection = db.collection::<serde_json::Value>("partidas");
+            let record = serde_json::json!({
+                "date": Utc::now().to_rfc3339(),
+                "opponent": "RandomBot",
+                "board_size": b_size_clone,
+                "difficulty": "facil",
+                "result": res_text
+            });
+
+            let _ = collection.insert_one(record).await;
+        });
     }
 
     // 5. Respuesta (Convertimos a YEN)

@@ -6,7 +6,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGODB_URI=${MONGODB_URI_BASE}/users_db${MONGODB_OPTIONS}
+      - MONGODB_URI=${MONGODB_URI}/users_db${MONGODB_OPTIONS}
       - PORT=3000
       - GAMEY_SERVICE_URL=http://gamey:4000
     networks:
@@ -33,7 +33,7 @@ services:
     ports:
       - "4000:4000"
     environment:
-      - MONGODB_URI=${MONGODB_URI_BASE}/gamey_db${MONGODB_OPTIONS}
+      - MONGODB_URI=${MONGODB_URI}/gamey_db${MONGODB_OPTIONS}
       - PORT=4000
     networks:
       - monitor-net
