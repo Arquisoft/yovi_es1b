@@ -3,7 +3,7 @@
 //! This module provides [`RandomBot`], a bot that makes random valid moves.
 //! It is useful for testing and as a baseline opponent.
 
-use crate::{Coordinates, GameY, YBot};
+use crate::{Coordinates, GameY, YBot, BotDifficulty};
 use rand::prelude::IndexedRandom;
 
 /// A bot that chooses moves randomly from the available cells.
@@ -31,6 +31,10 @@ impl YBot for RandomBot {
         "random_bot"
     }
 
+    fn difficulty(&self) -> BotDifficulty {
+        BotDifficulty::Easy
+    }
+
     fn choose_move(&self, board: &GameY) -> Option<Coordinates> {
         let available_cells = board.available_cells();
         let cell = available_cells.choose(&mut rand::rng())?;
@@ -48,6 +52,12 @@ mod tests {
     fn test_random_bot_name() {
         let bot = RandomBot;
         assert_eq!(bot.name(), "random_bot");
+    }
+
+    #[test]
+    fn test_random_bot_difficulty() {
+        let bot = RandomBot;
+        assert_eq!(bot.difficulty(), BotDifficulty::Easy);
     }
 
     #[test]

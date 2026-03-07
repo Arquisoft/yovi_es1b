@@ -1,4 +1,4 @@
-use crate::{Coordinates, GameY, YBot, PlayerId};
+use crate::{Coordinates, GameY, YBot, PlayerId, BotDifficulty};
 use crate::core::topology::TriangularTopology;
 use std::collections::HashSet;
 
@@ -8,6 +8,10 @@ pub struct BlockerBot;
 impl YBot for BlockerBot {
     fn name(&self) -> &str {
         "blocker_bot"
+    }
+
+    fn difficulty(&self) -> BotDifficulty {
+        BotDifficulty::Medium
     }
 
     /// Elige el siguiente movimiento intentando bloquear al oponente.
