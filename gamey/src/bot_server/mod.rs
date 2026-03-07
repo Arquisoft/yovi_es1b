@@ -31,9 +31,10 @@ pub use error::ErrorResponse;
 use std::sync::Arc;
 pub use version::*;
 
-use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
+use crate::{GameYError, RandomBot, YBotRegistry, state::AppState, BotDifficulty, GreedyBot, BlockerBot, ProBot};
 
 use serde::Deserialize;
+use std::str::FromStr;
 
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize)]
@@ -52,6 +53,7 @@ pub struct MoveRequest {
 #[derive(Deserialize)]
 pub struct ResetRequest {
     pub size: Option<u32>,
+    pub difficulty: Option<String>, // NEW: Optional difficulty parameter
 }
 
 // Routes
@@ -63,6 +65,7 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
+        .route("/difficulties", axum::routing::get(listar_dificultades)) // new
         .route(
             "/{api_version}/ybot/choose/{bot_id}",
             axum::routing::post(choose::choose),
@@ -74,7 +77,11 @@ pub fn create_router(state: AppState) -> axum::Router {
 ///
 /// The default state includes the `RandomBot` which selects moves randomly.
 pub fn create_default_state() -> AppState {
-    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+    let bots = YBotRegistry::new()
+        .with_bot(Arc::new(RandomBot))
+        .with_bot(Arc::new(GreedyBot))
+        .with_bot(Arc::new(BlockerBot))
+        .with_bot(Arc::new(ProBot));
     AppState::new(bots)
 }
 
@@ -145,7 +152,11 @@ pub async fn realizar_movimiento(
 
     // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
     if !game.check_game_over() {
-        if let Some(bot) = state.bots().find("random_bot") {
+        // Obtener la dificultad actual
+        let current_diff = *state.current_difficulty.lock().unwrap();
+
+        // Buscar un bot adecuado para esa dificultad
+        if let Some(bot) = state.bots().get_random_bot_by_difficulty(current_diff) {
             // Desreferenciamos el mutex guard con &*game
             if let Some(bot_coords) = bot.choose_move(&*game) {
                 let bot_move = crate::Movement::Placement {
@@ -153,6 +164,17 @@ pub async fn realizar_movimiento(
                     coords: bot_coords,
                 };
                 let _ = game.add_move(bot_move);
+            }
+        } else {
+            // Fallback: RandomBot si no hay bot para esa dificultad (no debería pasar con el registro completo)
+             if let Some(bot) = state.bots().find("random_bot") {
+                if let Some(bot_coords) = bot.choose_move(&*game) {
+                    let bot_move = crate::Movement::Placement {
+                        player: crate::PlayerId::new(1),
+                        coords: bot_coords,
+                    };
+                    let _ = game.add_move(bot_move);
+                }
             }
         }
     }
@@ -185,19 +207,35 @@ pub async fn realizar_movimiento(
  */
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
-    payload: Option<axum::extract::Json<ResetRequest>>,
+    axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
 ) -> impl IntoResponse {
     let mut game = state.game.lock().unwrap();
     // Tamaño efectivo del reset:
     // - usa size enviado por cliente si existe
     // - si no existe, usa 5
     // - siempre acotado a [3..20]
-    let size = payload.and_then(|json| json.size).unwrap_or(5).clamp(3, 20);
+    let size = payload.size.unwrap_or(5).clamp(3, 20);
 
     *game = crate::core::game::GameY::new(size);
 
-    println!("--> Juego reiniciado.");
+    // Actualizar dificultad si se proporciona
+    if let Some(diff_str) = payload.difficulty {
+        if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
+            let mut current_diff = state.current_difficulty.lock().unwrap();
+            *current_diff = diff;
+            println!("--> Dificultad actualizada a: {}", diff);
+        }
+    }
+
+    println!("--> Juego reiniciado con tamaño {}.", size);
 
     let yen_data: crate::YEN = (&*game).into();
     axum::Json(yen_data)
+}
+
+/// Endpoint para listar las dificultades disponibles.
+pub async fn listar_dificultades() -> impl IntoResponse {
+    let difficulties = BotDifficulty::all();
+    let diff_strings: Vec<String> = difficulties.iter().map(|d| d.to_string()).collect();
+    axum::Json(diff_strings)
 }
