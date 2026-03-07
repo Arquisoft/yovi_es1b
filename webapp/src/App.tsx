@@ -91,6 +91,16 @@ function App() {
     return data.responseFromRust ?? data.board ?? data;
   };
 
+  // Helper para reiniciar el estado del juego (UI) cuando se recibe un nuevo tablero
+  const resetGameState = (board: GameYData | null, message: string) => {
+    if (board) {
+        setBoardData(board);
+        setWinner(null);
+        setShowResultModal(false);
+        setConnectionStatus(message);
+    }
+  };
+
   const startGameWithUser = async (
     playerName: string,
     options?: { dimension?: number | null; resetChoices?: boolean }
@@ -193,10 +203,7 @@ function App() {
     // Al reiniciar desde el juego, mantenemos la dificultad actual
     if (difficultyChoice) {
         const board = await requestResetBoard(selectedDimension, difficultyChoice);
-        setBoardData(board);
-        setWinner(null);
-        setShowResultModal(false);
-        setConnectionStatus('Partida reiniciada');
+        resetGameState(board, 'Partida reiniciada');
     } else {
         await startGameWithUser(username, { dimension: selectedDimension, resetChoices: false });
     }
@@ -279,12 +286,7 @@ function App() {
     // Actualizar en el backend también si ya estamos en juego
     const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
     requestResetBoard(selectedDimension, choice).then(board => {
-        if(board) {
-            setBoardData(board);
-            setWinner(null);
-            setShowResultModal(false);
-            setConnectionStatus(`Dificultad cambiada a ${choice}`);
-        }
+        resetGameState(board, `Dificultad cambiada a ${choice}`);
     });
   };
 
