@@ -81,6 +81,17 @@ impl GameY {
         self.engine.topology.total_cells() as u32
     }
 
+    /// Returns the player occupying the cell at the given coordinates, or None if empty.
+    pub fn get_player_at(&self, coords: Coordinates) -> Option<PlayerId> {
+        let idx = coords.to_index(self.board_size);
+        // Check bounds just in case, though coords should be valid if created correctly
+        if (idx as usize) < self.engine.state.len() {
+             self.engine.state[idx as usize]
+        } else {
+            None
+        }
+    }
+
     /// Checks if the movement is made by the correct player.
     ///
     /// Returns an error if it's not the specified player's turn.
@@ -233,15 +244,18 @@ impl GameY {
     }
 
     /// Returns the neighboring coordinates for a given cell.
-    /// Used mainly for tests now, delegating to topology
-    #[cfg(test)]
-    fn get_neighbors(&self, coords: &Coordinates) -> Vec<Coordinates> {
+    pub fn get_neighbors(&self, coords: &Coordinates) -> Vec<Coordinates> {
         let idx = coords.to_index(self.board_size);
         let neighbor_indices = self.engine.topology.get_neighbors(idx as usize);
         neighbor_indices
             .iter()
             .map(|&i| Coordinates::from_index(i as u32, self.board_size))
             .collect()
+    }
+
+    pub fn get_cell_regions(&self, coords: Coordinates) -> u32 {
+        let idx = coords.to_index(self.board_size);
+        self.engine.topology.get_cell_regions(idx as usize)
     }
 
     /// Renders the current state of the board as a text string.

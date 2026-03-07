@@ -19,6 +19,9 @@ app.use(metricsMiddleware);
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 
+// URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://localhost:4000';
+
 try {
   const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -113,7 +116,7 @@ app.post('/move', async (req, res) => {
   const { cellIndex } = req.body;
 
   try {
-    const rustResponse = await fetch('http://gamey:4000/execute-move', { // LLama al endpoint de Rust para ejecutar el movimiento
+    const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, { // LLama al endpoint de Rust para ejecutar el movimiento
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ index: cellIndex})
@@ -155,7 +158,7 @@ app.post('/reset', async (req, res) => {
         ? Math.floor(requestedSize)
         : 5;
 
-    const rustResponse = await fetch('http://gamey:4000/reset', { // LLama al endpoint de Rust para resetear el juego
+    const rustResponse = await fetch(`${GAMEY_URL}/reset`, { // LLama al endpoint de Rust para resetear el juego
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ size: safeSize }),
@@ -165,6 +168,20 @@ app.post('/reset', async (req, res) => {
   }
   catch (e) {
     res.status(500).json({error: 'Error communicating with Rust server'});
+  }
+});
+
+
+// Para el historial
+app.get('/history', async (req, res) => {
+  try {
+    // Usamos el nombre del servicio 'gamey' definido en Docker
+    const rustResponse = await fetch(`${GAMEY_URL}/history`);
+    const history = await rustResponse.json();
+    res.json(history);
+  } catch (e) {
+    console.error("Error al pedir el historial a Rust:", e);
+    res.status(500).json({ error: 'No se pudo obtener el historial' });
   }
 });
 

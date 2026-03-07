@@ -12,7 +12,6 @@ interface GameScreenProps {
   boardData: GameYData | null;
   winner: number | null;
   connectionStatus: string;
-  difficulty: string | null;
   sizeLabel: string | null;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onEndGame: () => void; // Termina la partida actual
@@ -20,6 +19,7 @@ interface GameScreenProps {
   onExit: () => void; // Sale del juego y vuelve a home
   onChangeDifficulty: () => void; // Permite cambiar la dificultad durante la partida
   onChangeSize: () => void; // Permite cambiar el tamaño durante la partida
+  onFetchHistory: () => void; // Permite consultar el historial de partidas
 }
 
 function GameScreen({
@@ -28,14 +28,14 @@ function GameScreen({
   selectedBoardDimension,
   boardData,
   winner,
-  difficulty,
   sizeLabel,
   onCellClick,
   onEndGame,
   onResetGame,
   onExit,
   onChangeDifficulty,
-  onChangeSize
+  onChangeSize,
+  onFetchHistory
 }: GameScreenProps) {
 
   const botName =
@@ -76,8 +76,11 @@ function GameScreen({
         </div>
 
         <div className="nav-game-settings">
+          <button className="nav-btn" onClick={onFetchHistory}>
+            Historial
+          </button>
           <button className="nav-btn" onClick={onChangeDifficulty}>
-            Dificultad: {difficulty || '...'}
+            Dificultad: {difficultyChoice || '...'}
           </button>
           <button className="nav-btn" onClick={onChangeSize}>
             {sizeLabel || 'Tamaño...'}
@@ -142,7 +145,11 @@ function GameScreen({
           </div>
 
         </div>
-      </div>
+
+
+    </div>
+
+
   );
 }
 
