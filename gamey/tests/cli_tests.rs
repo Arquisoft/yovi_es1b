@@ -279,7 +279,7 @@ fn test_cli_args_default_values() {
     assert_eq!(args.size, 0);
 
     assert_eq!(args.mode, Mode::Human);
-    assert_eq!(args.bot, "random_bot");
+    assert_eq!(args.bot, "easy");
     assert_eq!(args.port, 3000);
 }
 

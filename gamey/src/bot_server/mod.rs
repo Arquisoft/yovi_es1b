@@ -30,7 +30,6 @@ use axum::response::IntoResponse;
 pub use choose::MoveResponse;
 use chrono::Utc;
 pub use error::ErrorResponse;
-use futures::stream::StreamExt; // Para manegar la lista de resultados de Mongo
 use std::sync::Arc;
 pub use version::*; // Para poner la fecha actual
 
@@ -282,7 +281,7 @@ pub async fn listar_dificultades() -> impl IntoResponse {
 }
 
 pub async fn obtener_historial(
-    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::State(_state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
     // 1. Aquí te conectarías a la colección de partidas en Mongo
     // 2. Harías un find() para traer todas las partidas
