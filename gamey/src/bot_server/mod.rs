@@ -13,6 +13,7 @@
 //! ```no_run
 //! use gamey::run_bot_server;
 //!
+//!
 //! #[tokio::main]
 //! async fn main() {
 //!     if let Err(e) = run_bot_server(3000).await {
@@ -27,8 +28,11 @@ pub mod state;
 pub mod version;
 use axum::response::IntoResponse;
 pub use choose::MoveResponse;
+use chrono::Utc;
 pub use error::ErrorResponse;
-pub use version::*;
+use futures::stream::StreamExt; // Para manegar la lista de resultados de Mongo
+use std::sync::Arc;
+pub use version::*; // Para poner la fecha actual
 
 use crate::{GameYError, state::AppState, BotDifficulty, create_default_registry};
 
@@ -63,6 +67,7 @@ pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
+        .route("/history", axum::routing::get(obtener_historial))
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
         .route("/difficulties", axum::routing::get(listar_dificultades)) // new
         .route(
@@ -72,6 +77,7 @@ pub fn create_router(state: AppState) -> axum::Router {
         .with_state(state)
 }
 
+/*
 /// Creates the default application state with the standard bot registry.
 ///
 /// The default state includes the `RandomBot` which selects moves randomly.
@@ -79,6 +85,7 @@ pub fn create_default_state() -> AppState {
     let bots = create_default_registry();
     AppState::new(bots)
 }
+*/
 
 /// Starts the bot server on the specified port.
 ///
@@ -92,7 +99,23 @@ pub fn create_default_state() -> AppState {
 /// - The TCP port cannot be bound (e.g., port already in use, permission denied)
 /// - The server encounters an error while running
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
-    let state = create_default_state();
+    // Leer la URI de MongoDB desde el .env
+    let uri = std::env::var("MONGODB_URI")
+        .expect("La variable MONGODB_URI no está configurada en el entorno.");
+
+    // Conectar a la BBDD
+    let client = mongodb::Client::with_uri_str(uri)
+        .await
+        .map_err(|e| GameYError::ServerError {
+            message: format!("Error conectando a Mongo: {}", e),
+        })?;
+
+    let db = client.database("gamey_db");
+
+    // Crar el estado pasando la DB
+    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+
+    let state = AppState::new(bots, db);
     let app = create_router(state);
 
     let addr = format!("0.0.0.0:{}", port);
@@ -183,6 +206,29 @@ pub async fn realizar_movimiento(
 
     if winner_id.is_some() {
         println!("¡Tenemos un ganador!: {:?}", winner_id);
+
+        // Guardar la partida en MongoDB
+        let db = state.db.clone();
+        let b_size_clone = b_size;
+        let res_text = if winner_id == Some(0) {
+            "Victoria"
+        } else {
+            "Derrota"
+        };
+
+        // Guardar en un hilo para no ralentizar
+        tokio::spawn(async move {
+            let collection = db.collection::<serde_json::Value>("partidas");
+            let record = serde_json::json!({
+                "date": Utc::now().to_rfc3339(),
+                "opponent": "RandomBot",
+                "board_size": b_size_clone,
+                "difficulty": "facil",
+                "result": res_text
+            });
+
+            let _ = collection.insert_one(record).await;
+        });
     }
 
     // 5. Respuesta (Convertimos a YEN)
@@ -233,4 +279,21 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     let difficulties = BotDifficulty::all();
     let diff_strings: Vec<String> = difficulties.iter().map(|d| d.to_string()).collect();
     axum::Json(diff_strings)
+pub async fn obtener_historial(
+    axum::extract::State(state): axum::extract::State<AppState>,
+) -> impl IntoResponse {
+    // 1. Aquí te conectarías a la colección de partidas en Mongo
+    // 2. Harías un find() para traer todas las partidas
+
+    // De momento, devolvemos un JSON de prueba para que veas que el "puente" funciona:
+    axum::Json(serde_json::json!([
+        {
+            "id": "1",
+            "date": "2026-03-06T15:00:00Z",
+            "opponent": "RandomBot",
+            "board_size": 6,
+            "difficulty": "facil",
+            "result": "Victoria"
+        }
+    ]))
 }

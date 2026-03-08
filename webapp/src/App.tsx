@@ -1,15 +1,21 @@
 import { useEffect, useState } from 'react'
 
+// Estilos y assets
 import './css/App.css'
 import './css/Log.css'
 import './css/Game.css'
-
 import menuVideo from './assets/background_video.mp4';
+
+// Pantallas
 import HomeScreen from './screens/HomeScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import LoginScreen from './screens/LoginScreen';
 import GameScreen from './screens/GameScreen';
 
+// URL del backend (se inyecta desde docker-compose o se usa localhost por defecto)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Definición de tipos
 interface GameYData {
   size: number;
   turn: number;
@@ -21,6 +27,13 @@ type Screen = 'home' | 'register' | 'login' | 'game';
 type DifficultyChoice = string; // Ahora es string dinámico
 type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
 
+
+// Funciones de utilidad
+
+/**
+ * Convierte el texto del boton en un numero
+ * Ej: "Tamaño 6x6x6" => 6
+ */
 const getBoardDimensionFromSizeChoice = (choice: SizeChoice | null): number | null => {
   if (!choice) return null;
   if (choice.includes('6x6x6')) return 6;
@@ -29,6 +42,16 @@ const getBoardDimensionFromSizeChoice = (choice: SizeChoice | null): number | nu
   return null;
 };
 
+/**
+ * Dibuja una ficha en el string del tablero.
+ * El tablero viene de rust como una linea de texto. Esta función busca el indice 
+ * que se ha pulsado y pone una 'B' azul para mostrar el movimiento.
+ * @param layout 
+ * @param size 
+ * @param index 
+ * @param value 
+ * @returns 
+ */
 const patchTriangularLayoutCell = (
   layout: string,
   size: number,
@@ -52,7 +75,10 @@ const patchTriangularLayoutCell = (
   return rows.join('/');
 };
 
+
+
 function App() {
+  // Estados (la memoria de App)
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
   const [username, setUsername] = useState('');
   const [currentScreen, setCurrentScreen] = useState<Screen>('home'); // Router interno de pantallas
@@ -62,9 +88,12 @@ function App() {
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
+  // Para consultar el historial
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyData, setHistoryData] = useState([]);
 
+  // Efecto para que la pantalla siempre empiece arriba al cambiar de menu
   useEffect(() => {
-    // Coloca la vista arriba al cambiar de pantalla
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [currentScreen]);
 
@@ -78,6 +107,13 @@ function App() {
 
   const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
     const response = await fetch('http://localhost:3000/reset', {
+  // COMUNICACION CON BACKEND
+
+  /**
+   * Le pide al servidor de Rust que limpie el tablero y cree uno nuevo.
+   */
+  const requestResetBoard = async (dimension: number | null): Promise<GameYData | null> => {
+    const response = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ size: dimension, difficulty: difficulty }),
@@ -101,6 +137,14 @@ function App() {
     }
   };
 
+  /**
+   * Configura todo para empezar a jugar.
+   * Se establece por defecto:
+   * - dificultad fácil
+   * - tamaño 6x6x6
+   * @param playerName 
+   * @param options 
+   */
   const startGameWithUser = async (
     playerName: string,
     options?: { dimension?: number | null; resetChoices?: boolean }
@@ -116,6 +160,8 @@ function App() {
       try {
         let targetDifficulty = difficultyChoice;
 
+        const board = await requestResetBoard(requestedDimension ?? 6);
+        // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
         // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
         // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
         if (shouldResetChoices) {
@@ -145,14 +191,18 @@ function App() {
     await startGameWithUser(username);
   };
 
-  //Funcionamiento de celdas y juego
+  /**
+   * Corazon del juego. 
+   * Cuando el usuario pulsa una celda, se envia al backend para que actualice 
+   * el tablero y responda con el nuevo estado de la partida.
+   */
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
 
     setConnectionStatus(`Moviendo a la posicion ${index}...`);
     try {
       // Envia el movimiento al backend para actualizar tablero
-      const response = await fetch('http://localhost:3000/move', {
+      const response = await fetch(`${API_BASE_URL}/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cellIndex: index, player: username }),
@@ -220,6 +270,23 @@ function App() {
     setCurrentScreen('home');
   };
 
+  /**
+   * Logica para cargar el historial desde el servidor
+   */
+ const fetchHistory = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/history`);
+    const data = await response.json();
+    setHistoryData(data);
+    setShowHistory(true);
+  } catch (error) {
+    console.error('Error fetching history:', error);
+  }
+ }
+
+
+  // Renderizado de pantallas
+
   //Permite ir cambiando entre pantallas, randerizando la vista
   const renderScreen = () => {
     switch (currentScreen) {
@@ -245,7 +312,6 @@ function App() {
             boardData={boardData}
             winner={winner}
             connectionStatus={connectionStatus}
-            difficulty={difficultyChoice}
             sizeLabel={sizeChoice}
             onCellClick={handleCellClick}
             onExit={handleExitFromGame}
@@ -253,6 +319,7 @@ function App() {
             onChangeSize={() => setSizeChoice(null)}
             onEndGame={handleEndFromGame}
             onResetGame={handleResetFromGame}
+            onFetchHistory={fetchHistory}
           />
         );
 
@@ -316,6 +383,7 @@ function App() {
     setShowResultModal(false);
   };
 
+  // Cierre de App
   return (
     <div className="App">
       {/* Fondo de video global */}
@@ -330,6 +398,7 @@ function App() {
         <source src={menuVideo} type="video/mp4" />
       </video>
       <div className="menu-video-overlay" />
+
       {/* Renderiza la pantalla activa (home/register/login/game) */}
       {renderScreen()}
       {currentScreen === 'game' && difficultyChoice === null && (
@@ -378,6 +447,53 @@ function App() {
           </div>
         </div>
       )}
+
+      {/* MODAL DE HISTORIAL: Se activa cuando showHistory es true */}
+      {showHistory && (
+        <div className="modal-backdrop" onClick={() => setShowHistory(false)}>
+          <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
+
+            <h3>Historial de Partidas</h3>
+            
+            <div className="history-table-container">
+              {historyData.length > 0 ? (
+                <table className="history-table">
+                  <thead>
+                    <tr>
+                      <th>Fecha</th>
+                      <th>Rival</th>
+                      <th>Tamaño</th>
+                      <th>Dificultad</th>
+                      <th>Resultado</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {historyData.map((game: any) => (
+                      <tr key={game.id}>
+                        <td>{new Date(game.date).toLocaleDateString()}</td>
+                        <td>{game.opponent}</td>
+                        <td>{game.board_size}x{game.board_size}</td>
+                        <td>{game.difficulty}</td>
+                        <td className={game.result === 'Victoria' ? 'text-win' : 'text-loss'}>
+                          {game.result}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p style={{color: '#ccc', padding: '20px'}}>No hay partidas guardadas.</p>
+              )}
+            </div>
+
+            <button className="submit-button" onClick={() => setShowHistory(false)}>
+              Volver al Juego
+            </button>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

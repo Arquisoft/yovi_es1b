@@ -37,6 +37,7 @@ const baseProps = (overrides?: {
   connectionStatus: 'Partida iniciada!',
   difficulty: overrides?.difficultyChoice ?? 'facil',
   sizeLabel: 'Tamaño 6x6x6', 
+  onFetchHistory: vi.fn(),
   onChangeDifficulty: vi.fn(),
   onChangeSize: vi.fn(),
   onCellClick: vi.fn(),
@@ -52,6 +53,7 @@ describe('Game UI', () => {
 
     render(<GameScreen {...props} />)
 
+    await user.click(screen.getByRole('button', { name: /historial/i }))
     await user.click(screen.getByRole('button', { name: /dificultad/i }))
     await user.click(screen.getByRole('button', { name: /tamaño/i }))
     await user.click(screen.getByRole('button', { name: /rendirse/i }))
