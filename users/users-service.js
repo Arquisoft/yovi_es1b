@@ -113,7 +113,7 @@ app.post('/login', async (req, res) => {
 // New
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex } = req.body;
+  const { cellIndex, username } = req.body; // NEW: Recibimos username
 
   try {
     const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, { // LLama al endpoint de Rust para ejecutar el movimiento
@@ -132,12 +132,45 @@ app.post('/move', async (req, res) => {
     // - responseFromRust: estado del tablero actualizado
     // - winner: ganador actual (null si la partida sigue)
     const newBoard = await rustResponse.json();
+    
+    // Lógica de actualización de historial si hay ganador
+    if (newBoard.winner !== null && username) {
+      try {
+        const user = await User.findOne({ username: String(username) });
+        if (user) {
+          user.gamesPlayed = (user.gamesPlayed || 0) + 1;
+          
+          let result = 'Draw';
+          if (newBoard.winner === 0) {
+            result = 'Win';
+            user.gamesWon = (user.gamesWon || 0) + 1;
+          } else if (newBoard.winner === 1) {
+            result = 'Loss';
+          }
+
+          user.gameHistory.push({
+            date: new Date(),
+            result: result,
+            opponent: 'RandomBot', // Podríamos parametrizar esto si hay más bots
+            difficulty: 'Unknown' // Idealmente deberíamos saber la dificultad actual
+          });
+
+          await user.save();
+          console.log(`Historial actualizado para ${username}: ${result}`);
+        }
+      } catch (dbError) {
+        console.error("Error actualizando historial:", dbError);
+        // No fallamos la request principal, solo logueamos el error
+      }
+    }
+
     res.json({ 
       responseFromRust: newBoard.board,
       winner: newBoard.winner
     });
   }
   catch (e) {
+    console.error(e);
     res.status(500).json({error: 'Error communicating with Rust server'});
   }
 });
@@ -191,14 +224,27 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
+  const username = req.query.username;
+  
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
   try {
-    // Usamos el nombre del servicio 'gamey' definido en Docker
-    const rustResponse = await fetch(`${GAMEY_URL}/history`);
-    const history = await rustResponse.json();
-    res.json(history);
+    const user = await User.findOne({ username: String(username) });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Devolvemos el historial y las estadísticas
+    res.json({
+      gamesPlayed: user.gamesPlayed,
+      gamesWon: user.gamesWon,
+      history: user.gameHistory
+    });
   } catch (e) {
-    console.error("Error al pedir el historial a Rust:", e);
-    res.status(500).json({ error: 'No se pudo obtener el historial' });
+    console.error("Error al obtener el historial:", e);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
 });
 

@@ -28,9 +28,7 @@ pub mod state;
 pub mod version;
 use axum::response::IntoResponse;
 pub use choose::MoveResponse;
-use chrono::Utc;
 pub use error::ErrorResponse;
-use futures::stream::StreamExt; // Para manegar la lista de resultados de Mongo
 use std::sync::Arc;
 pub use version::*; // Para poner la fecha actual
 
@@ -204,32 +202,9 @@ pub async fn realizar_movimiento(
         _ => None,
     };
 
-    if winner_id.is_some() {
-        println!("¡Tenemos un ganador!: {:?}", winner_id);
-
-        // Guardar la partida en MongoDB
-        let db = state.db.clone();
-        let b_size_clone = b_size;
-        let res_text = if winner_id == Some(0) {
-            "Victoria"
-        } else {
-            "Derrota"
-        };
-
-        // Guardar en un hilo para no ralentizar
-        tokio::spawn(async move {
-            let collection = db.collection::<serde_json::Value>("partidas");
-            let record = serde_json::json!({
-                "date": Utc::now().to_rfc3339(),
-                "opponent": "RandomBot",
-                "board_size": b_size_clone,
-                "difficulty": "facil",
-                "result": res_text
-            });
-
-            let _ = collection.insert_one(record).await;
-        });
-    }
+    // NOTA: La persistencia del historial ahora se maneja en el servicio de Usuarios (Node.js),
+    // que actúa como orquestador y conoce la identidad del jugador.
+    // Rust se limita a devolver el estado del juego.
 
     // 5. Respuesta (Convertimos a YEN)
     // Respuesta para el front: tablero actualizado + ganador.
@@ -284,18 +259,7 @@ pub async fn listar_dificultades() -> impl IntoResponse {
 pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
-    // 1. Aquí te conectarías a la colección de partidas en Mongo
-    // 2. Harías un find() para traer todas las partidas
-
-    // De momento, devolvemos un JSON de prueba para que veas que el "puente" funciona:
-    axum::Json(serde_json::json!([
-        {
-            "id": "1",
-            "date": "2026-03-06T15:00:00Z",
-            "opponent": "RandomBot",
-            "board_size": 6,
-            "difficulty": "facil",
-            "result": "Victoria"
-        }
-    ]))
+    // Este endpoint podría usarse para estadísticas globales del sistema en el futuro.
+    // El historial personal del usuario se gestiona en el servicio de Users.
+    axum::Json(serde_json::json!({ "message": "History is now managed by User Service" }))
 }
