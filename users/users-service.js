@@ -41,7 +41,58 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 
-// --- ENDPOINTS ---
+// --- BUSINESS LOGIC LAYER (Services) ---
+
+/**
+ * Procesa el resultado de una partida y actualiza el historial del usuario.
+ * Esta función encapsula la lógica de negocio, separándola del controlador HTTP.
+ * 
+ * @param {string} username - Nombre del usuario
+ * @param {number|null} winnerId - ID del ganador (0: Humano, 1: Bot, null: Nadie)
+ * @param {string} difficulty - Dificultad de la partida (opcional)
+ */
+async function processGameResult(username, winnerId, difficulty = 'Unknown') {
+  if (winnerId === null || !username) return; // No hay nada que actualizar
+
+  try {
+    const user = await User.findOne({ username: String(username) });
+    if (!user) {
+      console.warn(`Intento de actualizar historial para usuario inexistente: ${username}`);
+      return;
+    }
+
+    // Actualizar contadores globales
+    user.gamesPlayed = (user.gamesPlayed || 0) + 1;
+
+    // Determinar resultado
+    let result = 'Draw';
+    if (winnerId === 0) {
+      result = 'Win';
+      user.gamesWon = (user.gamesWon || 0) + 1;
+    } else if (winnerId === 1) {
+      result = 'Loss';
+    }
+
+    // Añadir al historial detallado
+    user.gameHistory.push({
+      date: new Date(),
+      result: result,
+      opponent: 'RandomBot', // En el futuro esto podría venir como parámetro
+      difficulty: difficulty
+    });
+
+    await user.save();
+    console.log(`Historial actualizado para ${username}: ${result}`);
+
+  } catch (error) {
+    console.error(`Error en processGameResult para ${username}:`, error);
+    // No lanzamos el error para no interrumpir la respuesta HTTP al cliente,
+    // pero lo registramos para monitoreo.
+  }
+}
+
+
+// --- ENDPOINTS (Controllers) ---
 
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
@@ -113,10 +164,11 @@ app.post('/login', async (req, res) => {
 // New
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex, username } = req.body; // NEW: Recibimos username
+  const { cellIndex, username } = req.body;
 
   try {
-    const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, { // LLama al endpoint de Rust para ejecutar el movimiento
+    // 1. Integración: Llamada al servicio de Rust
+    const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ index: cellIndex})
@@ -128,42 +180,17 @@ app.post('/move', async (req, res) => {
        return res.status(500).send(text);
     }
 
-    // Rust responde con { board, winner }; aquí lo adaptamos al formato que consume el front:
-    // - responseFromRust: estado del tablero actualizado
-    // - winner: ganador actual (null si la partida sigue)
     const newBoard = await rustResponse.json();
     
-    // Lógica de actualización de historial si hay ganador
-    if (newBoard.winner !== null && username) {
-      try {
-        const user = await User.findOne({ username: String(username) });
-        if (user) {
-          user.gamesPlayed = (user.gamesPlayed || 0) + 1;
-          
-          let result = 'Draw';
-          if (newBoard.winner === 0) {
-            result = 'Win';
-            user.gamesWon = (user.gamesWon || 0) + 1;
-          } else if (newBoard.winner === 1) {
-            result = 'Loss';
-          }
-
-          user.gameHistory.push({
-            date: new Date(),
-            result: result,
-            opponent: 'RandomBot', // Podríamos parametrizar esto si hay más bots
-            difficulty: 'Unknown' // Idealmente deberíamos saber la dificultad actual
-          });
-
-          await user.save();
-          console.log(`Historial actualizado para ${username}: ${result}`);
-        }
-      } catch (dbError) {
-        console.error("Error actualizando historial:", dbError);
-        // No fallamos la request principal, solo logueamos el error
-      }
+    // 2. Lógica de Negocio: Delegamos la actualización del historial
+    // Usamos 'await' si queremos asegurar que se guardó antes de responder,
+    // o podemos quitarlo para hacerlo "fire-and-forget" y responder más rápido.
+    // Aquí usamos await para consistencia.
+    if (newBoard.winner !== null) {
+        await processGameResult(username, newBoard.winner);
     }
 
+    // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
       winner: newBoard.winner
