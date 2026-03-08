@@ -107,13 +107,6 @@ function App() {
 
   const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
     const response = await fetch('http://localhost:3000/reset', {
-  // COMUNICACION CON BACKEND
-
-  /**
-   * Le pide al servidor de Rust que limpie el tablero y cree uno nuevo.
-   */
-  const requestResetBoard = async (dimension: number | null): Promise<GameYData | null> => {
-    const response = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ size: dimension, difficulty: difficulty }),
