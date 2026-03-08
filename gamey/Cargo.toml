@@ -35,8 +35,14 @@ thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tokio = { version = "1.0", features = ["full"] }
-utoipa = { version = "4.2", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "6.0", features = ["axum"] }
+
+utoipa = { version = "5.3", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "9.0", features = ["axum"] }
+
+mongodb = "3.5.1"
+chrono = "0.4"
+futures = "0.3"
+
 
 [dev-dependencies]
 tower = { version = "0.5", features = ["util"] }

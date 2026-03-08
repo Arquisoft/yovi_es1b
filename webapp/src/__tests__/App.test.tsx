@@ -23,7 +23,7 @@ describe('App Component', () => {
       }),
     } as Response)
 
-    render(<App />)
+    //render(<App />)
 
     // 1. Escribimos el nombre en el Quick Access
     const input = screen.getByPlaceholderText(/your nickname/i)

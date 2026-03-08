@@ -13,6 +13,7 @@
 //! ```no_run
 //! use gamey::run_bot_server;
 //!
+//!
 //! #[tokio::main]
 //! async fn main() {
 //!     if let Err(e) = run_bot_server(3000).await {
@@ -21,27 +22,61 @@
 //! }
 //! ```
 
-pub mod choose;
+pub mod play;
 pub mod error;
 pub mod state;
 pub mod version;
 use axum::response::IntoResponse;
-use std::sync::Arc;
-pub use choose::MoveResponse;
+pub use play::{play, PlayRequest, PlayResponse};
+use chrono::Utc;
 pub use error::ErrorResponse;
-pub use version::*;
+use futures::stream::StreamExt; // Para manegar la lista de resultados de Mongo
+use std::sync::Arc;
+pub use version::*; // Para poner la fecha actual
 
-use crate::{GameYError, RandomBot, YBotRegistry, state::AppState};
+use crate::{GameYError, state::AppState, BotDifficulty, create_default_registry};
 
 use serde::Deserialize;
+use std::str::FromStr;
 
+use crate::bot::random::RandomBot;
+use crate::bot::ybot_registry::YBotRegistry;
 
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize)]
 pub struct MoveRequest {
-    pub index: u32
+    pub index: u32,
 }
 
+use utoipa::OpenApi;
+use crate::YEN;
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(play::play),
+    components(schemas(
+        play::PlayRequest,
+        play::PlayResponse,
+        YEN,
+        error::ErrorResponse
+    )),
+    tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
+)]
+pub struct ApiDoc;
+
+/*
+ * Para pasar el tamaño del tablero desde Node hasta Rust.
+ *
+ * #[derive(Deserialize)] --> Convierte el JSON recibido a esta estructura de Rust
+ *
+ * pub size: usize -->  Tamaño del tablero
+ *
+ */
+#[derive(Deserialize)]
+pub struct ResetRequest {
+    pub size: Option<u32>,
+    pub difficulty: Option<String>, // NEW: Optional difficulty parameter
+}
 
 // Routes
 /// Creates the Axum router with the given state.
@@ -51,21 +86,25 @@ pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
+        .route("/history", axum::routing::get(obtener_historial))
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
-        .route(
-            "/{api_version}/ybot/choose/{bot_id}",
-            axum::routing::post(choose::choose),
-        )
+        .route("/difficulties", axum::routing::get(listar_dificultades)) // new
+
+        .route("/api/play", axum::routing::post(play::play))
+        .merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+
         .with_state(state)
 }
 
+/*
 /// Creates the default application state with the standard bot registry.
 ///
 /// The default state includes the `RandomBot` which selects moves randomly.
 pub fn create_default_state() -> AppState {
-    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+    let bots = create_default_registry();
     AppState::new(bots)
 }
+*/
 
 /// Starts the bot server on the specified port.
 ///
@@ -79,15 +118,32 @@ pub fn create_default_state() -> AppState {
 /// - The TCP port cannot be bound (e.g., port already in use, permission denied)
 /// - The server encounters an error while running
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
-    let state = create_default_state();
+    // Leer la URI de MongoDB desde el .env
+    let uri = std::env::var("MONGODB_URI")
+        .expect("La variable MONGODB_URI no está configurada en el entorno.");
+
+    // Conectar a la BBDD
+    let client = mongodb::Client::with_uri_str(uri)
+        .await
+        .map_err(|e| GameYError::ServerError {
+            message: format!("Error conectando a Mongo: {}", e),
+        })?;
+
+    let db = client.database("gamey_db");
+
+    // Crar el estado pasando la DB
+    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+
+    let state = AppState::new(bots, db);
     let app = create_router(state);
 
     let addr = format!("0.0.0.0:{}", port);
-    let listener = tokio::net::TcpListener::bind(&addr)
-        .await
-        .map_err(|e| GameYError::ServerError {
-            message: format!("Failed to bind to {}: {}", addr, e),
-        })?;
+    let listener =
+        tokio::net::TcpListener::bind(&addr)
+            .await
+            .map_err(|e| GameYError::ServerError {
+                message: format!("Failed to bind to {}: {}", addr, e),
+            })?;
 
     println!("Server mode: Listening on http://{}", addr);
     axum::serve(listener, app)
@@ -106,47 +162,62 @@ pub async fn status() -> impl IntoResponse {
     "OK"
 }
 
-
 // New
 // This endpoint handles the move made by the human player and then triggers the bot's response.
-pub async fn realizar_movimiento (
+pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
-    axum::extract::Json(payload): axum::extract::Json<MoveRequest>
+    axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
 ) -> impl IntoResponse {
-
     // 1. Bloqueamos el Mutex
     let mut game = state.game.lock().unwrap();
 
     // 2. Movimiento Humano (Azul)
+    // El índice se interpreta usando el tamaño REAL del juego activo en servidor.
     let b_size = game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
-    
-    let human_movement = crate::Movement::Placement { 
+
+    let human_movement = crate::Movement::Placement {
         player: crate::PlayerId::new(0),
         coords,
     };
 
     // Intentamos añadir el movimiento
+    // Si falla (ocupada/fuera de rango/turno inválido), el tablero no cambia.
     if let Err(e) = game.add_move(human_movement) {
         println!("Aviso: Movimiento humano no válido: {:?}", e);
     }
 
     // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
     if !game.check_game_over() {
-        if let Some(bot) = state.bots().find("random_bot") {
-        // Desreferenciamos el mutex guard con &*game
-        if let Some(bot_coords) = bot.choose_move(&*game) {
-            let bot_move = crate::Movement::Placement {
-                player: crate::PlayerId::new(1),
-                coords: bot_coords,
-            };
-            let _ = game.add_move(bot_move);
+        // Obtener la dificultad actual
+        let current_diff = *state.current_difficulty.lock().unwrap();
+
+        // Buscar un bot adecuado para esa dificultad
+        if let Some(bot) = state.bots().get_random_bot_by_difficulty(current_diff) {
+            // Desreferenciamos el mutex guard con &*game
+            if let Some(bot_coords) = bot.choose_move(&*game) {
+                let bot_move = crate::Movement::Placement {
+                    player: crate::PlayerId::new(1),
+                    coords: bot_coords,
+                };
+                let _ = game.add_move(bot_move);
+            }
+        } else {
+            // Fallback: RandomBot si no hay bot para esa dificultad (no debería pasar con el registro completo)
+             if let Some(bot) = state.bots().find("random_bot") {
+                if let Some(bot_coords) = bot.choose_move(&*game) {
+                    let bot_move = crate::Movement::Placement {
+                        player: crate::PlayerId::new(1),
+                        coords: bot_coords,
+                    };
+                    let _ = game.add_move(bot_move);
+                }
+            }
         }
     }
-    }
-    
 
     // 4. Extraer el ganador
+    // Ganador leído desde el estado final tras aplicar jugadas válidas.
     let winner_id = match game.status() {
         &crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
         _ => None,
@@ -154,31 +225,97 @@ pub async fn realizar_movimiento (
 
     if winner_id.is_some() {
         println!("¡Tenemos un ganador!: {:?}", winner_id);
+
+        // Guardar la partida en MongoDB
+        let db = state.db.clone();
+        let b_size_clone = b_size;
+        let res_text = if winner_id == Some(0) {
+            "Victoria"
+        } else {
+            "Derrota"
+        };
+
+        // Guardar en un hilo para no ralentizar
+        tokio::spawn(async move {
+            let collection = db.collection::<serde_json::Value>("partidas");
+            let record = serde_json::json!({
+                "date": Utc::now().to_rfc3339(),
+                "opponent": "RandomBot",
+                "board_size": b_size_clone,
+                "difficulty": "facil",
+                "result": res_text
+            });
+
+            let _ = collection.insert_one(record).await;
+        });
     }
 
     // 5. Respuesta (Convertimos a YEN)
+    // Respuesta para el front: tablero actualizado + ganador.
     let yen_data: crate::YEN = (&*game).into();
-    
+
     axum::Json(serde_json::json!({
         "board": yen_data,
         "winner": winner_id
     }))
 }
 
-
-// New
-// This endpoint resets the game to its initial state.
+/*
+ * Para reiniciar el juego a su estado inicial, creando una nueva instancia de GameY con el tamaño especificado.
+ *
+ *
+ */
 pub async fn reiniciar_juego(
-    axum::extract::State(state): axum::extract::State<AppState>
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
 ) -> impl IntoResponse {
-
     let mut game = state.game.lock().unwrap();
+    // Tamaño efectivo del reset:
+    // - usa size enviado por cliente si existe
+    // - si no existe, usa 5
+    // - siempre acotado a [3..20]
+    let size = payload.size.unwrap_or(5).clamp(3, 20);
 
-    // Reiniciamos el juego creando una nueva instancia de GameY
-    *game = crate::core::game::GameY::new(5);
+    *game = crate::core::game::GameY::new(size);
 
-    println!("--> Juego reiniciado.");
+    // Actualizar dificultad si se proporciona
+    if let Some(diff_str) = payload.difficulty {
+        if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
+            let mut current_diff = state.current_difficulty.lock().unwrap();
+            *current_diff = diff;
+            println!("--> Dificultad actualizada a: {}", diff);
+        }
+    }
+
+    println!("--> Juego reiniciado con tamaño {}.", size);
 
     let yen_data: crate::YEN = (&*game).into();
     axum::Json(yen_data)
+}
+
+/// Endpoint para listar las dificultades disponibles.
+pub async fn listar_dificultades() -> impl IntoResponse {
+    let difficulties = BotDifficulty::all();
+    let diff_strings: Vec<String> = difficulties.iter().map(|d| d.to_string()).collect();
+    axum::Json(diff_strings)
+}
+pub async fn obtener_historial(
+    axum::extract::State(state): axum::extract::State<AppState>,
+
+) -> impl IntoResponse {
+    // 1. Aquí te conectarías a la colección de partidas en Mongo
+    // 2. Harías un find() para traer todas las partidas
+
+    // De momento, devolvemos un JSON de prueba para que veas que el "puente" funciona:
+    axum::Json(serde_json::json!([
+        {
+            "id": "1",
+            "date": "2026-03-06T15:00:00Z",
+            "opponent": "RandomBot",
+            "board_size": 6,
+            "difficulty": "facil",
+            "result": "Victoria"
+        }
+    ]))
+    
 }

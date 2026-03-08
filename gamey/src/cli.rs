@@ -7,7 +7,8 @@
 //! - Server: Run as an HTTP server for bot API
 
 use crate::{
-    Coordinates, GameAction, Movement, RandomBot, RenderOptions, YBot, YBotRegistry, game,
+    Coordinates, GameAction, Movement, RenderOptions,
+    YBot, YBotRegistry, game, BotDifficulty, create_default_registry, RandomBot,
 };
 use crate::{GameStatus, GameY, PlayerId};
 use anyhow::Result;
@@ -15,6 +16,8 @@ use clap::{Parser, ValueEnum};
 use rustyline::DefaultEditor;
 use rustyline::error::ReadlineError;
 use std::fmt::Display;
+use std::io::{self, Write};
+use std::str::FromStr;
 use std::sync::Arc;
 
 /// Command-line arguments for the GameY application.
@@ -23,15 +26,16 @@ use std::sync::Arc;
 #[command(long_about = "GameY: A command-line implementation of the Game of Y.")]
 pub struct CliArgs {
     /// Size of the triangular board (length of one side).
-    #[arg(short, long, default_value_t = 7)]
+    /// If not provided (or 0), the user will be prompted to select a size.
+    #[arg(short, long, default_value_t = 0)]
     pub size: u32,
 
     /// Game mode: human (2-player), computer (vs bot), or server (HTTP API).
     #[arg(short, long, default_value_t = Mode::Human)]
     pub mode: Mode,
 
-    /// The bot to use (only used with --mode=computer), default = random_bot
-    #[arg(short, long, default_value = "random_bot")]
+    /// The bot difficulty to use (only used with --mode=computer), default = easy
+    #[arg(short, long, default_value = "easy")]
     pub bot: String,
 
     /// Port to run the server on (only used with --mode=server)
@@ -69,19 +73,24 @@ pub fn run_cli_game() -> Result<()> {
     let args = CliArgs::parse();
     let mut render_options = crate::RenderOptions::default();
     let mut rl = DefaultEditor::new()?;
-    let bots_registry = YBotRegistry::new().with_bot(Arc::new(RandomBot));
-    let bot: Arc<dyn YBot> = match bots_registry.find(&args.bot) {
-        Some(b) => b,
-        None => {
-            println!(
-                "Bot '{}' not found. Available bots: {:?}",
-                args.bot,
-                bots_registry.names()
-            );
-            return Ok(());
-        }
+
+    // Board Size Selection Logic
+    let board_size = if args.size == 0 {
+        select_board_size()?
+    } else {
+        args.size
     };
-    let mut game = game::GameY::new(args.size);
+
+    let bots_registry = create_default_registry();
+
+    let difficulty = BotDifficulty::from_str(&args.bot).unwrap_or(BotDifficulty::Easy);
+    let mut bot: Arc<dyn YBot> = bots_registry.get_random_bot_by_difficulty(difficulty)
+        .unwrap_or_else(|| Arc::new(RandomBot));
+
+    println!("Jugando contra bot de dificultad: {}", difficulty);
+
+    let mut game = game::GameY::new(board_size);
+
     loop {
         println!("{}", game.render(&render_options));
         let status = game.status();
@@ -114,7 +123,8 @@ pub fn run_cli_game() -> Result<()> {
                             &player,
                             &mut render_options,
                             args.mode,
-                            bot.as_ref(),
+                            &mut bot,
+                            &bots_registry,
                         )?;
                     }
                 }
@@ -124,6 +134,39 @@ pub fn run_cli_game() -> Result<()> {
     Ok(())
 }
 
+/// Promps the user to select a board size if not provided via CLI args.
+fn select_board_size() -> Result<u32> {
+    println!("Selecciona el tamaño del tablero:");
+    println!("1. Pequeño (6)");
+    println!("2. Mediano (9)");
+    println!("3. Grande (12)");
+    println!("4. Personalizado");
+
+    print!("Opción: ");
+    io::stdout().flush()?;
+
+    let mut input = String::new();
+    io::stdin().read_line(&mut input)?;
+
+    match input.trim() {
+        "1" => Ok(6),
+        "2" => Ok(9),
+        "3" => Ok(12),
+        "4" => {
+            print!("Introduce el tamaño deseado: ");
+            io::stdout().flush()?;
+            let mut custom_size = String::new();
+            io::stdin().read_line(&mut custom_size)?;
+            let size = custom_size.trim().parse::<u32>().unwrap_or(7); // Default to 7 on error
+            Ok(size)
+        }
+        _ => {
+            println!("Opción no válida, usando tamaño por defecto (7).");
+            Ok(7)
+        }
+    }
+}
+
 /// Processes a single line of user input and updates game state.
 fn process_input(
     input: &str,
@@ -131,12 +174,13 @@ fn process_input(
     player: &PlayerId,
     render_options: &mut RenderOptions,
     mode: Mode,
-    bot: &dyn YBot,
+    bot: &mut Arc<dyn YBot>,
+    registry: &YBotRegistry,
 ) -> Result<()> {
     let command = parse_command(input, game.total_cells());
     match command {
         Command::Place { idx } => {
-            handle_place_command(game, idx, *player, mode, bot);
+            handle_place_command(game, idx, *player, mode, bot.as_ref());
         }
         Command::Resign => {
             let movement = Movement::Action {
@@ -177,6 +221,24 @@ fn process_input(
             *game = GameY::load_from_file(path)?;
             tracing::info!("Game loaded from {}", filename);
         }
+        Command::ChangeBot { difficulty } => {
+            if let Ok(diff) = BotDifficulty::from_str(&difficulty) {
+                if let Some(new_bot) = registry.get_random_bot_by_difficulty(diff) {
+                    *bot = new_bot;
+                    println!("Bot cambiado a dificultad: {}", diff);
+                } else {
+                    println!("No se encontró bot para la dificultad: {}", diff);
+                }
+            } else {
+                println!("Dificultad inválida: {}", difficulty);
+            }
+        }
+        Command::ListBots => {
+            println!("Dificultades disponibles:");
+            for diff in BotDifficulty::all() {
+                println!(" - {}", diff);
+            }
+        }
     }
     Ok(())
 }
@@ -215,6 +277,17 @@ pub fn parse_command(input: &str, bound: u32) -> Command {
                 filename: parts[1].to_string(),
             }
         }
+        "bot" => {
+            if parts.len() < 2 {
+                return Command::Error {
+                    message: "Difficulty required for bot command".to_string(),
+                };
+            }
+            Command::ChangeBot {
+                difficulty: parts[1].to_string(),
+            }
+        }
+        "list_bots" => Command::ListBots,
         "resign" => Command::Resign,
         "help" => Command::Help,
         "exit" => Command::Exit,
@@ -240,6 +313,8 @@ fn print_help() {
     println!("  show_colors     - Toggle showing colors on the board");
     println!("  save <filename> - Save the current game state to a file");
     println!("  load <filename> - Load a game state from a file");
+    println!("  bot <difficulty> - Change bot difficulty (easy, medium, hard)");
+    println!("  list_bots       - List available bot difficulties");
     println!("  exit            - Exit the game");
     println!("  help            - Show this help message");
 }
@@ -269,6 +344,10 @@ pub enum Command {
     Exit,
     /// Show help message.
     Help,
+    /// Change the bot difficulty.
+    ChangeBot { difficulty: String },
+    /// List available bot difficulties.
+    ListBots,
 }
 
 /// Parses a string as a cell index and validates it's within bounds.
@@ -291,13 +370,7 @@ pub fn parse_idx(part: &str, bound: u32) -> Result<u32, String> {
 }
 
 /// Application logic for a Move command (Human + optional Bot response)
-fn handle_place_command(
-    game: &mut GameY,
-    idx: u32,
-    player: PlayerId,
-    mode: Mode,
-    bot: &dyn YBot,
-) {
+fn handle_place_command(game: &mut GameY, idx: u32, player: PlayerId, mode: Mode, bot: &dyn YBot) {
     let coords = Coordinates::from_index(idx, game.board_size());
     let movement = Movement::Placement { player, coords };
 
@@ -510,5 +583,32 @@ mod tests {
         assert!(debug.contains("Place"));
         assert!(debug.contains("5"));
     }
-}
 
+    #[test]
+    fn test_parse_command_bot() {
+        let cmd = parse_command("bot hard", 10);
+        assert_eq!(
+            cmd,
+            Command::ChangeBot {
+                difficulty: "hard".to_string()
+            }
+        );
+    }
+
+    #[test]
+    fn test_parse_command_bot_no_difficulty() {
+        let cmd = parse_command("bot", 10);
+        match cmd {
+            Command::Error { message } => {
+                assert!(message.contains("Difficulty required"));
+            }
+            _ => panic!("Expected Error command"),
+        }
+    }
+
+    #[test]
+    fn test_parse_command_list_bots() {
+        let cmd = parse_command("list_bots", 10);
+        assert_eq!(cmd, Command::ListBots);
+    }
+}

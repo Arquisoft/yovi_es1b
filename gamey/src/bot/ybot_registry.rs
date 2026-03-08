@@ -4,8 +4,9 @@
 //! bot implementations by name.
 
 use std::{collections::HashMap, sync::Arc};
+use rand::prelude::IndexedRandom;
 
-use crate::YBot;
+use crate::{YBot, BotDifficulty};
 
 /// A registry that stores and manages [`YBot`] implementations.
 ///
@@ -55,6 +56,23 @@ impl YBotRegistry {
     pub fn names(&self) -> Vec<String> {
         self.bots.keys().cloned().collect()
     }
+
+    /// Obtiene un bot aleatorio que coincida con la dificultad dada.
+    ///
+    /// Filtra todos los bots registrados por la dificultad especificada y selecciona uno al azar.
+    /// Devuelve `None` si no hay bots registrados para esa dificultad.
+    pub fn get_random_bot_by_difficulty(&self, difficulty: BotDifficulty) -> Option<Arc<dyn YBot>> {
+        let matching_bots: Vec<_> = self.bots.values()
+            .filter(|bot| bot.difficulty() == difficulty)
+            .cloned()
+            .collect();
+
+        if matching_bots.is_empty() {
+            return None;
+        }
+
+        matching_bots.choose(&mut rand::rng()).cloned()
+    }
 }
 
 impl Default for YBotRegistry {
@@ -71,12 +89,14 @@ mod tests {
     /// A mock bot for testing purposes.
     struct MockBot {
         name: String,
+        difficulty: BotDifficulty,
     }
 
     impl MockBot {
-        fn new(name: &str) -> Self {
+        fn new(name: &str, difficulty: BotDifficulty) -> Self {
             MockBot {
                 name: name.to_string(),
+                difficulty,
             }
         }
     }
@@ -84,6 +104,10 @@ mod tests {
     impl YBot for MockBot {
         fn name(&self) -> &str {
             &self.name
+        }
+
+        fn difficulty(&self) -> BotDifficulty {
+            self.difficulty
         }
 
         fn choose_move(&self, _board: &GameY) -> Option<Coordinates> {
@@ -105,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_with_bot_adds_bot() {
-        let registry = YBotRegistry::new().with_bot(Arc::new(MockBot::new("test_bot")));
+        let registry = YBotRegistry::new().with_bot(Arc::new(MockBot::new("test_bot", BotDifficulty::Easy)));
 
         assert_eq!(registry.names().len(), 1);
         assert!(registry.find("test_bot").is_some());
@@ -114,8 +138,8 @@ mod tests {
     #[test]
     fn test_with_bot_chaining() {
         let registry = YBotRegistry::new()
-            .with_bot(Arc::new(MockBot::new("bot1")))
-            .with_bot(Arc::new(MockBot::new("bot2")));
+            .with_bot(Arc::new(MockBot::new("bot1", BotDifficulty::Easy)))
+            .with_bot(Arc::new(MockBot::new("bot2", BotDifficulty::Easy)));
 
         assert_eq!(registry.names().len(), 2);
         assert!(registry.find("bot1").is_some());
@@ -137,11 +161,29 @@ mod tests {
 
     #[test]
     fn test_duplicate_name_overwrites() {
-        let bot1 = Arc::new(MockBot::new("same_name"));
-        let bot2 = Arc::new(MockBot::new("same_name"));
+        let bot1 = Arc::new(MockBot::new("same_name", BotDifficulty::Easy));
+        let bot2 = Arc::new(MockBot::new("same_name", BotDifficulty::Easy));
 
         let registry = YBotRegistry::new().with_bot(bot1).with_bot(bot2);
 
         assert_eq!(registry.names().len(), 1);
+    }
+
+    #[test]
+    fn test_get_random_bot_by_difficulty() {
+        let registry = YBotRegistry::new()
+            .with_bot(Arc::new(MockBot::new("easy1", BotDifficulty::Easy)))
+            .with_bot(Arc::new(MockBot::new("hard1", BotDifficulty::Hard)));
+
+        let easy_bot = registry.get_random_bot_by_difficulty(BotDifficulty::Easy);
+        assert!(easy_bot.is_some());
+        assert_eq!(easy_bot.unwrap().difficulty(), BotDifficulty::Easy);
+
+        let hard_bot = registry.get_random_bot_by_difficulty(BotDifficulty::Hard);
+        assert!(hard_bot.is_some());
+        assert_eq!(hard_bot.unwrap().difficulty(), BotDifficulty::Hard);
+
+        let medium_bot = registry.get_random_bot_by_difficulty(BotDifficulty::Medium);
+        assert!(medium_bot.is_none());
     }
 }

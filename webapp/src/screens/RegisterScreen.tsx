@@ -45,13 +45,38 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
     }
     setAgeError(null); // Limpia error de edad si pasa la validacion
 
-    // Si todo es valido, delega en App.tsx para continuar el flujo
-    await onCreateAccount(formData.name.trim());
+    
+    // Llamada al backend para crear cuenta e iniciar el juego
+    try {
+      const response = await fetch('http://localhost:3000/createuser', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.name.trim(),
+          password: formData.password.trim(),
+          age,
+          country: formData.country.trim(),
+        }),
+      });
+      
+      const data = await response.json();
+
+      if (response.ok) {
+        // Si el servidor dice OK, se registra y se inicia el juego
+        await onCreateAccount(formData.name.trim());
+      }
+      else {
+        // Si el usuario ya existe o hay otro error
+        setFormError(data.error || 'Error al crear la cuenta.');
+      }
+    } catch (error) {
+      setFormError('Error de red al crear la cuenta.');
+    }
   };
 
   return (
-    <div className="home-screen">
-      <h2 className="welcome-title">ZONA DE REGISTRO</h2>
+    <div className="register-screen">
+      <h2 className="title-log">ZONA DE REGISTRO</h2>
 
       {/* Formulario principal de registro */}
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
@@ -87,7 +112,7 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="register-country">Pais</label>
+          <label htmlFor="register-country">País</label>
           <input
             id="register-country"
             className="form-input"
@@ -99,7 +124,7 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="register-password">Contrasena</label>
+          <label htmlFor="register-password">Contraseña</label>
           <input
             id="register-password"
             className="form-input"
@@ -124,3 +149,4 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
 }
 
 export default RegisterScreen;
+
