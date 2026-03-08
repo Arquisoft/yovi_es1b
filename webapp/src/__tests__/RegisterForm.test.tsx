@@ -5,6 +5,12 @@ import RegisterScreen from '../screens/RegisterScreen'
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
+// Se define la respuesta para la carga automática de App
+const mockInitialDifficulties = {
+  ok: true,
+  json: async () => ['Easy', 'Medium', 'Hard'],
+}
+
 describe('RegisterForm', () => {
   beforeAll(() => {
     vi.stubGlobal('scrollTo', vi.fn())
@@ -12,11 +18,12 @@ describe('RegisterForm', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
   test('con datos incompletos no deja avanzar', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn()
+    const fetchMock = vi.fn().mockRejectedValueOnce(mockInitialDifficulties)
     global.fetch = fetchMock as unknown as typeof fetch
 
     render(<App />)
@@ -26,14 +33,14 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/edad/i), '22')
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('heading', { name: /zona de registro/i })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /jugador:/i })).not.toBeInTheDocument()
   })
 
   test('con edad no permitida no deja registrarse', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn()
+    const fetchMock = vi.fn().mockRejectedValueOnce(mockInitialDifficulties)
     global.fetch = fetchMock as unknown as typeof fetch
 
     render(<App />)
@@ -45,7 +52,7 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/contra/i), 'password123')
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(screen.getByLabelText(/edad/i)).toBeInvalid()
     expect(screen.getByRole('heading', { name: /zona de registro/i })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: /jugador:/i })).not.toBeInTheDocument()
@@ -53,7 +60,9 @@ describe('RegisterForm', () => {
 
   test('si el backend rechaza no deja avanzar', async () => {
     const user = userEvent.setup()
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    global.fetch = vi.fn()
+    .mockRejectedValueOnce(mockInitialDifficulties)
+    .mockResolvedValueOnce({
       ok: false,
       json: async () => ({ error: 'Usuario ya existe' }),
     } as Response)
