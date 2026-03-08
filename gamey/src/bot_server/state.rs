@@ -3,6 +3,7 @@ use crate::core::game::GameY;
 use mongodb::Database;
 use std::sync::Arc;
 use std::sync::Mutex;
+use crate::BotDifficulty;
 
 /// Shared application state for the bot server.
 ///
@@ -14,6 +15,7 @@ pub struct AppState {
     /// The registry of available bots, wrapped in Arc for thread-safe sharing.
     bots: Arc<YBotRegistry>,
     pub game: Arc<Mutex<GameY>>, // NEW: The actual game state, wrapped in Arc and Mutex for safe concurrent access
+    pub current_difficulty: Arc<Mutex<BotDifficulty>>, // NEW: The current difficulty level
     pub db: Database,
 }
 
@@ -23,7 +25,8 @@ impl AppState {
         Self {
             bots: Arc::new(bots),
             game: Arc::new(Mutex::new(GameY::new(5))), // NEW: Initialize the game state with a new GameY instance of size 5
-            db,                                        // Guardar la conexion
+            current_difficulty: Arc::new(Mutex::new(BotDifficulty::Easy)), // Default difficulty
+            db                                        // Guardar la conexion
         }
     }
 

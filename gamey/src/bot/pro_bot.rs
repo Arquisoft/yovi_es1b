@@ -1,5 +1,5 @@
 use crate::core::topology::TriangularTopology;
-use crate::{Coordinates, GameY, PlayerId, YBot};
+use crate::{Coordinates, GameY, PlayerId, YBot, BotDifficulty};
 use std::collections::{HashMap, VecDeque};
 
 pub struct ProBot;
@@ -7,6 +7,10 @@ pub struct ProBot;
 impl YBot for ProBot {
     fn name(&self) -> &str {
         "pro_bot"
+    }
+
+    fn difficulty(&self) -> BotDifficulty {
+        BotDifficulty::Hard
     }
 
     // La prioridad actual del bot es la defensa, es decir, bloquear al jugador humano (oponente)

@@ -148,6 +148,7 @@ app.post('/move', async (req, res) => {
 app.post('/reset', async (req, res) => {
 
   const size = req.body.size || 5;
+  const difficulty = req.body.difficulty; // NEW: Recibir dificultad opcional
 
   try {
     const requestedSize = Number(req.body?.size);
@@ -161,13 +162,29 @@ app.post('/reset', async (req, res) => {
     const rustResponse = await fetch(`${GAMEY_URL}/reset`, { // LLama al endpoint de Rust para resetear el juego
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize }),
+      body: JSON.stringify({ size: safeSize, difficulty: difficulty }), // NEW: Pasar dificultad a Rust
     });
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard});
   }
   catch (e) {
     res.status(500).json({error: 'Error communicating with Rust server'});
+  }
+});
+
+// New
+// Get available difficulties
+app.get('/difficulties', async (req, res) => {
+  try {
+    const rustResponse = await fetch('http://gamey:4000/difficulties');
+    if (!rustResponse.ok) {
+      throw new Error('Failed to fetch difficulties from Rust');
+    }
+    const difficulties = await rustResponse.json();
+    res.json(difficulties);
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({error: 'Error fetching difficulties'});
   }
 });
 

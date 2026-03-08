@@ -24,7 +24,7 @@ interface GameYData {
 }
 
 type Screen = 'home' | 'register' | 'login' | 'game';
-type DifficultyChoice = 'facil' | 'medio' | 'dificil';
+type DifficultyChoice = string; // Ahora es string dinámico
 type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
 
 
@@ -87,6 +87,7 @@ function App() {
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>(null);
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   // Para consultar el historial
   const [showHistory, setShowHistory] = useState(false);
   const [historyData, setHistoryData] = useState([]);
@@ -96,6 +97,16 @@ function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [currentScreen]);
 
+  useEffect(() => {
+    // Cargar dificultades disponibles al iniciar
+    fetch('http://localhost:3000/difficulties')
+      .then(res => res.json())
+      .then(data => setAvailableDifficulties(data))
+      .catch(err => console.error('Error fetching difficulties:', err));
+  }, []);
+
+  const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
+    const response = await fetch('http://localhost:3000/reset', {
   // COMUNICACION CON BACKEND
 
   /**
@@ -105,7 +116,7 @@ function App() {
     const response = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ size: dimension ?? 5 }),
+      body: JSON.stringify({ size: dimension, difficulty: difficulty }),
     });
 
     if (!response.ok) {
@@ -114,6 +125,16 @@ function App() {
 
     const data = await response.json();
     return data.responseFromRust ?? data.board ?? data;
+  };
+
+  // Helper para reiniciar el estado del juego (UI) cuando se recibe un nuevo tablero
+  const resetGameState = (board: GameYData | null, message: string) => {
+    if (board) {
+        setBoardData(board);
+        setWinner(null);
+        setShowResultModal(false);
+        setConnectionStatus(message);
+    }
   };
 
   /**
@@ -137,16 +158,25 @@ function App() {
       setConnectionStatus('Iniciando nueva partida predeterminada...');
 
       try {
+        let targetDifficulty = difficultyChoice;
+
         const board = await requestResetBoard(requestedDimension ?? 6);
         // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
         // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
+        // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
         if (shouldResetChoices) {
-          setDifficultyChoice('facil');
+          targetDifficulty = 'Easy';
+          setDifficultyChoice(targetDifficulty);
           setSizeChoice('Tamaño 6x6x6');
         }
 
-        setShowResultModal(false);
+        // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
+        const finalDiff = targetDifficulty || 'Easy';
+
+        const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
         setBoardData(board);
+
+        setShowResultModal(false);
         setWinner(null);
         setCurrentScreen('game');
         setConnectionStatus('¡Partida lista!');
@@ -220,7 +250,13 @@ function App() {
 
   const handleResetFromGame = async () => {
     const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
-    await startGameWithUser(username, { dimension: selectedDimension, resetChoices: false });
+    // Al reiniciar desde el juego, mantenemos la dificultad actual
+    if (difficultyChoice) {
+        const board = await requestResetBoard(selectedDimension, difficultyChoice);
+        resetGameState(board, 'Partida reiniciada');
+    } else {
+        await startGameWithUser(username, { dimension: selectedDimension, resetChoices: false });
+    }
   };
 
   const handleEndFromGame = () => {
@@ -271,7 +307,7 @@ function App() {
         return (
           <GameScreen
             username={username}
-            difficultyChoice={difficultyChoice}
+            difficultyChoice={difficultyChoice as any}
             selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
             boardData={boardData}
             winner={winner}
@@ -314,6 +350,11 @@ function App() {
   //Cambia la dificultad según elección
   const handleDifficultyChoice = (choice: DifficultyChoice) => {
     setDifficultyChoice(choice);
+    // Actualizar en el backend también si ya estamos en juego
+    const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
+    requestResetBoard(selectedDimension, choice).then(board => {
+        resetGameState(board, `Dificultad cambiada a ${choice}`);
+    });
   };
 
   //Cambia el tamaño de tablero según hemos elegido y deja un mensaje
@@ -323,7 +364,7 @@ function App() {
     if (selectedDimension === null) return;
 
     setConnectionStatus(`Cargando tablero ${selectedDimension}x${selectedDimension}...`);
-    requestResetBoard(selectedDimension)
+    requestResetBoard(selectedDimension, difficultyChoice || undefined)
       .then((board) => {
         if (board && board.layout) {
           setBoardData(board);
@@ -364,15 +405,15 @@ function App() {
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Seleccion de dificultad obligatoria">
           <div className="modal-box">
             <h3>Con que dificultad quieres jugar?</h3>
-            <button type="button" className="submit-button" onClick={() => handleDifficultyChoice('facil')}>
-              Facil
-            </button>
-            <button type="button" className="submit-button" onClick={() => handleDifficultyChoice('medio')}>
-              Medio
-            </button>
-            <button type="button" className="submit-button" onClick={() => handleDifficultyChoice('dificil')}>
-              Dificil
-            </button>
+            {availableDifficulties.length > 0 ? (
+                availableDifficulties.map(diff => (
+                    <button key={diff} type="button" className="submit-button" onClick={() => handleDifficultyChoice(diff)}>
+                        {diff}
+                    </button>
+                ))
+            ) : (
+                <p>Cargando dificultades...</p>
+            )}
           </div>
         </div>
       )}
