@@ -43,7 +43,7 @@ use crate::bot::random::RandomBot;
 use crate::bot::ybot_registry::YBotRegistry;
 
 // This helps Rust to understand the JSON that receive from Node
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct MoveRequest {
     pub index: u32,
 }
@@ -51,13 +51,17 @@ pub struct MoveRequest {
 use utoipa::OpenApi;
 use crate::YEN;
 
-#[derive(OpenApi)]
+
+#[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(play::play),
+    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), // Añadida aquí
     components(schemas(
         play::PlayRequest,
         play::PlayResponse,
         YEN,
+        ResetRequest,
+        MoveRequest,
+        GameRecord, // Añadida aquí
         error::ErrorResponse
     )),
     tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
@@ -72,10 +76,22 @@ pub struct ApiDoc;
  * pub size: usize -->  Tamaño del tablero
  *
  */
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ResetRequest {
     pub size: Option<u32>,
     pub difficulty: Option<String>, // NEW: Optional difficulty parameter
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct GameRecord {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<String>)] // <-- Esta línea soluciona el error de ObjectId
+    pub id: Option<mongodb::bson::oid::ObjectId>,
+    pub date: String,
+    pub opponent: String,
+    pub board_size: u32,
+    pub difficulty: String,
+    pub result: String,
 }
 
 // Routes
@@ -164,6 +180,16 @@ pub async fn status() -> impl IntoResponse {
 
 // New
 // This endpoint handles the move made by the human player and then triggers the bot's response.
+
+#[utoipa::path(
+    post,
+    path = "/execute-move",
+    request_body = MoveRequest,
+    responses(
+        (status = 200, description = "Movimiento procesado", body = Value) // Value porque devuelves un json! manual
+    ),
+    tag = "Bot"
+)]
 pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
@@ -265,6 +291,16 @@ pub async fn realizar_movimiento(
  *
  *
  */
+
+ #[utoipa::path(
+    post,
+    path = "/reset",
+    request_body = ResetRequest,
+    responses(
+        (status = 200, description = "Tablero reiniciado", body = YEN)
+    ),
+    tag = "Bot"
+)]
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
@@ -299,6 +335,15 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     let diff_strings: Vec<String> = difficulties.iter().map(|d| d.to_string()).collect();
     axum::Json(diff_strings)
 }
+
+#[utoipa::path(
+    get,
+    path = "/history",
+    responses(
+        (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
+    ),
+    tag = "Bot"
+)]
 pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
 

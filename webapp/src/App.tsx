@@ -99,20 +99,13 @@ function App() {
 
   useEffect(() => {
     // Cargar dificultades disponibles al iniciar
-    fetch('http://localhost:3000/difficulties')
+    fetch(`${API_BASE_URL}/difficulties`)
       .then(res => res.json())
       .then(data => setAvailableDifficulties(data))
       .catch(err => console.error('Error fetching difficulties:', err));
   }, []);
 
   const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
-    const response = await fetch('http://localhost:3000/reset', {
-  // COMUNICACION CON BACKEND
-
-  /**
-   * Le pide al servidor de Rust que limpie el tablero y cree uno nuevo.
-   */
-  const requestResetBoard = async (dimension: number | null): Promise<GameYData | null> => {
     const response = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -153,38 +146,41 @@ function App() {
     const requestedDimension = options?.dimension ?? null;
     const shouldResetChoices = options?.resetChoices ?? true;
 
-    if (playerName.trim() !== '') {
-      setUsername(playerName.trim());
-      setConnectionStatus('Iniciando nueva partida predeterminada...');
-
-      try {
-        let targetDifficulty = difficultyChoice;
-
-        const board = await requestResetBoard(requestedDimension ?? 6);
-        // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
-        // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
-        // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
-        if (shouldResetChoices) {
-          targetDifficulty = 'Easy';
-          setDifficultyChoice(targetDifficulty);
-          setSizeChoice('Tamaño 6x6x6');
-        }
-
-        // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
-        const finalDiff = targetDifficulty || 'Easy';
-
-        const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
-        setBoardData(board);
-
-        setShowResultModal(false);
-        setWinner(null);
-        setCurrentScreen('game');
-        setConnectionStatus('¡Partida lista!');
-      } catch (error) {
-        console.error('Error starting the game:', error);
-        setConnectionStatus('Error al conectar con el servidor.');
-      }
+    if (playerName.trim() === '') {
+      return Promise.resolve();
     }
+
+    setUsername(playerName.trim());
+    setConnectionStatus('Iniciando nueva partida predeterminada...');
+
+    try {
+      let targetDifficulty = difficultyChoice;
+
+      // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
+      // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
+      // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
+      if (shouldResetChoices) {
+        targetDifficulty = 'Easy';
+        setDifficultyChoice(targetDifficulty);
+        setSizeChoice('Tamaño 6x6x6');
+      }
+
+      // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
+      const finalDiff = targetDifficulty || 'Easy';
+
+      const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
+      setBoardData(board);
+
+      setShowResultModal(false);
+      setWinner(null);
+      setCurrentScreen('game');
+      setConnectionStatus('¡Partida lista!');
+    } catch (error) {
+      console.error('Error starting the game:', error);
+      setConnectionStatus('Error al conectar con el servidor.');
+      throw error;
+    }
+    
   };
 
   const handleStart = async () => {
