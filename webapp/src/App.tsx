@@ -153,7 +153,6 @@ function App() {
       try {
         let targetDifficulty = difficultyChoice;
 
-        const board = await requestResetBoard(requestedDimension ?? 6);
         // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
         // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
         // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
