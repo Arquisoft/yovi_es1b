@@ -70,6 +70,18 @@ impl TriangularTopology {
             regions,
         }
     }
+
+    pub fn side_a() -> u32 {
+        Self::SIDE_A
+    }
+
+    pub fn side_b() -> u32 {
+        Self::SIDE_B
+    }
+
+    pub fn side_c() -> u32 {
+        Self::SIDE_C
+    }
 }
 
 impl BoardTopology for TriangularTopology {
@@ -88,5 +100,13 @@ impl BoardTopology for TriangularTopology {
     fn winning_mask(&self) -> RegionMask {
         // Para ganar en Y, necesitas tocar los 3 lados
         Self::SIDE_A | Self::SIDE_B | Self::SIDE_C
+    }
+
+    fn coords_to_index(&self, coords: Coordinates) -> CellIndex {
+        coords.to_index(self.size) as usize
+    }
+
+    fn index_to_coords(&self, index: CellIndex) -> Coordinates {
+        Coordinates::from_index(index as u32, self.size)
     }
 }

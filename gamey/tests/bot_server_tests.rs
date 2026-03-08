@@ -2,14 +2,29 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
-use gamey::{YBotRegistry, YEN, create_default_state, create_router, state::AppState, RandomBot, MoveResponse, ErrorResponse};
+use gamey::{
+    ErrorResponse, MoveResponse, RandomBot, YBotRegistry, YEN, create_router, state::AppState,
+};
 use http_body_util::BodyExt;
+use mongodb::Client;
 use std::sync::Arc;
 use tower::ServiceExt;
 
+/// Helper para obtener una base de datos de prueba (local/falsa)
+/// Esto permite que el struct AppState se cree correctamente
+async fn get_test_db() -> mongodb::Database {
+    let client = Client::with_uri_str("mongodb://localhost:27017")
+        .await
+        .unwrap_or_else(|_| panic!("Fallo al crear cliente de prueba"));
+    client.database("test_db")
+}
+
 /// Helper to create a test app with the default state
-fn test_app() -> axum::Router {
-    create_router(create_default_state())
+async fn test_app() -> axum::Router {
+    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+    let db = get_test_db().await;
+    let state = AppState::new(bots, db);
+    create_router(state)
 }
 
 /// Helper to create a test app with a custom state
@@ -23,7 +38,7 @@ fn test_app_with_state(state: AppState) -> axum::Router {
 
 #[tokio::test]
 async fn test_status_endpoint_returns_ok() {
-    let app = test_app();
+    let app = test_app().await;
 
     let response = app
         .oneshot(
@@ -47,7 +62,7 @@ async fn test_status_endpoint_returns_ok() {
 
 #[tokio::test]
 async fn test_choose_endpoint_with_valid_request() {
-    let app = test_app();
+    let app = test_app().await;
 
     // Create a valid YEN (Y-game Exchange Notation) for a size 3 board
     // Layout: empty board with 3 rows (size 3): row1=1cell, row2=2cells, row3=3cells
@@ -77,7 +92,7 @@ async fn test_choose_endpoint_with_valid_request() {
 
 #[tokio::test]
 async fn test_choose_endpoint_with_partially_filled_board() {
-    let app = test_app();
+    let app = test_app().await;
 
     // Board with some cells already filled: B in first cell, R in second
     let yen = YEN::new(3, 2, vec!['B', 'R'], "B/R./.B.".to_string());
@@ -109,7 +124,7 @@ async fn test_choose_endpoint_with_partially_filled_board() {
 
 #[tokio::test]
 async fn test_choose_endpoint_with_invalid_api_version() {
-    let app = test_app();
+    let app = test_app().await;
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
 
@@ -136,7 +151,7 @@ async fn test_choose_endpoint_with_invalid_api_version() {
 
 #[tokio::test]
 async fn test_choose_endpoint_with_unknown_bot() {
-    let app = test_app();
+    let app = test_app().await;
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
 
@@ -164,7 +179,7 @@ async fn test_choose_endpoint_with_unknown_bot() {
 
 #[tokio::test]
 async fn test_choose_endpoint_with_invalid_json() {
-    let app = test_app();
+    let app = test_app().await;
 
     let response = app
         .oneshot(
@@ -184,7 +199,7 @@ async fn test_choose_endpoint_with_invalid_json() {
 
 #[tokio::test]
 async fn test_choose_endpoint_with_missing_content_type() {
-    let app = test_app();
+    let app = test_app().await;
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
 
@@ -212,7 +227,8 @@ async fn test_choose_endpoint_with_missing_content_type() {
 async fn test_choose_with_custom_bot_registry() {
     // Create a custom registry with only the random bot
     let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
-    let state = AppState::new(bots);
+    let db = get_test_db().await; // Obtenemos la DB para el test
+    let state = AppState::new(bots, db);
     let app = test_app_with_state(state);
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
@@ -236,7 +252,8 @@ async fn test_choose_with_custom_bot_registry() {
 async fn test_choose_with_empty_bot_registry() {
     // Create an empty registry
     let bots = YBotRegistry::new();
-    let state = AppState::new(bots);
+    let db = get_test_db().await; // Obtenemos la DB para el test
+    let state = AppState::new(bots, db);
     let app = test_app_with_state(state);
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
@@ -267,7 +284,7 @@ async fn test_choose_with_empty_bot_registry() {
 
 #[tokio::test]
 async fn test_unknown_route_returns_404() {
-    let app = test_app();
+    let app = test_app().await;
 
     let response = app
         .oneshot(
@@ -284,7 +301,7 @@ async fn test_unknown_route_returns_404() {
 
 #[tokio::test]
 async fn test_wrong_method_on_status_endpoint() {
-    let app = test_app();
+    let app = test_app().await;
 
     let response = app
         .oneshot(
@@ -303,7 +320,7 @@ async fn test_wrong_method_on_status_endpoint() {
 
 #[tokio::test]
 async fn test_get_on_choose_endpoint_returns_method_not_allowed() {
-    let app = test_app();
+    let app = test_app().await;
 
     let response = app
         .oneshot(

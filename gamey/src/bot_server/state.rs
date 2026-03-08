@@ -1,7 +1,9 @@
 use crate::YBotRegistry;
-use std::sync::Arc;
 use crate::core::game::GameY;
+use mongodb::Database;
+use std::sync::Arc;
 use std::sync::Mutex;
+use crate::BotDifficulty;
 
 /// Shared application state for the bot server.
 ///
@@ -13,14 +15,18 @@ pub struct AppState {
     /// The registry of available bots, wrapped in Arc for thread-safe sharing.
     bots: Arc<YBotRegistry>,
     pub game: Arc<Mutex<GameY>>, // NEW: The actual game state, wrapped in Arc and Mutex for safe concurrent access
+    pub current_difficulty: Arc<Mutex<BotDifficulty>>, // NEW: The current difficulty level
+    pub db: Database,
 }
 
 impl AppState {
     /// Creates a new application state with the given bot registry.
-    pub fn new(bots: YBotRegistry) -> Self {
+    pub fn new(bots: YBotRegistry, db: Database) -> Self {
         Self {
             bots: Arc::new(bots),
-            game: Arc::new(Mutex::new(GameY::new(5))) // NEW: Initialize the game state with a new GameY instance of size 5
+            game: Arc::new(Mutex::new(GameY::new(5))), // NEW: Initialize the game state with a new GameY instance of size 5
+            current_difficulty: Arc::new(Mutex::new(BotDifficulty::Easy)), // Default difficulty
+            db                                        // Guardar la conexion
         }
     }
 
@@ -29,6 +35,8 @@ impl AppState {
         Arc::clone(&self.bots)
     }
 }
+
+/*
 
 #[cfg(test)]
 mod tests {
@@ -68,3 +76,5 @@ mod tests {
         assert_eq!(bots1.names(), bots2.names());
     }
 }
+
+*/

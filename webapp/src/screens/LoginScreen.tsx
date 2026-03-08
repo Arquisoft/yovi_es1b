@@ -41,7 +41,7 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
       const data = await response.json();
 
       if (response.ok) {
-        // Login exitoso, inicia el juego con ese usuario
+        // El estado de partida se crea en el componente padre (App) usando este username.
         await onLogin(formData.username.trim());
       } else {
         setFormError(data.error || 'Error al iniciar sesion.');
@@ -84,7 +84,7 @@ function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
           />
         </div>
 
-        <button type="submit" disabled={isLoading}>
+        <button type="submit" className="submit-button" disabled={isLoading}>
           {isLoading ? 'Iniciando sesion...' : 'Iniciar sesion'}
         </button>
         <button type="button" className="submit-button" onClick={onBack}> {/* No envia formulario */}
