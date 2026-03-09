@@ -49,6 +49,6 @@ describe('POST /login', () => {
             })
 
         expect(res.status).toBe(401)
-        expect(res.body.error).toBe('Contraseña incorrecta')
+        expect(res.body.error).toBe('Usuario o contraseña incorrecta')
     })
 })
