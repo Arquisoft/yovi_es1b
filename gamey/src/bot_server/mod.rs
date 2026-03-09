@@ -22,38 +22,46 @@
 //! }
 //! ```
 
-pub mod play;
 pub mod error;
+pub mod play;
 pub mod state;
 pub mod version;
 
 use axum::response::IntoResponse;
-pub use play::{play, PlayRequest, PlayResponse};
 use chrono::Utc;
 pub use error::ErrorResponse;
+pub use play::{PlayRequest, PlayResponse, play};
 use std::sync::Arc;
 pub use version::*;
 
-use crate::{BotDifficulty, GameYError, state::AppState, YEN};
+use crate::{BotDifficulty, GameYError, YEN, state::AppState};
 
 use serde::Deserialize;
 use std::str::FromStr;
 
-use tower_http::cors::{Any, CorsLayer};
-use crate::bot::random::RandomBot;
-use crate::bot::pro_bot::ProBot; 
-use crate::bot::edge_bot::EdgeBot;
 use crate::bot::attacker_bot::AttackerBot;
+use crate::bot::edge_bot::EdgeBot;
+use crate::bot::pro_bot::ProBot;
+use crate::bot::random::RandomBot;
 use crate::bot::ybot_registry::YBotRegistry;
+use futures::stream::StreamExt;
+use mongodb::bson::doc;
+use tower_http::cors::{Any, CorsLayer};
 
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct MoveRequest {
     pub index: u32,
+    pub player: String,
+}
+
+// Para obtener el historial de partidas de un usuario específico.
+#[derive(Deserialize)]
+pub struct HistoryQuery {
+    pub username: String,
 }
 
 use utoipa::OpenApi;
-
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -108,10 +116,11 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/history", axum::routing::get(obtener_historial))
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
         .route("/difficulties", axum::routing::get(listar_dificultades)) // new
-
         .route("/api/play", axum::routing::post(play::play))
-        .merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
-
+        .merge(
+            utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
+                .url("/api-docs/openapi.json", ApiDoc::openapi()),
+        )
         .with_state(state)
 }
 
@@ -156,8 +165,7 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
         .with_bot(Arc::new(RandomBot))
         .with_bot(Arc::new(ProBot))
         .with_bot(Arc::new(AttackerBot))
-        .with_bot(Arc::new(EdgeBot)); 
-    
+        .with_bot(Arc::new(EdgeBot));
 
     let state = AppState::new(bots, db);
     let app = create_router(state);
@@ -278,6 +286,7 @@ pub async fn realizar_movimiento(
         tokio::spawn(async move {
             let collection = db.collection::<serde_json::Value>("partidas");
             let record = serde_json::json!({
+                "player": payload.player,
                 "date": Utc::now().to_rfc3339(),
                 "opponent": final_bot_name,
                 "board_size": b_size_clone,
@@ -305,7 +314,7 @@ pub async fn realizar_movimiento(
  *
  */
 
- #[utoipa::path(
+#[utoipa::path(
     post,
     path = "/reset",
     request_body = ResetRequest,
@@ -332,7 +341,6 @@ pub async fn reiniciar_juego(
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
             let mut current_diff = state.current_difficulty.lock().unwrap();
             *current_diff = diff;
-
 
             // Elegimos un bot al azar de esa dificultad y GUARDAMOS SU NOMBRE para toda la partida
             if let Some(chosen_bot) = state.bots().get_random_bot_by_difficulty(diff) {
@@ -367,23 +375,33 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     tag = "Bot"
 )]
 pub async fn obtener_historial(
-    axum::extract::State(_state): axum::extract::State<AppState>,
-
-
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
 ) -> impl IntoResponse {
-    // 1. Aquí te conectarías a la colección de partidas en Mongo
-    // 2. Harías un find() para traer todas las partidas
+    // Acceder bbdd
+    let collection = state.db.collection::<serde_json::Value>("partidas");
 
-    // De momento, devolvemos un JSON de prueba para que veas que el "puente" funciona:
-    axum::Json(serde_json::json!([
-        {
-            "id": "1",
-            "date": "2026-03-06T15:00:00Z",
-            "opponent": "RandomBot",
-            "board_size": 6,
-            "difficulty": "facil",
-            "result": "Victoria"
+    // Consultar partidas del usuario
+    let filter = doc! { "player": &params.username };
+
+    // Definir opciones
+    let mut cursor = match collection
+        .find(filter)
+        .sort(doc! { "date": -1 }) // Ordenamos de más reciente a más antiguo
+        .await
+    {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Error al buscar en la BBDD: {}", e);
+            return axum::Json(serde_json::json!([]));
         }
-    ]))
+    };
 
+    // Recoger los resultados del cursor
+    let mut partidas = Vec::new();
+    while let Some(Ok(doc)) = cursor.next().await {
+        partidas.push(doc);
+    }
+
+    axum::Json(serde_json::json!(partidas))
 }

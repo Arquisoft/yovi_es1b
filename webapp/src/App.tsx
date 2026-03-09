@@ -263,174 +263,181 @@ function App() {
       playerName: string,
       options?: { dimension?: number | null; resetChoices?: boolean }
   ) => {
+
+    if (!playerName.trim()) return;
+    const name = playerName.trim();
+    setUsername(name);
+
     // Permite iniciar partida forzando tamaño (desde Game) o limpiando selecciones (desde Home/Login).
     const requestedDimension = options?.dimension ?? null;
     const shouldResetChoices = options?.resetChoices ?? true;
 
-    if (playerName.trim() !== '') {
-      setUsername(playerName.trim());
-      setConnectionStatus('Iniciando nueva partida predeterminada...');
+    try {
+      let targetDifficulty = difficultyChoice;
 
-      try {
-        let targetDifficulty = difficultyChoice;
-
-        // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
-        // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
-        // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
-        if (shouldResetChoices) {
-          targetDifficulty = 'Easy';
-          setDifficultyChoice(targetDifficulty);
-          setSizeChoice('Tamaño 6x6x6');
-        }
-
-        // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
-        const finalDiff = targetDifficulty || 'Easy';
-
-        const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
-        setBoardData(board);
-
-        setShowResultModal(false);
-        setWinner(null);
-        setCurrentScreen('game');
-        setConnectionStatus('¡Partida lista!');
-        // Arrancar el temporizador para el primer turno
-        startTurnTimer(finalDiff);
-      } catch (error) {
-        console.error('Error starting the game:', error);
-        setConnectionStatus('Error al conectar con el servidor.');
-        throw error;
+      // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
+      // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
+      // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
+      if (shouldResetChoices) {
+        targetDifficulty = 'Easy';
+        setDifficultyChoice(targetDifficulty);
+        setSizeChoice('Tamaño 6x6x6');
       }
+
+      // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
+      const finalDiff = targetDifficulty || 'Easy';
+
+      const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
+      setBoardData(board);
+
+      setShowResultModal(false);
+      setWinner(null);
+      setCurrentScreen('game');
+      setConnectionStatus('¡Partida lista!');
+    } catch (error) {
+      console.error('Error starting the game:', error);
+      setConnectionStatus('Error al conectar con el servidor.');
+      throw error;
+    }
+    
+  };
+
+  const handleStart = async () => {
+    await startGameWithUser(username);
+  };
+        
+  /**
+   * Corazon del juego.
+   * Cuando el usuario pulsa una celda, se envia al backend para que actualice
+   * el tablero y responda con el nuevo estado de la partida.
+   */
+  const handleCellClick = async (index: number) => {
+    if (winner !== null) return;
+
+    // Detener el temporizador mientras se procesa el movimiento
+    stopTurnTimer();
+
+    setConnectionStatus(`Moviendo a la posicion ${index}...`);
+    try {
+      console.log("Sending move for user:", username); // DEBUG
+      // Envia el movimiento al backend para actualizar tablero
+      const response = await fetch(`${API_BASE_URL}/move`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          cellIndex: index,
+          username: username, 
+          difficulty: difficultyChoice,
+          boardSize: boardData?.size
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.responseFromRust) {
+        const serverBoard = data.responseFromRust as GameYData;
+        const chosenDimension = getBoardDimensionFromSizeChoice(sizeChoice);
+        const boardSize =
+            serverBoard?.size && Number.isFinite(serverBoard.size) && serverBoard.size > 0
+                ? serverBoard.size
+                : (chosenDimension ?? 5);
+        const serverFlatLayout = (serverBoard?.layout ?? '').replaceAll('/', '');
+        const shouldPatchClickedCell =
+            index >= 0 &&
+            index < (boardSize * (boardSize + 1)) / 2 &&
+            serverFlatLayout[index] === '.';
+
+        setBoardData(
+            shouldPatchClickedCell
+                ? {
+                  ...serverBoard,
+                  size: boardSize,
+                  layout: patchTriangularLayoutCell(serverBoard.layout ?? '', boardSize, index, 'B'),
+                }
+                : serverBoard
+        );
+        setWinner(data.winner);
+
+        if (data.winner !== null) {
+          setShowResultModal(true);
+          setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
+        } else {
+          setConnectionStatus('Movimiento realizado!');
+          // El bot ya respondió: reiniciar temporizador para el siguiente turno del jugador
+          if (difficultyChoice) startTurnTimer(difficultyChoice);
+        }
+      }
+    } catch (error) {
+      setConnectionStatus('Error realizando el movimiento');
+      // Reanudar temporizador aunque haya error
+      if (difficultyChoice) startTurnTimer(difficultyChoice);
+    }
+  }
+
+
+  const handleResetFromGame = async () => {
+    const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
+    // Al reiniciar desde el juego, mantenemos la dificultad actual
+    if (difficultyChoice) {
+      const board = await requestResetBoard(selectedDimension, difficultyChoice);
+      resetGameState(board, 'Partida reiniciada');
+    } else {
+      await startGameWithUser(username, {dimension: selectedDimension, resetChoices: false});
     }
   };
 
-    const handleStart = async () => {
-      await startGameWithUser(username);
-    };
-
-    /**
-     * Corazon del juego.
-     * Cuando el usuario pulsa una celda, se envia al backend para que actualice
-     * el tablero y responda con el nuevo estado de la partida.
-     */
-    const handleCellClick = async (index: number) => {
-      if (winner !== null) return;
-
-      // Detener el temporizador mientras se procesa el movimiento
-      stopTurnTimer();
-
-      setConnectionStatus(`Moviendo a la posicion ${index}...`);
-      try {
-        console.log("Sending move for user:", username); // DEBUG
-        // Envia el movimiento al backend para actualizar tablero
-        const response = await fetch(`${API_BASE_URL}/move`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({cellIndex: index, username: username, difficulty: difficultyChoice}),
-        });
-
-        const data = await response.json();
-
-        if (data.responseFromRust) {
-          const serverBoard = data.responseFromRust as GameYData;
-          const chosenDimension = getBoardDimensionFromSizeChoice(sizeChoice);
-          const boardSize =
-              serverBoard?.size && Number.isFinite(serverBoard.size) && serverBoard.size > 0
-                  ? serverBoard.size
-                  : (chosenDimension ?? 5);
-          const serverFlatLayout = (serverBoard?.layout ?? '').replaceAll('/', '');
-          const shouldPatchClickedCell =
-              index >= 0 &&
-              index < (boardSize * (boardSize + 1)) / 2 &&
-              serverFlatLayout[index] === '.';
-
-          setBoardData(
-              shouldPatchClickedCell
-                  ? {
-                    ...serverBoard,
-                    size: boardSize,
-                    layout: patchTriangularLayoutCell(serverBoard.layout ?? '', boardSize, index, 'B'),
-                  }
-                  : serverBoard
-          );
-          setWinner(data.winner);
-
-          if (data.winner !== null) {
-            setShowResultModal(true);
-            setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
-          } else {
-            setConnectionStatus('Movimiento realizado!');
-            // El bot ya respondió: reiniciar temporizador para el siguiente turno del jugador
-            if (difficultyChoice) startTurnTimer(difficultyChoice);
-          }
-        }
-      } catch (error) {
-        setConnectionStatus('Error realizando el movimiento');
-        // Reanudar temporizador aunque haya error
-        if (difficultyChoice) startTurnTimer(difficultyChoice);
-      }
+  // NEW: Función para manejar la rendición explícita
+  const handleSurrender = async () => {
+    try {
+      await fetch(`${API_BASE_URL}/surrender`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({username: username, difficulty: difficultyChoice}),
+      });
+    } catch (error) {
+      console.error("Error surrendering:", error);
     }
+  };
+
+  const handleEndFromGame = async () => {
+    // Parar el temporizador al rendirse1
+    stopTurnTimer();
+    // Primero registramos la rendición en el backend
+    await handleSurrender();
+
+    // Luego actualizamos la UI
+    setWinner(1);
+    setShowResultModal(true);
+    setConnectionStatus('Has perdido!');
+  };
+
+  const handleExitFromGame = () => {
+    stopTurnTimer();
+    setShowResultModal(false);
+    setCurrentScreen('home');
+  };
 
 
-    const handleResetFromGame = async () => {
-      const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
-      // Al reiniciar desde el juego, mantenemos la dificultad actual
-      if (difficultyChoice) {
-        const board = await requestResetBoard(selectedDimension, difficultyChoice);
-        resetGameState(board, 'Partida reiniciada');
-      } else {
-        await startGameWithUser(username, {dimension: selectedDimension, resetChoices: false});
-      }
-    };
+  /**
+   * Logica para cargar el historial desde el servidor1
+   */
+ const fetchHistory = async () => {
 
-    // NEW: Función para manejar la rendición explícita
-    const handleSurrender = async () => {
-      try {
-        await fetch(`${API_BASE_URL}/surrender`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({username: username, difficulty: difficultyChoice}),
-        });
-      } catch (error) {
-        console.error("Error surrendering:", error);
-      }
-    };
-
-    const handleEndFromGame = async () => {
-      // Parar el temporizador al rendirse
-      stopTurnTimer();
-      // Primero registramos la rendición en el backend
-      await handleSurrender();
-
-      // Luego actualizamos la UI
-      setWinner(1);
-      setShowResultModal(true);
-      setConnectionStatus('Has perdido!');
-    };
-
-    const handleExitFromGame = () => {
-      stopTurnTimer();
-      setShowResultModal(false);
-      setCurrentScreen('home');
-    };
-
-    /**
-     * Logica para cargar el historial desde el servidor
-     */
-    const fetchHistory = async () => {
-      console.log("Fetching history for user:", username); // DEBUG
-      if (!username) {
-        console.warn("Cannot fetch history: username is empty");
-        return;
-      }
-      try {
-        const response = await fetch(`${API_BASE_URL}/history?username=${username}`);
-        const data = await response.json();
-        setHistoryData(data.history || []);
-        setShowHistory(true);
-      } catch (error) {
-        console.error('Error fetching history:', error);
-      }
-    }
+  if (!username) {
+    setConnectionStatus('Debes estar identificado para ver el historial.');
+    return;
+  }
+  try {
+    const response = await fetch(`${API_BASE_URL}/history?username=${username}`);
+    const data = await response.json();
+    
+    // Como vemos en tus logs, llega un [ { ... } ], así que lo guardamos tal cual
+    setHistoryData(data || []); 
+    setShowHistory(true);
+  } catch (error) {
+    console.error('Error fetching history:', error);
+  }
+ }
 
 
     // Renderizado de pantallas
@@ -622,8 +629,8 @@ function App() {
                           </tr>
                           </thead>
                           <tbody>
-                          {historyData.map((game: any) => (
-                              <tr key={game.id}>
+                          {historyData.map((game: any, index: number) => (
+                              <tr key={game._id?.$oid || index}>
                                 <td>{new Date(game.date).toLocaleDateString()}</td>
                                 <td>{game.opponent}</td>
                                 <td>{game.board_size}x{game.board_size}</td>
