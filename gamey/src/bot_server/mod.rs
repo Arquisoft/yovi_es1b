@@ -41,7 +41,7 @@ use std::str::FromStr;
 
 use tower_http::cors::{Any, CorsLayer};
 use crate::bot::random::RandomBot;
-use crate::bot::pro_bot::ProBot; 
+use crate::bot::pro_bot::ProBot;
 use crate::bot::ybot_registry::YBotRegistry;
 
 // This helps Rust to understand the JSON that receive from Node
@@ -364,5 +364,5 @@ pub async fn obtener_historial(
             "result": "Victoria"
         }
     ]))
-    
+
 }

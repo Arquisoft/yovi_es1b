@@ -106,10 +106,12 @@ function App() {
   }, []);
 
   const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
-    const response = await fetch(`${API_BASE_URL}/reset`, {
+    console.log("Resetting board (neutral action)"); // DEBUG
+    // FIX: Ya no enviamos username porque resetear no debe contar como derrota
+    const response = await fetch('http://localhost:3000/reset', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ size: dimension, difficulty: difficulty }),
+      body: JSON.stringify({ size: dimension, difficulty: difficulty, username: username }),
     });
 
     if (!response.ok) {
@@ -146,12 +148,9 @@ function App() {
     const requestedDimension = options?.dimension ?? null;
     const shouldResetChoices = options?.resetChoices ?? true;
 
-    if (playerName.trim() === '') {
-      return Promise.resolve();
-    }
-
-    setUsername(playerName.trim());
-    setConnectionStatus('Iniciando nueva partida predeterminada...');
+    if (playerName.trim() !== '') {
+      setUsername(playerName.trim());
+      setConnectionStatus('Iniciando nueva partida predeterminada...');
 
     try {
       let targetDifficulty = difficultyChoice;
@@ -180,7 +179,6 @@ function App() {
       setConnectionStatus('Error al conectar con el servidor.');
       throw error;
     }
-    
   };
 
   const handleStart = async () => {
@@ -197,11 +195,12 @@ function App() {
 
     setConnectionStatus(`Moviendo a la posicion ${index}...`);
     try {
+      console.log("Sending move for user:", username); // DEBUG
       // Envia el movimiento al backend para actualizar tablero
       const response = await fetch(`${API_BASE_URL}/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cellIndex: index, player: username }),
+        body: JSON.stringify({ cellIndex: index, username: username, difficulty: difficultyChoice }),
       });
 
       const data = await response.json();
@@ -255,7 +254,24 @@ function App() {
     }
   };
 
-  const handleEndFromGame = () => {
+  // NEW: Función para manejar la rendición explícita
+  const handleSurrender = async () => {
+    try {
+        await fetch(`${API_BASE_URL}/surrender`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, difficulty: difficultyChoice }),
+        });
+    } catch (error) {
+        console.error("Error surrendering:", error);
+    }
+  };
+
+  const handleEndFromGame = async () => {
+    // Primero registramos la rendición en el backend
+    await handleSurrender();
+
+    // Luego actualizamos la UI
     setWinner(1);
     setShowResultModal(true);
     setConnectionStatus('Has perdido!');
@@ -270,10 +286,15 @@ function App() {
    * Logica para cargar el historial desde el servidor
    */
  const fetchHistory = async () => {
+  console.log("Fetching history for user:", username); // DEBUG
+  if (!username) {
+      console.warn("Cannot fetch history: username is empty");
+      return;
+  }
   try {
-    const response = await fetch(`${API_BASE_URL}/history`);
+    const response = await fetch(`${API_BASE_URL}/history?username=${username}`);
     const data = await response.json();
-    setHistoryData(data);
+    setHistoryData(data.history || []);
     setShowHistory(true);
   } catch (error) {
     console.error('Error fetching history:', error);
