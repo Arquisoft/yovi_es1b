@@ -166,6 +166,7 @@ impl ProBot {
         for n in board.get_neighbors(&coords) {
             if board.get_player_at(n) == Some(my_id) {
                 my_neighbors += 1;
+                
             }
         }
         // Si conecta dos o más grupos propios, es una celda clave
