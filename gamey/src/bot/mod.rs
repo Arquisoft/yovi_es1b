@@ -12,6 +12,7 @@ use std::sync::Arc;
 pub mod blocker_bot;
 pub mod pro_bot;
 pub mod random;
+pub mod attacker_bot;
 pub mod ybot;
 pub mod ybot_registry;
 

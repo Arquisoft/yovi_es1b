@@ -42,6 +42,7 @@ use std::str::FromStr;
 use tower_http::cors::{Any, CorsLayer};
 use crate::bot::random::RandomBot;
 use crate::bot::pro_bot::ProBot; 
+use crate::bot::attacker_bot::AttackerBot;
 use crate::bot::ybot_registry::YBotRegistry;
 
 // This helps Rust to understand the JSON that receive from Node
@@ -149,7 +150,12 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let db = client.database("gamey_db");
 
     // Crar el estado pasando la DB
-    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+
+    let bots = YBotRegistry::new()
+        .with_bot(Arc::new(RandomBot))
+        .with_bot(Arc::new(ProBot))
+        .with_bot(Arc::new(AttackerBot));
+    
 
     let state = AppState::new(bots, db);
     let app = create_router(state);
