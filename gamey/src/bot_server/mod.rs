@@ -385,5 +385,5 @@ pub async fn obtener_historial(
             "result": "Victoria"
         }
     ]))
-    
+
 }
