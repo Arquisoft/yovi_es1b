@@ -27,7 +27,7 @@ pub mod play;
 pub mod state;
 pub mod version;
 
-use axum::response::IntoResponse;
+use axum::{Json, response::IntoResponse};
 use chrono::Utc;
 pub use error::ErrorResponse;
 pub use play::{PlayRequest, PlayResponse, play};
@@ -59,6 +59,14 @@ pub struct MoveRequest {
 #[derive(Deserialize)]
 pub struct HistoryQuery {
     pub username: String,
+}
+
+// Estructura para recibir la rendición
+#[derive(Deserialize)]
+pub struct SurrenderRequest {
+    player: String,
+    difficulty: String,
+    board_size: i32,
 }
 
 use utoipa::OpenApi;
@@ -116,6 +124,7 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/history", axum::routing::get(obtener_historial))
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
         .route("/difficulties", axum::routing::get(listar_dificultades)) // new
+        .route("/surrender", axum::routing::post(rendirse))
         .route("/api/play", axum::routing::post(play::play))
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
@@ -404,4 +413,36 @@ pub async fn obtener_historial(
     }
 
     axum::Json(serde_json::json!(partidas))
+}
+
+pub async fn rendirse(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<SurrenderRequest>,
+) -> impl IntoResponse {
+    // 1. Obtener contexto del juego actual (Bot que estaba jugando)
+    let active_bot_name = state.active_bot.lock().unwrap().clone();
+    let db = state.db.clone();
+
+    // 2. Guardar la derrota en MongoDB (usamos tokio::spawn como en realizar_movimiento)
+    tokio::spawn(async move {
+        let collection = db.collection::<serde_json::Value>("partidas");
+        let record = serde_json::json!({
+            "player": payload.player,
+            "date": Utc::now().to_rfc3339(),
+            "opponent": active_bot_name,
+            "board_size": payload.board_size,
+            "difficulty": payload.difficulty,
+            "result": "Derrota" // Al rendirse, el resultado es siempre derrota
+        });
+
+        if let Err(e) = collection.insert_one(record).await {
+            eprintln!("Error al guardar la rendición en MongoDB: {:?}", e);
+        }
+    });
+
+    // 3. Responder al Gateway
+    axum::Json(serde_json::json!({
+        "status": "ok",
+        "message": "Rendición registrada correctamente"
+    }))
 }
