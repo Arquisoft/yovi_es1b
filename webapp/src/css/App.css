@@ -107,3 +107,55 @@
   flex-direction: column;
   gap: 0.6rem;
 }
+
+
+/* --- ESTILOS ESPECÍFICOS PARA EL HISTORIAL --- */
+
+/* Para que ell modal del historial sea más ancho que el normal */
+.modal-box.history-modal {
+  width: min(95vw, 45rem); 
+  max-height: 85vh;
+}
+
+.history-table-container {
+  margin-top: 1rem;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.history-table th {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  color: #555;
+  border-bottom: 2px solid #eee;
+}
+
+.history-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #eee;
+  color: #333;
+}
+
+/* Semántica de colores para el historial */
+.text-win {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.text-loss {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.history-table tr:hover {
+  background-color: #fcfcfc;
+}

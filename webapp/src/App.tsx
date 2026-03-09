@@ -99,7 +99,7 @@ function App() {
 
   useEffect(() => {
     // Cargar dificultades disponibles al iniciar
-    fetch('http://localhost:3000/difficulties')
+    fetch(`${API_BASE_URL}/difficulties`)
       .then(res => res.json())
       .then(data => setAvailableDifficulties(data))
       .catch(err => console.error('Error fetching difficulties:', err));
@@ -152,32 +152,32 @@ function App() {
       setUsername(playerName.trim());
       setConnectionStatus('Iniciando nueva partida predeterminada...');
 
-      try {
-        let targetDifficulty = difficultyChoice;
+    try {
+      let targetDifficulty = difficultyChoice;
 
-        // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
-        // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
-        // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
-        if (shouldResetChoices) {
-          targetDifficulty = 'Easy';
-          setDifficultyChoice(targetDifficulty);
-          setSizeChoice('Tamaño 6x6x6');
-        }
-
-        // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
-        const finalDiff = targetDifficulty || 'Easy';
-
-        const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
-        setBoardData(board);
-
-        setShowResultModal(false);
-        setWinner(null);
-        setCurrentScreen('game');
-        setConnectionStatus('¡Partida lista!');
-      } catch (error) {
-        console.error('Error starting the game:', error);
-        setConnectionStatus('Error al conectar con el servidor.');
+      // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
+      // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
+      // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
+      if (shouldResetChoices) {
+        targetDifficulty = 'Easy';
+        setDifficultyChoice(targetDifficulty);
+        setSizeChoice('Tamaño 6x6x6');
       }
+
+      // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
+      const finalDiff = targetDifficulty || 'Easy';
+
+      const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
+      setBoardData(board);
+
+      setShowResultModal(false);
+      setWinner(null);
+      setCurrentScreen('game');
+      setConnectionStatus('¡Partida lista!');
+    } catch (error) {
+      console.error('Error starting the game:', error);
+      setConnectionStatus('Error al conectar con el servidor.');
+      throw error;
     }
   };
 
@@ -197,8 +197,6 @@ function App() {
     try {
       console.log("Sending move for user:", username); // DEBUG
       // Envia el movimiento al backend para actualizar tablero
-      // FIX: Cambiado 'player' por 'username' para coincidir con el backend
-      // FIX: Añadido 'difficulty' para que se guarde correctamente en el historial
       const response = await fetch(`${API_BASE_URL}/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -272,7 +270,7 @@ function App() {
   const handleEndFromGame = async () => {
     // Primero registramos la rendición en el backend
     await handleSurrender();
-    
+
     // Luego actualizamos la UI
     setWinner(1);
     setShowResultModal(true);

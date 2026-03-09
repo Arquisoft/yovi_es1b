@@ -257,7 +257,7 @@ pub async fn listar_dificultades() -> impl IntoResponse {
 }
 
 pub async fn obtener_historial(
-    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::State(_state): axum::extract::State<AppState>,
 ) -> impl IntoResponse {
     // Este endpoint podría usarse para estadísticas globales del sistema en el futuro.
     // El historial personal del usuario se gestiona en el servicio de Users.

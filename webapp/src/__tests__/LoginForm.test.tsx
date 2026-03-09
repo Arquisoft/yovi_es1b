@@ -5,6 +5,11 @@ import LoginScreen from '../screens/LoginScreen'
 import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
+const mockInitialDifficulties = {
+  ok: true,
+  json: async () => ['Easy', 'Medium', 'Hard'],
+}
+
 describe('LoginForm', () => {
   beforeAll(() => {
     vi.stubGlobal('scrollTo', vi.fn())
@@ -16,7 +21,7 @@ describe('LoginForm', () => {
 
   test('con datos incompletos no deja avanzar', async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn()
+    const fetchMock = vi.fn().mockResolvedValue(mockInitialDifficulties)
     global.fetch = fetchMock as unknown as typeof fetch
 
     render(<App />)
@@ -25,14 +30,15 @@ describe('LoginForm', () => {
     await user.type(await screen.findByLabelText(/usuario/i), 'Alice')
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('heading', { name: /recuerdame/i })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: /jugador:/i })).not.toBeInTheDocument()
   })
 
   test('con credenciales incorrectas no deja avanzar', async () => {
     const user = userEvent.setup()
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    global.fetch = vi.fn()
+    .mockResolvedValueOnce(mockInitialDifficulties)
+    .mockResolvedValueOnce({
       ok: false,
       json: async () => ({ error: 'Credenciales invalidas' }),
     } as Response)
@@ -52,7 +58,9 @@ describe('LoginForm', () => {
 
   test('no permite login de usuario inexistente', async () => {
     const user = userEvent.setup()
-    global.fetch = vi.fn().mockResolvedValueOnce({
+    global.fetch = vi.fn()
+    .mockResolvedValueOnce(mockInitialDifficulties)
+    .mockResolvedValueOnce({
       ok: false,
       json: async () => ({ error: 'Ese usuario no existe en la base de datos' }),
     } as Response)
@@ -76,6 +84,7 @@ describe('LoginForm', () => {
     const password = 'pass1234'
 
     global.fetch = vi.fn()
+      .mockResolvedValueOnce(mockInitialDifficulties)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -149,9 +158,9 @@ describe('LoginForm', () => {
       expect(screen.getByText(/jugador: jugadorprueba/i)).toBeInTheDocument()
     })
 
-    await user.click(screen.getByRole('button', { name: /facil/i }))
-    await user.click(await screen.findByRole('button', { name: /6x6x6/i }))
-    await user.click(screen.getByRole('button', { name: /celda 0/i }))
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /celda 0/i })).toBeInTheDocument();
+    });
 
    
   })

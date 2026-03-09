@@ -1,5 +1,5 @@
 use crate::core::topology::TriangularTopology;
-use crate::{Coordinates, GameY, PlayerId, YBot, BotDifficulty};
+use crate::{BotDifficulty, Coordinates, GameY, PlayerId, YBot};
 use std::collections::{HashMap, VecDeque};
 
 pub struct ProBot;
@@ -39,6 +39,16 @@ impl YBot for ProBot {
             let my_p = self.get_exponential_potential(coords, &my_dists, size);
             let opp_p = self.get_exponential_potential(coords, &opp_dists, size);
 
+            let mut opp_neighbors = 0;
+            for n in board.get_neighbors(&coords) {
+                if board.get_player_at(n) == Some(opponent_id) {
+                    opp_neighbors += 1;
+                }
+            }
+
+            // Si esta celda conecta 2 o más de tus piezas, el bot la marca como CRÍTICA
+            let opp_block_bonus = if opp_neighbors >= 2 { 1000.0 } else { 0.0 };
+
             // El centro es la clave del mapa, se calcula una bonificación para las celdas cercanas al centro del tablero
             let center_dist = self.dist_to_center(coords, size);
             let centrality_bonus = (size as f32 / (1.0 + center_dist)) * 2.0;
@@ -47,7 +57,11 @@ impl YBot for ProBot {
             let connectivity_bonus = self.check_connectivity_bonus(coords, board, my_id);
 
             // Se multiplica por 10 el potencial del oponente para que el bot bloquee al oponente antes que intentar ganar él mismo.
-            let total_score = (opp_p * 10.0) + (my_p * 0.5) + centrality_bonus + connectivity_bonus;
+            let total_score = (opp_p * 15.0)
+                + (my_p * 1.0)
+                + centrality_bonus
+                + connectivity_bonus
+                + opp_block_bonus;
 
             // Guardar la celda con mayor puntuacion
             if total_score > best_score {
@@ -115,10 +129,10 @@ impl ProBot {
                 let weight = match board.get_player_at(neighbor) {
                     Some(p) if p == player => 0, // pasar por mis cuesta 0
                     None => 1,                   // pasar por celda vacia cuesta 1 ficha
-                    _ => 100, // pasar por celda de oponente cuesta 100 (imposible)
+                    _ => 2, // pasar por celda de oponente cuesta 2 (bot mas pesado)
                 };
                 let new_dist = dists[curr as usize] + weight;
-                if new_dist < dists[n_idx as usize] && new_dist < 20 {
+                if new_dist < dists[n_idx as usize] && new_dist < 50 {
                     dists[n_idx as usize] = new_dist;
                     queue.push_back(n_idx);
                 }
@@ -142,7 +156,7 @@ impl ProBot {
         for dist_vec in dists.values() {
             let d = dist_vec[idx] as f32;
             // Cuanto menor es la distancia, el valor crece exponencialmente
-            score += 1000.0 / (d * d + 1.0);
+            score += 1000.0 / (d.powi(4) + 1.0);
         }
         score
     }
