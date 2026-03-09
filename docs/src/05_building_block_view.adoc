@@ -71,26 +71,60 @@ image::5_1-building_block.png[align="center"]
 
 Motivation::
 
-La aplicación YGame tiene la estructura básica para jugar el juego y online contra distintos bots, u otros jugadores.
-Aparte de eso tambíen guarda y carga partidas previas y chatear cuando juegas cotra otro usuario
-
+La aplicación YGame permite jugar al juego de conexión Y online contra distintos bots
+con diferentes niveles de dificultad. Gestiona el registro y autenticación de usuarios,
+guarda el historial de partidas y ofrece una interfaz web accesible desde el navegador.
 
 Bloques de Construcción de Contenidos::
 [cols="1,2" options="header"]
 |===
 |Nombre| Descripción
 |*Usuario*
-|Usuario de la aplicación que interactua con ella
+|Usuario de la aplicación que interactúa con ella a través del navegador web.
 |*Webapp*
-|Ofrece la interfaz gráfica para que el usuario se registre y reciba la respuesta del backend.
+|Interfaz gráfica SPA (Single Page Application) construida con React, Vite y TypeScript.
+Gestiona las pantallas de inicio, registro, login y partida. Renderiza el tablero
+triangular en formato YEN, controla el temporizador de turno y se comunica con el
+backend mediante llamadas REST.
 |*Users*
-|Aplicación principal de backend que gestiona la creación y autenticación de usuarios.
+|Servicio backend construido con Node.js y Express. Gestiona el registro y autenticación
+de usuarios, el historial de partidas y actúa de intermediario entre la webapp y el
+motor de juego Gamey. Expone métricas para Prometheus.
 |*Gamey*
-|Backend que implementa la lógica del juego Y y de los bots, implementado en Rust.
+|Motor de juego implementado en Rust. Implementa la lógica completa del juego Y sobre
+un tablero triangular con coordenadas trilineales (x,y,z). Expone una API REST para
+gestionar partidas y ofrece tres niveles de bot: RandomBot (fácil), BlockerBot (medio)
+y ProBot (difícil).
+|*MongoDB*
+|Base de datos NoSQL que almacena los usuarios registrados y el historial de partidas,
+utilizada tanto por el servicio Users como por Gamey.
+|*Prometheus*
+|Sistema de monitorización que recolecta métricas del servicio Users.
+|*Grafana*
+|Plataforma de visualización que muestra los dashboards con las métricas recogidas
+por Prometheus.
 |===
 
 Important Interfaces::
-_<Description of important interfaces>_
+
+[cols="1,1,2" options="header"]
+|===
+|Interfaz|Entre|Descripción
+|REST `/reset`|Webapp → Users|Inicia o reinicia una partida con el tamaño de tablero
+y dificultad seleccionados. Devuelve el estado inicial del tablero en formato YEN.
+|REST `/move`|Webapp → Users|Envía el índice de celda elegida por el jugador.
+El servicio lo reenvía a Gamey, que responde con el nuevo estado del tablero
+tras el movimiento del jugador y la respuesta del bot.
+|REST `/surrender`|Webapp → Users|Registra la rendición del jugador y actualiza
+el historial de partidas en MongoDB.
+|REST `/history`|Webapp → Users|Consulta el historial de partidas del usuario
+autenticado almacenado en MongoDB.
+|REST `/difficulties`|Webapp → Users|Devuelve la lista de dificultades disponibles
+(Easy, Medium, Hard).
+|REST `/play`|Users → Gamey|Reenvía los movimientos al motor de juego Rust,
+que ejecuta la lógica del tablero y devuelve el nuevo estado YEN junto con
+el resultado (ganador o partida en curso).
+|===
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -103,18 +137,16 @@ responsibility according to the following schema:
 [cols="1,2" options="header"]
 |===
 | **Name** | **Responsibility**
-| _<black box 1>_ | _<Text>_
-| _<black box 2>_ | _<Text>_
+| _<black box 1>_ | _<Text>_
+| _<black box 2>_ | _<Text>_
 |===
 
-
-
-If you use a list of black box descriptions then you fill in a separate black box template for every important building block .
+If you use a list of black box descriptions then you fill in a separate black box template for every important building block.
 Its headline is the name of the black box.
 ****
 endif::arc42help[]
 
-==== <Name black box 1>
+==== Webapp
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -132,36 +164,45 @@ according the the following black box template:
 ****
 endif::arc42help[]
 
-_<Purpose/Responsibility>_
+*Purpose/Responsibility*: Proporcionar la interfaz gráfica del juego al usuario final.
+Gestiona el flujo completo de la partida: selección de dificultad y tamaño de tablero,
+renderizado del tablero triangular YEN, temporizador de turno con movimiento automático
+al agotarse, y visualización del historial de partidas.
 
-_<Interface(s)>_
+*Interface(s)*: Se comunica exclusivamente con el servicio Users mediante peticiones
+HTTP REST. No accede directamente a Gamey ni a MongoDB.
 
-_<(Optional) Quality/Performance Characteristics>_
+*Quality/Performance Characteristics*: Aplicación SPA que no requiere recarga de página.
+El temporizador de turno opera en cliente con intervalos de 1 segundo.
 
-_<(Optional) Directory/File Location>_
+*Directory/File Location*: `webapp/src/`
 
-_<(Optional) Fulfilled Requirements>_
+==== Users
 
-_<(optional) Open Issues/Problems/Risks>_
+*Purpose/Responsibility*: Gestionar la autenticación y registro de usuarios, el historial
+de partidas y actuar como API Gateway entre la webapp y el motor de juego Gamey.
 
+*Interface(s)*: Expone una API REST en el puerto 3000. Se conecta a MongoDB para
+persistencia y a Gamey (puerto 4000) para la lógica del juego.
 
+*Quality/Performance Characteristics*: Expone métricas en formato Prometheus para
+monitorización en tiempo real mediante Grafana.
 
+*Directory/File Location*: `users/`
 
-==== <Name black box 2>
+==== Gamey
 
-_<black box template>_
+*Purpose/Responsibility*: Ejecutar toda la lógica del juego Y: validar movimientos,
+detectar la condición de victoria (conexión de los tres lados del triángulo),
+gestionar el estado del tablero en formato YEN y calcular las respuestas de los bots.
 
-==== <Name black box n>
+*Interface(s)*: Expone una API REST en el puerto 3000 (mapeado al 4000 en Docker).
+Recibe y devuelve el estado del tablero en formato YEN (JSON).
 
-_<black box template>_
+*Quality/Performance Characteristics*: Implementado en Rust para máximo rendimiento
+en el cálculo de movimientos del ProBot, que usa BFS con potencial exponencial.
 
-
-==== <Name interface 1>
-
-...
-
-==== <Name interface m>
-
+*Directory/File Location*: `gamey/src/`
 
 
 === Nivel 2
@@ -177,7 +218,7 @@ Leave out normal, simple, boring or standardized parts of your system
 ****
 endif::arc42help[]
 
-==== White Box _<building block 1>_
+==== White Box _Webapp_
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -186,20 +227,70 @@ ifdef::arc42help[]
 ****
 endif::arc42help[]
 
-_<white box template>_
+La webapp está organizada en pantallas independientes gestionadas por un router
+interno en `App.tsx`:
 
-==== White Box _<building block 2>_
+[cols="1,2" options="header"]
+|===
+|Componente|Descripción
+|`HomeScreen`|Pantalla inicial con acceso a registro e inicio de sesión.
+|`RegisterScreen`|Formulario de registro de nuevos usuarios.
+|`LoginScreen`|Formulario de autenticación de usuarios existentes.
+|`GameScreen`|Pantalla principal de juego. Renderiza el tablero triangular YEN,
+muestra el temporizador de turno con barra de progreso, y gestiona las acciones
+de reiniciar, rendirse, cambiar dificultad/tamaño y consultar historial.
+|`App.tsx`|Componente raíz. Contiene toda la lógica de estado: gestión de turnos,
+temporizador automático (60s/30s/15s según dificultad), comunicación con el backend
+y navegación entre pantallas.
+|===
 
+==== White Box _Gamey_
 
-_<white box template>_
+ifdef::arc42help[]
+[role="arc42help"]
+****
+...describes the internal structure of _building block 2_.
+****
+endif::arc42help[]
 
-...
+El motor de juego Rust está organizado en los siguientes módulos:
 
-==== White Box _<building block m>_
+[cols="1,2" options="header"]
+|===
+|Módulo|Descripción
+|`core/game.rs`|Estado principal de la partida (`GameY`). Gestiona el tablero,
+el turno actual, el historial de movimientos y la condición de victoria.
+|`core/topology/`|Implementación de la topología triangular. Pre-calcula vecinos
+y regiones para cada celda usando coordenadas trilineales (x+y+z = size-1).
+|`core/coord.rs`|Sistema de coordenadas trilineales con conversión a/desde índice lineal.
+|`bot/random.rs`|Bot fácil: elige una celda vacía aleatoriamente.
+|`bot/blocker_bot.rs`|Bot medio: prioriza bloquear los movimientos del oponente.
+|`bot/pro_bot.rs`|Bot difícil: usa BFS para calcular distancias a los tres lados
+y puntúa cada celda con potencial exponencial, bonificación de centralidad
+y conectividad.
+|`notation/yen.rs`|Serialización/deserialización del formato YEN (JSON con layout
+triangular separado por `/`).
+|`bot_server/`|Servidor HTTP Axum que expone la API REST del motor de juego.
+|===
 
+==== White Box _Users_
 
-_<white box template>_
+ifdef::arc42help[]
+[role="arc42help"]
+****
+...describes the internal structure of _building block 3_.
+****
+endif::arc42help[]
 
+[cols="1,2" options="header"]
+|===
+|Módulo|Descripción
+|`users-service.js`|Servicio principal Express. Define los endpoints REST,
+gestiona la conexión a MongoDB y reenvía las peticiones de juego a Gamey.
+|`models/user.js`|Modelo Mongoose para usuarios y historial de partidas.
+|`monitoring/prometheus`|Configuración de Prometheus para recolección de métricas.
+|`monitoring/grafana`|Dashboards de Grafana para visualización de métricas.
+|===
 
 
 === Nivel 3
@@ -214,7 +305,7 @@ part of arc42 for additional levels.
 ****
 endif::arc42help[]
 
-==== White Box <_building block x.1_>
+==== White Box _ProBot (bot/pro_bot.rs)_
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -223,15 +314,62 @@ Specifies the internal structure of _building block x.1_.
 ****
 endif::arc42help[]
 
-_<white box template>_
+El ProBot implementa la estrategia más avanzada en varias fases:
 
+[cols="1,2" options="header"]
+|===
+|Fase|Descripción
+|*Cálculo de distancias*|Para cada jugador ejecuta BFS desde cada uno de los
+tres lados del tablero, calculando el coste mínimo de conexión. Pasar por una
+celda propia cuesta 0, por una vacía cuesta 1 y por una del oponente cuesta 2.
+|*Potencial exponencial*|Convierte distancias en puntuación con la fórmula
+`1000 / (d⁴ + 1)`, haciendo que la urgencia crezca exponencialmente al
+acercarse a un lado.
+|*Puntuación final*|Combina: potencial del oponente (×15) + potencial propio (×1)
++ bonificación de centralidad + bonificación de conectividad (+15 si conecta
+≥2 fichas propias) + bloqueo crítico (+1000 si bloquea ≥2 fichas del oponente).
+|*Selección*|Elige la celda vacía con mayor puntuación total.
+|===
 
-==== White Box <_building block x.2_>
+==== White Box _Topología Triangular (core/topology/)_
 
-_<white box template>_
+ifdef::arc42help[]
+[role="arc42help"]
+****
+Specifies the internal structure of _building block x.2_.
+****
+endif::arc42help[]
 
+[cols="1,2" options="header"]
+|===
+|Elemento|Descripción
+|`TriangularTopology`|Pre-calcula en construcción la lista de adyacencia y las
+regiones (lados A, B, C) de cada celda para acceso O(1) durante el juego.
+|Coordenadas trilineales|Cada celda se identifica por (x,y,z) donde x+y+z = size-1.
+Los tres lados del triángulo corresponden a x=0, y=0 y z=0 respectivamente.
+|`GameEngine`|Motor genérico parametrizado con la topología. Gestiona el estado
+de las celdas y detecta la victoria mediante Union-Find sobre los tres lados.
+|===
 
+==== White Box _Temporizador de turno (App.tsx)_
 
-==== White Box <_building block y.1_>
+ifdef::arc42help[]
+[role="arc42help"]
+****
+Specifies the internal structure of _building block y.1_.
+****
+endif::arc42help[]
 
-_<white box template>_
+[cols="1,2" options="header"]
+|===
+|Elemento|Descripción
+|`TURN_TIME_LIMIT`|Constante que define el límite en segundos por dificultad:
+Easy=60s, Medium=30s, Hard=15s.
+|`startTurnTimer()`|Arranca un intervalo de 1 segundo que decrementa `turnTimeLeft`.
+Al llegar a 0 llama a `triggerAutoMove()`.
+|`stopTurnTimer()`|Detiene el intervalo activo y resetea `turnTimeLeft` a null.
+Se invoca al hacer clic en una celda, rendirse, salir o terminar la partida.
+|`triggerAutoMove()`|Selecciona una celda vacía aleatoria del layout actual y
+ejecuta la misma lógica que `handleCellClick()`, usando refs para evitar
+problemas de stale closure con el estado de React.
+|===
