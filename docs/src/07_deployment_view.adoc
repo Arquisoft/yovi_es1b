@@ -60,7 +60,8 @@ For multiple environments or alternative deployments please copy and adapt this 
 ****
 endif::arc42help[]
 
-En este apartado se describe la infraestructura global de **YOVI**, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto.
+En este apartado se describe la infraestructura global de **YOVI**, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto (Node.js y Rust)
+y la persistencia de datos.
 
 [plantuml, deployment-diagram, png]
 ----
@@ -86,8 +87,9 @@ node "<<device>>\nServidor Cloud (Docker Host)" as cloud {
         artifact "<<artifact>>\nLogic Service (Rust)" as rust_app
     }
     
-    node "<<device>>\nDB Server" as db_node {
-        artifact "<<artifact>>\nDatabase (PostgreSQL/Mongo)" as db
+    node "<<device>>\nDB Server (MongoDB)" as db_node {
+        database "<<database>>\nUsers Collection" as db_users
+        database "<<database>>\nPartidas Collection" as db_games
     }
 }
 
@@ -95,7 +97,8 @@ node "<<device>>\nServidor Cloud (Docker Host)" as cloud {
 frontend -- node_app : HTTPS / JSON
 bot_app -- node_app : API REST / YEN
 node_app -- rust_app : HTTP / JSON (Interno)
-node_app -- db : TCP/IP
+node_app --> db_users : TCP/IP (Gestión Usuarios)
+rust_app --> db_games : TCP/IP (Guardado Partidas)
 @enduml
 ----
 
@@ -142,19 +145,25 @@ Es el servidor principal donde ocurre todo lo relativo al backend.
 @startuml
 node "Servidor Cloud" {
     node "Red Interna de Docker" {
-        component "Contenedor Web" as c1
-        component "Contenedor Rust" as c2
-        database "Base de Datos" as db
+        component "Backend (Node.js)" as node
+        component "Motor de Juego (Rust)" as rust
+        database "MongoDB" as db {
+            artifact "Colección: Users" as u_coll
+            artifact "Colección: Partidas" as p_coll
+        }
     }
 }
-c1 <-> c2 : Mensajes YEN
-c1 <-> db : SQL
+
+' Flujos de datos internos
+node -> rust : 1. Solicita Movimiento / Historial
+rust --> p_coll : 2. Guarda / Lee Partidas
+node --> u_coll : 3. Valida Sesión de Usuario
+
 @enduml
 ----
 
 **Explicación:**
-Dentro del servidor, los contenedores están conectados por una red "invisible" para el resto del mundo. Esto hace que el motor de **Rust** y los datos estén seguros, ya que nadie puede entrar en ellos directamente desde internet.
-Solo se puede pasar a través de la aplicación web desarrollada.
+En este nivel de detalle se observa que el servidor de Node.js funciona como un punto de control. Cuando el usuario solicita su historial, Node no accede a los datos de las partidas directamente; en su lugar, realiza una petición interna al servicio de Rust. Es Rust quien tiene la responsabilidad única de comunicarse con la colección partidas de MongoDB para registrar o recuperar los resultados de los juegos. Esta separación garantiza que la lógica del juego y la gestión de usuarios no interfieran entre sí.
 
 ==== Cliente
 
@@ -163,15 +172,32 @@ Es el dispositivo (PC o móvil) de la persona que utiliza la aplicación.
 [plantuml, level2-client, png]
 ----
 @startuml
-node "Navegador del Usuario" {
-    artifact "Archivos de la Web (JS/HTML)" as assets
-    component "Memoria Temporal" as storage
+skinparam componentStyle rectangle
+
+node "Dispositivo del Usuario" {
+node "Navegador Web" {
+artifact "React Application" as react_app
+
+    database "Estado Local" as state {
+        [Variable: username] as user_val
+    }
+    
+    component "API Fetch / Axios" as network
 }
+}
+
+node "Infraestructura Cloud" {
+component "Backend (Node.js)" as node_backend
+}
+
+react_app -down-> user_val : 1. Gestiona\nidentidad
+user_val -right-> network : 2. Inyecta\nparámetro
+network -right-> node_backend : 3. GET /history?username=...
 @enduml
 ----
 
 **Explicación:**
-Cuando alguien accede a la web, su navegador descarga la parte visual (React). El código se ejecuta directamente en su ordenador, usando su propia memoria para que el juego se vea fluido y rápido.
+Al acceder a la web, el navegador descarga la aplicación de React, que se ejecuta íntegramente en el dispositivo del usuario. El sistema utiliza el Estado Local (memoria RAM) para mantener identificada la sesión. Así, cuando el jugador solicita su historial, el código rescata el nombre guardado y construye una petición dinámica hacia el backend de Node.js. Esto permite que el juego sea fluido y que el servidor reciba siempre el contexto necesario para filtrar los datos de la base de datos correctamente.
 
 
 ==== Base de Datos (Persistencia)
@@ -181,13 +207,21 @@ Es el lugar donde se almacena la información. De esta manera no se perderá la 
 [plantuml, level2-db, png]
 ----
 @startuml
+skinparam componentStyle rectangle
+
 node "Contenedor de Datos" {
-    database "PostgreSQL / MongoDB" as store
-    storage "Volumen de Docker (Disco)" as disk
+    database "MongoDB" as store {
+        folder "gamey_db" {
+            [Colección: Users] as users
+            [Colección: Partidas] as games
+        }
+    }
+    storage "Volumen de Docker (Disco Host)" as disk
 }
-store -> disk : Guardado permanente
+
+store -down-> disk : Guardado permanente
 @enduml
 ----
 
 **Explicación:**
-Se utiliza lo que se denomina "volumen" de Docker. Esto significa que, aunque el contenedor de la base de datos se detenga o se actualice, la información de los usuarios y las partidas se queda grabada en el disco duro del servidor, como si estuviera almacenado en un USB.
+Se utiliza un motor de base de datos MongoDB que organiza la información en colecciones independientes: los perfiles de usuario (gestionados por Node.js) y el historial de juegos (registrado por Rust). Mediante un volumen persistente de Docker, los datos se sincronizan directamente con el disco duro del servidor. Esto garantiza que, aunque el contenedor de la base de datos se detenga o se actualice, la información de las partidas y las cuentas de usuario permanezca segura y disponible, funcionando como un almacenamiento externo permanente.
