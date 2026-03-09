@@ -26,19 +26,22 @@ pub mod play;
 pub mod error;
 pub mod state;
 pub mod version;
+
 use axum::response::IntoResponse;
 pub use play::{play, PlayRequest, PlayResponse};
 use chrono::Utc;
 pub use error::ErrorResponse;
 use std::sync::Arc;
-pub use version::*; // Para poner la fecha actual
+pub use version::*;
 
-use crate::{BotDifficulty, GameYError, RandomBot, YBotRegistry, state::AppState};
+use crate::{BotDifficulty, GameYError, state::AppState, YEN};
 
 use serde::Deserialize;
 use std::str::FromStr;
 
+use tower_http::cors::{Any, CorsLayer};
 use crate::bot::random::RandomBot;
+use crate::bot::pro_bot::ProBot; 
 use crate::bot::ybot_registry::YBotRegistry;
 
 // This helps Rust to understand the JSON that receive from Node
@@ -48,7 +51,6 @@ pub struct MoveRequest {
 }
 
 use utoipa::OpenApi;
-use crate::YEN;
 
 
 #[derive(utoipa::OpenApi)]
