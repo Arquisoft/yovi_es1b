@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.20">
+<meta name="generator" content="Asciidoctor 2.0.26">
 <title>Yovi en español - Equipo 1-B</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -116,7 +116,6 @@ h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title str
 :not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
 pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
 pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
-pre>code{display:block}
 pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
 em em{font-style:normal}
 strong strong{font-weight:400}
@@ -140,7 +139,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #content::before{content:none}
 #header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
 #header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
-#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header>h1:only-child{border-bottom:1px solid #dddddf;padding-bottom:8px}
 #header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
 #header .details span:first-child{margin-left:-.125em}
 #header .details span.email a{color:rgba(0,0,0,.85)}
@@ -162,6 +161,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #toctitle{color:#7a2518;font-size:1.2em}
 @media screen and (min-width:768px){#toctitle{font-size:1.375em}
 body.toc2{padding-left:15em;padding-right:0}
+body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
 #toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
 #toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
 #toc.toc2>ul{font-size:.9em;margin-bottom:0}
@@ -218,6 +218,7 @@ table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
 .literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
 .literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
 .listingblock>.content{position:relative}
+.listingblock pre>code{display:block}
 .listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
 .listingblock:hover code[data-lang]::before{display:block}
 .listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
@@ -327,7 +328,7 @@ a.image{text-decoration:none;display:inline-block}
 a.image object{pointer-events:none}
 sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
 sup.footnote a,sup.footnoteref a{text-decoration:none}
-sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+sup.footnote a:active,sup.footnoteref a:active,#footnotes .footnote a:first-of-type:active{text-decoration:underline}
 #footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
 #footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
 #footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
@@ -489,14 +490,28 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_infraestructura_de_nivel_2">7.2. Infraestructura de Nivel 2</a></li>
 </ul>
 </li>
-<li><a href="#section-concepts">8. Conceptos Transversales</a>
+<li><a href="#_8_conceptos_transversales">8. 8. Conceptos transversales</a>
 <ul class="sectlevel2">
-<li><a href="#_concepto_1">8.1. <em>&lt;Concepto 1&gt;</em></a></li>
-<li><a href="#_concepto_2">8.2. <em>&lt;Concepto 2&gt;</em></a></li>
-<li><a href="#_concepto_n">8.3. <em>&lt;Concepto n&gt;</em></a></li>
+<li><a href="#_8_1_gestión_de_proyecto">8.1. 8.1. Gestión de Proyecto</a></li>
+<li><a href="#_8_2_arquitectura_y_patrones_de_diseño">8.2. 8.2. Arquitectura y patrones de diseño</a></li>
+<li><a href="#_8_3_entorno_de_desarrollo_y_despliegue">8.3. 8.3. Entorno de Desarrollo y Despliegue</a></li>
+<li><a href="#_8_4_calidad_y_automatización">8.4. 8.4. Calidad y Automatización</a></li>
 </ul>
 </li>
-<li><a href="#section-design-decisions">9. Decisiones de Arquitectura</a></li>
+<li><a href="#section-design-decisions">9. Decisiones de Arquitectura</a>
+<ul class="sectlevel2">
+<li><a href="#_lenguaje_de_programación">9.1. Lenguaje de programación</a></li>
+<li><a href="#_base_de_datos">9.2. Base de datos</a></li>
+<li><a href="#_frontend_react">9.3. Frontend (React)</a></li>
+<li><a href="#_microservicios">9.4. Microservicios</a></li>
+<li><a href="#_docker">9.5. Docker</a></li>
+<li><a href="#_llms_empleados">9.6. LLMs empleados</a></li>
+<li><a href="#_plantilla_arc42">9.7. Plantilla Arc42</a></li>
+<li><a href="#_observabilidad_monitoring">9.8. Observabilidad / Monitoring</a></li>
+<li><a href="#_seguridad_autenticación">9.9. Seguridad / Autenticación</a></li>
+<li><a href="#_ci_calidad">9.10. CI / Calidad</a></li>
+</ul>
+</li>
 <li><a href="#section-quality-scenarios">10. Requisitos de Calidad</a>
 <ul class="sectlevel2">
 <li><a href="#_árbol_de_calidad">10.1. Árbol de calidad</a></li>
@@ -1166,31 +1181,10 @@ In the best case you will get away with examples or simple signatures.</p>
 </div>
 </div>
 </div>
-<div class="paragraph">
-<p>@startuml
-' Diagrama de componentes YOVI (formato estilo WiChat)</p>
+<div class="imageblock text-center">
+<div class="content">
+<img src="./images/5_1-building_block.png" alt="5 1 building block">
 </div>
-<div class="paragraph">
-<p>actor a as "Usuario"</p>
-</div>
-<div class="paragraph">
-<p>component web as "WEBAPP" #LightGray
-component u as "USERS" #2aa198
-component g as "GAMEY" #268bd2</p>
-</div>
-<div class="paragraph">
-<p>a &#8594; web: Interactúa
-web &#8594; u: Autenticación y perfiles
-web &#8594; g: Operaciones del juego
-g &#8594; u: Validación de identidad (opcional)</p>
-</div>
-<div class="paragraph">
-<p>legend
-|&lt;back:#LightGray&gt;   &lt;/back&gt;| Interfaz web (frontend) |
-|&lt;back:#2aa198&gt;      &lt;/back&gt;| Servicio de usuarios (identidad) |
-|&lt;back:#268bd2&gt;      &lt;/back&gt;| Lógica de juego (backend) |
-endlegend
-@enduml</p>
 </div>
 <div class="dlist">
 <dl>
@@ -1456,7 +1450,7 @@ part of arc42 for additional levels.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/Registration_Sequence.png" alt="Registration Sequence" width="588" height="347">
+<img src="./images/Registration_Sequence.png" alt="Registration Sequence" width="541" height="357">
 </div>
 </div>
 </div>
@@ -1477,7 +1471,7 @@ part of arc42 for additional levels.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/Game_Move_Sequence.png" alt="Game Move Sequence" width="709" height="390">
+<img src="./images/Game_Move_Sequence.png" alt="Game Move Sequence" width="642" height="401">
 </div>
 </div>
 <div style="page-break-after: always;"></div>
@@ -1574,7 +1568,7 @@ when your infrastructure is more complex.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/deployment-diagram.png" alt="deployment diagram" width="1184" height="414">
+<img src="./images/deployment-diagram.png" alt="deployment diagram" width="1006" height="321">
 </div>
 </div>
 <div class="dlist">
@@ -1653,7 +1647,7 @@ Así, una parte se encarga de la web y los usuarios (Node.js) y otra exclusivame
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-server.png" alt="level2 server" width="646" height="253">
+<img src="./images/level2-server.png" alt="level2 server" width="532" height="175">
 </div>
 </div>
 <div class="paragraph">
@@ -1669,7 +1663,7 @@ Solo se puede pasar a través de la aplicación web desarrollada.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-client.png" alt="level2 client" width="509" height="124">
+<img src="./images/level2-client.png" alt="level2 client" width="444" height="109">
 </div>
 </div>
 <div class="paragraph">
@@ -1684,7 +1678,7 @@ Cuando alguien accede a la web, su navegador descarga la parte visual (React). E
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-db.png" alt="level2 db" width="642" height="123">
+<img src="./images/level2-db.png" alt="level2 db" width="559" height="108">
 </div>
 </div>
 <div class="paragraph">
@@ -1697,185 +1691,453 @@ Se utiliza lo que se denomina "volumen" de Docker. Esto significa que, aunque el
 </div>
 </div>
 <div class="sect1">
-<h2 id="section-concepts">8. Conceptos Transversales</h2>
+<h2 id="_8_conceptos_transversales">8. 8. Conceptos transversales</h2>
 <div class="sectionbody">
-<div class="sidebarblock arc42help">
-<div class="content">
+<div class="sect2">
+<h3 id="_8_1_gestión_de_proyecto">8.1. 8.1. Gestión de Proyecto</h3>
+<div class="sect3">
+<h4 id="_metodología_de_desarrollo">8.1.1. Metodología de desarrollo</h4>
 <div class="paragraph">
-<div class="title">Content</div>
-<p>This section describes overall, principal regulations and solution ideas that are relevant in multiple parts (= cross-cutting) of your system.
-Such concepts are often related to multiple building blocks.
-They can include many different topics, such as</p>
+<p>El proyecto adopta una metodología ágil basada en <strong>Scrum</strong>.
+Este enfoque iterativo e incremental permite una adaptación continua a los cambios y una entrega de valor constante.
+Se realizan reuniones semanales de seguimiento para revisar el progreso, ajustar la planificación y asegurar la alineación del equipo.</p>
 </div>
-<div class="ulist">
-<ul>
-<li>
-<p>models, especially domain models</p>
-</li>
-<li>
-<p>architecture or design patterns</p>
-</li>
-<li>
-<p>rules for using specific technology</p>
-</li>
-<li>
-<p>principal, often technical decisions of an overarching (= cross-cutting) nature</p>
-</li>
-<li>
-<p>implementation rules</p>
-</li>
-</ul>
 </div>
+<div class="sect3">
+<h4 id="_tareas_y_prioridades">8.1.2. Tareas y prioridades</h4>
 <div class="paragraph">
-<div class="title">Motivation</div>
-<p>Concepts form the basis for <em>conceptual integrity</em> (consistency, homogeneity) of the architecture.
-Thus, they are an important contribution to achieve inner qualities of your system.</p>
-</div>
-<div class="paragraph">
-<p>Some of these concepts cannot be assigned to individual building blocks, e.g. security or safety.</p>
-</div>
-<div class="paragraph">
-<div class="title">Form</div>
-<p>The form can be varied:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>concept papers with any kind of structure</p>
-</li>
-<li>
-<p>cross-cutting model excerpts or scenarios using notations of the architecture views</p>
-</li>
-<li>
-<p>sample implementations, especially for technical concepts</p>
-</li>
-<li>
-<p>reference to typical usage of standard frameworks (e.g. using Hibernate for object/relational mapping)</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Structure</div>
-<p>A potential (but not mandatory) structure for this section could be:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>Domain concepts</p>
-</li>
-<li>
-<p>User Experience concepts (UX)</p>
-</li>
-<li>
-<p>Safety and security concepts</p>
-</li>
-<li>
-<p>Architecture and design patterns</p>
-</li>
-<li>
-<p>"Under-the-hood"</p>
-</li>
-<li>
-<p>development concepts</p>
-</li>
-<li>
-<p>operational concepts</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>Note: it might be difficult to assign individual concepts to one specific topic
-on this list.</p>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="./images/08-concepts-EN.drawio.png" alt="Possible topics for crosscutting concepts">
-</div>
-</div>
-<div class="paragraph">
-<div class="title">Further Information</div>
-<p>See <a href="https://docs.arc42.org/section-8/">Concepts</a> in the arc42 documentation.</p>
+<p>La planificación y el seguimiento de las tareas se centralizan en <strong>GitHub Projects</strong>.
+Las prioridades se revisan cada semana, quedando documentadas en actas de reunión para garantizar la transparencia y el compromiso del equipo.</p>
 </div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_concepto_1">8.1. <em>&lt;Concepto 1&gt;</em></h3>
+<h3 id="_8_2_arquitectura_y_patrones_de_diseño">8.2. 8.2. Arquitectura y patrones de diseño</h3>
+<div class="sect3">
+<h4 id="_arquitectura_de_microservicios">8.2.1. Arquitectura de Microservicios</h4>
 <div class="paragraph">
-<p><em>&lt;explanation&gt;</em></p>
+<p>La solución se ha diseñado siguiendo una arquitectura de <strong>microservicios</strong>.
+Este patrón estructura la aplicación como un conjunto de servicios pequeños, autónomos y débilmente acoplados.</p>
+</div>
+<div class="paragraph">
+<p><strong>Beneficios Clave:</strong></p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Escalabilidad:</strong> Permite escalar componentes individuales según la demanda.</p>
+</li>
+<li>
+<p><strong>Mantenibilidad:</strong> Facilita la comprensión, el desarrollo y el despliegue independiente de cada servicio.</p>
+</li>
+<li>
+<p><strong>Flexibilidad Tecnológica:</strong> Posibilita el uso de diferentes tecnologías o lenguajes para cada servicio si fuera necesario.</p>
+</li>
+</ul>
+</div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_concepto_2">8.2. <em>&lt;Concepto 2&gt;</em></h3>
+<h3 id="_8_3_entorno_de_desarrollo_y_despliegue">8.3. 8.3. Entorno de Desarrollo y Despliegue</h3>
+<div class="sect3">
+<h4 id="_contenerización_con_docker">8.3.1. Contenerización con Docker</h4>
 <div class="paragraph">
-<p><em>&lt;explanation&gt;</em></p>
+<p>Se utiliza <strong>Docker</strong> y <strong>Docker Compose</strong> para estandarizar los entornos de desarrollo, pruebas y producción.
+Cada microservicio (Webapp, Users, GameY) se empaqueta en su propio contenedor, asegurando que la aplicación se ejecute de manera consistente independientemente de la máquina anfitriona.
+Esto elimina el problema de "funciona en mi máquina" y simplifica la configuración inicial para nuevos desarrolladores.</p>
 </div>
-<div class="paragraph">
-<p>&#8230;&#8203;</p>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_concepto_n">8.3. <em>&lt;Concepto n&gt;</em></h3>
+<h3 id="_8_4_calidad_y_automatización">8.4. 8.4. Calidad y Automatización</h3>
+<div class="sect3">
+<h4 id="_integración_continua_y_calidad_de_código_cicq">8.4.1. Integración Continua y Calidad de Código (CI/CQ)</h4>
 <div class="paragraph">
-<p><em>&lt;explanation&gt;</em></p>
+<p>El proyecto implementa prácticas de Integración Continua (CI) y Calidad de Código (CQ) para mantener un alto estándar de desarrollo:</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>GitHub Actions:</strong> Se utilizan flujos de trabajo automatizados para ejecutar pruebas y verificar la integridad del código en cada <strong>push</strong> o <strong>pull request</strong>.</p>
+</li>
+<li>
+<p><strong>SonarQube / SonarCloud:</strong> Se integra el análisis estático de código para detectar <strong>bugs</strong>, vulnerabilidades de seguridad y deuda técnica de manera temprana.</p>
+</li>
+</ul>
 </div>
 <div style="page-break-after: always;"></div>
+</div>
 </div>
 </div>
 </div>
 <div class="sect1">
 <h2 id="section-design-decisions">9. Decisiones de Arquitectura</h2>
 <div class="sectionbody">
-<table class="tableblock frame-all grid-all stretch">
-<colgroup>
-<col style="width: 25%;">
-<col style="width: 50%;">
-<col style="width: 25%;">
-</colgroup>
-<thead>
-<tr>
-<th class="tableblock halign-left valign-top">Clave</th>
-<th class="tableblock halign-left valign-top">Decisión de diseño</th>
-<th class="tableblock halign-left valign-top">Justificación y suposiciones</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Lenguaje de programación</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">BB.DD</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Actualmente, no hemos decidido completamente que BB.DD utilizar, ya que todos tenemos conocimientos en MySQL, pero estamos pensando y probando MongoDB por nuestra propia cuenta. Por tanto, aún no tenemos una decisión final.</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Estamos barajando la posibilidad de MongoDB ya que tiene una mejor compatibilidad tal y como hemos visto en teoría, con Node.js y Angular, ya que pertenecen a la misma pila/familia tecnológico. Además, tras debatirlo el grupo entero, en un principio si no nos vemos superados por el tiempo/objetivos/dificultad de uso de esta BB.DD, optaremos por esta nueva opción, ya que también es un reto para nosotros mismos.</p></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">React</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Microservicios</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Docker</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">LLMs empleados</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-<tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Plantilla Arc42</p></td>
-<td class="tableblock halign-left valign-top"></td>
-<td class="tableblock halign-left valign-top"></td>
-</tr>
-</tbody>
-</table>
+<div class="sect2">
+<h3 id="_lenguaje_de_programación">9.1. Lenguaje de programación</h3>
+<div class="sect3">
+<h4 id="_contexto">9.1.1. Contexto</h4>
+<div class="paragraph">
+<p>Necesitamos un motor de juego con buen rendimiento y seguridad de memoria, y al mismo tiempo una capa web para interacción rápida y desarrollo de interfaz. El equipo dispone de experiencia web (JS/TS) y algunos miembros conocen Rust.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión">9.1.2. Decisión</h4>
+<div class="paragraph">
+<p>Usar Rust para el motor del juego (<code>gamey</code>) y JavaScript/TypeScript (Node.js) para el servicio <code>users</code> y TypeScript + React para el frontend (Vite).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias">9.1.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Alto rendimiento y seguridad en el motor (Rust): evita problemas de memoria y mejora la latencia.</p>
+</li>
+<li>
+<p>Desarrollo rápido y ecosistema web (Node/React/TypeScript): facilita iteración en frontend y servicios HTTP.</p>
+</li>
+<li>
+<p>Interoperabilidad clara: API REST expuestos por cada servicio.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Curva de aprendizaje y complejidad operativa por el stack poliglota (Rust + Node + TS).</p>
+</li>
+<li>
+<p>Mayor complejidad en CI/build (compilar Rust y bundles JS) y en la orquestación.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_base_de_datos">9.2. Base de datos</h3>
+<div class="sect3">
+<h4 id="_contexto_2">9.2.1. Contexto</h4>
+<div class="paragraph">
+<p>Se requiere persistencia para usuarios y registros de partidas; se valora flexibilidad de esquema y facilidad de integración con Node.js.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_2">9.2.2. Decisión</h4>
+<div class="paragraph">
+<p>Usar MongoDB como base de datos principal; <code>users</code> usa Mongoose y el servicio Rust puede escribir registros de partidas en Mongo cuando corresponda.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_2">9.2.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Esquema flexible para usuarios y partidas, lo que facilita evolucionar el modelo de datos.</p>
+</li>
+<li>
+<p>Integración sencilla con Node.js (Mongoose) y despliegue con Docker.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>No es relacional por diseño: operaciones transaccionales complejas requieren atención o soluciones adicionales.</p>
+</li>
+<li>
+<p>Riesgos de diseño incorrecto de índices y consultas (posibles problemas de rendimiento si no se indexa adecuadamente).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_frontend_react">9.3. Frontend (React)</h3>
+<div class="sect3">
+<h4 id="_contexto_3">9.3.1. Contexto</h4>
+<div class="paragraph">
+<p>Necesitamos una SPA con navegación por pantallas y una experiencia interactiva fluida para el juego.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_3">9.3.2. Decisión</h4>
+<div class="paragraph">
+<p>Usar React + TypeScript con Vite como bundler y desarrollo local.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_3">9.3.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Desarrollo rápido de UIs reusables y tipadas.</p>
+</li>
+<li>
+<p>Ecosistema amplio (testing, linters, herramientas) y buen soporte para Vite.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Dependencia de tooling (Vite, ESLint, etc.) y necesidad de mantener configuración.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_microservicios">9.4. Microservicios</h3>
+<div class="sect3">
+<h4 id="_contexto_4">9.4.1. Contexto</h4>
+<div class="paragraph">
+<p>Queremos separar responsabilidades (UI, gestión de usuarios, motor del juego) y facilitar despliegues independientes.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_4">9.4.2. Decisión</h4>
+<div class="paragraph">
+<p>Arquitectura de microservicios ligeros: <code>webapp</code>, <code>users</code>, <code>gamey</code> (Rust). Comunicación mediante HTTP/REST; orquestación con <code>docker-compose</code> en desarrollo.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_4">9.4.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Despliegue y escalado independientes por componente.</p>
+</li>
+<li>
+<p>Claridad en responsabilidades y menor acoplamiento lógico.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Mayor complejidad en integración, testing e implementación CI/CD.</p>
+</li>
+<li>
+<p>Latencia de red entre servicios y necesidad de gestionar variables de entorno y descubrimiento.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_docker">9.5. Docker</h3>
+<div class="sect3">
+<h4 id="_contexto_5">9.5.1. Contexto</h4>
+<div class="paragraph">
+<p>Necesitamos reproducibilidad en entornos de desarrollo y despliegue local sencillo.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_5">9.5.2. Decisión</h4>
+<div class="paragraph">
+<p>Usar Docker y <code>docker-compose</code> para orquestar los servicios en desarrollo.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_5">9.5.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Entornos reproducibles y aislamientos por servicio.</p>
+</li>
+<li>
+<p>Facilita onboarding y pruebas locales.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Overhead operacional y consumo de recursos en máquinas locales.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_llms_empleados">9.6. LLMs empleados</h3>
+<div class="sect3">
+<h4 id="_contexto_6">9.6.1. Contexto</h4>
+<div class="paragraph">
+<p>Valoramos la posibilidad de usar modelos de lenguaje para IA, pero no es un requisito actual.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_6">9.6.2. Decisión</h4>
+<div class="paragraph">
+<p>No integrar LLMs; las IAs del juego son bots heurísticos implementados en <code>gamey</code>.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_6">9.6.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Arquitectura más simple y sin dependencias a servicios de LLM.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Menor capacidad para comportamientos avanzados sin diseñar heurísticas más complejas.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_plantilla_arc42">9.7. Plantilla Arc42</h3>
+<div class="sect3">
+<h4 id="_contexto_7">9.7.1. Contexto</h4>
+<div class="paragraph">
+<p>Necesitamos una estructura clara para la documentación arquitectónica que sea comprensible por el equipo y terceros.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_7">9.7.2. Decisión</h4>
+<div class="paragraph">
+<p>Adoptar la plantilla arc42 para organizar la documentación (carpeta <code>docs/</code>).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_7">9.7.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Estructura estándar y reconocible para documentar decisiones, vistas y riesgos.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Trabajo adicional para mantener documentación al día.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_observabilidad_monitoring">9.8. Observabilidad / Monitoring</h3>
+<div class="sect3">
+<h4 id="_contexto_8">9.8.1. Contexto</h4>
+<div class="paragraph">
+<p>Se requiere visibilidad mínima del comportamiento del servicio (métricas de disponibilidad y latencia).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_8">9.8.2. Decisión</h4>
+<div class="paragraph">
+<p>Exponer métricas desde <code>users</code> con <code>express-prom-bundle</code> (Prometheus) y provisionar dashboards de Grafana (configuración en <code>users/monitoring</code>).</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_8">9.8.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Métricas simples disponibles para alertas y diagnóstico.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Infra adicional a desplegar y mantener (Prometheus/Grafana).</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_seguridad_autenticación">9.9. Seguridad / Autenticación</h3>
+<div class="sect3">
+<h4 id="_contexto_9">9.9.1. Contexto</h4>
+<div class="paragraph">
+<p>Las contraseñas de usuario deben almacenarse de forma segura.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_9">9.9.2. Decisión</h4>
+<div class="paragraph">
+<p>Hashear contraseñas con <code>bcryptjs</code> en <code>users</code>. Actualmente no hay JWT/sessions implementados; añadir autenticación basada en tokens queda como mejora pendiente.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_9">9.9.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Contraseñas no se almacenan en texto plano; protección básica frente a fugas.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Falta de mecanismo de autorización (tokens/sesiones) que limite recursos protegidos; requiere trabajo futuro.</p>
+</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_ci_calidad">9.10. CI / Calidad</h3>
+<div class="sect3">
+<h4 id="_contexto_10">9.10.1. Contexto</h4>
+<div class="paragraph">
+<p>Mantener calidad del código y detectar regresiones tempranamente.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_decisión_10">9.10.2. Decisión</h4>
+<div class="paragraph">
+<p>Usar linting, tests locales (Vitest en servicios JS/TS) y configuración de Sonar (archivo <code>sonar-project.properties</code>) para facilitar análisis de calidad.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_consecuencias_10">9.10.3. Consecuencias</h4>
+<div class="olist arabic">
+<div class="title">Beneficios:</div>
+<ol class="arabic">
+<li>
+<p>Detectar errores y antipatróns temprano; control de calidad.</p>
+</li>
+</ol>
+</div>
+<div class="olist arabic">
+<div class="title">Desventajas:</div>
+<ol class="arabic">
+<li>
+<p>Requiere mantenimiento de reglas y tiempo de ejecución adicional en pipelines.</p>
+</li>
+</ol>
+</div>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1921,6 +2183,8 @@ There you will find links and examples about ADR.</p>
 </div>
 </div>
 <div style="page-break-after: always;"></div>
+</div>
+</div>
 </div>
 </div>
 <div class="sect1">
@@ -2170,7 +2434,7 @@ GitHub&#8230;&#8203; retrasando el progreso del proyecto</p></td>
 <div id="footer">
 <div id="footer-text">
 Version 8.2 EN<br>
-Last updated 2026-02-16 22:21:50 +0100
+Last updated 2026-02-23 13:40:47 +0100
 </div>
 </div>
 </body>
