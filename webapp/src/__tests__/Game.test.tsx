@@ -40,6 +40,8 @@ const baseProps = (overrides?: {
   onFetchHistory: vi.fn(),
   onChangeDifficulty: vi.fn(),
   onChangeSize: vi.fn(),
+  turnTimeLeft: null,
+  turnTimeLimit: null,
   onCellClick: vi.fn(),
   onEndGame: vi.fn(),
   onResetGame: vi.fn(),

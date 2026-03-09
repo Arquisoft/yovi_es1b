@@ -41,7 +41,9 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 
-// --- ENDPOINTS ---
+
+
+// --- ENDPOINTS (Controllers) ---
 
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
@@ -88,7 +90,7 @@ app.post('/login', async (req, res) => {
     const user = await User.findOne({ username: secureUsername });
 
     if (!user) {
-      return res.status(401).json({ error: "Usuario no encontrado" });
+      return res.status(401).json({ error: "Usuario o contraseña incorrecta" });
     }
 
     // comparar contraseñas
@@ -101,7 +103,7 @@ app.post('/login', async (req, res) => {
         score: user.score
       });
     } else {
-      res.status(401).json({ error: "Contraseña incorrecta" });
+      res.status(401).json({ error: "Usuario o contraseña incorrecta" });
     }
       
   } catch (err) {
@@ -113,13 +115,17 @@ app.post('/login', async (req, res) => {
 // New
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex } = req.body;
+  const { cellIndex, username} = req.body; // NEW: Recibir difficulty
 
   try {
-    const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, { // LLama al endpoint de Rust para ejecutar el movimiento
+    // 1. Integración: Llamada al servicio de Rust
+    const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ index: cellIndex})
+      body: JSON.stringify({
+         index: cellIndex,
+         player: username,
+      })
     });
 
     if (!rustResponse.ok) {
@@ -128,41 +134,48 @@ app.post('/move', async (req, res) => {
        return res.status(500).send(text);
     }
 
-    // Rust responde con { board, winner }; aquí lo adaptamos al formato que consume el front:
-    // - responseFromRust: estado del tablero actualizado
-    // - winner: ganador actual (null si la partida sigue)
     const newBoard = await rustResponse.json();
+    
+    // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
       winner: newBoard.winner
     });
   }
   catch (e) {
+    console.error(e);
     res.status(500).json({error: 'Error communicating with Rust server'});
   }
 });
 
+// NEW: Endpoint para registrar una rendición (derrota)
+app.post('/surrender', async (req, res) => {
+    const { username, difficulty } = req.body;
+    if (username) {
+        // Llama a processGameResult con winnerId = 1 (Bot gana)
+        await processGameResult(username, 1, difficulty);
+        res.status(200).json({ message: 'Surrender recorded as a loss.' });
+    } else {
+        res.status(400).json({ error: 'Username is required to surrender.' });
+    }
+});
 
-// New
-// Resets the game
+
+// Resets the game board WITHOUT affecting stats
 app.post('/reset', async (req, res) => {
-
-  const size = req.body.size || 5;
-  const difficulty = req.body.difficulty; // NEW: Recibir dificultad opcional
+  const { size, difficulty } = req.body;
 
   try {
-    const requestedSize = Number(req.body?.size);
-    // Normaliza y valida el tamaño solicitado por el cliente:
-    // solo aceptamos enteros entre 3 y 20; si no, usamos 5 por defecto.
+    const requestedSize = Number(size);
     const safeSize =
       Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
         ? Math.floor(requestedSize)
         : 5;
 
-    const rustResponse = await fetch(`${GAMEY_URL}/reset`, { // LLama al endpoint de Rust para resetear el juego
+    const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize, difficulty: difficulty }), // NEW: Pasar dificultad a Rust
+      body: JSON.stringify({ size: safeSize, difficulty: difficulty }),
     });
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard});
@@ -191,14 +204,32 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
+  const { username } = req.query;
+  
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
   try {
-    // Usamos el nombre del servicio 'gamey' definido en Docker
-    const rustResponse = await fetch(`${GAMEY_URL}/history`);
-    const history = await rustResponse.json();
-    res.json(history);
+    // 1. Llamamos al servicio de Rust (puerto 4000)
+    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}`);
+    
+    if (!rustResponse.ok) {
+      console.error(`Error en Rust: ${rustResponse.status}`);
+      return res.status(rustResponse.status).json({ error: "Rust history service error" });
+    }
+
+    const games = await rustResponse.json();
+    
+    // DEBUG: Mira tu terminal de Node para ver si llegan datos
+    console.log(`Historial para ${username}:`, games); 
+
+    // 2. Enviamos el array directo al Frontend
+    res.json(games); 
+    
   } catch (e) {
-    console.error("Error al pedir el historial a Rust:", e);
-    res.status(500).json({ error: 'No se pudo obtener el historial' });
+    console.error("Error de conexión con Rust:", e);
+    res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
   }
 });
 

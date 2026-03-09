@@ -13,7 +13,7 @@ pub struct PlayRequest {
 }
 
 /// Respuesta que el bot devuelve al cliente
-#[derive(Serialize, ToSchema)]
+#[derive(Serialize, ToSchema, Deserialize)]
 pub struct PlayResponse {
     /// Nueva posición del tablero o movimiento en notación YEN
     pub position: YEN,
@@ -35,9 +35,8 @@ pub async fn play(
     State(state): State<AppState>,
     Json(payload): Json<PlayRequest>,
 ) -> Result<Json<PlayResponse>, Json<ErrorResponse>> {
-    
     let yen = payload.position.clone();
-    
+
     let mut game_y = match GameY::try_from(yen) {
         Ok(game) => game,
         Err(err) => {
@@ -50,13 +49,16 @@ pub async fn play(
     };
 
     let selected_bot_id = payload.bot_id.unwrap_or_else(|| "random_bot".to_string());
-    
+
     let bot = match state.bots().find(&selected_bot_id) {
         Some(bot) => bot,
         None => {
             let available_bots = state.bots().names().join(", ");
             return Err(Json(ErrorResponse::error(
-                &format!("Bot not found: {}, available bots: [{}]", selected_bot_id, available_bots),
+                &format!(
+                    "Bot not found: {}, available bots: [{}]",
+                    selected_bot_id, available_bots
+                ),
                 None,
                 Some(selected_bot_id),
             )));
@@ -78,7 +80,7 @@ pub async fn play(
         player: crate::PlayerId::new(1),
         coords,
     };
-    
+
     if let Err(e) = game_y.add_move(bot_move) {
         return Err(Json(ErrorResponse::error(
             &format!("Error applying bot move: {:?}", e),
@@ -88,8 +90,6 @@ pub async fn play(
     }
 
     let new_yen: YEN = (&game_y).into();
-    
-    Ok(Json(PlayResponse {
-        position: new_yen,
-    }))
+
+    Ok(Json(PlayResponse { position: new_yen }))
 }
