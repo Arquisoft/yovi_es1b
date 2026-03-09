@@ -6,11 +6,11 @@ interface LoginData {
 }
 
 interface LoginScreenProps {
-  onBack: () => void; // Vuelve a pantalla anterior
-  onLogin: (username: string) => Promise<void> | void; // Intenta iniciar partida con ese usuario
+  readonly onBack: () => void; // Vuelve a pantalla anterior
+  readonly onLogin: (username: string) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
-function LoginScreen({ onBack, onLogin }: LoginScreenProps) {
+function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
   const [formData, setFormData] = useState<LoginData>({
     username: '',
     password: '',

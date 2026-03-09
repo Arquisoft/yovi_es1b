@@ -8,11 +8,11 @@ interface RegisterData {
 }
 
 interface RegisterScreenProps {
-  onBack: () => void; // Vuelve a la pantalla anterior
-  onCreateAccount: (name: string) => Promise<void> | void; // Inicia el flujo de crear cuenta/juego
+  readonly onBack: () => void; // Vuelve a la pantalla anterior
+  readonly onCreateAccount: (name: string) => Promise<void> | void; // Inicia el flujo de crear cuenta/juego
 }
 
-function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
+function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     age: '',
