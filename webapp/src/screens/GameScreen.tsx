@@ -30,8 +30,8 @@ function GameScreen({
   selectedBoardDimension,
   boardData,
   winner,
-  turnTimeLeft,
-  turnTimeLimit,
+  //turnTimeLeft,
+  //turnTimeLimit,
   sizeLabel,
   onCellClick,
   onEndGame,
@@ -113,7 +113,7 @@ function GameScreen({
             </div>
 
             {/* Barra de temporizador de turno */}
-            {turnTimeLeft !== null && turnTimeLimit !== null && winner === null && (
+            {/*turnTimeLeft !== null && turnTimeLimit !== null && winner === null && (
                 <div className="turn-timer">
                   <div className="turn-timer-header">
                     <span className="turn-timer-label">⏱ Tu turno</span>
@@ -128,7 +128,7 @@ function GameScreen({
                     />
                   </div>
                 </div>
-            )}
+            )*/}
 
             <div className={`board-container board-size-${boardDimension}`}>
               {boardData ? (
