@@ -22,27 +22,34 @@
 //! }
 //! ```
 
-pub mod choose;
 pub mod error;
+pub mod play;
 pub mod state;
 pub mod version;
+
 use axum::response::IntoResponse;
-pub use choose::MoveResponse;
 use chrono::Utc;
 pub use error::ErrorResponse;
+pub use play::{PlayRequest, PlayResponse, play};
 use std::sync::Arc;
-pub use version::*; // Para poner la fecha actual
+pub use version::*;
 
-use crate::{BotDifficulty, GameYError, RandomBot, YBotRegistry, state::AppState};
+use crate::{BotDifficulty, GameYError, YEN, state::AppState};
 
 use serde::Deserialize;
 use std::str::FromStr;
 
+use crate::bot::attacker_bot::AttackerBot;
+use crate::bot::edge_bot::EdgeBot;
+use crate::bot::pro_bot::ProBot;
+use crate::bot::random::RandomBot;
+use crate::bot::ybot_registry::YBotRegistry;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
+use tower_http::cors::{Any, CorsLayer};
 
 // This helps Rust to understand the JSON that receive from Node
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct MoveRequest {
     pub index: u32,
     pub player: String,
@@ -54,6 +61,24 @@ pub struct HistoryQuery {
     pub username: String,
 }
 
+use utoipa::OpenApi;
+
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), // Añadida aquí
+    components(schemas(
+        play::PlayRequest,
+        play::PlayResponse,
+        YEN,
+        ResetRequest,
+        MoveRequest,
+        GameRecord, // Añadida aquí
+        error::ErrorResponse
+    )),
+    tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
+)]
+pub struct ApiDoc;
+
 /*
  * Para pasar el tamaño del tablero desde Node hasta Rust.
  *
@@ -62,10 +87,22 @@ pub struct HistoryQuery {
  * pub size: usize -->  Tamaño del tablero
  *
  */
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ResetRequest {
     pub size: Option<u32>,
     pub difficulty: Option<String>, // NEW: Optional difficulty parameter
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct GameRecord {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<String>)] // <-- Esta línea soluciona el error de ObjectId
+    pub id: Option<mongodb::bson::oid::ObjectId>,
+    pub date: String,
+    pub opponent: String,
+    pub board_size: u32,
+    pub difficulty: String,
+    pub result: String,
 }
 
 // Routes
@@ -79,9 +116,10 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/history", axum::routing::get(obtener_historial))
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
         .route("/difficulties", axum::routing::get(listar_dificultades)) // new
-        .route(
-            "/{api_version}/ybot/choose/{bot_id}",
-            axum::routing::post(choose::choose),
+        .route("/api/play", axum::routing::post(play::play))
+        .merge(
+            utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
+                .url("/api-docs/openapi.json", ApiDoc::openapi()),
         )
         .with_state(state)
 }
@@ -122,7 +160,12 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let db = client.database("gamey_db");
 
     // Crar el estado pasando la DB
-    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
+
+    let bots = YBotRegistry::new()
+        .with_bot(Arc::new(RandomBot))
+        .with_bot(Arc::new(ProBot))
+        .with_bot(Arc::new(AttackerBot))
+        .with_bot(Arc::new(EdgeBot));
 
     let state = AppState::new(bots, db);
     let app = create_router(state);
@@ -154,6 +197,16 @@ pub async fn status() -> impl IntoResponse {
 
 // New
 // This endpoint handles the move made by the human player and then triggers the bot's response.
+
+#[utoipa::path(
+    post,
+    path = "/execute-move",
+    request_body = MoveRequest,
+    responses(
+        (status = 200, description = "Movimiento procesado", body = Value) // Value porque devuelves un json! manual
+    ),
+    tag = "Bot"
+)]
 pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
@@ -180,10 +233,11 @@ pub async fn realizar_movimiento(
     // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
     if !game.check_game_over() {
         // Obtener la dificultad actual
-        let current_diff = *state.current_difficulty.lock().unwrap();
+        //let current_diff = *state.current_difficulty.lock().unwrap();
+        let active_bot_name = state.active_bot.lock().unwrap().clone();
 
         // Buscar un bot adecuado para esa dificultad
-        if let Some(bot) = state.bots().get_random_bot_by_difficulty(current_diff) {
+        if let Some(bot) = state.bots().find(&active_bot_name) {
             // Desreferenciamos el mutex guard con &*game
             if let Some(bot_coords) = bot.choose_move(&*game) {
                 let bot_move = crate::Movement::Placement {
@@ -216,6 +270,9 @@ pub async fn realizar_movimiento(
     if winner_id.is_some() {
         println!("¡Tenemos un ganador!: {:?}", winner_id);
 
+        let final_bot_name = state.active_bot.lock().unwrap().clone();
+        let final_difficulty = state.current_difficulty.lock().unwrap().to_string();
+
         // Guardar la partida en MongoDB
         let db = state.db.clone();
         let b_size_clone = b_size;
@@ -231,9 +288,9 @@ pub async fn realizar_movimiento(
             let record = serde_json::json!({
                 "player": payload.player,
                 "date": Utc::now().to_rfc3339(),
-                "opponent": "RandomBot",
+                "opponent": final_bot_name,
                 "board_size": b_size_clone,
-                "difficulty": "facil",
+                "difficulty": final_difficulty,
                 "result": res_text
             });
 
@@ -256,6 +313,16 @@ pub async fn realizar_movimiento(
  *
  *
  */
+
+#[utoipa::path(
+    post,
+    path = "/reset",
+    request_body = ResetRequest,
+    responses(
+        (status = 200, description = "Tablero reiniciado", body = YEN)
+    ),
+    tag = "Bot"
+)]
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
@@ -274,6 +341,14 @@ pub async fn reiniciar_juego(
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
             let mut current_diff = state.current_difficulty.lock().unwrap();
             *current_diff = diff;
+
+            // Elegimos un bot al azar de esa dificultad y GUARDAMOS SU NOMBRE para toda la partida
+            if let Some(chosen_bot) = state.bots().get_random_bot_by_difficulty(diff) {
+                let mut active_bot = state.active_bot.lock().unwrap();
+                *active_bot = chosen_bot.name().to_string();
+                println!("Nueva partida iniciada. Bot asignado: {}", *active_bot);
+            }
+
             println!("--> Dificultad actualizada a: {}", diff);
         }
     }
@@ -291,6 +366,14 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     axum::Json(diff_strings)
 }
 
+#[utoipa::path(
+    get,
+    path = "/history",
+    responses(
+        (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
+    ),
+    tag = "Bot"
+)]
 pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<HistoryQuery>,

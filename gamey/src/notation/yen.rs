@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-
+use utoipa::ToSchema;
 /// Y Exchange Notation (YEN) - a compact format for representing Y game states.
 ///
 /// YEN is inspired by FEN (Forsyth-Edwards Notation) used in chess. It provides
@@ -21,7 +21,7 @@ use serde::{Deserialize, Serialize};
 ///   "layout": "B/BR/.R."
 /// }
 /// ```
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize, ToSchema)]
 pub struct YEN {
     /// The board size (length of one side of the triangle).
     size: u32,

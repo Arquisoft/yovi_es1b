@@ -3,7 +3,6 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-quality-scenarios]]
 == Requisitos de Calidad
 
-
 ifdef::arc42help[]
 [role="arc42help"]
 ****
@@ -18,7 +17,6 @@ which will not create high risks when they are not fully achieved.
 Since quality requirements will have a lot of influence on architectural
 decisions you should know for every stakeholder what is really important to them,
 concrete and measurable.
-
 
 .Further Information
 
@@ -46,9 +44,10 @@ The quality tree is a high-level overview of the quality goals and requirements:
 
 In any case the tree should include links to the scenarios of the following section.
 
-
 ****
 endif::arc42help[]
+
+image::10_arbol_calidad.png[align="center"]
 
 === Escenarios de calidad
 
@@ -62,7 +61,7 @@ These scenarios describe what should happen when a stimulus arrives at the syste
 
 For architects, two kinds of scenarios are important:
 
-* Usage scenarios (also called application scenarios or use case scenarios) describe the system’s runtime reaction to a certain stimulus. This also includes scenarios that describe the system’s efficiency or performance. Example: The system reacts to a user’s request within one second.
+* Usage scenarios (also called application scenarios or use case scenarios) describe the system's runtime reaction to a certain stimulus. This also includes scenarios that describe the system's efficiency or performance. Example: The system reacts to a user's request within one second.
 * Change scenarios describe a modification of the system or of its immediate environment. Example: Additional functionality is implemented or requirements for a quality attribute change.
 
 .Motivation
@@ -77,3 +76,113 @@ more precisely down to a level of scenarios that can be discussed and evaluated.
 Tabular or free form text.
 ****
 endif::arc42help[]
+
+==== Escenarios de uso
+
+[cols="1,2,2,2" options="header"]
+|===
+|ID|Escenario|Estímulo|Respuesta esperada del sistema
+
+|SC-01
+|*Respuesta del bot en dificultad difícil*
+|El jugador realiza un movimiento en un tablero de tamaño 12x12x12 con el ProBot activo.
+|El motor Gamey calcula y devuelve el movimiento del bot en menos de 2 segundos,
+actualizándose el tablero en la webapp sin demora visible.
+
+|SC-02
+|*Timeout de turno en dificultad Hard*
+|El jugador no realiza ningún movimiento durante 15 segundos en dificultad Hard.
+|El sistema selecciona automáticamente una celda vacía aleatoria en nombre del jugador,
+y reinicia el temporizador para el siguiente turno.
+
+|SC-03
+|*Aviso visual de tiempo agotándose*
+|Quedan 5 segundos o menos en el temporizador de turno del jugador.
+|La barra de progreso cambia de azul a rojo y el contador de segundos
+parpadea para alertar al jugador de que debe actuar con urgencia.
+
+|SC-04
+|*Registro de nuevo usuario*
+|Un usuario rellena el formulario de registro con nombre y contraseña válidos.
+|El servicio Users crea el usuario en MongoDB y redirige automáticamente
+a la pantalla de juego en menos de 1 segundo.
+
+|SC-05
+|*Consulta del historial de partidas*
+|El jugador pulsa el botón "Historial" durante una partida.
+|La webapp solicita al backend el historial y muestra una tabla con fecha,
+rival, tamaño de tablero, dificultad y resultado de cada partida previa
+en menos de 2 segundos.
+
+|SC-06
+|*Rendición del jugador*
+|El jugador pulsa el botón "Rendirse" durante una partida en curso.
+|El sistema detiene el temporizador, registra la derrota en el historial
+de MongoDB y muestra el modal de resultado indicando "Has perdido".
+
+|SC-07
+|*Cambio de dificultad durante la partida*
+|El jugador cambia la dificultad de Easy a Hard desde el menú de la partida.
+|El sistema reinicia el tablero con la nueva dificultad, arranca el temporizador
+con el nuevo límite (15 segundos) y muestra el mensaje "Dificultad cambiada a Hard".
+
+|SC-08
+|*Cambio de tamaño de tablero*
+|El jugador selecciona un tablero de 12x12x12 desde el tamaño por defecto (6x6x6).
+|La webapp solicita un nuevo tablero al backend, lo renderiza correctamente
+con 78 celdas y reinicia el temporizador sin perder la dificultad seleccionada.
+
+|SC-09
+|*Acceso concurrente de múltiples usuarios*
+|Diez usuarios distintos inician sesión y juegan simultáneamente.
+|Cada sesión es independiente; el estado de la partida de un usuario
+no interfiere con el de los demás y el servicio Users responde
+correctamente a todas las peticiones.
+
+|SC-10
+|*Condición de victoria*
+|Un jugador conecta los tres lados del tablero triangular con sus fichas.
+|El motor Gamey detecta la victoria, detiene el juego, el temporizador
+se para y la webapp muestra el modal "Has ganado" o "Ha ganado el bot"
+según corresponda.
+|===
+
+==== Escenarios de cambio
+
+[cols="1,2,2,2" options="header"]
+|===
+|ID|Escenario|Cambio|Respuesta esperada del sistema
+
+|SC-C01
+|*Añadir un nuevo nivel de dificultad*
+|Se implementa un nuevo bot con dificultad "Expert" en el módulo `bot/` de Gamey.
+|El nuevo bot se registra en `ybot_registry.rs` y aparece automáticamente
+en el endpoint `/difficulties`. La webapp lo muestra en el modal de selección
+sin necesidad de modificar el frontend.
+
+|SC-C02
+|*Cambio en el tiempo límite por dificultad*
+|Se decide reducir el tiempo de Hard de 15 a 10 segundos.
+|Solo es necesario modificar la constante `TURN_TIME_LIMIT` en `App.tsx`.
+El resto del sistema (temporizador, barra de progreso, movimiento automático)
+se adapta automáticamente al nuevo valor.
+
+|SC-C03
+|*Caída del servicio Gamey*
+|El contenedor Gamey deja de responder durante una partida en curso.
+|El servicio Users recibe un error de red al intentar contactar con Gamey.
+La webapp muestra "Error realizando el movimiento" y el temporizador
+se reinicia para permitir al jugador intentarlo de nuevo.
+
+|SC-C04
+|*Escalado del tamaño de tablero*
+|Se añade soporte para un nuevo tamaño de tablero (por ejemplo 15x15x15).
+|Basta con añadir la opción en el modal de selección en `App.tsx` y en la
+función `getBoardDimensionFromSizeChoice`. El motor Gamey ya soporta
+cualquier tamaño gracias a su topología triangular paramétrica.
+
+|SC-C05
+|*Migración de base de datos*
+|Se decide cambiar de MongoDB local a MongoDB Atlas en producción.
+|Solo es necesario actualizar la variable de entorno `MONGODB_URI`
+en el `docker-co

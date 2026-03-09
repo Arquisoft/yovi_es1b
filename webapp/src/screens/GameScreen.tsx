@@ -12,6 +12,8 @@ interface GameScreenProps {
   boardData: GameYData | null;
   winner: number | null;
   connectionStatus: string;
+  turnTimeLeft: number | null;
+  turnTimeLimit: number | null;
   sizeLabel: string | null;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onEndGame: () => void; // Termina la partida actual
@@ -28,6 +30,8 @@ function GameScreen({
   selectedBoardDimension,
   boardData,
   winner,
+  turnTimeLeft,
+  turnTimeLimit,
   sizeLabel,
   onCellClick,
   onEndGame,
@@ -107,6 +111,24 @@ function GameScreen({
             <div className="player-slot player-slot-left" aria-label="Jugador humano">
               <p className="player-label player-label-blue">Jugador: {username}</p>
             </div>
+
+            {/* Barra de temporizador de turno */}
+            {turnTimeLeft !== null && turnTimeLimit !== null && winner === null && (
+                <div className="turn-timer">
+                  <div className="turn-timer-header">
+                    <span className="turn-timer-label">⏱ Tu turno</span>
+                    <span className={`turn-timer-seconds ${turnTimeLeft <= 5 ? 'turn-timer-urgent' : ''}`}>
+                    {turnTimeLeft}s
+                  </span>
+                  </div>
+                  <div className="turn-timer-bar-bg">
+                    <div
+                        className={`turn-timer-bar ${turnTimeLeft <= 5 ? 'turn-timer-bar-urgent' : ''}`}
+                        style={{ width: `${(turnTimeLeft / turnTimeLimit) * 100}%` }}
+                    />
+                  </div>
+                </div>
+            )}
 
             <div className={`board-container board-size-${boardDimension}`}>
               {boardData ? (

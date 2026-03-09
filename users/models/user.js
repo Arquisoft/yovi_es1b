@@ -22,7 +22,31 @@ const UserSchema = new mongoose.Schema({
   createdAt: { 
     type: Date, 
     default: Date.now
-  }
+  },
+  gamesPlayed: {
+    type: Number,
+    default: 0
+  },
+  gamesWon: {
+    type: Number,
+    default: 0
+  },
+  gamesLost: { // NEW: Contador de derrotas
+    type: Number,
+    default: 0
+  },
+  gameHistory: [{
+    date: { 
+      type: Date, 
+      default: Date.now 
+    },
+    result: { 
+      type: String, 
+      enum: ['Win', 'Loss', 'Draw'] 
+    },
+    opponent: String,
+    difficulty: String
+  }]
 });
 
 const User = mongoose.models.User || mongoose.model('User', UserSchema);
