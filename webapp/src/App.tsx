@@ -24,7 +24,7 @@ interface GameYData {
 }
 
 type Screen = 'home' | 'register' | 'login' | 'game';
-type DifficultyChoice = string; // Ahora es string dinámico
+// difficultyChoice ahora se mantiene como string | null directamente
 type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
 
 
@@ -84,7 +84,7 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home'); // Router interno de pantallas
   const [boardData, setBoardData] = useState<GameYData | null>(null);
   const [winner, setWinner] = useState<number | null>(null);
-  const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>(null);
+  const [difficultyChoice, setDifficultyChoice] = useState<string | null>(null);
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
@@ -344,7 +344,7 @@ function App() {
   };
 
   //Cambia la dificultad según elección
-  const handleDifficultyChoice = (choice: DifficultyChoice) => {
+  const handleDifficultyChoice = (choice: string) => {
     setDifficultyChoice(choice);
     // Actualizar en el backend también si ya estamos en juego
     const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);

@@ -2,39 +2,157 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-design-decisions]]
 == Decisiones de Arquitectura
-[cols = "1,2,1", options="header"]
-|===
-|Clave |Decisión de diseño |Justificación y suposiciones
 
-|Lenguaje de programación
-|
-|
+=== Lenguaje de programación
+==== Contexto
+Necesitamos un motor de juego con buen rendimiento y seguridad de memoria, y al mismo tiempo una capa web para interacción rápida y desarrollo de interfaz.
 
-|BB.DD 
-|Actualmente, no hemos decidido completamente que BB.DD utilizar, ya que todos tenemos conocimientos en MySQL, pero estamos pensando y probando MongoDB por nuestra propia cuenta. Por tanto, aún no tenemos una decisión final.
-|Estamos barajando la posibilidad de MongoDB ya que tiene una mejor compatibilidad tal y como hemos visto en teoría, con Node.js y Angular, ya que pertenecen a la misma pila/familia tecnológico. Además, tras debatirlo el grupo entero, en un principio si no nos vemos superados por el tiempo/objetivos/dificultad de uso de esta BB.DD, optaremos por esta nueva opción, ya que también es un reto para nosotros mismos.
+==== Decisión
+Usar Rust para el motor del juego (`gamey`) y JavaScript/TypeScript (Node.js) para el servicio `users` y TypeScript + React para el frontend (Vite).
 
-|React
-|
-|
+==== Consecuencias
+.Beneficios:
+. Alto rendimiento y seguridad en el motor (Rust): evita problemas de memoria y mejora la latencia.
+. Desarrollo rápido y ecosistema web (Node/React/TypeScript): facilita iteración en frontend y servicios HTTP.
+. Interoperabilidad clara: API REST expuestos por cada servicio.
 
-|Microservicios
-|
-|
+.Desventajas:
+. Curva de aprendizaje y complejidad operativa por el stack poliglota (Rust + Node + TS).
+. Mayor complejidad en CI/build (compilar Rust y bundles JS) y en la orquestación.
+. Desconocimiento por parte del equipo del lenguaje Rust.
 
-|Docker
-|
-|
+=== Base de datos
+==== Contexto
+Se requiere persistencia para usuarios y registros de partidas; se valora flexibilidad de esquema y facilidad de integración con Node.js.
 
-|LLMs empleados
-|
-|
+==== Decisión
+Usar MongoDB como base de datos principal; `users` usa Mongoose y el servicio Rust puede escribir registros de partidas en Mongo cuando corresponda.
 
-|Plantilla Arc42
-|
-|
+==== Consecuencias
+.Beneficios:
+. Esquema flexible para usuarios y partidas, lo que facilita evolucionar el modelo de datos.
+. Integración sencilla con Node.js (Mongoose) y despliegue con Docker.
 
-|===
+.Desventajas:
+. No es relacional por diseño: operaciones transaccionales complejas requieren atención o soluciones adicionales.
+. Riesgos de diseño incorrecto de índices y consultas (posibles problemas de rendimiento si no se indexa adecuadamente).
+. Desconocimiento por parte del equipo de MongoDB.
+
+=== Frontend (React)
+==== Contexto
+Necesitamos una SPA con navegación por pantallas y una experiencia interactiva fluida para el juego.
+
+==== Decisión
+Usar React + TypeScript con Vite como bundler y desarrollo local.
+
+==== Consecuencias
+.Beneficios:
+. Desarrollo rápido de UIs reusables y tipadas.
+. Ecosistema amplio (testing, linters, herramientas) y buen soporte para Vite.
+
+.Desventajas:
+. Dependencia de tooling (Vite, ESLint, etc.) y necesidad de mantener configuración.
+
+=== Microservicios
+==== Contexto
+Queremos separar responsabilidades (UI, gestión de usuarios, motor del juego) y facilitar despliegues independientes.
+
+==== Decisión
+Arquitectura de microservicios ligeros: `webapp`, `users`, `gamey` (Rust). Comunicación mediante HTTP/REST; orquestación con `docker-compose` en desarrollo.
+
+==== Consecuencias
+.Beneficios:
+. Despliegue y escalado independientes por componente.
+. Claridad en responsabilidades y menor acoplamiento lógico.
+
+.Desventajas:
+. Mayor complejidad en integración, testing e implementación CI/CD.
+. Latencia de red entre servicios y necesidad de gestionar variables de entorno y descubrimiento.
+
+=== Docker
+==== Contexto
+Necesitamos reproducibilidad en entornos de desarrollo y despliegue local sencillo.
+
+==== Decisión
+Usar Docker y `docker-compose` para orquestar los servicios en desarrollo.
+
+==== Consecuencias
+.Beneficios:
+. Entornos reproducibles y aislamientos por servicio.
+. Facilita pruebas locales.
+
+.Desventajas:
+. Consumo de recursos en máquinas locales.
+
+=== LLMs empleados
+==== Contexto
+Valoramos la posibilidad de usar modelos de lenguaje para IA, pero no es un requisito actual.
+
+==== Decisión
+No integrar LLMs; las IAs del juego son bots heurísticos implementados en `gamey`.
+
+==== Consecuencias
+.Beneficios:
+. Arquitectura más simple y sin dependencias a servicios de LLM.
+
+.Desventajas:
+. Menor capacidad para comportamientos avanzados sin diseñar heurísticas más complejas.
+
+=== Plantilla Arc42
+==== Contexto
+Necesitamos una estructura clara para la documentación arquitectónica que sea comprensible por el equipo y terceros.
+
+==== Decisión
+Adoptar la plantilla arc42 para organizar la documentación (carpeta `docs/`).
+
+==== Consecuencias
+.Beneficios:
+. Estructura estándar y reconocible para documentar decisiones, vistas y riesgos.
+
+.Desventajas:
+. Trabajo adicional para mantener documentación al día.
+
+=== Observabilidad / Monitoring
+==== Contexto
+Se requiere visibilidad mínima del comportamiento del servicio (métricas de disponibilidad y latencia).
+
+==== Decisión
+Exponer métricas desde `users` con `express-prom-bundle` (Prometheus) y provisionar dashboards de Grafana (configuración en `users/monitoring`).
+
+==== Consecuencias
+.Beneficios:
+. Métricas simples disponibles para alertas y diagnóstico.
+
+.Desventajas:
+. Infra adicional a desplegar y mantener (Prometheus/Grafana).
+
+=== Seguridad / Autenticación
+==== Contexto
+Las contraseñas de usuario deben almacenarse de forma segura.
+
+==== Decisión
+Hashear contraseñas con `bcryptjs` en `users`. Actualmente no hay sessions implementados; añadir autenticación basada en tokens queda como mejora pendiente.
+
+==== Consecuencias
+.Beneficios:
+. Contraseñas no se almacenan en texto plano; protección básica frente a fugas.
+
+.Desventajas:
+. Falta de mecanismo de autorización (tokens/sesiones) que limite recursos protegidos; requiere trabajo futuro.
+
+=== CI / Calidad
+==== Contexto
+Mantener calidad del código y detectar regresiones tempranamente.
+
+==== Decisión
+Usar linting, tests locales (Vitest en servicios JS/TS) y configuración de Sonar (archivo `sonar-project.properties`) para facilitar análisis de calidad.
+
+==== Consecuencias
+.Beneficios:
+. Detectar errores y antipatróns temprano; control de calidad.
+
+.Desventajas:
+. Requiere mantenimiento de reglas y tiempo de ejecución adicional en pipelines.
 
 ifdef::arc42help[]
 [role="arc42help"]
