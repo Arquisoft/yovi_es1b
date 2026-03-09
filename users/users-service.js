@@ -176,7 +176,7 @@ app.post('/reset', async (req, res) => {
 // Get available difficulties
 app.get('/difficulties', async (req, res) => {
   try {
-    const rustResponse = await fetch('http://gamey:4000/difficulties');
+    const rustResponse = await fetch(`${GAMEY_URL}/difficulties`);
     if (!rustResponse.ok) {
       throw new Error('Failed to fetch difficulties from Rust');
     }
