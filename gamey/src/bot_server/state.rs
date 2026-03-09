@@ -17,7 +17,10 @@ pub struct AppState {
     pub game: Arc<Mutex<GameY>>, // NEW: The actual game state, wrapped in Arc and Mutex for safe concurrent access
     pub current_difficulty: Arc<Mutex<BotDifficulty>>, // NEW: The current difficulty level
     pub db: Database,
+    pub active_bot: Arc<Mutex<String>>,
 }
+
+
 
 impl AppState {
     /// Creates a new application state with the given bot registry.
@@ -26,7 +29,8 @@ impl AppState {
             bots: Arc::new(bots),
             game: Arc::new(Mutex::new(GameY::new(5))), // NEW: Initialize the game state with a new GameY instance of size 5
             current_difficulty: Arc::new(Mutex::new(BotDifficulty::Easy)), // Default difficulty
-            db                                        // Guardar la conexion
+            db,                                        // Guardar la conexion
+            active_bot: Arc::new(Mutex::new("random_bot".to_string())), // Default active bot
         }
     }
 

@@ -42,6 +42,7 @@ use std::str::FromStr;
 use tower_http::cors::{Any, CorsLayer};
 use crate::bot::random::RandomBot;
 use crate::bot::pro_bot::ProBot; 
+use crate::bot::edge_bot::EdgeBot;
 use crate::bot::attacker_bot::AttackerBot;
 use crate::bot::ybot_registry::YBotRegistry;
 
@@ -154,7 +155,8 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let bots = YBotRegistry::new()
         .with_bot(Arc::new(RandomBot))
         .with_bot(Arc::new(ProBot))
-        .with_bot(Arc::new(AttackerBot));
+        .with_bot(Arc::new(AttackerBot))
+        .with_bot(Arc::new(EdgeBot)); 
     
 
     let state = AppState::new(bots, db);
@@ -223,10 +225,11 @@ pub async fn realizar_movimiento(
     // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
     if !game.check_game_over() {
         // Obtener la dificultad actual
-        let current_diff = *state.current_difficulty.lock().unwrap();
+        //let current_diff = *state.current_difficulty.lock().unwrap();
+        let active_bot_name = state.active_bot.lock().unwrap().clone();
 
         // Buscar un bot adecuado para esa dificultad
-        if let Some(bot) = state.bots().get_random_bot_by_difficulty(current_diff) {
+        if let Some(bot) = state.bots().find(&active_bot_name) {
             // Desreferenciamos el mutex guard con &*game
             if let Some(bot_coords) = bot.choose_move(&*game) {
                 let bot_move = crate::Movement::Placement {
@@ -259,6 +262,9 @@ pub async fn realizar_movimiento(
     if winner_id.is_some() {
         println!("¡Tenemos un ganador!: {:?}", winner_id);
 
+        let final_bot_name = state.active_bot.lock().unwrap().clone();
+        let final_difficulty = state.current_difficulty.lock().unwrap().to_string();
+
         // Guardar la partida en MongoDB
         let db = state.db.clone();
         let b_size_clone = b_size;
@@ -273,9 +279,9 @@ pub async fn realizar_movimiento(
             let collection = db.collection::<serde_json::Value>("partidas");
             let record = serde_json::json!({
                 "date": Utc::now().to_rfc3339(),
-                "opponent": "RandomBot",
+                "opponent": final_bot_name,
                 "board_size": b_size_clone,
-                "difficulty": "facil",
+                "difficulty": final_difficulty,
                 "result": res_text
             });
 
@@ -326,6 +332,15 @@ pub async fn reiniciar_juego(
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
             let mut current_diff = state.current_difficulty.lock().unwrap();
             *current_diff = diff;
+
+
+            // Elegimos un bot al azar de esa dificultad y GUARDAMOS SU NOMBRE para toda la partida
+            if let Some(chosen_bot) = state.bots().get_random_bot_by_difficulty(diff) {
+                let mut active_bot = state.active_bot.lock().unwrap();
+                *active_bot = chosen_bot.name().to_string();
+                println!("Nueva partida iniciada. Bot asignado: {}", *active_bot);
+            }
+
             println!("--> Dificultad actualizada a: {}", diff);
         }
     }

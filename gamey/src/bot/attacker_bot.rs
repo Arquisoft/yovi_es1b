@@ -10,7 +10,7 @@ impl YBot for AttackerBot {
     }
 
     fn difficulty(&self) -> BotDifficulty {
-        BotDifficulty::Medium 
+        BotDifficulty::Hard 
     }
 
     fn choose_move(&self, board: &GameY) -> Option<Coordinates> {
