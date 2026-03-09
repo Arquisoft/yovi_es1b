@@ -324,7 +324,12 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/move`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({cellIndex: index, username: username, difficulty: difficultyChoice}),
+        body: JSON.stringify({
+          cellIndex: index,
+          username: username, 
+          difficulty: difficultyChoice,
+          boardSize: boardData?.size
+        }),
       });
 
       const data = await response.json();
@@ -425,7 +430,9 @@ function App() {
   try {
     const response = await fetch(`${API_BASE_URL}/history?username=${username}`);
     const data = await response.json();
-    setHistoryData(data);
+    
+    // Como vemos en tus logs, llega un [ { ... } ], así que lo guardamos tal cual
+    setHistoryData(data || []); 
     setShowHistory(true);
   } catch (error) {
     console.error('Error fetching history:', error);
@@ -622,8 +629,8 @@ function App() {
                           </tr>
                           </thead>
                           <tbody>
-                          {historyData.map((game: any) => (
-                              <tr key={game.id}>
+                          {historyData.map((game: any, index: number) => (
+                              <tr key={game._id?.$oid || index}>
                                 <td>{new Date(game.date).toLocaleDateString()}</td>
                                 <td>{game.opponent}</td>
                                 <td>{game.board_size}x{game.board_size}</td>

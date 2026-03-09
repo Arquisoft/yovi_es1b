@@ -41,56 +41,6 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 
-// --- BUSINESS LOGIC LAYER (Services) ---
-
-/**
- * Procesa el resultado de una partida y actualiza el historial del usuario.
- * Esta función encapsula la lógica de negocio, separándola del controlador HTTP.
- * 
- * @param {string} username - Nombre del usuario
- * @param {number|null} winnerId - ID del ganador (0: Humano, 1: Bot, null: Nadie)
- * @param {string} difficulty - Dificultad de la partida (opcional)
- */
-async function processGameResult(username, winnerId, difficulty = 'Unknown') {
-  if (winnerId === null || !username) return; // No hay nada que actualizar
-
-  try {
-    const user = await User.findOne({ username: String(username) });
-    if (!user) {
-      console.warn(`Intento de actualizar historial para usuario inexistente: ${username}`);
-      return;
-    }
-
-    // Actualizar contadores globales
-    user.gamesPlayed = (user.gamesPlayed || 0) + 1;
-
-    // Determinar resultado
-    let result = 'Draw';
-    if (winnerId === 0) {
-      result = 'Win';
-      user.gamesWon = (user.gamesWon || 0) + 1;
-    } else if (winnerId === 1) {
-      result = 'Loss';
-      user.gamesLost = (user.gamesLost || 0) + 1; // NEW: Sumar derrota
-    }
-
-    // Añadir al historial detallado
-    user.gameHistory.push({
-      date: new Date(),
-      result: result,
-      opponent: 'RandomBot', // En el futuro esto podría venir como parámetro
-      difficulty: difficulty
-    });
-
-    await user.save();
-    console.log(`Historial actualizado para ${username}: ${result} (Diff: ${difficulty})`);
-
-  } catch (error) {
-    console.error(`Error en processGameResult para ${username}:`, error);
-    // No lanzamos el error para no interrumpir la respuesta HTTP al cliente,
-    // pero lo registramos para monitoreo.
-  }
-}
 
 
 // --- ENDPOINTS (Controllers) ---
@@ -165,7 +115,7 @@ app.post('/login', async (req, res) => {
 // New
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex, username, difficulty } = req.body; // NEW: Recibir difficulty
+  const { cellIndex, username} = req.body; // NEW: Recibir difficulty
 
   try {
     // 1. Integración: Llamada al servicio de Rust
@@ -174,7 +124,7 @@ app.post('/move', async (req, res) => {
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
          index: cellIndex,
-         player: player
+         player: username,
       })
     });
 
@@ -186,14 +136,6 @@ app.post('/move', async (req, res) => {
 
     const newBoard = await rustResponse.json();
     
-    // 2. Lógica de Negocio: Delegamos la actualización del historial
-    // Usamos 'await' si queremos asegurar que se guardó antes de responder,
-    // o podemos quitarlo para hacerlo "fire-and-forget" y responder más rápido.
-    // Aquí usamos await para consistencia.
-    if (newBoard.winner !== null) {
-        await processGameResult(username, newBoard.winner, difficulty); // NEW: Pasar difficulty
-    }
-
     // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
@@ -262,30 +204,32 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  const username = req.query.username;
+  const { username } = req.query;
   
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
   }
 
   try {
-
-    const user = await User.findOne({ username: String(username) });
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    // 1. Llamamos al servicio de Rust (puerto 4000)
+    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}`);
     
-    // Devolvemos el historial y las estadísticas
-    res.json({
-      gamesPlayed: user.gamesPlayed,
-      gamesWon: user.gamesWon,
-      gamesLost: user.gamesLost, // NEW: Devolver derrotas
-      history: user.gameHistory
-    });
+    if (!rustResponse.ok) {
+      console.error(`Error en Rust: ${rustResponse.status}`);
+      return res.status(rustResponse.status).json({ error: "Rust history service error" });
+    }
+
+    const games = await rustResponse.json();
+    
+    // DEBUG: Mira tu terminal de Node para ver si llegan datos
+    console.log(`Historial para ${username}:`, games); 
+
+    // 2. Enviamos el array directo al Frontend
+    res.json(games); 
     
   } catch (e) {
-    console.error("Error al obtener el historial:", e);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    console.error("Error de conexión con Rust:", e);
+    res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
   }
 });
 
