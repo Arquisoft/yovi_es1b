@@ -71,6 +71,7 @@ async function processGameResult(username, winnerId, difficulty = 'Unknown') {
       user.gamesWon = (user.gamesWon || 0) + 1;
     } else if (winnerId === 1) {
       result = 'Loss';
+      user.gamesLost = (user.gamesLost || 0) + 1; // NEW: Sumar derrota
     }
 
     // Añadir al historial detallado
@@ -82,7 +83,7 @@ async function processGameResult(username, winnerId, difficulty = 'Unknown') {
     });
 
     await user.save();
-    console.log(`Historial actualizado para ${username}: ${result}`);
+    console.log(`Historial actualizado para ${username}: ${result} (Diff: ${difficulty})`);
 
   } catch (error) {
     console.error(`Error en processGameResult para ${username}:`, error);
@@ -164,7 +165,7 @@ app.post('/login', async (req, res) => {
 // New
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex, username } = req.body;
+  const { cellIndex, username, difficulty } = req.body; // NEW: Recibir difficulty
 
   try {
     // 1. Integración: Llamada al servicio de Rust
@@ -187,7 +188,7 @@ app.post('/move', async (req, res) => {
     // o podemos quitarlo para hacerlo "fire-and-forget" y responder más rápido.
     // Aquí usamos await para consistencia.
     if (newBoard.winner !== null) {
-        await processGameResult(username, newBoard.winner);
+        await processGameResult(username, newBoard.winner, difficulty); // NEW: Pasar difficulty
     }
 
     // 3. Respuesta HTTP
@@ -202,27 +203,34 @@ app.post('/move', async (req, res) => {
   }
 });
 
+// NEW: Endpoint para registrar una rendición (derrota)
+app.post('/surrender', async (req, res) => {
+    const { username, difficulty } = req.body;
+    if (username) {
+        // Llama a processGameResult con winnerId = 1 (Bot gana)
+        await processGameResult(username, 1, difficulty);
+        res.status(200).json({ message: 'Surrender recorded as a loss.' });
+    } else {
+        res.status(400).json({ error: 'Username is required to surrender.' });
+    }
+});
 
-// New
-// Resets the game
+
+// Resets the game board WITHOUT affecting stats
 app.post('/reset', async (req, res) => {
-
-  const size = req.body.size || 5;
-  const difficulty = req.body.difficulty; // NEW: Recibir dificultad opcional
+  const { size, difficulty } = req.body;
 
   try {
-    const requestedSize = Number(req.body?.size);
-    // Normaliza y valida el tamaño solicitado por el cliente:
-    // solo aceptamos enteros entre 3 y 20; si no, usamos 5 por defecto.
+    const requestedSize = Number(size);
     const safeSize =
       Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
         ? Math.floor(requestedSize)
         : 5;
 
-    const rustResponse = await fetch(`${GAMEY_URL}/reset`, { // LLama al endpoint de Rust para resetear el juego
+    const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize, difficulty: difficulty }), // NEW: Pasar dificultad a Rust
+      body: JSON.stringify({ size: safeSize, difficulty: difficulty }),
     });
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard});
@@ -236,7 +244,7 @@ app.post('/reset', async (req, res) => {
 // Get available difficulties
 app.get('/difficulties', async (req, res) => {
   try {
-    const rustResponse = await fetch('http://gamey:4000/difficulties');
+    const rustResponse = await fetch(`${GAMEY_URL}/difficulties`);
     if (!rustResponse.ok) {
       throw new Error('Failed to fetch difficulties from Rust');
     }
@@ -267,6 +275,7 @@ app.get('/history', async (req, res) => {
     res.json({
       gamesPlayed: user.gamesPlayed,
       gamesWon: user.gamesWon,
+      gamesLost: user.gamesLost, // NEW: Devolver derrotas
       history: user.gameHistory
     });
   } catch (e) {

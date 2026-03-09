@@ -31,6 +31,10 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
+  gamesLost: { // NEW: Contador de derrotas
+    type: Number,
+    default: 0
+  },
   gameHistory: [{
     date: { 
       type: Date, 
