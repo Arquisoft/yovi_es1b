@@ -23,7 +23,7 @@ describe('App Component', () => {
       }),
     } as Response)
 
-    //render(<App />)
+    render(<App />)
 
     // 1. Escribimos el nombre en el Quick Access
     const input = screen.getByPlaceholderText(/your nickname/i)
@@ -59,10 +59,9 @@ describe('App Component', () => {
     render(<App />)
 
     // Entramos al juego
-    //Prueba comentada porque el input de nickname se ha eliminado en la versión actual, si lo vuelven a agregar, descomenten esta línea
     await user.type(screen.getByPlaceholderText(/your nickname/i), 'JugadorPrueba')
     await user.click(screen.getByRole('button', { name: /start playing/i }))
-
+      
     // Buscamos las celdas (ahora que son botones es más fácil)
     // Usamos getAllByRole('gridcell') si pusiste ese role, o simplemente 'button'
     await waitFor(async () => {
