@@ -201,7 +201,10 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/move`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cellIndex: index, player: username }),
+        body: JSON.stringify({
+           cellIndex: index, 
+           player: username 
+        }),
       });
 
       const data = await response.json();
@@ -270,8 +273,13 @@ function App() {
    * Logica para cargar el historial desde el servidor
    */
  const fetchHistory = async () => {
+
+  if (!username) {
+    setConnectionStatus('Debes estar identificado para ver el historial.');
+    return;
+  }
   try {
-    const response = await fetch(`${API_BASE_URL}/history`);
+    const response = await fetch(`${API_BASE_URL}/history?username=${username}`);
     const data = await response.json();
     setHistoryData(data);
     setShowHistory(true);

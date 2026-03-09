@@ -38,10 +38,20 @@ use crate::{BotDifficulty, GameYError, RandomBot, YBotRegistry, state::AppState}
 use serde::Deserialize;
 use std::str::FromStr;
 
+use futures::stream::StreamExt;
+use mongodb::bson::doc;
+
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize)]
 pub struct MoveRequest {
     pub index: u32,
+    pub player: String,
+}
+
+// Para obtener el historial de partidas de un usuario específico.
+#[derive(Deserialize)]
+pub struct HistoryQuery {
+    pub username: String,
 }
 
 /*
@@ -219,6 +229,7 @@ pub async fn realizar_movimiento(
         tokio::spawn(async move {
             let collection = db.collection::<serde_json::Value>("partidas");
             let record = serde_json::json!({
+                "player": payload.player,
                 "date": Utc::now().to_rfc3339(),
                 "opponent": "RandomBot",
                 "board_size": b_size_clone,
@@ -281,20 +292,33 @@ pub async fn listar_dificultades() -> impl IntoResponse {
 }
 
 pub async fn obtener_historial(
-    axum::extract::State(_state): axum::extract::State<AppState>,
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
 ) -> impl IntoResponse {
-    // 1. Aquí te conectarías a la colección de partidas en Mongo
-    // 2. Harías un find() para traer todas las partidas
+    // Acceder bbdd
+    let collection = state.db.collection::<serde_json::Value>("partidas");
 
-    // De momento, devolvemos un JSON de prueba para que veas que el "puente" funciona:
-    axum::Json(serde_json::json!([
-        {
-            "id": "1",
-            "date": "2026-03-06T15:00:00Z",
-            "opponent": "RandomBot",
-            "board_size": 6,
-            "difficulty": "facil",
-            "result": "Victoria"
+    // Consultar partidas del usuario
+    let filter = doc! { "player": &params.username };
+
+    // Definir opciones
+    let mut cursor = match collection
+        .find(filter)
+        .sort(doc! { "date": -1 }) // Ordenamos de más reciente a más antiguo
+        .await
+    {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Error al buscar en la BBDD: {}", e);
+            return axum::Json(serde_json::json!([]));
         }
-    ]))
+    };
+
+    // Recoger los resultados del cursor
+    let mut partidas = Vec::new();
+    while let Some(Ok(doc)) = cursor.next().await {
+        partidas.push(doc);
+    }
+
+    axum::Json(serde_json::json!(partidas))
 }

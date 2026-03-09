@@ -88,7 +88,7 @@ app.post('/login', async (req, res) => {
     const user = await User.findOne({ username: secureUsername });
 
     if (!user) {
-      return res.status(401).json({ error: "Usuario no encontrado" });
+      return res.status(401).json({ error: "Usuario o contraseña incorrecta" });
     }
 
     // comparar contraseñas
@@ -101,7 +101,7 @@ app.post('/login', async (req, res) => {
         score: user.score
       });
     } else {
-      res.status(401).json({ error: "Contraseña incorrecta" });
+      res.status(401).json({ error: "Usuario o contraseña incorrecta" });
     }
       
   } catch (err) {
@@ -113,13 +113,16 @@ app.post('/login', async (req, res) => {
 // New
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex } = req.body;
+  const { cellIndex, player } = req.body;
 
   try {
     const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, { // LLama al endpoint de Rust para ejecutar el movimiento
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ index: cellIndex})
+      body: JSON.stringify({
+         index: cellIndex,
+         player: player
+      })
     });
 
     if (!rustResponse.ok) {
@@ -192,10 +195,22 @@ app.get('/difficulties', async (req, res) => {
 // Para el historial
 app.get('/history', async (req, res) => {
   try {
+    const { username } = req.query;
+
+    if (!username) {
+      return res.status(400).json({ error: 'Username query parameter is required' });
+    }
+
     // Usamos el nombre del servicio 'gamey' definido en Docker
-    const rustResponse = await fetch(`${GAMEY_URL}/history`);
+    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}`);
+
+    if (!rustResponse.ok) {
+      throw new Error('Rust history service failed');
+    }
+
     const history = await rustResponse.json();
     res.json(history);
+    
   } catch (e) {
     console.error("Error al pedir el historial a Rust:", e);
     res.status(500).json({ error: 'No se pudo obtener el historial' });
