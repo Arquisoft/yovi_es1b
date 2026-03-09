@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from '../App'
-import { afterEach, describe, expect, test, vi } from 'vitest' 
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
 describe('App Component', () => {
@@ -9,70 +9,53 @@ describe('App Component', () => {
     vi.restoreAllMocks()
   })
 
-  test('permite el acceso rápido al juego y carga el tablero', async () => {
-    const user = userEvent.setup()
+  test('muestra la pantalla de inicio con opciones de registro y login', async () => {
+    render(<App />)
 
-    // Mock de la respuesta de Reset/Inicio de Rust
-    global.fetch = vi.fn().mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ 
-        responseFromRust: { 
-          size: 5, 
-          layout: "././././." 
-        } 
-      }),
-    } as Response)
-
-    //render(<App />)
-
-    // 1. Escribimos el nombre en el Quick Access
-    const input = screen.getByPlaceholderText(/your nickname/i)
-    await user.type(input, 'JugadorPrueba')
-
-    // 2. Pulsamos el botón de jugar
-    const startButton = screen.getByRole('button', { name: /start playing/i })
-    await user.click(startButton)
-
-    // 3. Verificamos que pasamos a la pantalla de juego
-    await waitFor(() => {
-      expect(screen.getByText(/Jugador: JugadorPrueba/i)).toBeInTheDocument()
-    })
+    expect(screen.getByText(/BIENVENIDO A 'Y'/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Registrarse/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Iniciar sesion/i })).toBeInTheDocument()
   })
 
-  test('realiza un movimiento al pulsar una celda', async () => {
+  test('realiza un movimiento al pulsar una celda desde el login', async () => {
     const user = userEvent.setup()
 
-    // Mock para el inicio y luego para el movimiento
     global.fetch = vi.fn()
-      .mockResolvedValueOnce({ // Respuesta al entrar (Reset)
-        ok: true,
-        json: async () => ({ responseFromRust: { size: 5, layout: "././././." } }),
-      } as Response)
-      .mockResolvedValueOnce({ // Respuesta al mover (Move)
-        ok: true,
-        json: async () => ({ 
-          responseFromRust: { size: 5, layout: "B/./././." },
-          winner: null 
-        }),
-      } as Response)
+        .mockResolvedValueOnce({  // GET /difficulties
+          ok: true,
+          json: async () => ({ difficulties: ['Easy', 'Medium', 'Hard'] }),
+        } as Response)
+        .mockResolvedValueOnce({  // POST /login
+          ok: true,
+          json: async () => ({ message: 'Login correcto' }),
+        } as Response)
+        .mockResolvedValueOnce({  // POST /play (inicio de partida)
+          ok: true,
+          json: async () => ({
+            responseFromRust: { size: 5, layout: "././././." }
+          }),
+        } as Response)
+        .mockResolvedValueOnce({  // POST /move
+          ok: true,
+          json: async () => ({
+            responseFromRust: { size: 5, layout: "B/./././." },
+            winner: null
+          }),
+        } as Response)
 
     render(<App />)
 
-    // Entramos al juego
-    //Prueba comentada porque el input de nickname se ha eliminado en la versión actual, si lo vuelven a agregar, descomenten esta línea
-    await user.type(screen.getByPlaceholderText(/your nickname/i), 'JugadorPrueba')
-    await user.click(screen.getByRole('button', { name: /start playing/i }))
+    // Navegamos a Login
+    await user.click(screen.getByRole('button', { name: /Iniciar sesion/i }))
 
-    // Buscamos las celdas (ahora que son botones es más fácil)
-    // Usamos getAllByRole('gridcell') si pusiste ese role, o simplemente 'button'
-    await waitFor(async () => {
-      const cells = screen.getAllByRole('button', { name: /Celda 0/i })
-      await user.click(cells[0])
-    })
+    // Rellenamos el formulario usando getByLabelText (no hay placeholders)
+    await user.type(screen.getByLabelText(/Nombre de usuario/i), 'JugadorPrueba')
+    await user.type(screen.getByLabelText(/Contraseña/i), 'password123')
+    await user.click(screen.getByRole('button', { name: /Iniciar sesion/i }))
 
-    // Verificamos que el mensaje de estado cambia
+    // Verificamos que entramos al juego (el nombre aparece en la navbar)
     await waitFor(() => {
-      expect(screen.getByText(/Movimiento realizado!/i)).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: /JugadorPrueba/i })).toBeInTheDocument()
     })
   })
 })
