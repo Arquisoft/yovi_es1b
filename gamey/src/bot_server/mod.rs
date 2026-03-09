@@ -30,11 +30,10 @@ use axum::response::IntoResponse;
 pub use play::{play, PlayRequest, PlayResponse};
 use chrono::Utc;
 pub use error::ErrorResponse;
-use futures::stream::StreamExt; // Para manegar la lista de resultados de Mongo
 use std::sync::Arc;
 pub use version::*; // Para poner la fecha actual
 
-use crate::{GameYError, state::AppState, BotDifficulty, create_default_registry};
+use crate::{BotDifficulty, GameYError, RandomBot, YBotRegistry, state::AppState};
 
 use serde::Deserialize;
 use std::str::FromStr;
@@ -230,7 +229,7 @@ pub async fn realizar_movimiento(
             }
         } else {
             // Fallback: RandomBot si no hay bot para esa dificultad (no debería pasar con el registro completo)
-             if let Some(bot) = state.bots().find("random_bot") {
+            if let Some(bot) = state.bots().find("random_bot") {
                 if let Some(bot_coords) = bot.choose_move(&*game) {
                     let bot_move = crate::Movement::Placement {
                         player: crate::PlayerId::new(1),
@@ -345,7 +344,8 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     tag = "Bot"
 )]
 pub async fn obtener_historial(
-    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::State(_state): axum::extract::State<AppState>,
+
 
 ) -> impl IntoResponse {
     // 1. Aquí te conectarías a la colección de partidas en Mongo
