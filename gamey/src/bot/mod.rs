@@ -12,14 +12,18 @@ use std::sync::Arc;
 pub mod blocker_bot;
 pub mod pro_bot;
 pub mod random;
+pub mod attacker_bot;
 pub mod ybot;
 pub mod ybot_registry;
+pub mod edge_bot;
 
 pub use blocker_bot::*;
 pub use pro_bot::*;
 pub use random::*;
 pub use ybot::*;
 pub use ybot_registry::*;
+pub use edge_bot::*;
+pub use attacker_bot::*;
 
 /// Creates a new bot registry and populates it with all available bots.
 ///
@@ -30,4 +34,6 @@ pub fn create_default_registry() -> YBotRegistry {
         .with_bot(Arc::new(RandomBot))
         .with_bot(Arc::new(BlockerBot))
         .with_bot(Arc::new(ProBot))
+        .with_bot(Arc::new(AttackerBot))
+        .with_bot(Arc::new(EdgeBot))
 }

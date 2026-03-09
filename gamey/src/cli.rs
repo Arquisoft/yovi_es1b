@@ -83,11 +83,19 @@ pub fn run_cli_game() -> Result<()> {
 
     let bots_registry = create_default_registry();
 
-    let difficulty = BotDifficulty::from_str(&args.bot).unwrap_or(BotDifficulty::Easy);
-    let mut bot: Arc<dyn YBot> = bots_registry.get_random_bot_by_difficulty(difficulty)
-        .unwrap_or_else(|| Arc::new(RandomBot));
+    // --- INICIO DEL CAMBIO EXACTO ---
+    // 1. Busca el bot por el nombre que escribes en la terminal
+    let mut bot: Arc<dyn YBot> = if let Some(exact_bot) = bots_registry.find(&args.bot) {
+        exact_bot
+    } else {
+        // 2. Si fallas al escribir o pones una dificultad ("hard"), hace lo de siempre
+        let difficulty = BotDifficulty::from_str(&args.bot).unwrap_or(BotDifficulty::Easy);
+        bots_registry.get_random_bot_by_difficulty(difficulty)
+            .unwrap_or_else(|| Arc::new(RandomBot))
+    };
 
-    println!("Jugando contra bot de dificultad: {}", difficulty);
+    println!("Jugando contra el bot: {}", bot.name());
+    // --- FIN DEL CAMBIO EXACTO ---
 
     let mut game = game::GameY::new(board_size);
 
