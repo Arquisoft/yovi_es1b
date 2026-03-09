@@ -282,3 +282,66 @@ body {
 .game-screen {
   padding-top: 0; /* Quitamos padding para que la nav pegue arriba */
 }
+
+/*Temporizador de turno*/
+.turn-timer {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto 18px auto;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+}
+
+.turn-timer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.turn-timer-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cce4ff;
+  letter-spacing: 0.03em;
+}
+
+.turn-timer-seconds {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffffff;
+  transition: color 0.3s ease;
+}
+
+.turn-timer-seconds.turn-timer-urgent {
+  color: #ff4d4d;
+  animation: pulse-urgent 0.6s infinite alternate;
+}
+
+.turn-timer-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.turn-timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #4da6ff, #007bff);
+  border-radius: 999px;
+  transition: width 0.9s linear, background 0.4s ease;
+}
+
+.turn-timer-bar.turn-timer-bar-urgent {
+  background: linear-gradient(90deg, #ff6b6b, #dc3545);
+}
+
+@keyframes pulse-urgent {
+  from { transform: scale(1); }
+  to   { transform: scale(1.12); }
+}
+
