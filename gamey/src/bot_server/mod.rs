@@ -22,26 +22,52 @@
 //! }
 //! ```
 
-pub mod choose;
+pub mod play;
 pub mod error;
 pub mod state;
 pub mod version;
+
 use axum::response::IntoResponse;
-pub use choose::MoveResponse;
+pub use play::{play, PlayRequest, PlayResponse};
+use chrono::Utc;
 pub use error::ErrorResponse;
 use std::sync::Arc;
-pub use version::*; // Para poner la fecha actual
+pub use version::*;
 
-use crate::{BotDifficulty, GameYError, RandomBot, YBotRegistry, state::AppState};
+use crate::{BotDifficulty, GameYError, state::AppState, YEN};
 
 use serde::Deserialize;
 use std::str::FromStr;
 
+use tower_http::cors::{Any, CorsLayer};
+use crate::bot::random::RandomBot;
+use crate::bot::pro_bot::ProBot;
+use crate::bot::ybot_registry::YBotRegistry;
+
 // This helps Rust to understand the JSON that receive from Node
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct MoveRequest {
     pub index: u32,
 }
+
+use utoipa::OpenApi;
+
+
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), // Añadida aquí
+    components(schemas(
+        play::PlayRequest,
+        play::PlayResponse,
+        YEN,
+        ResetRequest,
+        MoveRequest,
+        GameRecord, // Añadida aquí
+        error::ErrorResponse
+    )),
+    tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
+)]
+pub struct ApiDoc;
 
 /*
  * Para pasar el tamaño del tablero desde Node hasta Rust.
@@ -51,10 +77,22 @@ pub struct MoveRequest {
  * pub size: usize -->  Tamaño del tablero
  *
  */
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct ResetRequest {
     pub size: Option<u32>,
     pub difficulty: Option<String>, // NEW: Optional difficulty parameter
+}
+
+#[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
+pub struct GameRecord {
+    #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
+    #[schema(value_type = Option<String>)] // <-- Esta línea soluciona el error de ObjectId
+    pub id: Option<mongodb::bson::oid::ObjectId>,
+    pub date: String,
+    pub opponent: String,
+    pub board_size: u32,
+    pub difficulty: String,
+    pub result: String,
 }
 
 // Routes
@@ -68,10 +106,10 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/history", axum::routing::get(obtener_historial))
         .route("/reset", axum::routing::post(reiniciar_juego)) // new
         .route("/difficulties", axum::routing::get(listar_dificultades)) // new
-        .route(
-            "/{api_version}/ybot/choose/{bot_id}",
-            axum::routing::post(choose::choose),
-        )
+
+        .route("/api/play", axum::routing::post(play::play))
+        .merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
+
         .with_state(state)
 }
 
@@ -143,6 +181,16 @@ pub async fn status() -> impl IntoResponse {
 
 // New
 // This endpoint handles the move made by the human player and then triggers the bot's response.
+
+#[utoipa::path(
+    post,
+    path = "/execute-move",
+    request_body = MoveRequest,
+    responses(
+        (status = 200, description = "Movimiento procesado", body = Value) // Value porque devuelves un json! manual
+    ),
+    tag = "Bot"
+)]
 pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
@@ -202,9 +250,32 @@ pub async fn realizar_movimiento(
         _ => None,
     };
 
-    // NOTA: La persistencia del historial ahora se maneja en el servicio de Usuarios (Node.js),
-    // que actúa como orquestador y conoce la identidad del jugador.
-    // Rust se limita a devolver el estado del juego.
+    if winner_id.is_some() {
+        println!("¡Tenemos un ganador!: {:?}", winner_id);
+
+        // Guardar la partida en MongoDB
+        let db = state.db.clone();
+        let b_size_clone = b_size;
+        let res_text = if winner_id == Some(0) {
+            "Victoria"
+        } else {
+            "Derrota"
+        };
+
+        // Guardar en un hilo para no ralentizar
+        tokio::spawn(async move {
+            let collection = db.collection::<serde_json::Value>("partidas");
+            let record = serde_json::json!({
+                "date": Utc::now().to_rfc3339(),
+                "opponent": "RandomBot",
+                "board_size": b_size_clone,
+                "difficulty": "facil",
+                "result": res_text
+            });
+
+            let _ = collection.insert_one(record).await;
+        });
+    }
 
     // 5. Respuesta (Convertimos a YEN)
     // Respuesta para el front: tablero actualizado + ganador.
@@ -221,6 +292,16 @@ pub async fn realizar_movimiento(
  *
  *
  */
+
+ #[utoipa::path(
+    post,
+    path = "/reset",
+    request_body = ResetRequest,
+    responses(
+        (status = 200, description = "Tablero reiniciado", body = YEN)
+    ),
+    tag = "Bot"
+)]
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
@@ -256,10 +337,32 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     axum::Json(diff_strings)
 }
 
+#[utoipa::path(
+    get,
+    path = "/history",
+    responses(
+        (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
+    ),
+    tag = "Bot"
+)]
 pub async fn obtener_historial(
     axum::extract::State(_state): axum::extract::State<AppState>,
+
+
 ) -> impl IntoResponse {
-    // Este endpoint podría usarse para estadísticas globales del sistema en el futuro.
-    // El historial personal del usuario se gestiona en el servicio de Users.
-    axum::Json(serde_json::json!({ "message": "History is now managed by User Service" }))
+    // 1. Aquí te conectarías a la colección de partidas en Mongo
+    // 2. Harías un find() para traer todas las partidas
+
+    // De momento, devolvemos un JSON de prueba para que veas que el "puente" funciona:
+    axum::Json(serde_json::json!([
+        {
+            "id": "1",
+            "date": "2026-03-06T15:00:00Z",
+            "opponent": "RandomBot",
+            "board_size": 6,
+            "difficulty": "facil",
+            "result": "Victoria"
+        }
+    ]))
+
 }
