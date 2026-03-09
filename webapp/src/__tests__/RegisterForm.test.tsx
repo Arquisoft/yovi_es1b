@@ -1,35 +1,114 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import HomeScreen from '../screens/HomeScreen'
-import { afterEach, describe, expect, test, vi } from 'vitest' 
+import App from '../App'
+import RegisterScreen from '../screens/RegisterScreen'
+import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
+// Se define la respuesta para la carga automática de App
+const mockInitialDifficulties = {
+  ok: true,
+  json: async () => ['Easy', 'Medium', 'Hard'],
+}
 
 describe('RegisterForm', () => {
-  afterEach(() => {
-    vi.restoreAllMocks()
+  beforeAll(() => {
+    vi.stubGlobal('scrollTo', vi.fn())
   })
 
-  test('muestra botones de registro e inicio de sesion', async () => {
-    const onUsernameChange = vi.fn()
-    const onStart = vi.fn()
-    const onGoToRegister = vi.fn()
-    const onGoToLogin = vi.fn()
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.clearAllMocks()
+  })
 
-    render(
-      <HomeScreen
-        username=""
-        onUsernameChange={onUsernameChange}
-        onStart={onStart}
-        onGoToRegister={onGoToRegister}
-        onGoToLogin={onGoToLogin}
-      />
-    )
+  test('con datos incompletos no deja avanzar', async () => {
     const user = userEvent.setup()
+    const fetchMock = vi.fn().mockRejectedValueOnce(mockInitialDifficulties)
+    global.fetch = fetchMock as unknown as typeof fetch
+
+    render(<App />)
 
     await user.click(screen.getByRole('button', { name: /registrarse/i }))
-    expect(onGoToRegister).toHaveBeenCalledTimes(1)
-    await user.click(screen.getByRole('button', { name: /iniciar sesion/i }))
-    expect(onGoToLogin).toHaveBeenCalledTimes(1)
+    await user.type(await screen.findByLabelText(/nombre/i), 'Alice')
+    await user.type(screen.getByLabelText(/edad/i), '22')
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('heading', { name: /zona de registro/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /jugador:/i })).not.toBeInTheDocument()
+  })
+
+  test('con edad no permitida no deja registrarse', async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn().mockRejectedValueOnce(mockInitialDifficulties)
+    global.fetch = fetchMock as unknown as typeof fetch
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /registrarse/i }))
+    await user.type(await screen.findByLabelText(/nombre/i), 'Alice')
+    await user.type(screen.getByLabelText(/edad/i), '2')
+    await user.type(screen.getByLabelText(/pa/i), 'Spain')
+    await user.type(screen.getByLabelText(/contra/i), 'password123')
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(screen.getByLabelText(/edad/i)).toBeInvalid()
+    expect(screen.getByRole('heading', { name: /zona de registro/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /jugador:/i })).not.toBeInTheDocument()
+  })
+
+  test('si el backend rechaza no deja avanzar', async () => {
+    const user = userEvent.setup()
+    global.fetch = vi.fn()
+    .mockRejectedValueOnce(mockInitialDifficulties)
+    .mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ error: 'Usuario ya existe' }),
+    } as Response)
+
+    render(<App />)
+
+    await user.click(screen.getByRole('button', { name: /registrarse/i }))
+    await user.type(await screen.findByLabelText(/nombre/i), 'Alice')
+    await user.type(screen.getByLabelText(/edad/i), '22')
+    await user.type(screen.getByLabelText(/pa/i), 'Spain')
+    await user.type(screen.getByLabelText(/contra/i), 'password123')
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/usuario ya existe/i)).toBeInTheDocument()
+    })
+    expect(screen.getByRole('heading', { name: /zona de registro/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /jugador:/i })).not.toBeInTheDocument()
+  })
+
+  test.each([
+    { field: 'nombre', name: 'Alice', age: '22', country: 'Spain', password: 'password123' },
+    { field: 'edad', name: 'Alice', age: '30', country: 'Spain', password: 'password123' },
+    { field: 'pais', name: 'Alice', age: '22', country: 'Argentina', password: 'password123' },
+    { field: 'contrasena', name: 'Alice', age: '22', country: 'Spain', password: 'ClaveSegura99' },
+  ])('campo valido de $field permite enviar el registro', async ({ name, age, country, password }) => {
+    const user = userEvent.setup()
+    const onCreateAccount = vi.fn()
+    const onBack = vi.fn()
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ok: true }),
+    } as Response)
+
+    render(<RegisterScreen onBack={onBack} onCreateAccount={onCreateAccount} />)
+
+    await user.type(screen.getByLabelText(/nombre/i), name)
+    await user.type(screen.getByLabelText(/edad/i), age)
+    await user.type(screen.getByLabelText(/pa/i), country)
+    await user.type(screen.getByLabelText(/contra/i), password)
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(onCreateAccount).toHaveBeenCalledWith(name)
+    })
   })
 })

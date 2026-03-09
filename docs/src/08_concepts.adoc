@@ -1,74 +1,44 @@
-ifndef::imagesdir[:imagesdir: ../images]
+== 8. Conceptos transversales
 
-[[section-concepts]]
-== Conceptos Transversales
+=== 8.1. Gestión de Proyecto
 
+==== Metodología de desarrollo
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-.Content
-This section describes overall, principal regulations and solution ideas that are relevant in multiple parts (= cross-cutting) of your system.
-Such concepts are often related to multiple building blocks.
-They can include many different topics, such as
+El proyecto adopta una metodología ágil basada en **Scrum**.
+Este enfoque iterativo e incremental permite una adaptación continua a los cambios y una entrega de valor constante.
+Se realizan reuniones semanales de seguimiento para revisar el progreso, ajustar la planificación y asegurar la alineación del equipo.
 
-* models, especially domain models
-* architecture or design patterns
-* rules for using specific technology
-* principal, often technical decisions of an overarching (= cross-cutting) nature
-* implementation rules
+==== Tareas y prioridades
 
+La planificación y el seguimiento de las tareas se centralizan en **GitHub Projects**.
+Las prioridades se revisan cada semana, quedando documentadas en actas de reunión para garantizar la transparencia y el compromiso del equipo.
 
-.Motivation
-Concepts form the basis for _conceptual integrity_ (consistency, homogeneity) of the architecture. 
-Thus, they are an important contribution to achieve inner qualities of your system.
+=== 8.2. Arquitectura y patrones de diseño
 
-Some of these concepts cannot be assigned to individual building blocks, e.g. security or safety. 
+==== Arquitectura de Microservicios
 
+La solución se ha diseñado siguiendo una arquitectura de **microservicios**.
+Este patrón estructura la aplicación como un conjunto de servicios pequeños, autónomos y débilmente acoplados.
 
-.Form
-The form can be varied:
+**Beneficios Clave:**
 
-* concept papers with any kind of structure
-* cross-cutting model excerpts or scenarios using notations of the architecture views
-* sample implementations, especially for technical concepts
-* reference to typical usage of standard frameworks (e.g. using Hibernate for object/relational mapping)
+* **Escalabilidad:** Permite escalar componentes individuales según la demanda.
+* **Mantenibilidad:** Facilita la comprensión, el desarrollo y el despliegue independiente de cada servicio.
+* **Flexibilidad Tecnológica:** Posibilita el uso de diferentes tecnologías o lenguajes para cada servicio si fuera necesario.
 
-.Structure
-A potential (but not mandatory) structure for this section could be:
+=== 8.3. Entorno de Desarrollo y Despliegue
 
-* Domain concepts
-* User Experience concepts (UX)
-* Safety and security concepts
-* Architecture and design patterns
-* "Under-the-hood"
-* development concepts
-* operational concepts
+==== Contenerización con Docker
 
-Note: it might be difficult to assign individual concepts to one specific topic
-on this list.
+Se utiliza **Docker** y **Docker Compose** para estandarizar los entornos de desarrollo, pruebas y producción.
+Cada microservicio (Webapp, Users, GameY) se empaqueta en su propio contenedor, asegurando que la aplicación se ejecute de manera consistente independientemente de la máquina anfitriona.
+Esto elimina el problema de "funciona en mi máquina" y simplifica la configuración inicial para nuevos desarrolladores.
 
-image::08-concepts-EN.drawio.png["Possible topics for crosscutting concepts"]
+=== 8.4. Calidad y Automatización
 
+==== Integración Continua y Calidad de Código (CI/CQ)
 
-.Further Information
+El proyecto implementa prácticas de Integración Continua (CI) y Calidad de Código (CQ) para mantener un alto estándar de desarrollo:
 
-See https://docs.arc42.org/section-8/[Concepts] in the arc42 documentation.
-****
-endif::arc42help[]
-
-=== _<Concepto 1>_
-
-_<explanation>_
-
-
-
-=== _<Concepto 2>_
-
-_<explanation>_
-
-...
-
-=== _<Concepto n>_
-
-_<explanation>_
+* **GitHub Actions:** Se utilizan flujos de trabajo automatizados para ejecutar pruebas y verificar la integridad del código en cada *push* o *pull request*.
+* **SonarQube / SonarCloud:** Se integra el análisis estático de código para detectar *bugs*, vulnerabilidades de seguridad y deuda técnica de manera temprana.

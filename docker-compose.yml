@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   users:
     build: ./users
@@ -5,6 +7,10 @@ services:
     image: ghcr.io/arquisoft/yovi_es1b-users:latest
     ports:
       - "3000:3000"
+    environment:
+      - MONGODB_URI=${MONGODB_URI}/users_db${MONGODB_OPTIONS}
+      - PORT=3000
+      - GAMEY_SERVICE_URL=http://gamey:3000
     networks:
       - monitor-net
 
@@ -13,12 +19,14 @@ services:
       context: ./webapp
       args:
         - VITE_API_URL=http://localhost:3000
+        - VITE_GAMEY_URL=http://localhost:4000
     container_name: webapp
     image: ghcr.io/arquisoft/yovi_es1b-webapp:latest
     ports:
       - "80:80"
     depends_on:
       - users
+      - gamey
     networks:
       - monitor-net
 
@@ -27,7 +35,11 @@ services:
     container_name: gamey
     image: ghcr.io/arquisoft/yovi_es1b-gamey:latest
     ports:
-      - "4000:4000"
+      - "4000:3000"
+    command: ["./gamey", "--mode", "server", "--port", "3000"]
+    environment:
+      - MONGODB_URI=${MONGODB_URI}/gamey_db${MONGODB_OPTIONS}
+      - PORT=3000
     networks:
       - monitor-net
 

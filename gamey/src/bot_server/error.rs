@@ -1,3 +1,4 @@
+use utoipa::ToSchema;
 use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 
@@ -5,7 +6,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// This type is serialized to JSON and returned when API requests fail.
 /// It includes context about which API version and bot were involved.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[derive(serde::Serialize, serde::Deserialize, Debug, Clone, ToSchema)]
 pub struct ErrorResponse {
     /// The API version that was requested, if available.
     pub api_version: Option<String>,
@@ -14,6 +15,7 @@ pub struct ErrorResponse {
     /// A human-readable error message describing what went wrong.
     pub message: String,
 }
+
 
 impl ErrorResponse {
     /// Creates a new error response with the given message and optional context.
