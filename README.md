@@ -8,7 +8,7 @@
 [![CodeScene Average Code Health](https://codescene.io/projects/76241/status-badges/average-code-health)](https://codescene.io/projects/76241)
 
 
-GameY URL: 158.158.16.177
+GameY URL: [158.158.16.177](http://158.158.16.177/)
 
 This project is a template with some basic functionality for the ASW labs.
 
