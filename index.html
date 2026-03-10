@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="generator" content="Asciidoctor 2.0.26">
+<meta name="generator" content="Asciidoctor 2.0.20">
 <title>Yovi en español - Equipo 1-B</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
 <style>
@@ -116,6 +116,7 @@ h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title str
 :not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
 pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
 pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre>code{display:block}
 pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
 em em{font-style:normal}
 strong strong{font-weight:400}
@@ -139,7 +140,7 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #content::before{content:none}
 #header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
 #header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
-#header>h1:only-child{border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
 #header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
 #header .details span:first-child{margin-left:-.125em}
 #header .details span.email a{color:rgba(0,0,0,.85)}
@@ -161,7 +162,6 @@ p a>code:hover{color:rgba(0,0,0,.9)}
 #toctitle{color:#7a2518;font-size:1.2em}
 @media screen and (min-width:768px){#toctitle{font-size:1.375em}
 body.toc2{padding-left:15em;padding-right:0}
-body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
 #toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
 #toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
 #toc.toc2>ul{font-size:.9em;margin-bottom:0}
@@ -218,7 +218,6 @@ table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
 .literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
 .literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
 .listingblock>.content{position:relative}
-.listingblock pre>code{display:block}
 .listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
 .listingblock:hover code[data-lang]::before{display:block}
 .listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
@@ -328,7 +327,7 @@ a.image{text-decoration:none;display:inline-block}
 a.image object{pointer-events:none}
 sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
 sup.footnote a,sup.footnoteref a{text-decoration:none}
-sup.footnote a:active,sup.footnoteref a:active,#footnotes .footnote a:first-of-type:active{text-decoration:underline}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
 #footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
 #footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
 #footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
@@ -481,7 +480,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#section-runtime-view">6. Vista de Ejecución</a>
 <ul class="sectlevel2">
 <li><a href="#_escenario_de_registro_de_usuario">6.1. Escenario de Registro de Usuario</a></li>
-<li><a href="#_escenario_de_cálculo_de_movimiento">6.2. Escenario de cálculo de Movimiento</a></li>
+<li><a href="#_escenario_de_inicialización_de_partida">6.2. Escenario de Inicialización de Partida</a></li>
+<li><a href="#_escenario_de_turno_de_juego_y_persistencia">6.3. Escenario de Turno de Juego y Persistencia</a></li>
 </ul>
 </li>
 <li><a href="#section-deployment-view">7. Vista de despliegue</a>
@@ -521,7 +521,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#section-technical-risks">11. Riesgos y Deudas Técnicas</a>
 <ul class="sectlevel2">
 <li><a href="#_riesgos">11.1. Riesgos</a></li>
-<li><a href="#_deudas">11.2. Deudas</a></li>
+<li><a href="#_deudas_técnicas">11.2. Deudas Técnicas</a></li>
 </ul>
 </li>
 <li><a href="#section-glossary">12. Glosario</a></li>
@@ -1190,8 +1190,9 @@ In the best case you will get away with examples or simple signatures.</p>
 <dl>
 <dt class="hdlist1">Motivation</dt>
 <dd>
-<p>La aplicación YGame tiene la estructura básica para jugar el juego y online contra distintos bots, u otros jugadores.
-Aparte de eso tambíen guarda y carga partidas previas y chatear cuando juegas cotra otro usuario</p>
+<p>La aplicación YGame permite jugar al juego de conexión Y online contra distintos bots
+con diferentes niveles de dificultad. Gestiona el registro y autenticación de usuarios,
+guarda el historial de partidas y ofrece una interfaz web accesible desde el navegador.</p>
 </dd>
 <dt class="hdlist1">Bloques de Construcción de Contenidos</dt>
 </dl>
@@ -1210,30 +1211,103 @@ Aparte de eso tambíen guarda y carga partidas previas y chatear cuando juegas c
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Usuario</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Usuario de la aplicación que interactua con ella</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Usuario de la aplicación que interactúa con ella a través del navegador web.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Webapp</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Ofrece la interfaz gráfica para que el usuario se registre y reciba la respuesta del backend.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Interfaz gráfica SPA (Single Page Application) construida con React, Vite y TypeScript.
+Gestiona las pantallas de inicio, registro, login y partida. Renderiza el tablero
+triangular en formato YEN, controla el temporizador de turno y se comunica con el
+backend mediante llamadas REST.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Users</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Aplicación principal de backend que gestiona la creación y autenticación de usuarios.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Servicio backend construido con Node.js y Express. Gestiona el registro y autenticación
+de usuarios, el historial de partidas y actúa de intermediario entre la webapp y el
+motor de juego Gamey. Expone métricas para Prometheus.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Gamey</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Backend que implementa la lógica del juego Y y de los bots, implementado en Rust.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Motor de juego implementado en Rust. Implementa la lógica completa del juego Y sobre
+un tablero triangular con coordenadas trilineales (x,y,z). Expone una API REST para
+gestionar partidas y ofrece tres niveles de bot: RandomBot (fácil), BlockerBot (medio)
+y ProBot (difícil).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>MongoDB</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Base de datos NoSQL que almacena los usuarios registrados y el historial de partidas,
+utilizada tanto por el servicio Users como por Gamey.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Prometheus</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sistema de monitorización que recolecta métricas del servicio Users.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Grafana</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Plataforma de visualización que muestra los dashboards con las métricas recogidas
+por Prometheus.</p></td>
 </tr>
 </tbody>
 </table>
 <div class="dlist">
 <dl>
 <dt class="hdlist1">Important Interfaces</dt>
-<dd>
-<p><em>&lt;Description of important interfaces&gt;</em></p>
-</dd>
 </dl>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Interfaz</th>
+<th class="tableblock halign-left valign-top">Entre</th>
+<th class="tableblock halign-left valign-top">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REST <code>/reset</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Webapp → Users</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Inicia o reinicia una partida con el tamaño de tablero
+y dificultad seleccionados. Devuelve el estado inicial del tablero en formato YEN.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REST <code>/move</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Webapp → Users</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Envía el índice de celda elegida por el jugador.
+El servicio lo reenvía a Gamey, que responde con el nuevo estado del tablero
+tras el movimiento del jugador y la respuesta del bot.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REST <code>/surrender</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Webapp → Users</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Registra la rendición del jugador y actualiza
+el historial de partidas en MongoDB.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REST <code>/history</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Webapp → Users</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Consulta el historial de partidas del usuario
+autenticado almacenado en MongoDB.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REST <code>/difficulties</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Webapp → Users</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Devuelve la lista de dificultades disponibles
+(Easy, Medium, Hard).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">REST <code>/play</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Users → Gamey</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reenvía los movimientos al motor de juego Rust,
+que ejecuta la lógica del tablero y devuelve el nuevo estado YEN junto con
+el resultado (ganador o partida en curso).</p></td>
+</tr>
+</tbody>
+</table>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1257,22 +1331,22 @@ responsibility according to the following schema:</p>
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;black box 1&gt;</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"> <em>&lt;Text&gt;</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Text&gt;</em></p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;black box 2&gt;</em></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"> <em>&lt;Text&gt;</em></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><em>&lt;Text&gt;</em></p></td>
 </tr>
 </tbody>
 </table>
 <div class="paragraph">
-<p>If you use a list of black box descriptions then you fill in a separate black box template for every important building block .
+<p>If you use a list of black box descriptions then you fill in a separate black box template for every important building block.
 Its headline is the name of the black box.</p>
 </div>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_name_black_box_1">5.1.1. &lt;Name black box 1&gt;</h4>
+<h4 id="_webapp">5.1.1. Webapp</h4>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1304,45 +1378,59 @@ according the the following black box template:</p>
 </div>
 </div>
 <div class="paragraph">
-<p><em>&lt;Purpose/Responsibility&gt;</em></p>
+<p><strong>Purpose/Responsibility</strong>: Proporcionar la interfaz gráfica del juego al usuario final.
+Gestiona el flujo completo de la partida: selección de dificultad y tamaño de tablero,
+renderizado del tablero triangular YEN, temporizador de turno con movimiento automático
+al agotarse, y visualización del historial de partidas.</p>
 </div>
 <div class="paragraph">
-<p><em>&lt;Interface(s)&gt;</em></p>
+<p><strong>Interface(s)</strong>: Se comunica exclusivamente con el servicio Users mediante peticiones
+HTTP REST. No accede directamente a Gamey ni a MongoDB.</p>
 </div>
 <div class="paragraph">
-<p><em>&lt;(Optional) Quality/Performance Characteristics&gt;</em></p>
+<p><strong>Quality/Performance Characteristics</strong>: Aplicación SPA que no requiere recarga de página.
+El temporizador de turno opera en cliente con intervalos de 1 segundo.</p>
 </div>
 <div class="paragraph">
-<p><em>&lt;(Optional) Directory/File Location&gt;</em></p>
-</div>
-<div class="paragraph">
-<p><em>&lt;(Optional) Fulfilled Requirements&gt;</em></p>
-</div>
-<div class="paragraph">
-<p><em>&lt;(optional) Open Issues/Problems/Risks&gt;</em></p>
+<p><strong>Directory/File Location</strong>: <code>webapp/src/</code></p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_name_black_box_2">5.1.2. &lt;Name black box 2&gt;</h4>
+<h4 id="_users">5.1.2. Users</h4>
 <div class="paragraph">
-<p><em>&lt;black box template&gt;</em></p>
+<p><strong>Purpose/Responsibility</strong>: Gestionar la autenticación y registro de usuarios, el historial
+de partidas y actuar como API Gateway entre la webapp y el motor de juego Gamey.</p>
+</div>
+<div class="paragraph">
+<p><strong>Interface(s)</strong>: Expone una API REST en el puerto 3000. Se conecta a MongoDB para
+persistencia y a Gamey (puerto 4000) para la lógica del juego.</p>
+</div>
+<div class="paragraph">
+<p><strong>Quality/Performance Characteristics</strong>: Expone métricas en formato Prometheus para
+monitorización en tiempo real mediante Grafana.</p>
+</div>
+<div class="paragraph">
+<p><strong>Directory/File Location</strong>: <code>users/</code></p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_name_black_box_n">5.1.3. &lt;Name black box n&gt;</h4>
+<h4 id="_gamey">5.1.3. Gamey</h4>
 <div class="paragraph">
-<p><em>&lt;black box template&gt;</em></p>
+<p><strong>Purpose/Responsibility</strong>: Ejecutar toda la lógica del juego Y: validar movimientos,
+detectar la condición de victoria (conexión de los tres lados del triángulo),
+gestionar el estado del tablero en formato YEN y calcular las respuestas de los bots.</p>
 </div>
-</div>
-<div class="sect3">
-<h4 id="_name_interface_1">5.1.4. &lt;Name interface 1&gt;</h4>
 <div class="paragraph">
-<p>&#8230;&#8203;</p>
+<p><strong>Interface(s)</strong>: Expone una API REST en el puerto 3000 (mapeado al 4000 en Docker).
+Recibe y devuelve el estado del tablero en formato YEN (JSON).</p>
 </div>
+<div class="paragraph">
+<p><strong>Quality/Performance Characteristics</strong>: Implementado en Rust para máximo rendimiento
+en el cálculo de movimientos del ProBot, que usa BFS con potencial exponencial.</p>
 </div>
-<div class="sect3">
-<h4 id="_name_interface_m">5.1.5. &lt;Name interface m&gt;</h4>
-
+<div class="paragraph">
+<p><strong>Directory/File Location</strong>: <code>gamey/src/</code></p>
+</div>
 </div>
 </div>
 <div class="sect2">
@@ -1360,7 +1448,7 @@ Leave out normal, simple, boring or standardized parts of your system</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_white_box_building_block_1">5.2.1. White Box <em>&lt;building block 1&gt;</em></h4>
+<h4 id="_white_box_webapp">5.2.1. White Box <em>Webapp</em></h4>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1369,23 +1457,152 @@ Leave out normal, simple, boring or standardized parts of your system</p>
 </div>
 </div>
 <div class="paragraph">
-<p><em>&lt;white box template&gt;</em></p>
+<p>La webapp está organizada en pantallas independientes gestionadas por un router
+interno en <code>App.tsx</code>:</p>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Componente</th>
+<th class="tableblock halign-left valign-top">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>HomeScreen</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pantalla inicial con acceso a registro e inicio de sesión.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>RegisterScreen</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Formulario de registro de nuevos usuarios.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>LoginScreen</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Formulario de autenticación de usuarios existentes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>GameScreen</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pantalla principal de juego. Renderiza el tablero triangular YEN,
+muestra el temporizador de turno con barra de progreso, y gestiona las acciones
+de reiniciar, rendirse, cambiar dificultad/tamaño y consultar historial.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>App.tsx</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Componente raíz. Contiene toda la lógica de estado: gestión de turnos,
+temporizador automático (60s/30s/15s según dificultad), comunicación con el backend
+y navegación entre pantallas.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect3">
-<h4 id="_white_box_building_block_2">5.2.2. White Box <em>&lt;building block 2&gt;</em></h4>
+<h4 id="_white_box_gamey">5.2.2. White Box <em>Gamey</em></h4>
+<div class="sidebarblock arc42help">
+<div class="content">
 <div class="paragraph">
-<p><em>&lt;white box template&gt;</em></p>
+<p>&#8230;&#8203;describes the internal structure of <em>building block 2</em>.</p>
+</div>
+</div>
 </div>
 <div class="paragraph">
-<p>&#8230;&#8203;</p>
+<p>El motor de juego Rust está organizado en los siguientes módulos:</p>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Módulo</th>
+<th class="tableblock halign-left valign-top">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>core/game.rs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Estado principal de la partida (<code>GameY</code>). Gestiona el tablero,
+el turno actual, el historial de movimientos y la condición de victoria.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>core/topology/</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Implementación de la topología triangular. Pre-calcula vecinos
+y regiones para cada celda usando coordenadas trilineales (x+y+z = size-1).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>core/coord.rs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Sistema de coordenadas trilineales con conversión a/desde índice lineal.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bot/random.rs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bot fácil: elige una celda vacía aleatoriamente.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bot/blocker_bot.rs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bot medio: prioriza bloquear los movimientos del oponente.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bot/pro_bot.rs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bot difícil: usa BFS para calcular distancias a los tres lados
+y puntúa cada celda con potencial exponencial, bonificación de centralidad
+y conectividad.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>notation/yen.rs</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Serialización/deserialización del formato YEN (JSON con layout
+triangular separado por <code>/</code>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>bot_server/</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Servidor HTTP Axum que expone la API REST del motor de juego.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect3">
-<h4 id="_white_box_building_block_m">5.2.3. White Box <em>&lt;building block m&gt;</em></h4>
+<h4 id="_white_box_users">5.2.3. White Box <em>Users</em></h4>
+<div class="sidebarblock arc42help">
+<div class="content">
 <div class="paragraph">
-<p><em>&lt;white box template&gt;</em></p>
+<p>&#8230;&#8203;describes the internal structure of <em>building block 3</em>.</p>
 </div>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Módulo</th>
+<th class="tableblock halign-left valign-top">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>users-service.js</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Servicio principal Express. Define los endpoints REST,
+gestiona la conexión a MongoDB y reenvía las peticiones de juego a Gamey.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>models/user.js</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Modelo Mongoose para usuarios y historial de partidas.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>monitoring/prometheus</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Configuración de Prometheus para recolección de métricas.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>monitoring/grafana</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Dashboards de Grafana para visualización de métricas.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 <div class="sect2">
@@ -1402,7 +1619,7 @@ part of arc42 for additional levels.</p>
 </div>
 </div>
 <div class="sect3">
-<h4 id="_white_box_building_block_x_1">5.3.1. White Box &lt;_building block x.1_&gt;</h4>
+<h4 id="_white_box_probot_botpro_bot_rs">5.3.1. White Box <em>ProBot (bot/pro_bot.rs)</em></h4>
 <div class="sidebarblock arc42help">
 <div class="content">
 <div class="paragraph">
@@ -1411,20 +1628,128 @@ part of arc42 for additional levels.</p>
 </div>
 </div>
 <div class="paragraph">
-<p><em>&lt;white box template&gt;</em></p>
+<p>El ProBot implementa la estrategia más avanzada en varias fases:</p>
 </div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Fase</th>
+<th class="tableblock halign-left valign-top">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cálculo de distancias</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Para cada jugador ejecuta BFS desde cada uno de los
+tres lados del tablero, calculando el coste mínimo de conexión. Pasar por una
+celda propia cuesta 0, por una vacía cuesta 1 y por una del oponente cuesta 2.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Potencial exponencial</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Convierte distancias en puntuación con la fórmula
+<code>1000 / (d⁴ + 1)</code>, haciendo que la urgencia crezca exponencialmente al
+acercarse a un lado.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Puntuación final</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Combina: potencial del oponente (×15) + potencial propio (×1)
++ bonificación de centralidad + bonificación de conectividad (+15 si conecta
+≥2 fichas propias) + bloqueo crítico (+1000 si bloquea ≥2 fichas del oponente).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Selección</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Elige la celda vacía con mayor puntuación total.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect3">
-<h4 id="_white_box_building_block_x_2">5.3.2. White Box &lt;_building block x.2_&gt;</h4>
+<h4 id="_white_box_topología_triangular_coretopology">5.3.2. White Box <em>Topología Triangular (core/topology/)</em></h4>
+<div class="sidebarblock arc42help">
+<div class="content">
 <div class="paragraph">
-<p><em>&lt;white box template&gt;</em></p>
+<p>Specifies the internal structure of <em>building block x.2</em>.</p>
 </div>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Elemento</th>
+<th class="tableblock halign-left valign-top">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TriangularTopology</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pre-calcula en construcción la lista de adyacencia y las
+regiones (lados A, B, C) de cada celda para acceso O(1) durante el juego.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Coordenadas trilineales</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cada celda se identifica por (x,y,z) donde x+y+z = size-1.
+Los tres lados del triángulo corresponden a x=0, y=0 y z=0 respectivamente.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>GameEngine</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Motor genérico parametrizado con la topología. Gestiona el estado
+de las celdas y detecta la victoria mediante Union-Find sobre los tres lados.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 <div class="sect3">
-<h4 id="_white_box_building_block_y_1">5.3.3. White Box &lt;_building block y.1_&gt;</h4>
+<h4 id="_white_box_temporizador_de_turno_app_tsx">5.3.3. White Box <em>Temporizador de turno (App.tsx)</em></h4>
+<div class="sidebarblock arc42help">
+<div class="content">
 <div class="paragraph">
-<p><em>&lt;white box template&gt;</em></p>
+<p>Specifies the internal structure of <em>building block y.1</em>.</p>
 </div>
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 33.3333%;">
+<col style="width: 66.6667%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Elemento</th>
+<th class="tableblock halign-left valign-top">Descripción</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>TURN_TIME_LIMIT</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Constante que define el límite en segundos por dificultad:
+Easy=60s, Medium=30s, Hard=15s.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>startTurnTimer()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Arranca un intervalo de 1 segundo que decrementa <code>turnTimeLeft</code>.
+Al llegar a 0 llama a <code>triggerAutoMove()</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>stopTurnTimer()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Detiene el intervalo activo y resetea <code>turnTimeLeft</code> a null.
+Se invoca al hacer clic en una celda, rendirse, salir o terminar la partida.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>triggerAutoMove()</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Selecciona una celda vacía aleatoria del layout actual y
+ejecuta la misma lógica que <code>handleCellClick()</code>, usando refs para evitar
+problemas de stale closure con el estado de React.</p></td>
+</tr>
+</tbody>
+</table>
 <div style="page-break-after: always;"></div>
 </div>
 </div>
@@ -1450,28 +1775,68 @@ part of arc42 for additional levels.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/Registration_Sequence.png" alt="Registration Sequence" width="541" height="357">
+<img src="./images/Registration_Sequence.png" alt="Registration Sequence" width="642" height="347">
 </div>
 </div>
 </div>
 <div class="sect2">
-<h3 id="_escenario_de_cálculo_de_movimiento">6.2. Escenario de cálculo de Movimiento</h3>
+<h3 id="_escenario_de_inicialización_de_partida">6.2. Escenario de Inicialización de Partida</h3>
 <div class="paragraph">
-<p>This scenario illustrates how the application requests a move or a game action from the GameY engine. Although the engine is built in Rust, it exposes an interface accessible via HTTP.</p>
+<p>El motor de Rust ahora mantiene un <strong>estado persistente</strong> durante la partida. Este escenario es crucial porque es donde el servidor "elige" su personalidad.</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p><strong>Performance</strong>: The heavy logic (calculating the move) is offloaded to the Rust service.</p>
+<p><strong>Consistencia</strong>: Una vez elegida la dificultad, el bot asignado no cambia hasta que se reinicie el tablero.</p>
 </li>
 <li>
-<p><strong>Interoperability</strong>: The React frontend communicates with the Rust backend via HTTP requests on port 4000.</p>
+<p><strong>Estado compartido</strong>: Se utiliza un <code>AppState</code> con <code>Arc&lt;Mutex&lt;String&gt;&gt;</code> para recordar el bot activo.</p>
 </li>
 </ul>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/Game_Move_Sequence.png" alt="Game Move Sequence" width="642" height="401">
+<img src="./images/Game_Init_Sequence.png" alt="Game Init Sequence" width="770" height="363">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_escenario_de_turno_de_juego_y_persistencia">6.3. Escenario de Turno de Juego y Persistencia</h3>
+<div class="paragraph">
+<p>Este escenario ilustra el ciclo de vida de un movimiento. El motor de Rust no solo calcula la respuesta, sino que detecta el final de la partida y persiste el resultado.</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Inteligencia</strong>: El motor delega la jugada al bot guardado en el <code>active_bot</code>.</p>
+</li>
+<li>
+<p><strong>Persistencia</strong>: Al detectar un ganador, el servicio de Rust se comunica directamente con MongoDB.</p>
+</li>
+</ul>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>actor Usuario
+participant "Webapp (React)" as Webapp
+participant "GameY Engine (Rust)" as Gamey
+database "MongoDB" as DB
+
+Usuario -&gt; Webapp: Pulsa en una celda
+activate Webapp
+Webapp -&gt; Gamey: POST /execute-move {index}
+activate Gamey
+note right of Gamey: 1. Aplica mov. humano\n2. Carga IA asignada\n3. Calcula respuesta
+Gamey -&gt; Gamey: El bot ejecuta su estrategia (Edge/Attacker...)
+alt Si la partida termina (Winner != null)
+    Gamey -&gt; DB: insert_one(PartidaRecord)
+    note right of DB: Guarda fecha, oponente,\ndificultad y resultado real
+end
+Gamey --&gt; Webapp: 200 OK (Tablero YEN + Winner ID)
+deactivate Gamey
+Webapp -&gt; Webapp: Actualiza UI (Celdas coloreadas)
+Webapp --&gt; Usuario: Muestra el estado actual del juego
+deactivate Webapp</pre>
 </div>
 </div>
 <div style="page-break-after: always;"></div>
@@ -1564,11 +1929,12 @@ when your infrastructure is more complex.</p>
 </div>
 </div>
 <div class="paragraph">
-<p>En este apartado se describe la infraestructura global de <strong>YOVI</strong>, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto.</p>
+<p>En este apartado se describe la infraestructura global de <strong>YOVI</strong>, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto (Node.js y Rust)
+y la persistencia de datos.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/deployment-diagram.png" alt="deployment diagram" width="1006" height="321">
+<img src="./images/deployment-diagram.png" alt="deployment diagram" width="1684" height="375">
 </div>
 </div>
 <div class="dlist">
@@ -1647,13 +2013,12 @@ Así, una parte se encarga de la web y los usuarios (Node.js) y otra exclusivame
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-server.png" alt="level2 server" width="532" height="175">
+<img src="./images/level2-server.png" alt="level2 server" width="720" height="372">
 </div>
 </div>
 <div class="paragraph">
 <p><strong>Explicación:</strong>
-Dentro del servidor, los contenedores están conectados por una red "invisible" para el resto del mundo. Esto hace que el motor de <strong>Rust</strong> y los datos estén seguros, ya que nadie puede entrar en ellos directamente desde internet.
-Solo se puede pasar a través de la aplicación web desarrollada.</p>
+En este nivel de detalle se observa que el servidor de Node.js funciona como un punto de control. Cuando el usuario solicita su historial, Node no accede a los datos de las partidas directamente; en su lugar, realiza una petición interna al servicio de Rust. Es Rust quien tiene la responsabilidad única de comunicarse con la colección partidas de MongoDB para registrar o recuperar los resultados de los juegos. Esta separación garantiza que la lógica del juego y la gestión de usuarios no interfieran entre sí.</p>
 </div>
 </div>
 <div class="sect3">
@@ -1663,12 +2028,12 @@ Solo se puede pasar a través de la aplicación web desarrollada.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-client.png" alt="level2 client" width="444" height="109">
+<img src="./images/level2-client.png" alt="level2 client" width="920" height="377">
 </div>
 </div>
 <div class="paragraph">
 <p><strong>Explicación:</strong>
-Cuando alguien accede a la web, su navegador descarga la parte visual (React). El código se ejecuta directamente en su ordenador, usando su propia memoria para que el juego se vea fluido y rápido.</p>
+Al acceder a la web, el navegador descarga la aplicación de React, que se ejecuta íntegramente en el dispositivo del usuario. El sistema utiliza el Estado Local (memoria RAM) para mantener identificada la sesión. Así, cuando el jugador solicita su historial, el código rescata el nombre guardado y construye una petición dinámica hacia el backend de Node.js. Esto permite que el juego sea fluido y que el servidor reciba siempre el contexto necesario para filtrar los datos de la base de datos correctamente.</p>
 </div>
 </div>
 <div class="sect3">
@@ -1678,12 +2043,12 @@ Cuando alguien accede a la web, su navegador descarga la parte visual (React). E
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-db.png" alt="level2 db" width="559" height="108">
+<img src="./images/level2-db.png" alt="level2 db" width="525" height="386">
 </div>
 </div>
 <div class="paragraph">
 <p><strong>Explicación:</strong>
-Se utiliza lo que se denomina "volumen" de Docker. Esto significa que, aunque el contenedor de la base de datos se detenga o se actualice, la información de los usuarios y las partidas se queda grabada en el disco duro del servidor, como si estuviera almacenado en un USB.</p>
+Se utiliza un motor de base de datos MongoDB que organiza la información en colecciones independientes: los perfiles de usuario (gestionados por Node.js) y el historial de juegos (registrado por Rust). Mediante un volumen persistente de Docker, los datos se sincronizan directamente con el disco duro del servidor. Esto garantiza que, aunque el contenedor de la base de datos se detenga o se actualice, la información de las partidas y las cuentas de usuario permanezca segura y disponible, funcionando como un almacenamiento externo permanente.</p>
 </div>
 <div style="page-break-after: always;"></div>
 </div>
@@ -1778,7 +2143,7 @@ Esto elimina el problema de "funciona en mi máquina" y simplifica la configurac
 <div class="sect3">
 <h4 id="_contexto">9.1.1. Contexto</h4>
 <div class="paragraph">
-<p>Necesitamos un motor de juego con buen rendimiento y seguridad de memoria, y al mismo tiempo una capa web para interacción rápida y desarrollo de interfaz. El equipo dispone de experiencia web (JS/TS) y algunos miembros conocen Rust.</p>
+<p>Necesitamos un motor de juego con buen rendimiento y seguridad de memoria, y al mismo tiempo una capa web para interacción rápida y desarrollo de interfaz.</p>
 </div>
 </div>
 <div class="sect3">
@@ -1811,6 +2176,9 @@ Esto elimina el problema de "funciona en mi máquina" y simplifica la configurac
 </li>
 <li>
 <p>Mayor complejidad en CI/build (compilar Rust y bundles JS) y en la orquestación.</p>
+</li>
+<li>
+<p>Desconocimiento por parte del equipo del lenguaje Rust.</p>
 </li>
 </ol>
 </div>
@@ -1851,6 +2219,9 @@ Esto elimina el problema de "funciona en mi máquina" y simplifica la configurac
 </li>
 <li>
 <p>Riesgos de diseño incorrecto de índices y consultas (posibles problemas de rendimiento si no se indexa adecuadamente).</p>
+</li>
+<li>
+<p>Desconocimiento por parte del equipo de MongoDB.</p>
 </li>
 </ol>
 </div>
@@ -1956,7 +2327,7 @@ Esto elimina el problema de "funciona en mi máquina" y simplifica la configurac
 <p>Entornos reproducibles y aislamientos por servicio.</p>
 </li>
 <li>
-<p>Facilita onboarding y pruebas locales.</p>
+<p>Facilita pruebas locales.</p>
 </li>
 </ol>
 </div>
@@ -1964,7 +2335,7 @@ Esto elimina el problema de "funciona en mi máquina" y simplifica la configurac
 <div class="title">Desventajas:</div>
 <ol class="arabic">
 <li>
-<p>Overhead operacional y consumo de recursos en máquinas locales.</p>
+<p>Consumo de recursos en máquinas locales.</p>
 </li>
 </ol>
 </div>
@@ -2083,7 +2454,7 @@ Esto elimina el problema de "funciona en mi máquina" y simplifica la configurac
 <div class="sect3">
 <h4 id="_decisión_9">9.9.2. Decisión</h4>
 <div class="paragraph">
-<p>Hashear contraseñas con <code>bcryptjs</code> en <code>users</code>. Actualmente no hay JWT/sessions implementados; añadir autenticación basada en tokens queda como mejora pendiente.</p>
+<p>Hashear contraseñas con <code>bcryptjs</code> en <code>users</code>. Actualmente no hay sessions implementados; añadir autenticación basada en tokens queda como mejora pendiente.</p>
 </div>
 </div>
 <div class="sect3">
@@ -2243,6 +2614,11 @@ concrete and measurable.</p>
 </div>
 </div>
 </div>
+<div class="imageblock text-center">
+<div class="content">
+<img src="./images/10_arbol_calidad.png" alt="10 arbol calidad">
+</div>
+</div>
 </div>
 <div class="sect2">
 <h3 id="_escenarios_de_calidad">10.2. Escenarios de calidad</h3>
@@ -2261,7 +2637,7 @@ concrete and measurable.</p>
 <div class="ulist">
 <ul>
 <li>
-<p>Usage scenarios (also called application scenarios or use case scenarios) describe the system’s runtime reaction to a certain stimulus. This also includes scenarios that describe the system’s efficiency or performance. Example: The system reacts to a user’s request within one second.</p>
+<p>Usage scenarios (also called application scenarios or use case scenarios) describe the system&#8217;s runtime reaction to a certain stimulus. This also includes scenarios that describe the system&#8217;s efficiency or performance. Example: The system reacts to a user&#8217;s request within one second.</p>
 </li>
 <li>
 <p>Change scenarios describe a modification of the system or of its immediate environment. Example: Additional functionality is implemented or requirements for a quality attribute change.</p>
@@ -2284,7 +2660,161 @@ more precisely down to a level of scenarios that can be discussed and evaluated.
 </div>
 </div>
 </div>
+<div class="sect3">
+<h4 id="_escenarios_de_uso">10.2.1. Escenarios de uso</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">ID</th>
+<th class="tableblock halign-left valign-top">Escenario</th>
+<th class="tableblock halign-left valign-top">Estímulo</th>
+<th class="tableblock halign-left valign-top">Respuesta esperada del sistema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-01</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Respuesta del bot en dificultad difícil</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El jugador realiza un movimiento en un tablero de tamaño 12x12x12 con el ProBot activo.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El motor Gamey calcula y devuelve el movimiento del bot en menos de 2 segundos,
+actualizándose el tablero en la webapp sin demora visible.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-02</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Timeout de turno en dificultad Hard</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El jugador no realiza ningún movimiento durante 15 segundos en dificultad Hard.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El sistema selecciona automáticamente una celda vacía aleatoria en nombre del jugador,
+y reinicia el temporizador para el siguiente turno.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-03</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Aviso visual de tiempo agotándose</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quedan 5 segundos o menos en el temporizador de turno del jugador.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">La barra de progreso cambia de azul a rojo y el contador de segundos
+parpadea para alertar al jugador de que debe actuar con urgencia.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-04</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Registro de nuevo usuario</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Un usuario rellena el formulario de registro con nombre y contraseña válidos.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El servicio Users crea el usuario en MongoDB y redirige automáticamente
+a la pantalla de juego en menos de 1 segundo.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-05</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Consulta del historial de partidas</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El jugador pulsa el botón "Historial" durante una partida.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">La webapp solicita al backend el historial y muestra una tabla con fecha,
+rival, tamaño de tablero, dificultad y resultado de cada partida previa
+en menos de 2 segundos.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-06</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Rendición del jugador</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El jugador pulsa el botón "Rendirse" durante una partida en curso.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El sistema detiene el temporizador, registra la derrota en el historial
+de MongoDB y muestra el modal de resultado indicando "Has perdido".</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-07</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cambio de dificultad durante la partida</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El jugador cambia la dificultad de Easy a Hard desde el menú de la partida.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El sistema reinicia el tablero con la nueva dificultad, arranca el temporizador
+con el nuevo límite (15 segundos) y muestra el mensaje "Dificultad cambiada a Hard".</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-08</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cambio de tamaño de tablero</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El jugador selecciona un tablero de 12x12x12 desde el tamaño por defecto (6x6x6).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">La webapp solicita un nuevo tablero al backend, lo renderiza correctamente
+con 78 celdas y reinicia el temporizador sin perder la dificultad seleccionada.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-09</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Acceso concurrente de múltiples usuarios</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Diez usuarios distintos inician sesión y juegan simultáneamente.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Cada sesión es independiente; el estado de la partida de un usuario
+no interfiere con el de los demás y el servicio Users responde
+correctamente a todas las peticiones.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-10</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Condición de victoria</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Un jugador conecta los tres lados del tablero triangular con sus fichas.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El motor Gamey detecta la victoria, detiene el juego, el temporizador
+se para y la webapp muestra el modal "Has ganado" o "Ha ganado el bot"
+según corresponda.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_escenarios_de_cambio">10.2.2. Escenarios de cambio</h4>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5714%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">ID</th>
+<th class="tableblock halign-left valign-top">Escenario</th>
+<th class="tableblock halign-left valign-top">Cambio</th>
+<th class="tableblock halign-left valign-top">Respuesta esperada del sistema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-C01</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Añadir un nuevo nivel de dificultad</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Se implementa un nuevo bot con dificultad "Expert" en el módulo <code>bot/</code> de Gamey.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El nuevo bot se registra en <code>ybot_registry.rs</code> y aparece automáticamente
+en el endpoint <code>/difficulties</code>. La webapp lo muestra en el modal de selección
+sin necesidad de modificar el frontend.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-C02</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Cambio en el tiempo límite por dificultad</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Se decide reducir el tiempo de Hard de 15 a 10 segundos.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Solo es necesario modificar la constante <code>TURN_TIME_LIMIT</code> en <code>App.tsx</code>.
+El resto del sistema (temporizador, barra de progreso, movimiento automático)
+se adapta automáticamente al nuevo valor.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-C03</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Caída del servicio Gamey</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El contenedor Gamey deja de responder durante una partida en curso.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El servicio Users recibe un error de red al intentar contactar con Gamey.
+La webapp muestra "Error realizando el movimiento" y el temporizador
+se reinicia para permitir al jugador intentarlo de nuevo.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-C04</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Escalado del tamaño de tablero</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Se añade soporte para un nuevo tamaño de tablero (por ejemplo 15x15x15).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Basta con añadir la opción en el modal de selección en <code>App.tsx</code> y en la
+función <code>getBoardDimensionFromSizeChoice</code>. El motor Gamey ya soporta
+cualquier tamaño gracias a su topología triangular paramétrica.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">SC-C05</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Migración de base de datos</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Se decide cambiar de MongoDB local a MongoDB Atlas en producción.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Solo es necesario actualizar la variable de entorno <code>MONGODB_URI</code>
+en el `docker-co</p></td>
+</tr>
+</tbody>
+</table>
 <div style="page-break-after: always;"></div>
+</div>
 </div>
 </div>
 </div>
@@ -2295,22 +2825,7 @@ more precisely down to a level of scenarios that can be discussed and evaluated.
 <div class="content">
 <div class="paragraph">
 <div class="title">Contents</div>
-<p>A list of identified technical risks or technical debts, ordered by priority</p>
-</div>
-<div class="paragraph">
-<div class="title">Motivation</div>
-<p>“Risk management is project management for grown-ups” (Tim Lister, Atlantic Systems Guild.)</p>
-</div>
-<div class="paragraph">
-<p>This should be your motto for systematic detection and evaluation of risks and technical debts in the architecture, which will be needed by management stakeholders (e.g. project managers, product owners) as part of the overall risk analysis and measurement planning.</p>
-</div>
-<div class="paragraph">
-<div class="title">Form</div>
-<p>List of risks and/or technical debts, probably including suggested measures to minimize, mitigate or avoid risks or reduce technical debts.</p>
-</div>
-<div class="paragraph">
-<div class="title">Further Information</div>
-<p>See <a href="https://docs.arc42.org/section-11/">Risks and Technical Debt</a> in the arc42 documentation.</p>
+<p>Lista de riesgos y deudas técnicas identificadas, ordenadas por prioridad.</p>
 </div>
 </div>
 </div>
@@ -2318,9 +2833,9 @@ more precisely down to a level of scenarios that can be discussed and evaluated.
 <h3 id="_riesgos">11.1. Riesgos</h3>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
-<col style="width: 16.6666%;">
-<col style="width: 33.3333%;">
-<col style="width: 50.0001%;">
+<col style="width: 25%;">
+<col style="width: 50%;">
+<col style="width: 25%;">
 </colgroup>
 <thead>
 <tr>
@@ -2332,36 +2847,38 @@ more precisely down to a level of scenarios that can be discussed and evaluated.
 <tbody>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Tiempo</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo tiene otros trabajos</p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"> Medium</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo tiene otras obligaciones laborales.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Medium</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Poca experiencia en RUST y Docker</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock"> El equipo de desarrollo se encuentra dificultades debido al poco
-conocimiento del leguaje necesario, RUST y la herramienta docker. Para mitigar este riesgo se fomenta el aprendizage, compartir información y dudas.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Poca experiencia en Rust y Docker</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">El equipo encuentra dificultades debido al conocimiento limitado del lenguaje Rust y la herramienta Docker. Para mitigarlo, se fomenta el aprendizaje activo y el intercambio de dudas.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">High</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Perdida de datos</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Posible perdida de datos por errores en el systema, falllos de hardware, eliminaciones accidentales.. Que podria
-realentizar el dessarrollo del proyacto.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Pérdida de datos</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Posible pérdida de información por errores en el sistema, fallos de hardware o eliminaciones accidentales que podrían ralentizar el desarrollo del proyecto.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">High</p></td>
 </tr>
 <tr>
-<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Fallos de conexión a internet</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Un falllo en la conexión a internet podria interrumpir el acceso a servidores en la nube, repositorio de
-GitHub&#8230;&#8203; retrasando el progreso del proyecto</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Fallos de conexión</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Un fallo en la conexión a internet podría interrumpir el acceso a servidores en la nube y al repositorio de GitHub, retrasando el progreso.</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Medium</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="sect2">
-<h3 id="_deudas">11.2. Deudas</h3>
-<div class="literalblock">
-<div class="content">
-<pre>costo del retrabajo adicional causado por la elección de la solución más rápida en lugar de la más efectiva</pre>
+<h3 id="_deudas_técnicas">11.2. Deudas Técnicas</h3>
+<div class="paragraph">
+<p>La deuda técnica representa el costo del retrabajo adicional causado por la elección de una solución rápida en lugar de la más efectiva a largo plazo.</p>
 </div>
+<div class="ulist">
+<ul>
+<li>
+<p><strong>Falta de tests automatizados:</strong> Se ha priorizado el desarrollo de funcionalidades sobre la cobertura de tests, lo que podría generar errores en el futuro.</p>
+</li>
+</ul>
 </div>
 <div style="page-break-after: always;"></div>
 </div>
@@ -2434,7 +2951,7 @@ GitHub&#8230;&#8203; retrasando el progreso del proyecto</p></td>
 <div id="footer">
 <div id="footer-text">
 Version 8.2 EN<br>
-Last updated 2026-02-23 13:40:47 +0100
+Last updated 2026-03-07 14:22:47 +0100
 </div>
 </div>
 </body>
