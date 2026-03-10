@@ -3,40 +3,33 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-technical-risks]]
 == Riesgos y Deudas Técnicas
 
-
 ifdef::arc42help[]
 [role="arc42help"]
 ****
 .Contents
-A list of identified technical risks or technical debts, ordered by priority
-
-.Motivation
-“Risk management is project management for grown-ups” (Tim Lister, Atlantic Systems Guild.) 
-
-This should be your motto for systematic detection and evaluation of risks and technical debts in the architecture, which will be needed by management stakeholders (e.g. project managers, product owners) as part of the overall risk analysis and measurement planning.
-
-.Form
-List of risks and/or technical debts, probably including suggested measures to minimize, mitigate or avoid risks or reduce technical debts.
-
-
-.Further Information
-
-See https://docs.arc42.org/section-11/[Risks and Technical Debt] in the arc42 documentation.
-
+Lista de riesgos y deudas técnicas identificadas, ordenadas por prioridad.
 ****
 endif::arc42help[]
+
 === Riesgos
-[cols="1,2,3" options="header"]
+[cols="1,2,1", options="header"]
 |===
 | *Riesgo* | *Descripción* | *Prioridad*
-| *Tiempo* |El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo tiene otros trabajos | Medium
-| *Poca experiencia en RUST y Docker* | El equipo de desarrollo se encuentra dificultades debido al poco 
-conocimiento del leguaje necesario, RUST y la herramienta docker. Para mitigar este riesgo se fomenta el aprendizage, compartir información y dudas.| High
-|*Perdida de datos*|Posible perdida de datos por errores en el systema, falllos de hardware, eliminaciones accidentales.. Que podria 
-realentizar el dessarrollo del proyacto. |High
-|*Fallos de conexión a internet*|Un falllo en la conexión a internet podria interrumpir el acceso a servidores en la nube, repositorio de 
-GitHub... retrasando el progreso del proyecto|Medium
+
+| *Tiempo* | El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo tiene otras obligaciones laborales. 
+| Medium
+
+| *Poca experiencia en Rust y Docker* | El equipo encuentra dificultades debido al conocimiento limitado del lenguaje Rust y la herramienta Docker. Para mitigarlo, se fomenta el aprendizaje activo y el intercambio de dudas.
+| High
+
+| *Pérdida de datos* | Posible pérdida de información por errores en el sistema, fallos de hardware o eliminaciones accidentales que podrían ralentizar el desarrollo del proyecto. 
+| High
+
+| *Fallos de conexión* | Un fallo en la conexión a internet podría interrumpir el acceso a servidores en la nube y al repositorio de GitHub, retrasando el progreso. 
+| Medium
 |===
 
-=== Deudas
- costo del retrabajo adicional causado por la elección de la solución más rápida en lugar de la más efectiva
+=== Deudas Técnicas
+La deuda técnica representa el costo del retrabajo adicional causado por la elección de una solución rápida en lugar de la más efectiva a largo plazo. 
+
+* *Falta de tests automatizados:* Se ha priorizado el desarrollo de funcionalidades sobre la cobertura de tests, lo que podría generar errores en el futuro.
