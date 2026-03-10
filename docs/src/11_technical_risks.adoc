@@ -3,7 +3,6 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-technical-risks]]
 == Riesgos y Deudas Técnicas
 
-
 ifdef::arc42help[]
 [role="arc42help"]
 ****
@@ -11,32 +10,117 @@ ifdef::arc42help[]
 A list of identified technical risks or technical debts, ordered by priority
 
 .Motivation
-“Risk management is project management for grown-ups” (Tim Lister, Atlantic Systems Guild.) 
-
-This should be your motto for systematic detection and evaluation of risks and technical debts in the architecture, which will be needed by management stakeholders (e.g. project managers, product owners) as part of the overall risk analysis and measurement planning.
+"Risk management is project management for grown-ups" (Tim Lister, Atlantic Systems Guild.)
+This should be your motto for systematic detection and elimination of risks and
+technical debts in the architecture, which will be needed by management stakeholders
+(e.g. project managers, product owners) as part of the overall risk analysis and
+measurement planning.
 
 .Form
-List of risks and/or technical debts, probably including suggested measures to minimize, mitigate or avoid risks or reduce technical debts.
-
+List of risks and/or technical debts, probably including suggested measures to minimize,
+mitigate or avoid risks or reduce technical debts.
 
 .Further Information
-
 See https://docs.arc42.org/section-11/[Risks and Technical Debt] in the arc42 documentation.
-
 ****
 endif::arc42help[]
+
 === Riesgos
-[cols="1,2,3" options="header"]
+
+[cols="1,2,2,2" options="header"]
 |===
-| *Riesgo* | *Descripción* | *Prioridad*
-| *Tiempo* |El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo tiene otros trabajos | Medium
-| *Poca experiencia en RUST y Docker* | El equipo de desarrollo se encuentra dificultades debido al poco 
-conocimiento del leguaje necesario, RUST y la herramienta docker. Para mitigar este riesgo se fomenta el aprendizage, compartir información y dudas.| High
-|*Perdida de datos*|Posible perdida de datos por errores en el systema, falllos de hardware, eliminaciones accidentales.. Que podria 
-realentizar el dessarrollo del proyacto. |High
-|*Fallos de conexión a internet*|Un falllo en la conexión a internet podria interrumpir el acceso a servidores en la nube, repositorio de 
-GitHub... retrasando el progreso del proyecto|Medium
+|*Riesgo*|*Descripción*|*Medidas de mitigación*|*Prioridad*
+
+|*Tiempo limitado de desarrollo*
+|El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo
+tiene otras asignaturas y obligaciones académicas en paralelo.
+|Planificación iterativa con entregas incrementales. Priorización de funcionalidades
+críticas frente a mejoras opcionales.
+|Medium
+
+|*Poca experiencia en Rust y Docker*
+|El equipo encuentra dificultades debido al escaso conocimiento previo de Rust,
+su sistema de ownership y borrowing, y del uso de Docker para orquestación
+de contenedores.
+|Fomentar el aprendizaje compartido, documentar las soluciones encontradas y
+apoyarse en la documentación oficial de Rust y Docker. Revisiones de código
+entre compañeros para transferir conocimiento.
+|High
+
+|*Pérdida de datos*
+|Posible pérdida de datos por errores en el sistema, fallos de hardware o
+eliminaciones accidentales en la base de datos MongoDB, lo que podría
+ralentizar el desarrollo del proyecto.
+|Uso de control de versiones Git para el código. Configuración de volúmenes
+persistentes en Docker para MongoDB. Realización de copias de seguridad
+periódicas de la base de datos.
+|High
+
+|*Fallos de conexión a internet*
+|Un fallo en la conexión a internet podría interrumpir el acceso a servidores
+en la nube, al repositorio de GitHub o a MongoDB Atlas, retrasando el progreso
+del proyecto.
+|Mantener copias locales del repositorio actualizadas. Configurar MongoDB
+localmente como alternativa al servicio en la nube mediante el contenedor
+Docker de mongo.
+|Medium
+
+|*Inconsistencia de versiones de dependencias*
+|Como se ha evidenciado durante el desarrollo, conflictos entre versiones de
+paquetes npm (como esbuild) pueden bloquear completamente la compilación
+del proyecto en entornos Docker.
+|Fijar versiones exactas en `package-lock.json` y regenerarlo ante cualquier
+conflicto. Añadir `npm rebuild` en el Dockerfile como medida preventiva.
+|Medium
+
+|*Ausencia del servicio Gamey*
+|Si el contenedor Gamey no arranca correctamente (por ejemplo por falta de
+configuración de MongoDB), el servicio Users no puede procesar movimientos
+y el juego queda inoperativo.
+|Añadir health checks en `docker-compose.yml` para que Users y Webapp
+esperen a que Gamey esté disponible antes de arrancar. Gestión de errores
+en el frontend con mensajes informativos al usuario.
+|High
 |===
 
-=== Deudas
- costo del retrabajo adicional causado por la elección de la solución más rápida en lugar de la más efectiva
+=== Deudas Técnicas
+
+ifdef::arc42help[]
+[role="arc42help"]
+****
+Technical debt is the cost of the additional rework caused by choosing an easy
+solution now instead of using a better approach that would take longer.
+****
+endif::arc42help[]
+
+[cols="1,2,2,2" options="header"]
+|===
+|*Deuda*|*Descripción*|*Impacto*|*Prioridad de resolución*
+
+|*Movimiento automático aleatorio por timeout*
+|Cuando el temporizador de turno se agota, el sistema realiza un movimiento
+completamente aleatorio en nombre del jugador. Esta solución es rápida de
+implementar pero no ofrece una buena experiencia de juego, ya que el movimiento
+automático podría perjudicar gravemente la posición del jugador.
+|El jugador puede perder por un movimiento automático en una posición crítica
+del tablero, lo que puede percibirse como injusto.
+|Medium — se podría mejorar usando el RandomBot existente en Gamey en lugar
+de la selección aleatoria en cliente.
+
+|*Estado de partida en memoria en Gamey*
+|El motor de juego Gamey mantiene el estado de la partida en memoria durante
+la sesión. Si el contenedor se reinicia, la partida en curso se pierde
+y no puede recuperarse.
+|El jugador pierde su partida si el servidor se cae o se reinicia, sin
+posibilidad de continuarla.
+|High — se debería persistir el estado de la partida en MongoDB al igual
+que el historial.
+
+|*Ausencia de validación de movimientos en el frontend*
+|La webapp no valida localmente si el índice de celda enviado al backend
+es correcto antes de hacer la petición REST. Toda la validación recae
+en Gamey.
+|Peticiones innecesarias al servidor ante clics erróneos, aumentando
+la latencia percibida.
+|Low — se puede añadir una validación simple en `handleCellClick`.
+|===
