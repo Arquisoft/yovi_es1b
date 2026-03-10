@@ -227,7 +227,7 @@ function App() {
   const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
     console.log("Resetting board (neutral action)"); // DEBUG
     // FIX: Ya no enviamos username porque resetear no debe contar como derrota
-    const response = await fetch('http://localhost:3000/reset', {
+    const response = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({size: dimension, difficulty: difficulty, username: username}),
@@ -490,6 +490,7 @@ function App() {
               <RegisterScreen
                   onBack={() => setCurrentScreen('home')}
                   onCreateAccount={startGameWithUser}
+                  apiBaseUrl={API_BASE_URL}
               />
           );
 
@@ -499,6 +500,7 @@ function App() {
               <LoginScreen
                   onBack={() => setCurrentScreen('home')}
                   onLogin={startGameWithUser}
+                  apiBaseUrl={API_BASE_URL}
               />
           );
 

@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import { API_BASE_URL } from '../config';
 
 interface RegisterData {
   name: string;
@@ -48,7 +49,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
     
     // Llamada al backend para crear cuenta e iniciar el juego
     try {
-      const response = await fetch('http://localhost:3000/createuser', {
+      const response = await fetch(`${API_BASE_URL}/createuser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

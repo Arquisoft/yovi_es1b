@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import { API_BASE_URL } from '../config';
 
 interface LoginData {
   username: string;
@@ -29,7 +30,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
     // Llamada al backend para validar usuario e iniciar el juego
     try {
-      const response = await fetch('http://localhost:3000/login', {
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,4 +97,3 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 }
 
 export default LoginScreen;
-
