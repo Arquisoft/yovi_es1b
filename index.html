@@ -1815,28 +1815,9 @@ problemas de stale closure con el estado de React.</p></td>
 </li>
 </ul>
 </div>
-<div class="listingblock">
+<div class="imageblock">
 <div class="content">
-<pre>actor Usuario
-participant "Webapp (React)" as Webapp
-participant "GameY Engine (Rust)" as Gamey
-database "MongoDB" as DB
-
-Usuario -&gt; Webapp: Pulsa en una celda
-activate Webapp
-Webapp -&gt; Gamey: POST /execute-move {index}
-activate Gamey
-note right of Gamey: 1. Aplica mov. humano\n2. Carga IA asignada\n3. Calcula respuesta
-Gamey -&gt; Gamey: El bot ejecuta su estrategia (Edge/Attacker...)
-alt Si la partida termina (Winner != null)
-    Gamey -&gt; DB: insert_one(PartidaRecord)
-    note right of DB: Guarda fecha, oponente,\ndificultad y resultado real
-end
-Gamey --&gt; Webapp: 200 OK (Tablero YEN + Winner ID)
-deactivate Gamey
-Webapp -&gt; Webapp: Actualiza UI (Celdas coloreadas)
-Webapp --&gt; Usuario: Muestra el estado actual del juego
-deactivate Webapp</pre>
+<img src="./images/Game_Move_Sequence.png" alt="Game Move Sequence" width="1085" height="557">
 </div>
 </div>
 <div style="page-break-after: always;"></div>
