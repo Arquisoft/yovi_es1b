@@ -394,7 +394,11 @@ function App() {
       await fetch(`${API_BASE_URL}/surrender`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username: username, difficulty: difficultyChoice}),
+        body: JSON.stringify({
+          username: username,
+          difficulty: difficultyChoice,
+          boardSize: boardData?.size
+        }),
       });
     } catch (error) {
       console.error("Error surrendering:", error);
