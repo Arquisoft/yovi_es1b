@@ -1,5 +1,7 @@
 import { type FormEvent, useState } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 interface LoginData {
   username: string;
   password: string;
@@ -29,7 +31,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
     // Llamada al backend para validar usuario e iniciar el juego
     try {
-      const response = await fetch('http://localhost:3000/login', {
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,4 +98,3 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 }
 
 export default LoginScreen;
-
