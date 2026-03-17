@@ -43,6 +43,7 @@ use crate::bot::attacker_bot::AttackerBot;
 use crate::bot::edge_bot::EdgeBot;
 use crate::bot::pro_bot::ProBot;
 use crate::bot::random::RandomBot;
+use crate::bot::blocker_bot::BlockerBot;
 use crate::bot::ybot_registry::YBotRegistry;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
@@ -173,6 +174,7 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let bots = YBotRegistry::new()
         .with_bot(Arc::new(RandomBot))
         .with_bot(Arc::new(ProBot))
+        .with_bot(Arc::new(BlockerBot))
         .with_bot(Arc::new(AttackerBot))
         .with_bot(Arc::new(EdgeBot));
 
