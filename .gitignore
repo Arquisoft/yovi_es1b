@@ -4,3 +4,4 @@ gamey/target
 lcov.info
 docs/build
 .vscode/
+.env

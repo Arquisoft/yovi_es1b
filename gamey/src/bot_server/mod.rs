@@ -27,7 +27,7 @@ pub mod play;
 pub mod state;
 pub mod version;
 
-use axum::{Json, response::IntoResponse};
+use axum::{ response::IntoResponse};
 use chrono::Utc;
 pub use error::ErrorResponse;
 pub use play::{PlayRequest, PlayResponse, play};
@@ -47,7 +47,7 @@ use crate::bot::blocker_bot::BlockerBot;
 use crate::bot::ybot_registry::YBotRegistry;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
-use tower_http::cors::{Any, CorsLayer};
+
 
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize, utoipa::ToSchema)]
@@ -57,9 +57,21 @@ pub struct MoveRequest {
 }
 
 // Para obtener el historial de partidas de un usuario específico.
+//añadida la paginación con page y limit opcionales.
 #[derive(Deserialize)]
 pub struct HistoryQuery {
     pub username: String,
+    pub page: Option<u64>,
+    pub limit: Option<i64>,
+}
+// Estructura de respuesta para el historial paginado
+#[derive(serde::Serialize)]
+pub struct PaginatedHistoryResponse {
+    pub data: Vec<serde_json::Value>,
+    pub total: u64,
+    pub page: u64,
+    pub limit: i64,
+    pub total_pages: u64,
 }
 
 // Estructura para recibir la rendición
@@ -74,14 +86,14 @@ use utoipa::OpenApi;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), // Añadida aquí
+    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), 
     components(schemas(
         play::PlayRequest,
         play::PlayResponse,
         YEN,
         ResetRequest,
         MoveRequest,
-        GameRecord, // Añadida aquí
+        GameRecord, 
         error::ErrorResponse
     )),
     tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
@@ -381,7 +393,7 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     get,
     path = "/history",
     responses(
-        (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
+    (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
     ),
     tag = "Bot"
 )]
@@ -389,32 +401,64 @@ pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
 ) -> impl IntoResponse {
-    // Acceder bbdd
+    // 1. Acceder a la BBDD y definir filtro
     let collection = state.db.collection::<serde_json::Value>("partidas");
-
-    // Consultar partidas del usuario
     let filter = doc! { "player": &params.username };
 
-    // Definir opciones
-    let mut cursor = match collection
-        .find(filter)
-        .sort(doc! { "date": -1 }) // Ordenamos de más reciente a más antiguo
-        .await
-    {
-        Ok(c) => c,
+    // 2. Configuración matemática de la paginación
+    let page = params.page.unwrap_or(1).max(1); // Evitar página 0 o negativa
+    let limit = params.limit.unwrap_or(10).clamp(1, 100); // Límite máximo de seguridad
+    let skip = (page - 1) * (limit as u64);
+
+    // 3. Contar el total de documentos ANTES de paginar
+    let total_documents = match collection.count_documents(filter.clone()).await {
+        Ok(count) => count,
         Err(e) => {
-            eprintln!("Error al buscar en la BBDD: {}", e);
-            return axum::Json(serde_json::json!([]));
+            eprintln!("Error al contar documentos en BBDD: {}", e);
+            return axum::Json(serde_json::json!({
+                "error": "Error interno del servidor"
+            }));
         }
     };
 
-    // Recoger los resultados del cursor
+    // Calcular el total de páginas
+    let total_pages = (total_documents as f64 / limit as f64).ceil() as u64;
+
+    // 4. Opciones de consulta con paginación
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "date": -1 }) // Más recientes primero
+        .skip(skip)
+        .limit(limit)
+        .build();
+
+    // 5. Ejecutar la consulta aplicando las opciones (AQUÍ ESTÁ LA CORRECCIÓN CLAVE)
+    let mut cursor = match collection.find(filter).with_options(find_options).await {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Error al buscar en la BBDD: {}", e);
+            return axum::Json(serde_json::json!({
+                "error": "Error interno del servidor"
+            }));
+        }
+    };
+
+    // 6. Recoger los resultados del cursor
     let mut partidas = Vec::new();
     while let Some(Ok(doc)) = cursor.next().await {
         partidas.push(doc);
     }
 
-    axum::Json(serde_json::json!(partidas))
+    // 7. Construir la respuesta final estructurada
+    let response = PaginatedHistoryResponse {
+        data: partidas,
+        total: total_documents,
+        page,
+        limit,
+        total_pages,
+    };
+
+    // 8. Devolver la respuesta como JSON
+    axum::Json(serde_json::json!(response))
 }
 
 pub async fn rendirse(

@@ -230,7 +230,7 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  const { username } = req.query;
+  const { username, page = 1, limit = 10 } = req.query;
   
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
@@ -238,20 +238,20 @@ app.get('/history', async (req, res) => {
 
   try {
     // 1. Llamamos al servicio de Rust (puerto 4000)
-    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}`);
+    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}&page=${page}&limit=${limit}`);
     
     if (!rustResponse.ok) {
       console.error(`Error en Rust: ${rustResponse.status}`);
       return res.status(rustResponse.status).json({ error: "Rust history service error" });
     }
 
-    const games = await rustResponse.json();
+    const paginatedData = await rustResponse.json();
     
     // DEBUG: Mira tu terminal de Node para ver si llegan datos
-    console.log(`Historial para ${username}:`, games); 
+    console.log(`Historial para ${username}: (Pag ${page}):`, paginatedData.data);
 
     // 2. Enviamos el array directo al Frontend
-    res.json(games); 
+    res.json(paginatedData); 
     
   } catch (e) {
     console.error("Error de conexión con Rust:", e);
