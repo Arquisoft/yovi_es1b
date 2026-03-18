@@ -104,9 +104,15 @@ function App() {
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
+
   // Para consultar el historial
   const [showHistory, setShowHistory] = useState(false);
-  const [historyData, setHistoryData] = useState([]);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyFilter, setHistoryFilter] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  
 
   // Temporizador de turno
   const [turnTimeLeft, setTurnTimeLeft] = useState<number | null>(null);
@@ -438,10 +444,10 @@ function App() {
   /**
    * Logica para cargar el historial desde el servidor1
    */
-const [currentPage, setCurrentPage] = useState(1);
-const [totalPages, setTotalPages] = useState(1);
 
- const fetchHistory = async (pageToFetch = 1) => {
+
+
+ const fetchHistory = async (pageToFetch = 1, filterParam = historyFilter) => {
   if (!username) {
     setConnectionStatus('Debes estar identificado para ver el historial.');
     return;
@@ -449,14 +455,19 @@ const [totalPages, setTotalPages] = useState(1);
   const validPage = typeof pageToFetch === 'number' ? pageToFetch : 1;
   
   try {
-    
-const response = await fetch(`${API_BASE_URL}/history?username=${username}&page=${validPage}&limit=5`);
+    let url = `${API_BASE_URL}/history?username=${username}&page=${validPage}&limit=5`;
+    if (filterParam) {
+      url += `&result=${encodeURIComponent(filterParam)}`;
+    }
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch history: ${response.statusText}`);
+    }
     const result = await response.json();
     
    
     setHistoryData(result.data || []); 
-    
-  
     setTotalPages(result.total_pages || 1);
     setCurrentPage(result.page || 1);
     
@@ -465,6 +476,11 @@ const response = await fetch(`${API_BASE_URL}/history?username=${username}&page=
     console.error('Error fetching history:', error);
   }
 }
+const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newFilter = event.target.value;
+  setHistoryFilter(newFilter); // Guardas el filtro seleccionado
+  fetchHistory(1, newFilter);  // Fuerza la búsqueda en la página 1 con el nuevo filtro
+};
  
 
 
@@ -644,6 +660,20 @@ const response = await fetch(`${API_BASE_URL}/history?username=${username}&page=
                 <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
 
                   <h3>Historial de Partidas</h3>
+
+                  <div className="history-controls">
+                    <label htmlFor="result-filter">Filtrar por resultado: </label>
+                    <select 
+                      id="result-filter" 
+                      value={historyFilter || ''} 
+                      onChange={handleFilterChange}
+                      className="filter-select"
+                    >
+                      <option value="">Todas las partidas</option>
+                      <option value="Victoria">Victorias</option>
+                      <option value="Derrota">Derrotas</option>
+                    </select>
+                  </div>
 
                   <div className="history-table-container">
                     {historyData.length > 0 ? (
