@@ -1,6 +1,15 @@
-version: '3.8'
+version: "3.8"
 
 services:
+  # Se añade MongoDB para que el servidor tenga base de datos ---
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - monitor-net
+
   users:
     build: ./users
     container_name: users
@@ -8,11 +17,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - MONGODB_URI=${MONGODB_URI}/users_db${MONGODB_OPTIONS}
-      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/users_db
       - GAMEY_SERVICE_URL=http://gamey:3000
     networks:
       - monitor-net
+    depends_on:
+      - mongodb
 
   webapp:
     build:
@@ -38,8 +48,9 @@ services:
       - "4000:3000"
     command: ["./gamey", "--mode", "server", "--port", "3000"]
     environment:
-      - MONGODB_URI=${MONGODB_URI}/gamey_db${MONGODB_OPTIONS}
-      - PORT=3000
+      - MONGODB_URI=mongodb://mongodb:27017/gamey_db
+    depends_on:
+      - mongodb
     networks:
       - monitor-net
 

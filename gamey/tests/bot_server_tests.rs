@@ -372,6 +372,7 @@ async fn test_get_on_play_endpoint_returns_method_not_allowed() {
     // Ahora sí estamos testeando que el método GET está bloqueado en una ruta real
     assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
+    */
 
 // ============================================================================
 // Board size edge cases
@@ -468,7 +469,12 @@ async fn test_choose_with_blocker_bot() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    let empty_after = play_response.position.layout().chars().filter(|c| *c == '.').count();
+    let empty_after = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
     assert_eq!(empty_after, empty_before - 1);
 }
 
@@ -503,7 +509,12 @@ async fn test_choose_with_pro_bot() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    let empty_after = play_response.position.layout().chars().filter(|c| *c == '.').count();
+    let empty_after = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
     assert_eq!(empty_after, empty_before - 1);
 }
 
@@ -543,8 +554,18 @@ async fn test_all_bots_return_valid_moves_on_same_board() {
         assert_eq!(response.status(), StatusCode::OK, "Bot {} falló", bot_id);
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-        let empty_after = play_response.position.layout().chars().filter(|c| *c == '.').count();
-        assert_eq!(empty_after, empty_before - 1, "Bot {} no colocó exactamente una ficha", bot_id);
+        let empty_after = play_response
+            .position
+            .layout()
+            .chars()
+            .filter(|c| *c == '.')
+            .count();
+        assert_eq!(
+            empty_after,
+            empty_before - 1,
+            "Bot {} no colocó exactamente una ficha",
+            bot_id
+        );
     }
 }
 
@@ -576,7 +597,12 @@ async fn test_choose_with_player_1_turn() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    let empty_after = play_response.position.layout().chars().filter(|c| *c == '.').count();
+    let empty_after = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
     assert_eq!(empty_after, empty_before - 1);
 }
 
