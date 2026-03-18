@@ -132,7 +132,7 @@ function GameScreen({
                     />
                   </div>
                 </div>
-            )*/}
+            )}
 
             <div className={`board-container board-size-${boardDimension}`}>
               {boardData ? (
