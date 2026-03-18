@@ -1,7 +1,8 @@
 // Node.js Server
 
 const mongoose = require('mongoose');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
 
@@ -150,14 +151,39 @@ app.post('/move', async (req, res) => {
 
 // NEW: Endpoint para registrar una rendición (derrota)
 app.post('/surrender', async (req, res) => {
-    const { username, difficulty } = req.body;
-    if (username) {
-        // Llama a processGameResult con winnerId = 1 (Bot gana)
-        await processGameResult(username, 1, difficulty);
-        res.status(200).json({ message: 'Surrender recorded as a loss.' });
-    } else {
-        res.status(400).json({ error: 'Username is required to surrender.' });
+  const { username, difficulty, boardSize } = req.body;
+
+  try {
+    // 1. Integración: Llamada al servicio de Rust (GameY)
+    const rustResponse = await fetch(`${GAMEY_URL}/surrender`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        player: username,       // Rust espera "player"
+        difficulty: difficulty,
+        board_size: boardSize   // Rust espera "board_size"
+      })
+    });
+
+    // 2. Control de errores de la respuesta de Rust
+    if (!rustResponse.ok) {
+      const text = await rustResponse.text();
+      console.error("Error desde Rust en surrender:", text);
+      return res.status(rustResponse.status).send(text);
     }
+
+    const data = await rustResponse.json();
+
+    // 3. Respuesta al Frontend
+    res.json({ 
+      message: "Rendición registrada correctamente",
+      details: data 
+    });
+
+  } catch (e) {
+    console.error("Error de conexión con Rust en surrender:", e);
+    res.status(500).json({ error: 'Error communicating with Rust server' });
+  }
 });
 
 
@@ -204,7 +230,7 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  const { username } = req.query;
+  const { username, page = 1, limit = 10 } = req.query;
   
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
@@ -212,20 +238,20 @@ app.get('/history', async (req, res) => {
 
   try {
     // 1. Llamamos al servicio de Rust (puerto 4000)
-    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}`);
+    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}&page=${page}&limit=${limit}`);
     
     if (!rustResponse.ok) {
       console.error(`Error en Rust: ${rustResponse.status}`);
       return res.status(rustResponse.status).json({ error: "Rust history service error" });
     }
 
-    const games = await rustResponse.json();
+    const paginatedData = await rustResponse.json();
     
     // DEBUG: Mira tu terminal de Node para ver si llegan datos
-    console.log(`Historial para ${username}:`, games); 
+    console.log(`Historial para ${username}: (Pag ${page}):`, paginatedData.data);
 
     // 2. Enviamos el array directo al Frontend
-    res.json(games); 
+    res.json(paginatedData); 
     
   } catch (e) {
     console.error("Error de conexión con Rust:", e);

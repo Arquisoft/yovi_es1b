@@ -12,42 +12,69 @@ This scenario describes how a new user registers in the application. The Webapp 
 
 [plantuml,"Registration_Sequence",png]
 ----
-actor User
+actor Usuario
 participant "Webapp (React)" as Webapp
 participant "Users Service (Node)" as Users
 
-User -> Webapp: Enters username/email
+Usuario -> Webapp: Introduce credenciales
 activate Webapp
-Webapp -> Users: POST /createuser (user data)
+Webapp -> Users: POST /login (user/pass)
 activate Users
-note right of Users: Validates data \nand creates user
-Users --> Webapp: 200 OK (Welcome Message)
+note right of Users: Valida credenciales \nen Base de Datos
+Users --> Webapp: 200 OK (JWT/Sesión)
 deactivate Users
-Webapp --> User: Displays success message
+Webapp --> Usuario: Acceso concedido al Menú Principal
 deactivate Webapp
 ----
+=== Escenario de Inicialización de Partida 
+El motor de Rust ahora mantiene un **estado persistente** durante la partida. Este escenario es crucial porque es donde el servidor "elige" su personalidad.
 
-=== Escenario de cálculo de Movimiento
+* *Consistencia*: Una vez elegida la dificultad, el bot asignado no cambia hasta que se reinicie el tablero.
+* *Estado compartido*: Se utiliza un `AppState` con `Arc<Mutex<String>>` para recordar el bot activo.
 
-This scenario illustrates how the application requests a move or a game action from the GameY engine. Although the engine is built in Rust, it exposes an interface accessible via HTTP.
-
-* *Performance*: The heavy logic (calculating the move) is offloaded to the Rust service.
-* *Interoperability*: The React frontend communicates with the Rust backend via HTTP requests on port 4000.
-
-[plantuml,"Game_Move_Sequence",png]
+[plantuml,"Game_Init_Sequence",png]
 ----
-actor User
+actor Usuario
 participant "Webapp (React)" as Webapp
 participant "GameY Engine (Rust)" as Gamey
 
-User -> Webapp: Asks for Bot Move / Starts Game
+Usuario -> Webapp: Selecciona Tamaño y Dificultad
 activate Webapp
-Webapp -> Gamey: Request Move (Current Game State)
+Webapp -> Gamey: POST /reset {size, difficulty}
 activate Gamey
-note right of Gamey: Rust logic calculates\nthe best random piece
-Gamey --> Webapp: Return Move Coordinates/Piece
+note right of Gamey: 1. Crea nueva instancia GameY\n2. Filtra bots por dificultad\n3. Fija **active_bot** en memoria
+Gamey --> Webapp: 200 OK (Tablero inicializado)
 deactivate Gamey
-Webapp -> Webapp: Update Board UI
-Webapp --> User: Shows new state
+Webapp --> Usuario: Muestra tablero vacío listo para jugar
+deactivate Webapp
+----
+
+=== Escenario de Turno de Juego y Persistencia
+Este escenario ilustra el ciclo de vida de un movimiento. El motor de Rust no solo calcula la respuesta, sino que detecta el final de la partida y persiste el resultado.
+
+* *Inteligencia*: El motor delega la jugada al bot guardado en el `active_bot`.
+* *Persistencia*: Al detectar un ganador, el servicio de Rust se comunica directamente con MongoDB.
+
+[plantuml,"Game_Move_Sequence",png]
+----
+actor Usuario
+participant "Webapp (React)" as Webapp
+participant "GameY Engine (Rust)" as Gamey
+database "MongoDB" as DB
+
+Usuario -> Webapp: Pulsa en una celda
+activate Webapp
+Webapp -> Gamey: POST /execute-move {index}
+activate Gamey
+note right of Gamey: 1. Aplica mov. humano\n2. Carga IA asignada\n3. Calcula respuesta
+Gamey -> Gamey: El bot ejecuta su estrategia (Edge/Attacker...)
+alt Si la partida termina (Winner != null)
+    Gamey -> DB: insert_one(PartidaRecord)
+    note right of DB: Guarda fecha, oponente,\ndificultad y resultado real
+end
+Gamey --> Webapp: 200 OK (Tablero YEN + Winner ID)
+deactivate Gamey
+Webapp -> Webapp: Actualiza UI (Celdas coloreadas)
+Webapp --> Usuario: Muestra el estado actual del juego
 deactivate Webapp
 ----

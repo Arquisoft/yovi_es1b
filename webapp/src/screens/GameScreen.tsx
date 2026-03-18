@@ -44,10 +44,14 @@ function GameScreen({
   onFetchHistory
 }: GameScreenProps) {
 
-  const botName =
-    difficultyChoice === 'facil' ? 'Bot Player (fácil)' :
-    difficultyChoice === 'medio' ? 'Bot Player (medio)' :
-    difficultyChoice === 'dificil' ? 'Bot Player (difícil)' : 'Bot Player';
+  let botName = 'Bot Player';
+  if (difficultyChoice === 'facil') {
+    botName = 'Bot Player (fácil)';
+  } else if (difficultyChoice === 'medio') {
+    botName = 'Bot Player (medio)';
+  } else if (difficultyChoice === 'dificil') {
+    botName = 'Bot Player (difícil)';
+  }
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
 
@@ -128,7 +132,7 @@ function GameScreen({
                     />
                   </div>
                 </div>
-            )}
+            )*/}
 
             <div className={`board-container board-size-${boardDimension}`}>
               {boardData ? (

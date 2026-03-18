@@ -30,6 +30,15 @@ interface GameYData {
   layout: string;
 }
 
+interface HistoryGameRecord {
+  _id?: { $oid: string };
+  date: string;
+  opponent: string;
+  board_size: number;
+  difficulty: string;
+  result: string;
+}
+
 type Screen = 'home' | 'register' | 'login' | 'game';
 type DifficultyChoice = string; // Ahora es string dinámico
 type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
@@ -394,7 +403,11 @@ function App() {
       await fetch(`${API_BASE_URL}/surrender`, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({username: username, difficulty: difficultyChoice}),
+        body: JSON.stringify({
+          username: username,
+          difficulty: difficultyChoice,
+          boardSize: boardData?.size
+        }),
       });
     } catch (error) {
       console.error("Error surrendering:", error);
@@ -425,23 +438,34 @@ function App() {
   /**
    * Logica para cargar el historial desde el servidor1
    */
- const fetchHistory = async () => {
+const [currentPage, setCurrentPage] = useState(1);
+const [totalPages, setTotalPages] = useState(1);
 
+ const fetchHistory = async (pageToFetch = 1) => {
   if (!username) {
     setConnectionStatus('Debes estar identificado para ver el historial.');
     return;
   }
+  const validPage = typeof pageToFetch === 'number' ? pageToFetch : 1;
+  
   try {
-    const response = await fetch(`${API_BASE_URL}/history?username=${username}`);
-    const data = await response.json();
     
-    // Como vemos en tus logs, llega un [ { ... } ], así que lo guardamos tal cual
-    setHistoryData(data || []); 
+const response = await fetch(`${API_BASE_URL}/history?username=${username}&page=${validPage}&limit=5`);
+    const result = await response.json();
+    
+   
+    setHistoryData(result.data || []); 
+    
+  
+    setTotalPages(result.total_pages || 1);
+    setCurrentPage(result.page || 1);
+    
     setShowHistory(true);
   } catch (error) {
     console.error('Error fetching history:', error);
   }
- }
+}
+ 
 
 
     // Renderizado de pantallas
@@ -634,7 +658,7 @@ function App() {
                           </tr>
                           </thead>
                           <tbody>
-                          {historyData.map((game: any, index: number) => (
+                          {historyData.map((game: HistoryGameRecord, index: number) => (
                               <tr key={game._id?.$oid || index}>
                                 <td>{new Date(game.date).toLocaleDateString()}</td>
                                 <td>{game.opponent}</td>
@@ -648,9 +672,34 @@ function App() {
                           </tbody>
                         </table>
                     ) : (
-                        <p style={{color: '#ccc', padding: '20px'}}>No hay partidas guardadas.</p>
+                        <p>No hay partidas guardadas.</p>
                     )}
                   </div>
+
+                  
+                  {historyData.length > 0 && (
+                    <div className="history-pagination">
+                      <button 
+                        className="submit-button"
+                        onClick={() => fetchHistory(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                      >
+                        Anterior
+                      </button>
+                      
+                      <span className="history-pagination-info">
+                        Página {currentPage} de {totalPages}
+                      </span>
+                      
+                      <button 
+                        className="submit-button"
+                        onClick={() => fetchHistory(currentPage + 1)} 
+                        disabled={currentPage === totalPages}                      
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  )}
 
                   <button className="submit-button" onClick={() => setShowHistory(false)}>
                     Volver al Juego

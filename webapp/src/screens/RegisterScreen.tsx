@@ -1,5 +1,7 @@
 import { type FormEvent, useState } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
 interface RegisterData {
   name: string;
   age: string;
@@ -8,11 +10,11 @@ interface RegisterData {
 }
 
 interface RegisterScreenProps {
-  onBack: () => void; // Vuelve a la pantalla anterior
-  onCreateAccount: (name: string) => Promise<void> | void; // Inicia el flujo de crear cuenta/juego
+  readonly onBack: () => void; // Vuelve a la pantalla anterior
+  readonly onCreateAccount: (name: string) => Promise<void> | void; // Inicia el flujo de crear cuenta/juego
 }
 
-function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
+function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     age: '',
@@ -48,7 +50,7 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
     
     // Llamada al backend para crear cuenta e iniciar el juego
     try {
-      const response = await fetch('http://localhost:3000/createuser', {
+      const response = await fetch(`${API_BASE_URL}/createuser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -149,4 +151,3 @@ function RegisterScreen({ onBack, onCreateAccount }: RegisterScreenProps) {
 }
 
 export default RegisterScreen;
-
