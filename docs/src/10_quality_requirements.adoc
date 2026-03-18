@@ -186,3 +186,4 @@ cualquier tamaño gracias a su topología triangular paramétrica.
 |Se decide cambiar de MongoDB local a MongoDB Atlas en producción.
 |Solo es necesario actualizar la variable de entorno `MONGODB_URI`
 en el `docker-co
+|===

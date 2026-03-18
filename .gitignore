@@ -3,7 +3,5 @@ coverage
 gamey/target
 lcov.info
 docs/build
-.env
-webapp/.env
 .vscode/
 .env
