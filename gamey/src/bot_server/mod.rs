@@ -63,6 +63,7 @@ pub struct HistoryQuery {
     pub username: String,
     pub page: Option<u64>,
     pub limit: Option<i64>,
+    pub result: Option<String>,
 }
 // Estructura de respuesta para el historial paginado
 #[derive(serde::Serialize)]
@@ -393,7 +394,7 @@ pub async fn listar_dificultades() -> impl IntoResponse {
     get,
     path = "/history",
     responses(
-    (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
+        (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
     ),
     tag = "Bot"
 )]
@@ -401,18 +402,24 @@ pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
 ) -> impl IntoResponse {
-    // 1. Acceder a la BBDD y definir filtro
     let collection = state.db.collection::<serde_json::Value>("partidas");
-    let filter = doc! { "player": &params.username };
 
-    // 2. Configuración matemática de la paginación
-    let page = params.page.unwrap_or(1).max(1); // Evitar página 0 o negativa
-    let limit = params.limit.unwrap_or(10).clamp(1, 100); // Límite máximo de seguridad
-    let skip = (page - 1) * (limit as u64);
+    // 1. Configuración de la paginación (arreglado el tipado)
+    let page = params.page.unwrap_or(1).max(1); 
+    let limit = params.limit.unwrap_or(10).clamp(1, 100); 
+    let skip_value = (page - 1) * (limit as u64);
 
-    // 3. Contar el total de documentos ANTES de paginar
-    let total_documents = match collection.count_documents(filter.clone()).await {
-        Ok(count) => count,
+    // 2. Construir un ÚNICO filtro dinámico
+    // CRÍTICO: Asegúrate de si tu campo en Mongo se llama "player" o "username". Aquí asumo "player".
+    let mut filter = doc! { "player": &params.username };
+
+    // Añadimos el filtro de resultado si el frontend lo envía
+    if let Some(res) = &params.result {
+        filter.insert("result", res);
+    }
+
+    // 3. Contar el total de documentos UNA SOLA VEZ, usando el filtro final
+        let total_documents = match collection.count_documents(filter.clone()).await {        Ok(count) => count,
         Err(e) => {
             eprintln!("Error al contar documentos en BBDD: {}", e);
             return axum::Json(serde_json::json!({
@@ -421,18 +428,17 @@ pub async fn obtener_historial(
         }
     };
 
-    // Calcular el total de páginas
     let total_pages = (total_documents as f64 / limit as f64).ceil() as u64;
 
     // 4. Opciones de consulta con paginación
     let find_options = mongodb::options::FindOptions::builder()
-        .sort(doc! { "date": -1 }) // Más recientes primero
-        .skip(skip)
+        .sort(doc! { "date": -1 }) // Asegúrate de que el campo fecha se llama "date"
+        .skip(skip_value)
         .limit(limit)
         .build();
 
-    // 5. Ejecutar la consulta aplicando las opciones (AQUÍ ESTÁ LA CORRECCIÓN CLAVE)
-    let mut cursor = match collection.find(filter).with_options(find_options).await {
+    // 5. Ejecutar la búsqueda pasando las opciones correctamente   
+        let mut cursor = match collection.find(filter).with_options(find_options).await {        
         Ok(c) => c,
         Err(e) => {
             eprintln!("Error al buscar en la BBDD: {}", e);
@@ -443,22 +449,20 @@ pub async fn obtener_historial(
     };
 
     // 6. Recoger los resultados del cursor
+    // Recuerda que esto necesita importar: use futures::stream::StreamExt;
     let mut partidas = Vec::new();
     while let Some(Ok(doc)) = cursor.next().await {
         partidas.push(doc);
     }
 
-    // 7. Construir la respuesta final estructurada
-    let response = PaginatedHistoryResponse {
-        data: partidas,
-        total: total_documents,
-        page,
-        limit,
-        total_pages,
-    };
-
-    // 8. Devolver la respuesta como JSON
-    axum::Json(serde_json::json!(response))
+    // 7. Devolver la respuesta como JSON
+    axum::Json(serde_json::json!({
+        "data": partidas,
+        "total": total_documents,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+    }))
 }
 
 pub async fn rendirse(
