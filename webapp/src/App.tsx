@@ -110,6 +110,7 @@ function App() {
 
   // Temporizador de turno
   const [turnTimeLeft, setTurnTimeLeft] = useState<number | null>(null);
+  const [timerVisible, setTimerVisible] = useState(false);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoMoveInProgressRef = useRef(false);
 
@@ -139,7 +140,7 @@ function App() {
       clearInterval(turnTimerRef.current);
       turnTimerRef.current = null;
     }
-    setTurnTimeLeft(null);
+    //setTurnTimeLeft(null);
   };
 
   /** Arranca el temporizador para el turno del jugador humano */
@@ -147,16 +148,16 @@ function App() {
     stopTurnTimer();
     const limit = TURN_TIME_LIMIT[difficulty] ?? 60;
     setTurnTimeLeft(limit);
+    setTimerVisible(true);  // ← mostrar recuadro
 
     turnTimerRef.current = setInterval(() => {
       setTurnTimeLeft(prev => {
         if (prev === null) return null;
         if (prev <= 1) {
-          // Tiempo agotado: disparar movimiento automático
           clearInterval(turnTimerRef.current!);
           turnTimerRef.current = null;
           triggerAutoMove();
-          return null;
+          return 0;  // ← mostrar 0 en vez de null para no ocultar el recuadro
         }
         return prev - 1;
       });
@@ -207,16 +208,16 @@ function App() {
           setShowResultModal(true);
           setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
         } else {
-          setConnectionStatus('Movimiento automático realizado. ¡Es tu turno!');
-          // Reiniciar temporizador para el siguiente turno
-          if (difficultyRef.current) startTurnTimer(difficultyRef.current);
+          setConnectionStatus('Error en movimiento automático');
+          autoMoveInProgressRef.current = false;  // ← añadir esta línea
+          if (difficultyRef.current) setTimeout(() => startTurnTimer(difficultyRef.current!), 300);
         }
       }
     } catch (error) {
       setConnectionStatus('Error en movimiento automático');
       if (difficultyRef.current) startTurnTimer(difficultyRef.current);
     } finally {
-      autoMoveInProgressRef.current = false;
+      //autoMoveInProgressRef.current = false;
     }
   };
 
@@ -368,12 +369,13 @@ function App() {
         setWinner(data.winner);
 
         if (data.winner !== null) {
+          setTimerVisible(false);  // ← ocultar al terminar partida
           setShowResultModal(true);
           setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
         } else {
           setConnectionStatus('Movimiento realizado!');
           // El bot ya respondió: reiniciar temporizador para el siguiente turno del jugador
-          if (difficultyChoice) startTurnTimer(difficultyChoice);
+          if (difficultyChoice) setTimeout(() => startTurnTimer(difficultyChoice), 300);
         }
       }
     } catch (error) {
@@ -415,6 +417,7 @@ function App() {
   const handleEndFromGame = async () => {
     // Parar el temporizador al rendirse1
     stopTurnTimer();
+    setTimerVisible(false);  // ← ocultar al rendirse
     // Primero registramos la rendición en el backend
     await handleSurrender();
 
@@ -426,6 +429,7 @@ function App() {
 
   const handleExitFromGame = () => {
     stopTurnTimer();
+    setTimerVisible(false);  // ← ocultar al salir
     setShowResultModal(false);
     setCurrentScreen('home');
   };
@@ -493,6 +497,7 @@ const response = await fetch(`${API_BASE_URL}/history?username=${username}&page=
                   connectionStatus={connectionStatus}
                   turnTimeLeft={turnTimeLeft}
                   turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
+                  timerVisible={timerVisible}
                   sizeLabel={sizeChoice}
                   onCellClick={handleCellClick}
                   onExit={handleExitFromGame}
