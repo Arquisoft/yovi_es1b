@@ -14,6 +14,7 @@ interface GameScreenProps {
   connectionStatus: string;
   turnTimeLeft: number | null;
   turnTimeLimit: number | null;
+  timerVisible: boolean;
   sizeLabel: string | null;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onEndGame: () => void; // Termina la partida actual
@@ -30,8 +31,9 @@ function GameScreen({
   selectedBoardDimension,
   boardData,
   winner,
-  //turnTimeLeft,
-  //turnTimeLimit,
+  turnTimeLeft,
+  turnTimeLimit,
+  timerVisible,
   sizeLabel,
   onCellClick,
   onEndGame,
@@ -117,18 +119,16 @@ function GameScreen({
             </div>
 
             {/* Barra de temporizador de turno */}
-            {/*turnTimeLeft !== null && turnTimeLimit !== null && winner === null && (
+            {timerVisible && turnTimeLimit !== null && winner === null && (
                 <div className="turn-timer">
                   <div className="turn-timer-header">
-                    <span className="turn-timer-label">⏱ Tu turno</span>
-                    <span className={`turn-timer-seconds ${turnTimeLeft <= 5 ? 'turn-timer-urgent' : ''}`}>
-                    {turnTimeLeft}s
-                  </span>
+                    <span className="turn-timer-label">Tu turno</span>
+                    <span className={`turn-timer-seconds ${(turnTimeLeft ?? 0) <= 5 ? 'turn-timer-urgent' : ''}`}> {turnTimeLeft ?? 0}s</span>
                   </div>
                   <div className="turn-timer-bar-bg">
                     <div
-                        className={`turn-timer-bar ${turnTimeLeft <= 5 ? 'turn-timer-bar-urgent' : ''}`}
-                        style={{ width: `${(turnTimeLeft / turnTimeLimit) * 100}%` }}
+                        className={`turn-timer-bar ${(turnTimeLeft ?? 0) <= 5 ? 'turn-timer-bar-urgent' : ''}`}
+                        style={{ width: `${((turnTimeLeft ?? 0) / turnTimeLimit) * 100}%` }}
                     />
                   </div>
                 </div>
