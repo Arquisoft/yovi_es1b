@@ -54,6 +54,7 @@ Este escenario ilustra el ciclo de vida de un movimiento. El motor de Rust no so
 
 * *Inteligencia*: El motor delega la jugada al bot guardado en el `active_bot`.
 * *Persistencia*: Al detectar un ganador, el servicio de Rust se comunica directamente con MongoDB.
+
 [plantuml,"Game_Move_Sequence",png]
 ----
 actor Usuario
