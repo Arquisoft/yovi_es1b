@@ -12,8 +12,6 @@ services:
       - GAMEY_SERVICE_URL=http://gamey:3000
     networks:
       - monitor-net
-    depends_on:
-      - mongodb
 
   webapp:
     build:
