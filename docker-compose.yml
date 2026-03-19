@@ -40,8 +40,6 @@ services:
     command: ["./gamey", "--mode", "server", "--port", "3000"]
     environment:
       - MONGODB_URI=${MONGODB_URI}
-    depends_on:
-      - mongodb
     networks:
       - monitor-net
 
