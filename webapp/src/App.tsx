@@ -30,6 +30,15 @@ interface GameYData {
   layout: string;
 }
 
+interface HistoryGameRecord {
+  _id?: { $oid: string };
+  date: string;
+  opponent: string;
+  board_size: number;
+  difficulty: string;
+  result: string;
+}
+
 type Screen = 'home' | 'register' | 'login' | 'game';
 type DifficultyChoice = string; // Ahora es string dinámico
 type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
@@ -95,12 +104,19 @@ function App() {
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
   const [showResultModal, setShowResultModal] = useState(false);
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
+
   // Para consultar el historial
   const [showHistory, setShowHistory] = useState(false);
-  const [historyData, setHistoryData] = useState([]);
+  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyFilter, setHistoryFilter] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  
 
   // Temporizador de turno
   const [turnTimeLeft, setTurnTimeLeft] = useState<number | null>(null);
+  const [timerVisible, setTimerVisible] = useState(false);
   const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoMoveInProgressRef = useRef(false);
 
@@ -130,7 +146,7 @@ function App() {
       clearInterval(turnTimerRef.current);
       turnTimerRef.current = null;
     }
-    setTurnTimeLeft(null);
+    //setTurnTimeLeft(null);
   };
 
   /** Arranca el temporizador para el turno del jugador humano */
@@ -138,16 +154,16 @@ function App() {
     stopTurnTimer();
     const limit = TURN_TIME_LIMIT[difficulty] ?? 60;
     setTurnTimeLeft(limit);
+    setTimerVisible(true);  // ← mostrar recuadro
 
     turnTimerRef.current = setInterval(() => {
       setTurnTimeLeft(prev => {
         if (prev === null) return null;
         if (prev <= 1) {
-          // Tiempo agotado: disparar movimiento automático
           clearInterval(turnTimerRef.current!);
           turnTimerRef.current = null;
           triggerAutoMove();
-          return null;
+          return 0;  // ← mostrar 0 en vez de null para no ocultar el recuadro
         }
         return prev - 1;
       });
@@ -198,16 +214,16 @@ function App() {
           setShowResultModal(true);
           setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
         } else {
-          setConnectionStatus('Movimiento automático realizado. ¡Es tu turno!');
-          // Reiniciar temporizador para el siguiente turno
-          if (difficultyRef.current) startTurnTimer(difficultyRef.current);
+          setConnectionStatus('Error en movimiento automático');
+          autoMoveInProgressRef.current = false;  // ← añadir esta línea
+          if (difficultyRef.current) setTimeout(() => startTurnTimer(difficultyRef.current!), 300);
         }
       }
     } catch (error) {
       setConnectionStatus('Error en movimiento automático');
       if (difficultyRef.current) startTurnTimer(difficultyRef.current);
     } finally {
-      autoMoveInProgressRef.current = false;
+      //autoMoveInProgressRef.current = false;
     }
   };
 
@@ -227,7 +243,7 @@ function App() {
   const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
     console.log("Resetting board (neutral action)"); // DEBUG
     // FIX: Ya no enviamos username porque resetear no debe contar como derrota
-    const response = await fetch('http://localhost:3000/reset', {
+    const response = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({size: dimension, difficulty: difficulty, username: username}),
@@ -359,12 +375,13 @@ function App() {
         setWinner(data.winner);
 
         if (data.winner !== null) {
+          setTimerVisible(false);  // ← ocultar al terminar partida
           setShowResultModal(true);
           setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
         } else {
           setConnectionStatus('Movimiento realizado!');
           // El bot ya respondió: reiniciar temporizador para el siguiente turno del jugador
-          if (difficultyChoice) startTurnTimer(difficultyChoice);
+          if (difficultyChoice) setTimeout(() => startTurnTimer(difficultyChoice), 300);
         }
       }
     } catch (error) {
@@ -406,6 +423,7 @@ function App() {
   const handleEndFromGame = async () => {
     // Parar el temporizador al rendirse1
     stopTurnTimer();
+    setTimerVisible(false);  // ← ocultar al rendirse
     // Primero registramos la rendición en el backend
     await handleSurrender();
 
@@ -417,6 +435,7 @@ function App() {
 
   const handleExitFromGame = () => {
     stopTurnTimer();
+    setTimerVisible(false);  // ← ocultar al salir
     setShowResultModal(false);
     setCurrentScreen('home');
   };
@@ -425,23 +444,44 @@ function App() {
   /**
    * Logica para cargar el historial desde el servidor1
    */
- const fetchHistory = async () => {
 
+
+
+ const fetchHistory = async (pageToFetch = 1, filterParam = historyFilter) => {
   if (!username) {
     setConnectionStatus('Debes estar identificado para ver el historial.');
     return;
   }
+  const validPage = typeof pageToFetch === 'number' ? pageToFetch : 1;
+  
   try {
-    const response = await fetch(`${API_BASE_URL}/history?username=${username}`);
-    const data = await response.json();
+    let url = `${API_BASE_URL}/history?username=${username}&page=${validPage}&limit=5`;
+    if (filterParam) {
+      url += `&result=${encodeURIComponent(filterParam)}`;
+    }
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch history: ${response.statusText}`);
+    }
+    const result = await response.json();
     
-    // Como vemos en tus logs, llega un [ { ... } ], así que lo guardamos tal cual
-    setHistoryData(data || []); 
+   
+    setHistoryData(result.data || []); 
+    setTotalPages(result.total_pages || 1);
+    setCurrentPage(result.page || 1);
+    
     setShowHistory(true);
   } catch (error) {
     console.error('Error fetching history:', error);
   }
- }
+}
+const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const newFilter = event.target.value;
+  setHistoryFilter(newFilter); // Guardas el filtro seleccionado
+  fetchHistory(1, newFilter);  // Fuerza la búsqueda en la página 1 con el nuevo filtro
+};
+ 
 
 
     // Renderizado de pantallas
@@ -473,6 +513,7 @@ function App() {
                   connectionStatus={connectionStatus}
                   turnTimeLeft={turnTimeLeft}
                   turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
+                  timerVisible={timerVisible}
                   sizeLabel={sizeChoice}
                   onCellClick={handleCellClick}
                   onExit={handleExitFromGame}
@@ -620,6 +661,20 @@ function App() {
 
                   <h3>Historial de Partidas</h3>
 
+                  <div className="history-controls">
+                    <label htmlFor="result-filter">Filtrar por resultado: </label>
+                    <select 
+                      id="result-filter" 
+                      value={historyFilter || ''} 
+                      onChange={handleFilterChange}
+                      className="filter-select"
+                    >
+                      <option value="">Todas las partidas</option>
+                      <option value="Victoria">Victorias</option>
+                      <option value="Derrota">Derrotas</option>
+                    </select>
+                  </div>
+
                   <div className="history-table-container">
                     {historyData.length > 0 ? (
                         <table className="history-table">
@@ -633,7 +688,7 @@ function App() {
                           </tr>
                           </thead>
                           <tbody>
-                          {historyData.map((game: any, index: number) => (
+                          {historyData.map((game: HistoryGameRecord, index: number) => (
                               <tr key={game._id?.$oid || index}>
                                 <td>{new Date(game.date).toLocaleDateString()}</td>
                                 <td>{game.opponent}</td>
@@ -647,9 +702,34 @@ function App() {
                           </tbody>
                         </table>
                     ) : (
-                        <p style={{color: '#ccc', padding: '20px'}}>No hay partidas guardadas.</p>
+                        <p>No hay partidas guardadas.</p>
                     )}
                   </div>
+
+                  
+                  {historyData.length > 0 && (
+                    <div className="history-pagination">
+                      <button 
+                        className="submit-button"
+                        onClick={() => fetchHistory(currentPage - 1)} 
+                        disabled={currentPage === 1}
+                      >
+                        Anterior
+                      </button>
+                      
+                      <span className="history-pagination-info">
+                        Página {currentPage} de {totalPages}
+                      </span>
+                      
+                      <button 
+                        className="submit-button"
+                        onClick={() => fetchHistory(currentPage + 1)} 
+                        disabled={currentPage === totalPages}                      
+                      >
+                        Siguiente
+                      </button>
+                    </div>
+                  )}
 
                   <button className="submit-button" onClick={() => setShowHistory(false)}>
                     Volver al Juego

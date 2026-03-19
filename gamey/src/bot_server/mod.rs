@@ -27,7 +27,7 @@ pub mod play;
 pub mod state;
 pub mod version;
 
-use axum::{Json, response::IntoResponse};
+use axum::{ response::IntoResponse};
 use chrono::Utc;
 pub use error::ErrorResponse;
 pub use play::{PlayRequest, PlayResponse, play};
@@ -43,10 +43,11 @@ use crate::bot::attacker_bot::AttackerBot;
 use crate::bot::edge_bot::EdgeBot;
 use crate::bot::pro_bot::ProBot;
 use crate::bot::random::RandomBot;
+use crate::bot::blocker_bot::BlockerBot;
 use crate::bot::ybot_registry::YBotRegistry;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
-use tower_http::cors::{Any, CorsLayer};
+
 
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize, utoipa::ToSchema)]
@@ -56,9 +57,22 @@ pub struct MoveRequest {
 }
 
 // Para obtener el historial de partidas de un usuario específico.
+//añadida la paginación con page y limit opcionales.
 #[derive(Deserialize)]
 pub struct HistoryQuery {
     pub username: String,
+    pub page: Option<u64>,
+    pub limit: Option<i64>,
+    pub result: Option<String>,
+}
+// Estructura de respuesta para el historial paginado
+#[derive(serde::Serialize)]
+pub struct PaginatedHistoryResponse {
+    pub data: Vec<serde_json::Value>,
+    pub total: u64,
+    pub page: u64,
+    pub limit: i64,
+    pub total_pages: u64,
 }
 
 // Estructura para recibir la rendición
@@ -73,14 +87,14 @@ use utoipa::OpenApi;
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), // Añadida aquí
+    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), 
     components(schemas(
         play::PlayRequest,
         play::PlayResponse,
         YEN,
         ResetRequest,
         MoveRequest,
-        GameRecord, // Añadida aquí
+        GameRecord, 
         error::ErrorResponse
     )),
     tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
@@ -173,6 +187,7 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let bots = YBotRegistry::new()
         .with_bot(Arc::new(RandomBot))
         .with_bot(Arc::new(ProBot))
+        .with_bot(Arc::new(BlockerBot))
         .with_bot(Arc::new(AttackerBot))
         .with_bot(Arc::new(EdgeBot));
 
@@ -387,32 +402,67 @@ pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
 ) -> impl IntoResponse {
-    // Acceder bbdd
     let collection = state.db.collection::<serde_json::Value>("partidas");
 
-    // Consultar partidas del usuario
-    let filter = doc! { "player": &params.username };
+    // 1. Configuración de la paginación (arreglado el tipado)
+    let page = params.page.unwrap_or(1).max(1); 
+    let limit = params.limit.unwrap_or(10).clamp(1, 100); 
+    let skip_value = (page - 1) * (limit as u64);
 
-    // Definir opciones
-    let mut cursor = match collection
-        .find(filter)
-        .sort(doc! { "date": -1 }) // Ordenamos de más reciente a más antiguo
-        .await
-    {
-        Ok(c) => c,
+    // 2. Construir un ÚNICO filtro dinámico
+    // CRÍTICO: Asegúrate de si tu campo en Mongo se llama "player" o "username". Aquí asumo "player".
+    let mut filter = doc! { "player": &params.username };
+
+    // Añadimos el filtro de resultado si el frontend lo envía
+    if let Some(res) = &params.result {
+        filter.insert("result", res);
+    }
+
+    // 3. Contar el total de documentos UNA SOLA VEZ, usando el filtro final
+        let total_documents = match collection.count_documents(filter.clone()).await {        Ok(count) => count,
         Err(e) => {
-            eprintln!("Error al buscar en la BBDD: {}", e);
-            return axum::Json(serde_json::json!([]));
+            eprintln!("Error al contar documentos en BBDD: {}", e);
+            return axum::Json(serde_json::json!({
+                "error": "Error interno del servidor"
+            }));
         }
     };
 
-    // Recoger los resultados del cursor
+    let total_pages = (total_documents as f64 / limit as f64).ceil() as u64;
+
+    // 4. Opciones de consulta con paginación
+    let find_options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "date": -1 }) // Asegúrate de que el campo fecha se llama "date"
+        .skip(skip_value)
+        .limit(limit)
+        .build();
+
+    // 5. Ejecutar la búsqueda pasando las opciones correctamente   
+        let mut cursor = match collection.find(filter).with_options(find_options).await {        
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Error al buscar en la BBDD: {}", e);
+            return axum::Json(serde_json::json!({
+                "error": "Error interno del servidor"
+            }));
+        }
+    };
+
+    // 6. Recoger los resultados del cursor
+    // Recuerda que esto necesita importar: use futures::stream::StreamExt;
     let mut partidas = Vec::new();
     while let Some(Ok(doc)) = cursor.next().await {
         partidas.push(doc);
     }
 
-    axum::Json(serde_json::json!(partidas))
+    // 7. Devolver la respuesta como JSON
+    axum::Json(serde_json::json!({
+        "data": partidas,
+        "total": total_documents,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+    }))
 }
 
 pub async fn rendirse(

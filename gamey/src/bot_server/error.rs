@@ -1,5 +1,4 @@
 use axum::{Json, http::StatusCode, response::IntoResponse};
-use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
 /// A structured error response returned by the bot server API.

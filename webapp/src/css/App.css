@@ -159,3 +159,17 @@
 .history-table tr:hover {
   background-color: #fcfcfc;
 }
+
+/* Controles de paginación del historial */
+.history-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem 0;
+}
+
+.history-pagination-info {
+  font-weight: 600;
+  color: #333;
+}
