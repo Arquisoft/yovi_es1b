@@ -21,7 +21,7 @@ const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:3000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
 
 try {
   const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
