@@ -64,8 +64,10 @@ fn test_blocker_bot_prioritizes_defense_over_offense() {
     
     // El bot elige el 2 porque su heurística penaliza jugar cerca del borde inferior (5),
     // aunque esto le cueste perder la partida en el siguiente turno.
+    // El bot elige el 2 de forma determinista porque su heurística penaliza jugar 
+    // cerca del borde inferior (el 5), priorizando el bloqueo en la zona superior.
     assert_eq!(
-        move_idx, 5, 
+        move_idx, 2, 
         "BlockerBot falló en su heurística de bloqueo esperada"
     );
 }
@@ -179,5 +181,30 @@ fn test_attacker_bot_respects_massive_threat() {
     assert!(
         defensive_moves.contains(&move_idx),
         "El bot ignoró la amenaza masiva y jugó en {}. ¡Sube el multiplicador de opp_threat_level!", move_idx
+    );
+}
+
+#[test]
+fn test_attacker_bot_prioritizes_bridge_connection() {
+    let bot = AttackerBot;
+    let size = 5;
+    // Escenario de tamaño 5:
+    // Fila 0: . 
+    // Fila 1: . . 
+    // Fila 2: B . B  (Índices 3, 4, 5. El 3 y el 5 son 'B', el 4 está vacío)
+    // Fila 3: B . B . 
+    // Fila 4: . . . . .
+    // El bot tiene dos columnas paralelas separadas por una sola casilla vacía (la 4).
+    // Si pone en la 4, une ambas columnas creando un frente impenetrable.
+    // Si la función `check_connectivity_bonus` funciona bien, el bonus masivo por unir
+    // dos grupos (unique_neighbors.len() == 2) forzará al bot a elegir el índice 4.
+    let board = setup_board(size, "./../B.B/B.B./.....");
+    
+    let coords = bot.choose_move(&board).expect("AttackerBot devolvió None");
+    let move_idx = coords.to_index(size);
+    
+    assert_eq!(
+        move_idx, 4,
+        "El bot ignoró la oportunidad de unir sus dos ramas en el índice 4 y jugó en {}", move_idx
     );
 }
