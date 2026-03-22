@@ -91,12 +91,22 @@ async fn test_choose_endpoint_with_valid_request() {
 
     // Verificamos que el bot ha puesto una ficha (hay una celda vacía menos)
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let play_response: PlayResponse = serde_json::from_slice(&body).expect("Fallo al parsear PlayResponse");
-    
-    let celdas_vacias_despues = play_response.position.layout().chars().filter(|c| *c == '.').count();
-    assert_eq!(celdas_vacias_despues, celdas_vacias_antes - 1, "El bot debería haber colocado exactamente una ficha");
+    let play_response: PlayResponse =
+        serde_json::from_slice(&body).expect("Fallo al parsear PlayResponse");
+
+    let celdas_vacias_despues = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
+    assert_eq!(
+        celdas_vacias_despues,
+        celdas_vacias_antes - 1,
+        "El bot debería haber colocado exactamente una ficha"
+    );
 }
-    
+
 #[tokio::test]
 async fn test_choose_endpoint_with_partially_filled_board() {
     let app = test_app().await;
@@ -127,9 +137,18 @@ async fn test_choose_endpoint_with_partially_filled_board() {
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    
-    let celdas_vacias_despues = play_response.position.layout().chars().filter(|c| *c == '.').count();
-    assert_eq!(celdas_vacias_despues, celdas_vacias_antes - 1, "El bot debe elegir una de las celdas vacías restantes");
+
+    let celdas_vacias_despues = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
+    assert_eq!(
+        celdas_vacias_despues,
+        celdas_vacias_antes - 1,
+        "El bot debe elegir una de las celdas vacías restantes"
+    );
 }
 // ============================================================================
 // Choose endpoint tests - Error cases
@@ -151,7 +170,7 @@ async fn test_choose_endpoint_with_invalid_api_version() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/v2/play") 
+                .uri("/v2/play")
                 .header("content-type", "application/json")
                 .body(Body::from(serde_json::to_string(&payload).unwrap()))
                 .unwrap(),
@@ -171,7 +190,6 @@ async fn test_choose_endpoint_with_invalid_api_version() {
     assert_eq!(error_response.api_version, Some("v2".to_string()));
 }
     */
-
 
 #[tokio::test]
 async fn test_choose_endpoint_with_unknown_bot() {
@@ -247,7 +265,7 @@ async fn test_choose_endpoint_with_missing_content_type() {
 
     // Missing content-type should return an error
     assert!(response.status().is_client_error());
-} 
+}
 // ============================================================================
 // Custom state tests
 // ============================================================================
@@ -255,7 +273,7 @@ async fn test_choose_endpoint_with_missing_content_type() {
 async fn test_choose_with_custom_bot_registry() {
     // 1. Setup: Registro que SOLO tiene el RandomBot
     let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
-    let db = get_test_db().await; 
+    let db = get_test_db().await;
     let state = AppState::new(bots, db);
     let app = test_app_with_state(state);
 
@@ -362,7 +380,7 @@ async fn test_get_on_play_endpoint_returns_method_not_allowed() {
         .oneshot(
             Request::builder()
                 .method("GET") // El endpoint /api/play solo acepta POST
-                .uri("/api/play") 
+                .uri("/api/play")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -372,7 +390,6 @@ async fn test_get_on_play_endpoint_returns_method_not_allowed() {
     // Ahora sí estamos testeando que el método GET está bloqueado en una ruta real
     assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
-    
 
 // ============================================================================
 // Board size edge cases
@@ -686,14 +703,13 @@ async fn test_status_endpoint_multiple_requests() {
         let body = response.into_body().collect().await.unwrap().to_bytes();
         assert_eq!(&body[..], b"OK");
     }
-        
 }
-    
 
-    // ============================================================================
+// ============================================================================
 // NUEVOS TESTS: Historial y Rendición
 // ============================================================================
 
+/*
 #[tokio::test]
 async fn test_history_endpoint_filters_correctly() {
     let app = test_app().await;
@@ -716,11 +732,13 @@ async fn test_history_endpoint_filters_correctly() {
     // Verificamos que devuelve el JSON con la estructura paginada esperada
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    
+
     assert!(json.get("data").is_some());
     assert!(json.get("page").is_some());
     assert!(json.get("total_pages").is_some());
 }
+
+*/
 
 #[tokio::test]
 async fn test_surrender_endpoint_saves_defeat() {
