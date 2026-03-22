@@ -372,7 +372,7 @@ async fn test_get_on_play_endpoint_returns_method_not_allowed() {
     // Ahora sí estamos testeando que el método GET está bloqueado en una ruta real
     assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
-    */
+    
 
 // ============================================================================
 // Board size edge cases
