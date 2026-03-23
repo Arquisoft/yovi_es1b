@@ -393,11 +393,14 @@ function App() {
 
 
   const handleResetFromGame = async () => {
+    stopTurnTimer(); //detener timer anterior
+    setTimerVisible(false);
     const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
     // Al reiniciar desde el juego, mantenemos la dificultad actual
     if (difficultyChoice) {
       const board = await requestResetBoard(selectedDimension, difficultyChoice);
       resetGameState(board, 'Partida reiniciada');
+      startTurnTimer(difficultyChoice);//arrancar timer nuevo
     } else {
       await startGameWithUser(username, {dimension: selectedDimension, resetChoices: false});
     }
@@ -551,16 +554,21 @@ const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
 
     //Cambia la dificultad según elección
     const handleDifficultyChoice = (choice: DifficultyChoice) => {
+      stopTurnTimer();//matar timer con dificultad anterior
+      setTimerVisible(false);
       setDifficultyChoice(choice);
       // Actualizar en el backend también si ya estamos en juego
       const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
       requestResetBoard(selectedDimension, choice).then(board => {
         resetGameState(board, `Dificultad cambiada a ${choice}`);
+        startTurnTimer(choice);  //timer con la nueva dificultad
       });
     };
 
     //Cambia el tamaño de tablero según hemos elegido y deja un mensaje
     const handleSecondaryChoice = (choice: SizeChoice) => {
+      stopTurnTimer();//matar timer antes de cambiar de tablero
+      setTimerVisible(false);
       setSizeChoice(choice);
       const selectedDimension = getBoardDimensionFromSizeChoice(choice);
       if (selectedDimension === null) return;
@@ -572,6 +580,7 @@ const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
               setBoardData(board);
               setWinner(null);
               setConnectionStatus(`Tablero ${selectedDimension}x${selectedDimension} cargado`);
+              if (difficultyChoice) startTurnTimer(difficultyChoice);//arranco timer si hay dificultad elegida
             } else {
               setConnectionStatus('No se recibio un tablero valido para el tamano elegido.');
             }
