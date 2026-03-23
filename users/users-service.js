@@ -21,7 +21,7 @@ const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://localhost:4000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
 
 try {
   const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
@@ -230,27 +230,36 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  const { username, page = 1, limit = 10 } = req.query;
+  // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
+  const { username, page = 1, limit = 10, result } = req.query;
   
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
   }
 
   try {
-    // 1. Llamamos al servicio de Rust (puerto 4000)
-    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}&page=${page}&limit=${limit}`);
+    // 2. Construimos la URL como un simple string (let, no const, porque va a cambiar)
+    let rustUrl = `${GAMEY_URL}/history?username=${username}&page=${page}&limit=${limit}`;
     
+    // 3. Modificamos el string si hay filtro
+    if (result) {
+        rustUrl += `&result=${encodeURIComponent(result)}`;
+    }
+
+    // 4. AHORA SÍ, ejecutamos el fetch pasándole el string de la URL
+    const rustResponse = await fetch(rustUrl);
+
     if (!rustResponse.ok) {
       console.error(`Error en Rust: ${rustResponse.status}`);
       return res.status(rustResponse.status).json({ error: "Rust history service error" });
     }
-
+    
     const paginatedData = await rustResponse.json();
     
     // DEBUG: Mira tu terminal de Node para ver si llegan datos
     console.log(`Historial para ${username}: (Pag ${page}):`, paginatedData.data);
 
-    // 2. Enviamos el array directo al Frontend
+    // 5. Enviamos el array directo al Frontend
     res.json(paginatedData); 
     
   } catch (e) {
