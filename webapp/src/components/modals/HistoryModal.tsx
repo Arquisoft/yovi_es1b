@@ -25,7 +25,7 @@ export const HistoryModal = ({
 
         {/* Selector de Filtro */}
         <div className="history-controls">
-          <label htmlFor="result-filter">Filtrar: </label>
+          <label htmlFor="result-filter">Filtrar por resultado: </label>
           <select 
             id="result-filter" 
             value={currentFilter || ''} 
