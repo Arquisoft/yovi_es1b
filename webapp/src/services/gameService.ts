@@ -1,5 +1,5 @@
 import { API_BASE_URL } from '../constants/config';
-import type { GameYData, HistoryGameRecord } from '../types/game';
+import type { GameYData } from '../types/game';
 
 export const gameService = {
   // Obtener dificultades
