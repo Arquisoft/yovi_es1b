@@ -1,5 +1,3 @@
-// Para manejar el motor del juego: tablero, movimientos, ganador...
-
 import { useState } from 'react';
 import { gameService } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
@@ -9,15 +7,11 @@ export const useGameLogic = (username: string) => {
   const [boardData, setBoardData] = useState<GameYData | null>(null);
   const [winner, setWinner] = useState<number | null>(null);
 
-  // Función para procesar un movimiento (humano o bot)
-  const processMove = async (cellIndex: number, difficulty: string) => {
-    const data = await gameService.makeMove(cellIndex, username, difficulty, boardData?.size);
-
+  // Función interna para aplicar el parche visual y actualizar estado
+  const updateBoardState = (data: any, cellIndex: number) => {
     if (data.responseFromRust) {
       const serverBoard = data.responseFromRust as GameYData;
       const boardSize = serverBoard.size || 5;
-      
-      // Aplicamos el parche visual para que la ficha aparezca al instante
       const serverFlatLayout = serverBoard.layout.replaceAll('/', '');
       const shouldPatch = cellIndex >= 0 && serverFlatLayout[cellIndex] === '.';
 
@@ -31,6 +25,37 @@ export const useGameLogic = (username: string) => {
     return data;
   };
 
+  // Movimiento del Jugador
+  const executeHumanMove = async (index: number, difficulty: string, stopTimer: () => void, startTimer: (d: string) => void) => {
+    stopTimer();
+    const data = await gameService.makeMove(index, username, difficulty, boardData?.size);
+    const result = updateBoardState(data, index);
+    
+    if (result.winner === null) {
+      setTimeout(() => startTimer(difficulty), 300);
+    }
+    return result;
+  };
+
+  // Movimiento Automático (Bot/Tiempo agotado)
+  const executeAutoMove = async (difficulty: string, startTimer: (d: string) => void) => {
+    if (!boardData || winner !== null) return;
+
+    const flat = boardData.layout.replaceAll('/', '');
+    const emptyCells = [...flat].map((c, i) => (c === '.' ? i : -1)).filter((i) => i !== -1);
+    
+    if (emptyCells.length === 0) return;
+    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
+    const data = await gameService.makeMove(randomIndex, username, difficulty, boardData?.size);
+    const result = updateBoardState(data, randomIndex);
+
+    if (result.winner === null) {
+      startTimer(difficulty);
+    }
+    return result;
+  };
+
   const resetGame = async (dimension: number, difficulty: string) => {
     const board = await gameService.resetBoard(dimension, difficulty, username);
     setBoardData(board);
@@ -39,15 +64,9 @@ export const useGameLogic = (username: string) => {
   };
 
   const surrender = async (difficulty: string) => {
-    try {
-      await gameService.surrender(username, difficulty, boardData?.size);
-      setWinner(1); // El bot gana automáticamente
-      return true;
-    } catch (error) {
-      console.error("Error al rendirse:", error);
-      return false;
-    }
+    await gameService.surrender(username, difficulty, boardData?.size);
+    setWinner(1);
   };
 
-  return { boardData, setBoardData, winner, setWinner, processMove, resetGame, surrender   };
+  return { boardData, winner, executeHumanMove, executeAutoMove, resetGame, surrender };
 };
