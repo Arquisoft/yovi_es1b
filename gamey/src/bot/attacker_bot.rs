@@ -70,16 +70,26 @@ impl YBot for AttackerBot {
 
             let connectivity_bonus = self.check_connectivity_bonus(coords, board, my_id);
 
-            // INTELIGENCIA DINÁMICA APLICADA
+            // INTELIGENCIA DINÁMICA APLICADA 
+            // Si el potencial del oponente es masivo, el multiplicador DEBE superar al 10.0 de mi propio ataque.
             let opp_threat_level = if opp_p > 2000.0 {
-                5.0
-            } else if opp_p > 500.0 {
-                2.0
+                25.0 // EMERGENCIA: Abandona el ataque, bloquea la red enemiga a toda costa.
+            } else if opp_p > 800.0 {
+                12.0 // PELIGRO ALTO: Prioriza molestar al oponente un poco más que tu propio avance.
+            } else if opp_p > 300.0 {
+                5.0  // MEDIO: Mantén un ojo en él, pero sigue atacando (5.0 < 10.0).
             } else {
-                0.2
+                0.5  // IGNORAR: El oponente no va a ningún lado.
             };
 
-            let total_score = (my_p * 10.0) + (opp_p * opp_threat_level) + centrality_bonus + connectivity_bonus;
+            // Ajustamos el peso del centro. En 12x12, el centro pierde valor rápido a medida que el tablero se llena.
+            let adjusted_centrality = if board.available_cells().len() > (size * size / 2) as usize {
+                centrality_bonus * 5.0 // Muy importante al principio
+            } else {
+                centrality_bonus // Irrelevante al final
+            };
+
+            let total_score = (my_p * 10.0) + (opp_p * opp_threat_level) + adjusted_centrality + connectivity_bonus;
 
             if total_score > best_score {
                 best_score = total_score;
@@ -132,7 +142,7 @@ impl AttackerBot {
                     _ => 100, 
                 };
                 let new_dist = dists[curr as usize] + weight;
-                if new_dist < dists[n_idx as usize] && new_dist < 20 {
+                if new_dist < dists[n_idx as usize] && new_dist < 50 {
                     dists[n_idx as usize] = new_dist;
                     queue.push_back(n_idx);
                 }
@@ -143,12 +153,17 @@ impl AttackerBot {
 
     fn get_exponential_potential(&self, coords: Coordinates, dists: &HashMap<u32, Vec<i32>>, size: u32) -> f32 {
         let idx = coords.to_index(size) as usize;
-        let mut score = 0.0;
-        for dist_vec in dists.values() {
-            let d = dist_vec[idx] as f32;
-            score += 1000.0 / (d * d + 1.0);
-        }
-        score
+        
+        // Obtenemos las tres distancias a los lados para esta celda
+        let d1 = dists.get(&0).unwrap()[idx] as f32;
+        let d2 = dists.get(&1).unwrap()[idx] as f32;
+        let d3 = dists.get(&2).unwrap()[idx] as f32;
+
+        // Suma de los cuadrados de las distancias
+        let sum_of_squares = (d1 * d1) + (d2 * d2) + (d3 * d3);
+        
+        // Esta fórmula premia el equilibrio (el centro) y castiga las esquinas aisladas
+        50000.0 / (sum_of_squares + 1.0)
     }
 
     fn dist_to_center(&self, coords: Coordinates, size: u32) -> f32 {
@@ -161,17 +176,16 @@ impl AttackerBot {
 
     fn check_connectivity_bonus(&self, coords: Coordinates, board: &GameY, my_id: PlayerId) -> f32 {
         let mut unique_neighbors = HashSet::new();
-        
         for n in board.get_neighbors(&coords) {
             if board.get_player_at(n) == Some(my_id) {
                 unique_neighbors.insert(n.to_index(board.board_size())); 
             }
         }
-
         match unique_neighbors.len() {
-            0 => 0.0,
-            1 => 15.0, 
-            _ => 40.0, 
+            0 => -50.0,   // Ligeramente malo poner fichas sueltas
+            1 => 150.0,   // Bueno para extender líneas
+            2 => 300.0,   // Muy bueno para crear nodos fuertes
+            _ => 500.0,
         }
     }
 }
