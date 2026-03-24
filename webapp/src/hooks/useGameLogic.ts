@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { gameService } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
-import type { GameYData, DifficultyChoice } from '../types/game';
+import type { GameYData } from '../types/game';
 
 export const useGameLogic = (username: string) => {
   const [boardData, setBoardData] = useState<GameYData | null>(null);
