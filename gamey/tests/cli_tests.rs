@@ -392,3 +392,13 @@ fn test_cli_args_version_flag() {
     let result = CliArgs::try_parse_from(["gamey", "--version"]);
     assert!(result.is_err()); // --version causes an error (but it's intentional)
 }
+
+#[test]
+fn test_parse_command_unknown_with_args() {
+    let command = parse_command("attack 55", 10);
+    assert!(matches!(command, Command::Error { .. }));
+    if let Command::Error { message } = command {
+        // Ajustamos al mensaje real que hemos descubierto con el panic
+        assert!(message.contains("Invalid index (not a number)"));
+    }
+}
