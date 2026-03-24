@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 // Estilos y assets
 import './css/App.css'
@@ -12,735 +12,197 @@ import RegisterScreen from './screens/RegisterScreen';
 import LoginScreen from './screens/LoginScreen';
 import GameScreen from './screens/GameScreen';
 
-// URL del backend (se inyecta desde docker-compose o se usa localhost por defecto)
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+// Hooks, Servicios y Utils
+import { useGameTimer } from './hooks/useGameTimer';
+import { useGameLogic } from './hooks/useGameLogic';
+import { gameService } from './services/gameService';
+import { getBoardDimensionFromSizeChoice } from './utils/boardUtils';
+import { DIFFICULTY_TRANSLATIONS, TURN_TIME_LIMIT } from './constants/config';
 
-// Tiempo límite en segundos según dificultad (Easy=60s, Medium=30s, Hard=15s)
-const TURN_TIME_LIMIT: Record<string, number> = {
-  Easy:   60,
-  Medium: 30,
-  Hard:   15,
-};
+// Tipos
+import type { Screen, DifficultyChoice, SizeChoice, HistoryGameRecord } from './types/game';
 
-// Definición de tipos
-interface GameYData {
-  size: number;
-  turn: number;
-  players: string[];
-  layout: string;
-}
-
-interface HistoryGameRecord {
-  _id?: { $oid: string };
-  date: string;
-  opponent: string;
-  board_size: number;
-  difficulty: string;
-  result: string;
-}
-
-type Screen = 'home' | 'register' | 'login' | 'game';
-type DifficultyChoice = string; // Ahora es string dinámico
-type SizeChoice = 'Tamaño 6x6x6' | 'Tamaño 9x9x9' | 'Tamaño 12x12x12';
-
-
-// Funciones de utilidad
-
-/**
- * Convierte el texto del boton en un numero
- * Ej: "Tamaño 6x6x6" => 6
- */
-const getBoardDimensionFromSizeChoice = (choice: SizeChoice | null): number | null => {
-  if (!choice) return null;
-  if (choice.includes('6x6x6')) return 6;
-  if (choice.includes('9x9x9')) return 9;
-  if (choice.includes('12x12x12')) return 12;
-  return null;
-};
-
-/**
- * Dibuja una ficha en el string del tablero.
- * El tablero viene de rust como una linea de texto. Esta función busca el indice 
- * que se ha pulsado y pone una 'B' azul para mostrar el movimiento.
- * @param layout 
- * @param size 
- * @param index 
- * @param value 
- * @returns 
- */
-const patchTriangularLayoutCell = (
-  layout: string,
-  size: number,
-  index: number,
-  value: 'B' | 'R'
-): string => {
-  if (!Number.isFinite(size) || size <= 0) return layout;
-  const totalCells = (size * (size + 1)) / 2;
-  if (index < 0 || index >= totalCells) return layout;
-
-  const flat = layout.replaceAll('/', '').padEnd(totalCells, '.').slice(0, totalCells).split('');
-  flat[index] = value;
-
-  const rows: string[] = [];
-  let cursor = 0;
-  // Reconstruye el layout con filas triangulares: 1,2,3...N celdas.
-  for (let rowLen = 1; rowLen <= size; rowLen += 1) {
-    rows.push(flat.slice(cursor, cursor + rowLen).join(''));
-    cursor += rowLen;
-  }
-  return rows.join('/');
-};
-
-
+// Componentes UI (Modales)
+import { HistoryModal } from './components/modals/HistoryModal';
+import { SelectionModals } from './components/modals/SelectionModals';
+import { ResultModal } from './components/modals/ResultModal';
 
 function App() {
-  // Estados (la memoria de App)
+  // --- ESTADOS ---
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
   const [username, setUsername] = useState('');
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home'); // Router interno de pantallas
-  const [boardData, setBoardData] = useState<GameYData | null>(null);
-  const [winner, setWinner] = useState<number | null>(null);
+  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>(null);
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
-  const [showResultModal, setShowResultModal] = useState(false);
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
-
-  // Para consultar el historial
+  const [showResultModal, setShowResultModal] = useState(false);
+  // Historial
   const [showHistory, setShowHistory] = useState(false);
-  const [historyData, setHistoryData] = useState<any[]>([]);
+  const [historyData, setHistoryData] = useState<HistoryGameRecord[]>([]);
   const [historyFilter, setHistoryFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  // --- HOOKS PERSONALIZADOS ---
+  const { boardData, winner, processMove, resetGame, surrender } = useGameLogic(username);
+  const { timeLeft: turnTimeLeft, isVisible: timerVisible, startTimer, stopTimer, setIsVisible: setTimerVisible 
+  } = useGameTimer(() => triggerAutoMove());
 
-  
-
-  // Temporizador de turno
-  const [turnTimeLeft, setTurnTimeLeft] = useState<number | null>(null);
-  const [timerVisible, setTimerVisible] = useState(false);
-  const turnTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const autoMoveInProgressRef = useRef(false);
-
-  // Refs para que el auto-movimiento siempre acceda a los valores más recientes
-  const boardDataRef = useRef<GameYData | null>(null);
-  const winnerRef = useRef<number | null>(null);
-  const difficultyRef = useRef<DifficultyChoice | null>(null);
-  const usernameRef = useRef<string>('');
-
-  // Sincronizar refs con el estado
+  // --- EFECTOS ---
   useEffect(() => {
-    boardDataRef.current = boardData;
-  }, [boardData]);
-  useEffect(() => {
-    winnerRef.current = winner;
-  }, [winner]);
-  useEffect(() => {
-    difficultyRef.current = difficultyChoice;
-  }, [difficultyChoice]);
-  useEffect(() => {
-    usernameRef.current = username;
-  }, [username]);
-
-  /** Detiene el temporizador actual sin disparar auto-movimiento */
-  const stopTurnTimer = () => {
-    if (turnTimerRef.current) {
-      clearInterval(turnTimerRef.current);
-      turnTimerRef.current = null;
-    }
-    //setTurnTimeLeft(null);
-  };
-
-  /** Arranca el temporizador para el turno del jugador humano */
-  const startTurnTimer = (difficulty: string) => {
-    stopTurnTimer();
-    const limit = TURN_TIME_LIMIT[difficulty] ?? 60;
-    setTurnTimeLeft(limit);
-    setTimerVisible(true);  // ← mostrar recuadro
-
-    turnTimerRef.current = setInterval(() => {
-      setTurnTimeLeft(prev => {
-        if (prev === null) return null;
-        if (prev <= 1) {
-          clearInterval(turnTimerRef.current!);
-          turnTimerRef.current = null;
-          triggerAutoMove();
-          return 0;  // ← mostrar 0 en vez de null para no ocultar el recuadro
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  /** Elige una celda vacía aleatoria y la juega en nombre del jugador */
-  const triggerAutoMove = async () => {
-    if (autoMoveInProgressRef.current) return;
-    if (winnerRef.current !== null) return;
-
-    const board = boardDataRef.current;
-    if (!board) return;
-
-    // Obtener celdas vacías del layout plano
-    const flat = board.layout.replaceAll('/', '');
-    const emptyCells: number[] = [];
-    for (let i = 0; i < flat.length; i++) {
-      if (flat[i] === '.') emptyCells.push(i);
-    }
-    if (emptyCells.length === 0) return;
-
-    // Elegir una celda aleatoria
-    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-
-    autoMoveInProgressRef.current = true;
-    setConnectionStatus('⏱️ ¡Tiempo agotado! Movimiento automático...');
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/move`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          cellIndex: randomIndex,
-          username: usernameRef.current,
-          difficulty: difficultyRef.current,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.responseFromRust) {
-        const serverBoard = data.responseFromRust as GameYData;
-        setBoardData(serverBoard);
-        setWinner(data.winner);
-
-        if (data.winner !== null) {
-          setShowResultModal(true);
-          setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
-        } else {
-          setConnectionStatus('Error en movimiento automático');
-          autoMoveInProgressRef.current = false;  // ← añadir esta línea
-          if (difficultyRef.current) setTimeout(() => startTurnTimer(difficultyRef.current!), 300);
-        }
-      }
-    } catch (error) {
-      setConnectionStatus('Error en movimiento automático');
-      if (difficultyRef.current) startTurnTimer(difficultyRef.current);
-    } finally {
-      //autoMoveInProgressRef.current = false;
-    }
-  };
-
-  // Efecto para que la pantalla siempre empiece arriba al cambiar de menu
-  useEffect(() => {
-    window.scrollTo({top: 0, left: 0, behavior: 'auto'});
-  }, [currentScreen]);
-
-  useEffect(() => {
-    // Cargar dificultades disponibles al iniciar
-    fetch(`${API_BASE_URL}/difficulties`)
-        .then(res => res.json())
-        .then(data => setAvailableDifficulties(data))
-        .catch(err => console.error('Error fetching difficulties:', err));
+    gameService.getDifficulties()
+      .then(setAvailableDifficulties)
+      .catch(err => console.error('Error cargando dificultades:', err));
   }, []);
 
-  const requestResetBoard = async (dimension: number | null, difficulty?: string): Promise<GameYData | null> => {
-    console.log("Resetting board (neutral action)"); // DEBUG
-    // FIX: Ya no enviamos username porque resetear no debe contar como derrota
-    const response = await fetch(`${API_BASE_URL}/reset`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({size: dimension, difficulty: difficulty, username: username}),
-    });
+  // --- FUNCIONES DE LÓGICA ---
 
-    if (!response.ok) {
-      throw new Error(`Reset failed with status ${response.status}`);
-    }
+  const triggerAutoMove = async () => {
+    if (!boardData || winner !== null) return;
+    const flat = boardData.layout.replaceAll('/', '');
+    const emptyCells = [...flat].map((c, i) => c === '.' ? i : -1).filter(i => i !== -1);
+    
+    if (emptyCells.length === 0) return;
+    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
 
-    const data = await response.json();
-    return data.responseFromRust ?? data.board ?? data;
-  };
-
-  // Helper para reiniciar el estado del juego (UI) cuando se recibe un nuevo tablero
-  const resetGameState = (board: GameYData | null, message: string) => {
-    if (board) {
-      setBoardData(board);
-      setWinner(null);
-      setShowResultModal(false);
-      setConnectionStatus(message);
+    setConnectionStatus('⏱️ Movimiento automático...');
+    try {
+      const data = await processMove(randomIndex, difficultyChoice!);
+      if (data.winner !== null) setShowResultModal(true);
+      else startTimer(difficultyChoice!);
+    } catch (error) {
+      setConnectionStatus('Error en movimiento automático');
     }
   };
 
-  /**
-   * Configura todo para empezar a jugar.
-   * Se establece por defecto:
-   * - dificultad fácil
-   * - tamaño 6x6x6
-   * @param playerName
-   * @param options
-   */
-  const startGameWithUser = async (
-      playerName: string,
-      options?: { dimension?: number | null; resetChoices?: boolean }
-  ) => {
+  const handleCellClick = async (index: number) => {
+    if (winner !== null) return;
+    stopTimer();
+    setConnectionStatus(`Moviendo...`);
+    try {
+      const data = await processMove(index, difficultyChoice!);
+      if (data.winner !== null) {
+        setTimerVisible(false);
+        setShowResultModal(true);
+      } else {
+        setTimeout(() => startTimer(difficultyChoice!), 300);
+      }
+    } catch (error) {
+      startTimer(difficultyChoice!);
+    }
+  };
 
+  const startGameWithUser = async (playerName: string, options?: { dimension?: number | null; resetChoices?: boolean }) => {
     if (!playerName.trim()) return;
-    const name = playerName.trim();
-    setUsername(name);
+    setUsername(playerName.trim());
 
-    // Permite iniciar partida forzando tamaño (desde Game) o limpiando selecciones (desde Home/Login).
-    const requestedDimension = options?.dimension ?? null;
-    const shouldResetChoices = options?.resetChoices ?? true;
+    if (options?.resetChoices ?? true) {
+      setDifficultyChoice('Easy');
+      setSizeChoice('Tamaño 6x6x6');
+    }
 
     try {
-      let targetDifficulty = difficultyChoice;
-
-      // SOLO reseteamos a "Fácil/5x5" si venimos desde el Login o Inicio
-      // Si venimos del menú de "Cambiar Tamaño", mantenemos lo que había
-      // Si venimos de Login/Home (shouldResetChoices=true), forzamos "Easy" por defecto
-      if (shouldResetChoices) {
-        targetDifficulty = 'Easy';
-        setDifficultyChoice(targetDifficulty);
-        setSizeChoice('Tamaño 6x6x6');
-      }
-
-      // Aseguramos que haya una dificultad seleccionada (fallback a Easy)
-      const finalDiff = targetDifficulty || 'Easy';
-
-      const board = await requestResetBoard(requestedDimension ?? 6, finalDiff);
-      setBoardData(board);
-
-      setShowResultModal(false);
-      setWinner(null);
+      const dim = options?.dimension ?? 6;
+      await resetGame(dim, difficultyChoice || 'Easy');
       setCurrentScreen('game');
       setConnectionStatus('¡Partida lista!');
     } catch (error) {
-      console.error('Error starting the game:', error);
       setConnectionStatus('Error al conectar con el servidor.');
-      throw error;
     }
-    
   };
 
-  const handleStart = async () => {
-    await startGameWithUser(username);
-  };
-        
-  /**
-   * Corazon del juego.
-   * Cuando el usuario pulsa una celda, se envia al backend para que actualice
-   * el tablero y responda con el nuevo estado de la partida.
-   */
-  const handleCellClick = async (index: number) => {
-    if (winner !== null) return;
-
-    // Detener el temporizador mientras se procesa el movimiento
-    stopTurnTimer();
-
-    setConnectionStatus(`Moviendo a la posicion ${index}...`);
+  const fetchHistory = async (page = 1, filter = historyFilter) => {
+    if (!username) return;
     try {
-      console.log("Sending move for user:", username); // DEBUG
-      // Envia el movimiento al backend para actualizar tablero
-      const response = await fetch(`${API_BASE_URL}/move`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          cellIndex: index,
-          username: username, 
-          difficulty: difficultyChoice,
-          boardSize: boardData?.size
-        }),
-      });
+      const result = await gameService.getHistory(username, page, filter);
+      setHistoryData(result.data || []);
+      setTotalPages(result.total_pages || 1);
+      setCurrentPage(result.page || 1);
+      setShowHistory(true);
+    } catch (error) {
+      console.error('Error historial:', error);
+    }
+  };
 
-      const data = await response.json();
+  // --- RENDERIZADO DE PANTALLAS ---
+  const renderScreen = () => {
+    switch (currentScreen) {
+      case 'home':
+        return <HomeScreen username={username} onUsernameChange={setUsername} onStart={() => startGameWithUser(username)} onGoToRegister={() => setCurrentScreen('register')} onGoToLogin={() => setCurrentScreen('login')} />;
+      case 'game':
+        // Mapeamos el valor del estado (Easy/Medium/Hard) al que espera el componente (facil/medio/dificil)
+        const displayDifficulty = difficultyChoice ? DIFFICULTY_TRANSLATIONS[difficultyChoice] : null;
 
-      if (data.responseFromRust) {
-        const serverBoard = data.responseFromRust as GameYData;
-        const chosenDimension = getBoardDimensionFromSizeChoice(sizeChoice);
-        const boardSize =
-            serverBoard?.size && Number.isFinite(serverBoard.size) && serverBoard.size > 0
-                ? serverBoard.size
-                : (chosenDimension ?? 5);
-        const serverFlatLayout = (serverBoard?.layout ?? '').replaceAll('/', '');
-        const shouldPatchClickedCell =
-            index >= 0 &&
-            index < (boardSize * (boardSize + 1)) / 2 &&
-            serverFlatLayout[index] === '.';
+        return (
+          <GameScreen 
+            // --- DATOS (Las que te faltaban) ---
+            username={username}
+            boardData={boardData}
+            winner={winner}
+            connectionStatus={connectionStatus}
+            
+            // --- CONFIGURACIÓN ---
+            difficultyChoice={displayDifficulty as any} 
+            selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
+            sizeLabel={sizeChoice}
 
-        setBoardData(
-            shouldPatchClickedCell
-                ? {
-                  ...serverBoard,
-                  size: boardSize,
-                  layout: patchTriangularLayoutCell(serverBoard.layout ?? '', boardSize, index, 'B'),
-                }
-                : serverBoard
+            // --- TIEMPOS ---
+            turnTimeLeft={turnTimeLeft}
+            timerVisible={timerVisible}
+            turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
+
+            // --- FUNCIONES (Acciones) ---
+            onCellClick={handleCellClick}
+            onFetchHistory={() => fetchHistory()}
+            onExit={() => { stopTimer(); setCurrentScreen('home'); }}
+            onChangeDifficulty={() => setDifficultyChoice(null)}
+            onChangeSize={() => setSizeChoice(null)}
+            onResetGame={() => resetGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy')}
+            
+            // --- RENDICIÓN (Llamando al hook) ---
+            onEndGame={async () => {
+              stopTimer();
+              setTimerVisible(false);
+              const success = await surrender(difficultyChoice!);
+              if (success) {
+                setConnectionStatus('Has perdido (rendición)');
+                setShowResultModal(true);
+              }
+            }}
+          />
         );
-        setWinner(data.winner);
-
-        if (data.winner !== null) {
-          setTimerVisible(false);  // ← ocultar al terminar partida
-          setShowResultModal(true);
-          setConnectionStatus(data.winner === 0 ? 'Has ganado!' : 'Ha ganado el bot!');
-        } else {
-          setConnectionStatus('Movimiento realizado!');
-          // El bot ya respondió: reiniciar temporizador para el siguiente turno del jugador
-          if (difficultyChoice) setTimeout(() => startTurnTimer(difficultyChoice), 300);
-        }
-      }
-    } catch (error) {
-      setConnectionStatus('Error realizando el movimiento');
-      // Reanudar temporizador aunque haya error
-      if (difficultyChoice) startTurnTimer(difficultyChoice);
-    }
-  }
-
-
-  const handleResetFromGame = async () => {
-    const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
-    // Al reiniciar desde el juego, mantenemos la dificultad actual
-    if (difficultyChoice) {
-      const board = await requestResetBoard(selectedDimension, difficultyChoice);
-      resetGameState(board, 'Partida reiniciada');
-    } else {
-      await startGameWithUser(username, {dimension: selectedDimension, resetChoices: false});
+      case 'register':
+        return <RegisterScreen onBack={() => setCurrentScreen('home')} onCreateAccount={startGameWithUser} />;
+      case 'login':
+        return <LoginScreen onBack={() => setCurrentScreen('home')} onLogin={startGameWithUser} />;
+      default:
+        return null;
     }
   };
 
-  // NEW: Función para manejar la rendición explícita
-  const handleSurrender = async () => {
-    try {
-      await fetch(`${API_BASE_URL}/surrender`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({
-          username: username,
-          difficulty: difficultyChoice,
-          boardSize: boardData?.size
-        }),
-      });
-    } catch (error) {
-      console.error("Error surrendering:", error);
-    }
-  };
+  return (
+    <div className="App">
+      <video className="menu-video-bg" autoPlay loop muted playsInline><source src={menuVideo} type="video/mp4"/></video>
+      <div className="menu-video-overlay"/>
 
-  const handleEndFromGame = async () => {
-    // Parar el temporizador al rendirse1
-    stopTurnTimer();
-    setTimerVisible(false);  // ← ocultar al rendirse
-    // Primero registramos la rendición en el backend
-    await handleSurrender();
+      {renderScreen()}
 
-    // Luego actualizamos la UI
-    setWinner(1);
-    setShowResultModal(true);
-    setConnectionStatus('Has perdido!');
-  };
+      <SelectionModals 
+        currentScreen={currentScreen} difficultyChoice={difficultyChoice} sizeChoice={sizeChoice} 
+        availableDifficulties={availableDifficulties}
+        onDifficultySelect={(d) => { setDifficultyChoice(d); resetGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, d); }}
+        onSizeSelect={(s) => { setSizeChoice(s); resetGame(getBoardDimensionFromSizeChoice(s)!, difficultyChoice || 'Easy'); }}
+      />
 
-  const handleExitFromGame = () => {
-    stopTurnTimer();
-    setTimerVisible(false);  // ← ocultar al salir
-    setShowResultModal(false);
-    setCurrentScreen('home');
-  };
+      <ResultModal isOpen={showResultModal} winner={winner} onClose={() => setShowResultModal(false)} />
 
-
-  /**
-   * Logica para cargar el historial desde el servidor1
-   */
-
-
-
- const fetchHistory = async (pageToFetch = 1, filterParam = historyFilter) => {
-  if (!username) {
-    setConnectionStatus('Debes estar identificado para ver el historial.');
-    return;
-  }
-  const validPage = typeof pageToFetch === 'number' ? pageToFetch : 1;
-  
-  try {
-    let url = `${API_BASE_URL}/history?username=${username}&page=${validPage}&limit=5`;
-    if (filterParam) {
-      url += `&result=${encodeURIComponent(filterParam)}`;
-    }
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch history: ${response.statusText}`);
-    }
-    const result = await response.json();
-    
-   
-    setHistoryData(result.data || []); 
-    setTotalPages(result.total_pages || 1);
-    setCurrentPage(result.page || 1);
-    
-    setShowHistory(true);
-  } catch (error) {
-    console.error('Error fetching history:', error);
-  }
+      <HistoryModal 
+        isOpen={showHistory} onClose={() => setShowHistory(false)} data={historyData}
+        currentPage={currentPage} totalPages={totalPages} currentFilter={historyFilter}
+        onPageChange={fetchHistory}
+        onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
+      />
+    </div>
+  );
 }
-const handleFilterChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const newFilter = event.target.value;
-  setHistoryFilter(newFilter); // Guardas el filtro seleccionado
-  fetchHistory(1, newFilter);  // Fuerza la búsqueda en la página 1 con el nuevo filtro
-};
- 
-
-
-    // Renderizado de pantallas
-
-    //Permite ir cambiando entre pantallas, randerizando la vista
-    const renderScreen = () => {
-      switch (currentScreen) {
-        case 'home':
-          // CASE HOME: pantalla inicial con accesos a registro/login y quick access
-          return (
-              <HomeScreen
-                  username={username}
-                  onUsernameChange={setUsername}
-                  onStart={handleStart}
-                  onGoToRegister={() => setCurrentScreen('register')}
-                  onGoToLogin={() => setCurrentScreen('login')}
-              />
-          );
-
-        case 'game':
-          // CASE GAME: pantalla del tablero y estado de la partida en curso
-          return (
-              <GameScreen
-                  username={username}
-                  difficultyChoice={difficultyChoice as any}
-                  selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
-                  boardData={boardData}
-                  winner={winner}
-                  connectionStatus={connectionStatus}
-                  turnTimeLeft={turnTimeLeft}
-                  turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
-                  timerVisible={timerVisible}
-                  sizeLabel={sizeChoice}
-                  onCellClick={handleCellClick}
-                  onExit={handleExitFromGame}
-                  onChangeDifficulty={() => setDifficultyChoice(null)}
-                  onChangeSize={() => setSizeChoice(null)}
-                  onEndGame={handleEndFromGame}
-                  onResetGame={handleResetFromGame}
-                  onFetchHistory={fetchHistory}
-              />
-          );
-
-        case 'register':
-          // CASE REGISTER: formulario de registro; si valida, inicia partida y entra a game
-          return (
-              <RegisterScreen
-                  onBack={() => setCurrentScreen('home')}
-                  onCreateAccount={startGameWithUser}
-              />
-          );
-
-        case 'login':
-          // CASE LOGIN: formulario de inicio de sesion; si valida, inicia partida y entra a game
-          return (
-              <LoginScreen
-                  onBack={() => setCurrentScreen('home')}
-                  onLogin={startGameWithUser}
-              />
-          );
-
-        default:
-          // CASE DEFAULT: salvaguarda por si llega un valor de pantalla no contemplado
-          return null;
-      }
-    };
-
-    //Cambia la dificultad según elección
-    const handleDifficultyChoice = (choice: DifficultyChoice) => {
-      setDifficultyChoice(choice);
-      // Actualizar en el backend también si ya estamos en juego
-      const selectedDimension = getBoardDimensionFromSizeChoice(sizeChoice);
-      requestResetBoard(selectedDimension, choice).then(board => {
-        resetGameState(board, `Dificultad cambiada a ${choice}`);
-      });
-    };
-
-    //Cambia el tamaño de tablero según hemos elegido y deja un mensaje
-    const handleSecondaryChoice = (choice: SizeChoice) => {
-      setSizeChoice(choice);
-      const selectedDimension = getBoardDimensionFromSizeChoice(choice);
-      if (selectedDimension === null) return;
-
-      setConnectionStatus(`Cargando tablero ${selectedDimension}x${selectedDimension}...`);
-      requestResetBoard(selectedDimension, difficultyChoice || undefined)
-          .then((board) => {
-            if (board && board.layout) {
-              setBoardData(board);
-              setWinner(null);
-              setConnectionStatus(`Tablero ${selectedDimension}x${selectedDimension} cargado`);
-            } else {
-              setConnectionStatus('No se recibio un tablero valido para el tamano elegido.');
-            }
-          })
-          .catch(() => {
-            setConnectionStatus('No se pudo cambiar el tamano del tablero.');
-          });
-    };
-
-    const handleCloseResultModal = () => {
-      setShowResultModal(false);
-    };
-
-    // Cierre de App
-    return (
-        <div className="App">
-          {/* Fondo de video global */}
-          <video
-              className="menu-video-bg"
-              autoPlay
-              loop
-              muted
-              playsInline
-              aria-hidden="true"
-          >
-            <source src={menuVideo} type="video/mp4"/>
-          </video>
-          <div className="menu-video-overlay"/>
-
-          {/* Renderiza la pantalla activa (home/register/login/game) */}
-          {renderScreen()}
-          {currentScreen === 'game' && difficultyChoice === null && (
-              <div className="modal-backdrop" role="dialog" aria-modal="true"
-                   aria-label="Seleccion de dificultad obligatoria">
-                <div className="modal-box">
-                  <h3>Con que dificultad quieres jugar?</h3>
-                  {availableDifficulties.length > 0 ? (
-                      availableDifficulties.map(diff => (
-                          <button key={diff} type="button" className="submit-button"
-                                  onClick={() => handleDifficultyChoice(diff)}>
-                            {diff}
-                          </button>
-                      ))
-                  ) : (
-                      <p>Cargando dificultades...</p>
-                  )}
-                </div>
-              </div>
-          )}
-
-          {currentScreen === 'game' && difficultyChoice !== null && sizeChoice === null && (
-              <div className="modal-backdrop" role="dialog" aria-modal="true"
-                   aria-label="Seleccion secundaria obligatoria">
-                <div className="modal-box">
-                  <h3>¿Con qué tamaño de tablero deseas jugar?</h3>
-                  <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 6x6x6')}>
-                    Tamaño 6x6x6
-                  </button>
-                  <button type="button" className="submit-button" onClick={() => handleSecondaryChoice('Tamaño 9x9x9')}>
-                    Tamaño 9x9x9
-                  </button>
-                  <button type="button" className="submit-button"
-                          onClick={() => handleSecondaryChoice('Tamaño 12x12x12')}>
-                    Tamaño 12x12x12
-                  </button>
-                </div>
-              </div>
-          )}
-
-          {currentScreen === 'game' && winner !== null && showResultModal && (
-              <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Resultado de la partida">
-                <div className="modal-box">
-                  <h3>{winner === 0 ? 'Has ganado' : 'Has perdido'}</h3>
-                  <div className="modal-actions">
-                    <button type="button" className="submit-button" onClick={handleCloseResultModal}>
-                      Aceptar
-                    </button>
-                  </div>
-                </div>
-              </div>
-          )}
-
-          {/* MODAL DE HISTORIAL: Se activa cuando showHistory es true */}
-          {showHistory && (
-              <div className="modal-backdrop" onClick={() => setShowHistory(false)}>
-                <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
-
-                  <h3>Historial de Partidas</h3>
-
-                  <div className="history-controls">
-                    <label htmlFor="result-filter">Filtrar por resultado: </label>
-                    <select 
-                      id="result-filter" 
-                      value={historyFilter || ''} 
-                      onChange={handleFilterChange}
-                      className="filter-select"
-                    >
-                      <option value="">Todas las partidas</option>
-                      <option value="Victoria">Victorias</option>
-                      <option value="Derrota">Derrotas</option>
-                    </select>
-                  </div>
-
-                  <div className="history-table-container">
-                    {historyData.length > 0 ? (
-                        <table className="history-table">
-                          <thead>
-                          <tr>
-                            <th>Fecha</th>
-                            <th>Rival</th>
-                            <th>Tamaño</th>
-                            <th>Dificultad</th>
-                            <th>Resultado</th>
-                          </tr>
-                          </thead>
-                          <tbody>
-                          {historyData.map((game: HistoryGameRecord, index: number) => (
-                              <tr key={game._id?.$oid || index}>
-                                <td>{new Date(game.date).toLocaleDateString()}</td>
-                                <td>{game.opponent}</td>
-                                <td>{game.board_size}x{game.board_size}</td>
-                                <td>{game.difficulty}</td>
-                                <td className={game.result === 'Victoria' ? 'text-win' : 'text-loss'}>
-                                  {game.result}
-                                </td>
-                              </tr>
-                          ))}
-                          </tbody>
-                        </table>
-                    ) : (
-                        <p>No hay partidas guardadas.</p>
-                    )}
-                  </div>
-
-                  
-                  {historyData.length > 0 && (
-                    <div className="history-pagination">
-                      <button 
-                        className="submit-button"
-                        onClick={() => fetchHistory(currentPage - 1)} 
-                        disabled={currentPage === 1}
-                      >
-                        Anterior
-                      </button>
-                      
-                      <span className="history-pagination-info">
-                        Página {currentPage} de {totalPages}
-                      </span>
-                      
-                      <button 
-                        className="submit-button"
-                        onClick={() => fetchHistory(currentPage + 1)} 
-                        disabled={currentPage === totalPages}                      
-                      >
-                        Siguiente
-                      </button>
-                    </div>
-                  )}
-
-                  <button className="submit-button" onClick={() => setShowHistory(false)}>
-                    Volver al Juego
-                  </button>
-                </div>
-              </div>
-          )}
-
-
-        </div>
-    );
-  }
 
 export default App;
