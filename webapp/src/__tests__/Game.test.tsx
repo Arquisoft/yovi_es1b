@@ -21,6 +21,9 @@ const baseProps = (overrides?: {
   selectedBoardDimension?: number | null
   boardData?: GameYData | null
   winner?: number | null
+  timerVisible?: boolean
+  turnTimeLeft?: number | null
+  turnTimeLimit?: number | null
 }) => ({
   username: 'Alice',
   difficultyChoice: overrides?.difficultyChoice ?? 'facil',
@@ -37,12 +40,12 @@ const baseProps = (overrides?: {
   connectionStatus: 'Partida iniciada!',
   difficulty: overrides?.difficultyChoice ?? 'facil',
   sizeLabel: 'Tamaño 6x6x6',
-  timerVisible: false,
+  timerVisible: overrides?.timerVisible ?? false,
+  turnTimeLeft: overrides?.turnTimeLeft ?? null,
+  turnTimeLimit: overrides?.turnTimeLimit ?? null,
   onFetchHistory: vi.fn(),
   onChangeDifficulty: vi.fn(),
   onChangeSize: vi.fn(),
-  turnTimeLeft: null,
-  turnTimeLimit: null,
   onCellClick: vi.fn(),
   onEndGame: vi.fn(),
   onResetGame: vi.fn(),
@@ -181,4 +184,155 @@ describe('Game UI', () => {
     expect(screen.getByText('R')).toBeInTheDocument()
   })
 })
+describe('Temporizador — renderizado en GameScreen', () => {
 
+  // ── Visibilidad ──────────────────────────────
+
+  test('no muestra el temporizador cuando timerVisible es false', () => {
+    render(<GameScreen {...baseProps({ timerVisible: false })} />)
+
+    expect(screen.queryByText(/tu turno/i)).not.toBeInTheDocument()
+  })
+
+  test('no muestra el temporizador cuando turnTimeLimit es null aunque timerVisible sea true', () => {
+    // Sin límite definido no hay barra que mostrar
+    render(<GameScreen {...baseProps({ timerVisible: true, turnTimeLeft: 30, turnTimeLimit: null })} />)
+
+    expect(screen.queryByText(/tu turno/i)).not.toBeInTheDocument()
+  })
+
+  test('no muestra el temporizador cuando la partida ha terminado (winner != null)', () => {
+    // Aunque timerVisible sea true, si hay ganador el timer no debe aparecer
+    render(
+        <GameScreen
+            {...baseProps({
+              timerVisible: true,
+              turnTimeLeft: 20,
+              turnTimeLimit: 60,
+              winner: 0,
+            })}
+        />
+    )
+
+    expect(screen.queryByText(/tu turno/i)).not.toBeInTheDocument()
+  })
+
+  // ── Valores mostrados ────────────────────────
+
+  test('muestra correctamente los segundos restantes', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 42, turnTimeLimit: 60 })}
+        />
+    )
+
+    expect(screen.getByText(/42s/i)).toBeInTheDocument()
+  })
+
+  test('muestra 0s cuando el tiempo se ha agotado', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 0, turnTimeLimit: 60 })}
+        />
+    )
+
+    expect(screen.getByText(/0s/i)).toBeInTheDocument()
+  })
+
+  // ── Estado de urgencia (≤ 5 segundos) ────────
+
+  test('aplica la clase de urgencia cuando quedan 5 segundos o menos', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 5, turnTimeLimit: 60 })}
+        />
+    )
+
+    // El span de segundos debe tener la clase "turn-timer-urgent"
+    const segundosEl = screen.getByText(/5s/i)
+    expect(segundosEl).toHaveClass('turn-timer-urgent')
+  })
+
+  test('aplica la clase de urgencia en la barra cuando quedan 3 segundos', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 3, turnTimeLimit: 60 })}
+        />
+    )
+
+    // El div de la barra debe tener la clase "turn-timer-bar-urgent"
+    const barra = document.querySelector('.turn-timer-bar')
+    expect(barra).toHaveClass('turn-timer-bar-urgent')
+  })
+
+  test('NO aplica la clase de urgencia cuando quedan más de 5 segundos', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 20, turnTimeLimit: 60 })}
+        />
+    )
+
+    const segundosEl = screen.getByText(/20s/i)
+    expect(segundosEl).not.toHaveClass('turn-timer-urgent')
+  })
+
+  // ── Anchura de la barra de progreso ──────────
+
+  test('la barra de progreso ocupa el 100% al inicio', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 60, turnTimeLimit: 60 })}
+        />
+    )
+
+    const barra = document.querySelector('.turn-timer-bar') as HTMLElement
+    expect(barra.style.width).toBe('100%')
+  })
+
+  test('la barra de progreso ocupa el 50% a mitad del tiempo', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 30, turnTimeLimit: 60 })}
+        />
+    )
+
+    const barra = document.querySelector('.turn-timer-bar') as HTMLElement
+    expect(barra.style.width).toBe('50%')
+  })
+
+  test('la barra de progreso ocupa el 0% cuando el tiempo se acaba', () => {
+    render(
+        <GameScreen
+            {...baseProps({ timerVisible: true, turnTimeLeft: 0, turnTimeLimit: 60 })}
+        />
+    )
+
+    const barra = document.querySelector('.turn-timer-bar') as HTMLElement
+    expect(barra.style.width).toBe('0%')
+  })
+
+  // ── Distintos límites de tiempo por dificultad ─
+
+  test.each([
+    { difficulty: 'facil',   turnTimeLimit: 60, turnTimeLeft: 45, expectedWidth: '75%' },
+    { difficulty: 'medio',   turnTimeLimit: 30, turnTimeLeft: 15, expectedWidth: '50%' },
+    { difficulty: 'dificil', turnTimeLimit: 15, turnTimeLeft: 3,  expectedWidth: '20%' },
+  ])(
+      'barra correcta para dificultad $difficulty con $turnTimeLeft/$turnTimeLimit segundos',
+      ({ difficulty, turnTimeLimit, turnTimeLeft, expectedWidth }) => {
+        render(
+            <GameScreen
+                {...baseProps({
+                  difficultyChoice: difficulty as Difficulty,
+                  timerVisible: true,
+                  turnTimeLeft,
+                  turnTimeLimit,
+                })}
+            />
+        )
+
+        const barra = document.querySelector('.turn-timer-bar') as HTMLElement
+        expect(barra.style.width).toBe(expectedWidth)
+      }
+  )
+})
