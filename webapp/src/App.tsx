@@ -43,7 +43,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   // --- HOOKS PERSONALIZADOS ---
-  const { boardData, winner, processMove, resetGame, setBoardData, surrender } = useGameLogic(username);
+  const { boardData, winner, processMove, resetGame, surrender } = useGameLogic(username);
   const { timeLeft: turnTimeLeft, isVisible: timerVisible, startTimer, stopTimer, setIsVisible: setTimerVisible 
   } = useGameTimer(() => triggerAutoMove());
 
