@@ -1,16 +1,17 @@
 ﻿import { useEffect, useRef } from 'react';
-import failedJson from '../assets/Failed.json';
-import logoutJson from '../assets/Logout.json';
-import historyJson from '../assets/History.json';
-import updownJson from '../assets/updown.json';
-import restartJson from '../assets/Restart.json';
-import difficultyJson from '../assets/Difficulty.json';
-import botonRojo from '../assets/BotonRojo.png';
-import dificultadImg from '../assets/Dificultad.png';
-import historialImg from '../assets/Historial.jpg';
-import reiniciarPartidaImg from '../assets/ReiniciarPartida.jpg';
-import salirMenuImg from '../assets/SalirMenu.jpg';
-import tamanoTableroImg from '../assets/TamañoTablero.png';
+import failedJson from '../assets/buttons/Failed.json';
+import logoutJson from '../assets/buttons/Logout.json';
+import historyJson from '../assets/buttons/History.json';
+import updownJson from '../assets/buttons/updown.json';
+import restartJson from '../assets/buttons/Restart.json';
+import difficultyJson from '../assets/buttons/Difficulty.json';
+import botonRojo from '../assets/buttons/BotonRojo.png';
+import dificultadImg from '../assets/buttons/Dificultad.png';
+import historialImg from '../assets/buttons/Historial.jpg';
+import reiniciarPartidaImg from '../assets/buttons/ReiniciarPartida.jpg';
+import salirMenuImg from '../assets/buttons/SalirMenu.jpg';
+import tamanoTableroImg from '../assets/buttons/TamañoTablero.png';
+import defaultAvatar from '../assets/icon/SinAvatar.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 
 interface GameYData {
@@ -22,6 +23,7 @@ interface GameYData {
 
 interface GameScreenProps {
   username: string;
+  playerIcon?: string | null;
   difficultyChoice: 'facil' | 'medio' | 'dificil' | null;
   selectedBoardDimension: number | null;
   boardData: GameYData | null;
@@ -42,6 +44,7 @@ interface GameScreenProps {
 
 function GameScreen({
   username,
+  playerIcon,
   difficultyChoice,
   selectedBoardDimension,
   boardData,
@@ -93,6 +96,7 @@ function GameScreen({
           : 'Sin seleccionar';
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
+  const safePlayerIcon = playerIcon && playerIcon.trim() ? playerIcon : defaultAvatar;
 
   const rawLayout = boardData?.layout ?? '';
   const expectedTotalCells = (boardDimension * (boardDimension + 1)) / 2;
@@ -171,8 +175,13 @@ function GameScreen({
         <div className="game-main-content">
           <div className="board-area">
             <div className="player-slot player-slot-left" aria-label="Jugador humano">
-              <div className="player-info" style={{ display: 'block' }}>
-                <p className="player-label player-label-blue" style={{ display: 'block', marginBottom: '8px' }}>Jugador: {username}</p>
+              <div className="player-info">
+                <div className="player-header-row">
+                  <div className="player-avatar-box">
+                    <img src={safePlayerIcon} alt={`Avatar de ${username}`} className="player-avatar-image" />
+                  </div>
+                  <p className="player-label player-label-blue">Jugador: {username}</p>
+                </div>
                 {timerVisible && turnTimeLimit !== null && winner === null && (
                   <div className="turn-timer-under" style={{ width: '100%', maxWidth: '16rem' }}>
                     <div className="turn-timer-header">
@@ -222,7 +231,14 @@ function GameScreen({
             </div>
 
             <div className="player-slot player-slot-right" aria-label="Jugador bot">
-              <p className="player-label player-label-red">{botName}</p>
+              <div className="player-info player-info-right">
+                <div className="player-header-row player-header-row-right">
+                  <p className="player-label player-label-red">{botName}</p>
+                  <div className="player-avatar-box">
+                    <img src={defaultAvatar} alt="Avatar del bot" className="player-avatar-image" />
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

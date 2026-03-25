@@ -173,6 +173,38 @@ body {
   gap: 0.5rem;
 }
 
+.player-info-right {
+  align-items: flex-end;
+}
+
+.player-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.player-header-row-right {
+  justify-content: flex-end;
+}
+
+.player-avatar-box {
+  width: 5rem;
+  height: 5rem;
+  padding: 0.2rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.45);
+}
+
+.player-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 0.55rem;
+}
+
 .game-controls {
   background: rgba(255, 255, 255, 0.88);
   border-radius: 0.5rem;

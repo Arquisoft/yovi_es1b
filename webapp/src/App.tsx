@@ -5,6 +5,7 @@ import './css/App.css'
 import './css/Log.css'
 import './css/Game.css'
 import menuVideo from './assets/background_video.mp4';
+import defaultAvatar from './assets/icon/SinAvatar.png';
 
 // Pantallas
 import HomeScreen from './screens/HomeScreen';
@@ -31,6 +32,7 @@ function App() {
   // --- ESTADOS ---
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
   const [username, setUsername] = useState('');
+  const [userIcon, setUserIcon] = useState<string>(defaultAvatar);
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>(null);
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
@@ -91,9 +93,14 @@ function App() {
     }
   };
 
-  const startGameWithUser = async (playerName: string, options?: { dimension?: number | null; resetChoices?: boolean }) => {
+  const startGameWithUser = async (
+    playerName: string,
+    options?: { dimension?: number | null; resetChoices?: boolean },
+    icon?: string | null
+  ) => {
     if (!playerName.trim()) return;
     setUsername(playerName.trim());
+    setUserIcon(icon && icon.trim() ? icon : defaultAvatar);
 
     if (options?.resetChoices ?? true) {
       setDifficultyChoice('Easy');
@@ -136,6 +143,7 @@ function App() {
           <GameScreen 
             // --- DATOS (Las que te faltaban) ---
             username={username}
+            playerIcon={userIcon}
             boardData={boardData}
             winner={winner}
             connectionStatus={connectionStatus}
@@ -171,9 +179,19 @@ function App() {
           />
         );
       case 'register':
-        return <RegisterScreen onBack={() => setCurrentScreen('home')} onCreateAccount={startGameWithUser} />;
+        return (
+          <RegisterScreen
+            onBack={() => setCurrentScreen('home')}
+            onCreateAccount={(name, icon) => startGameWithUser(name, undefined, icon)}
+          />
+        );
       case 'login':
-        return <LoginScreen onBack={() => setCurrentScreen('home')} onLogin={startGameWithUser} />;
+        return (
+          <LoginScreen
+            onBack={() => setCurrentScreen('home')}
+            onLogin={(name, icon) => startGameWithUser(name, undefined, icon)}
+          />
+        );
       default:
         return null;
     }
