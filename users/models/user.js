@@ -15,18 +15,9 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
-  birthDate: {
-    type: Date,
-    required: false
-  },
   country: {
     type: String,
     required: true
-  },
-  icon: {
-    type: String,
-    required: false,
-    default: ''
   },
   createdAt: { 
     type: Date, 

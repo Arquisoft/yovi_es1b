@@ -9,7 +9,7 @@ interface LoginData {
 
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
-  readonly onLogin: (username: string, icon?: string | null) => Promise<void> | void; // Intenta iniciar partida con ese usuario
+  readonly onLogin: (username: string) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
 function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
@@ -44,7 +44,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
       if (response.ok) {
         // El estado de partida se crea en el componente padre (App) usando este username.
-        await onLogin(formData.username.trim(), typeof data.icon === 'string' ? data.icon : null);
+        await onLogin(formData.username.trim());
       } else {
         setFormError(data.error || 'Error al iniciar sesion.');
       }

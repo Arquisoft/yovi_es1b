@@ -53,9 +53,7 @@ app.post('/createuser', async (req, res) => {
   const username = String(req.body.username || "");
   const password = String(req.body.password || "");
   const age = Number(req.body.age);
-  const birthDate = req.body.birthDate ? new Date(String(req.body.birthDate)) : null;
   const country = String(req.body.country || "");
-  const icon = String(req.body.icon || "");
   try {
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password are required" });
@@ -68,9 +66,7 @@ app.post('/createuser', async (req, res) => {
       username,
       password: hashedPassword,
       age,
-      birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : undefined,
-      country,
-      icon
+      country
     })
 
     // Save the new user to the database
@@ -105,8 +101,7 @@ app.post('/login', async (req, res) => {
       res.json({
         message: `Welcome back, ${username}!`,
         username: user.username,
-        score: user.score,
-        icon: user.icon
+        score: user.score
       });
     } else {
       res.status(401).json({ error: "Usuario o contraseña incorrecta" });
