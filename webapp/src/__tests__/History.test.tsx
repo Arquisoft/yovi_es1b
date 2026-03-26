@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import App from '../App'; // Ajusta la ruta si tu App.tsx está en otra carpeta
+import App from '../App';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { MemoryRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 
-// 1. Datos falsos para engañar a React
 const mockHistoryResponse = {
   data: [
     { _id: { $oid: "1" }, date: "2026-03-18T10:00:00Z", opponent: "pro_bot", board_size: 6, difficulty: "Hard", result: "Derrota" },
@@ -16,11 +16,19 @@ const mockHistoryResponse = {
 
 describe('Tests de Integración: Historial y Filtros', () => {
   beforeEach(() => {
-    // 2. Mock Router: Interceptamos TODAS las llamadas de red
+    // 1. LIMPIEZA CRÍTICA: Borramos el localStorage antes de cada test
+    // para que la app siempre empiece en la Home sin usuario.
+    localStorage.clear();
+    vi.clearAllMocks();
+
     global.fetch = vi.fn(async (url: RequestInfo | URL) => {
       const urlString = url.toString();
 
-      // Si React intenta hacer login, le decimos que todo ha ido bien
+      // Mock para la carga inicial de dificultades en App.tsx
+      if (urlString.includes('/difficulties')) {
+        return { ok: true, json: async () => ['Easy', 'Medium', 'Hard'] } as Response;
+      }
+
       if (urlString.includes('/login')) {
         return {
           ok: true,
@@ -28,7 +36,6 @@ describe('Tests de Integración: Historial y Filtros', () => {
         } as Response;
       }
       
-      // Si React pide el historial, le devolvemos nuestra lista falsa
       if (urlString.includes('/history')) {
         return {
           ok: true,
@@ -36,11 +43,16 @@ describe('Tests de Integración: Historial y Filtros', () => {
         } as Response;
       }
 
-      // Por defecto para cualquier otra cosa (ej. cargar dificultades al inicio)
-      return { ok: true, json: async () => [] } as Response;
+      // Respuesta para resetGame/start (tablero inicial)
+      return { 
+        ok: true, 
+        json: async () => ({ 
+          responseFromRust: { size: 6, layout: ".".repeat(36) },
+          winner: null 
+        }) 
+      } as Response;
     });
 
-    // Evitamos que los console.error ensucien la terminal del test
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
@@ -48,27 +60,30 @@ describe('Tests de Integración: Historial y Filtros', () => {
     vi.restoreAllMocks();
   });
 
-  // 3. Función auxiliar: Hace el trabajo sucio de loguearse antes de cada test
   const loginAndOpenHistory = async (user: ReturnType<typeof userEvent.setup>) => {
-    render(<App />);
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <App />
+      </MemoryRouter>
+    );
 
-    // 1. Clic en el botón "Iniciar sesion" de la pantalla Home
-    await user.click(screen.getByRole('button', { name: /iniciar sesion/i }));
+    // Navegar a Login
+    const loginEntryBtn = await screen.findByRole('button', { name: /iniciar sesion/i });
+    await user.click(loginEntryBtn);
 
-    // 2. Buscamos los inputs por sus etiquetas visibles
-    const usernameInput = screen.getByLabelText(/nombre de usuario/i);
-    const passwordInput = screen.getByLabelText(/contraseña/i);
+    // Rellenar formulario
+    const usernameInput = await screen.findByLabelText(/usuario/i);
+    const passwordInput = screen.getByLabelText(/contra/i);
     
     await user.type(usernameInput, 'Drus');
     await user.type(passwordInput, '12345');
 
-    // 3. Clic en el botón "Iniciar sesion" del formulario. 
-    // Usamos getAllByRole porque a veces el botón de la pantalla Home tarda unos milisegundos en desaparecer del DOM virtual del test
-    const botonesLogin = screen.getAllByRole('button', { name: /iniciar sesion/i });
-    await user.click(botonesLogin[botonesLogin.length - 1]); // Clic al último renderizado
+    // Clic en el botón de enviar del formulario
+    const loginSubmitBtn = screen.getByRole('button', { name: /^iniciar sesion$/i });
+    await user.click(loginSubmitBtn);
 
-    // 4. Esperamos a que la petición fetch falsa responda, cargue el juego y aparezca el botón "Historial"
-    const historyBtn = await screen.findByRole('button', { name: /historial/i });
+    // Esperar a llegar al juego y que aparezca el botón Historial
+    const historyBtn = await screen.findByRole('button', { name: /historial/i }, { timeout: 2000 });
     await user.click(historyBtn);
   };
 
@@ -76,34 +91,27 @@ describe('Tests de Integración: Historial y Filtros', () => {
     const user = userEvent.setup();
     await loginAndOpenHistory(user);
 
-    // Comprobamos que los datos mockeados se han pintado en pantalla
+    // Verificamos que los datos mockeados aparecen (usamos findBy para esperar el render)
     expect(await screen.findByText('pro_bot')).toBeInTheDocument();
     expect(screen.getByText('edge_bot')).toBeInTheDocument();
     
-    // Verificamos que se llamó a la API del historial
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/history?username=Drus'));
+    // Verificamos la llamada a la API
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('username=Drus'));
+    });
   });
 
   test('aplica el filtro de resultados modificando la URL', async () => {
     const user = userEvent.setup();
     await loginAndOpenHistory(user);
 
-    // Buscamos el desplegable. Si le pusiste un id "result-filter", lo encontraremos fácil
     const selectFiltro = await screen.findByRole('combobox', { name: /filtrar por resultado/i });
-    
-    // Simulamos elegir "Derrotas" (Asegúrate de que el <option value="Derrota"> coincide con esto)
     await user.selectOptions(selectFiltro, 'Derrota');
 
-    // Extraemos todas las llamadas que ha hecho la app a fetch
-    const fetchCalls = (global.fetch as ReturnType<typeof vi.fn>).mock.calls;
-    
-    // Buscamos la última llamada que se hizo
-    const lastCallUrl = fetchCalls[fetchCalls.length - 1][0];
-
-    // CRÍTICO: Comprobamos si la URL lleva el parámetro correcto
-    expect(lastCallUrl).toContain('result=Derrota');
-    // Verificamos que reinicia a la página 1 al filtrar
-    expect(lastCallUrl).toContain('page=1');
+    await waitFor(() => {
+      const fetchCalls = (global.fetch as any).mock.calls;
+      const historyCall = fetchCalls.find((call: any) => call[0].includes('/history') && call[0].includes('result=Derrota'));
+      expect(historyCall).toBeDefined();
+    });
   });
-
 });

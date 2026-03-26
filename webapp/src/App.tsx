@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
 
 // Estilos y assets
 import './css/App.css'
@@ -21,7 +22,7 @@ import { getBoardDimensionFromSizeChoice } from './utils/boardUtils';
 import { DIFFICULTY_TRANSLATIONS, TURN_TIME_LIMIT } from './constants/config';
 
 // Tipos
-import type { Screen, DifficultyChoice, SizeChoice, HistoryGameRecord } from './types/game';
+import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from './types/game';
 
 // Componentes UI (Modales)
 import { HistoryModal } from './components/modals/HistoryModal';
@@ -29,7 +30,10 @@ import { SelectionModals } from './components/modals/SelectionModals';
 import { ResultModal } from './components/modals/ResultModal';
 
 function App() {
-  // --- ESTADOS ---
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  // --- ESTADOS DE UI ---
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
   const [username, setUsername] = useState('');
   const [userIcon, setUserIcon] = useState<string>(defaultAvatar);
@@ -38,39 +42,58 @@ function App() {
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
-  // Historial
+
+  // --- PERSISTENCIA DE SESIÓN ---
+  const [username, setUsername] = useState<string>(() => {
+    return localStorage.getItem('yovi_user') || '';
+  });
+
+  // --- ESTADOS DE HISTORIAL ---
   const [showHistory, setShowHistory] = useState(false);
   const [historyData, setHistoryData] = useState<HistoryGameRecord[]>([]);
   const [historyFilter, setHistoryFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  // --- HOOKS PERSONALIZADOS ---
-  const { boardData, winner, processMove, resetGame, surrender } = useGameLogic(username);
-  const { timeLeft: turnTimeLeft, isVisible: timerVisible, startTimer, stopTimer, setIsVisible: setTimerVisible 
-  } = useGameTimer(() => triggerAutoMove());
+
+  // --- HOOKS DE LÓGICA CENTRALIZADA ---
+  const { 
+    boardData, 
+    winner, 
+    executeHumanMove, 
+    executeAutoMove, 
+    resetGame, 
+    surrender 
+  } = useGameLogic(username);
+  
+  const { 
+    timeLeft: turnTimeLeft, 
+    isVisible: timerVisible, 
+    startTimer, 
+    stopTimer, 
+    setIsVisible: setTimerVisible 
+  } = useGameTimer(() => handleAutoMove());
 
   // --- EFECTOS ---
+  
+  // Guardar usuario en el navegador para evitar pérdidas en F5
+  useEffect(() => {
+    localStorage.setItem('yovi_user', username);
+  }, [username]);
+
+  // Cargar dificultades al arrancar
   useEffect(() => {
     gameService.getDifficulties()
       .then(setAvailableDifficulties)
-      .catch(err => console.error('Error cargando dificultades:', err));
+      .catch(err => console.error('Error API:', err));
   }, []);
 
-  // --- FUNCIONES DE LÓGICA ---
+  // --- MANEJADORES DE ACCIONES (Delegando al Hook) ---
 
-  const triggerAutoMove = async () => {
-    if (!boardData || winner !== null) return;
-    const flat = boardData.layout.replaceAll('/', '');
-    const emptyCells = [...flat].map((c, i) => c === '.' ? i : -1).filter(i => i !== -1);
-    
-    if (emptyCells.length === 0) return;
-    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-
+  const handleAutoMove = async () => {
     setConnectionStatus('⏱️ Movimiento automático...');
     try {
-      const data = await processMove(randomIndex, difficultyChoice!);
-      if (data.winner !== null) setShowResultModal(true);
-      else startTimer(difficultyChoice!);
+      const data = await executeAutoMove(difficultyChoice!, startTimer);
+      if (data?.winner !== null) setShowResultModal(true);
     } catch (error) {
       setConnectionStatus('Error en movimiento automático');
     }
@@ -78,18 +101,15 @@ function App() {
 
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
-    stopTimer();
     setConnectionStatus(`Moviendo...`);
     try {
-      const data = await processMove(index, difficultyChoice!);
+      const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
         setTimerVisible(false);
         setShowResultModal(true);
-      } else {
-        setTimeout(() => startTimer(difficultyChoice!), 300);
       }
     } catch (error) {
-      startTimer(difficultyChoice!);
+      setConnectionStatus('Error en el movimiento');
     }
   };
 
@@ -102,16 +122,12 @@ function App() {
     setUsername(playerName.trim());
     setUserIcon(icon && icon.trim() ? icon : defaultAvatar);
 
-    if (options?.resetChoices ?? true) {
+    try {
       setDifficultyChoice('Easy');
       setSizeChoice('Tamaño 6x6x6');
-    }
-
-    try {
-      const dim = options?.dimension ?? 6;
-      await resetGame(dim, difficultyChoice || 'Easy');
-      setCurrentScreen('game');
+      await resetGame(6, 'Easy');
       setConnectionStatus('¡Partida lista!');
+      navigate('/game'); 
     } catch (error) {
       setConnectionStatus('Error al conectar con el servidor.');
     }
@@ -199,13 +215,70 @@ function App() {
 
   return (
     <div className="App">
-      <video className="menu-video-bg" autoPlay loop muted playsInline><source src={menuVideo} type="video/mp4"/></video>
+      {/* Fondo de video persistente */}
+      <video className="menu-video-bg" autoPlay loop muted playsInline>
+        <source src={menuVideo} type="video/mp4"/>
+      </video>
       <div className="menu-video-overlay"/>
 
-      {renderScreen()}
+      {/* RUTAS DE NAVEGACIÓN (SPA) */}
+      <Routes>
+        <Route path="/" element={
+          <HomeScreen 
+            username={username} 
+            onUsernameChange={setUsername} 
+            onStart={() => handleStartGame(username)} 
+            onGoToRegister={() => navigate('/register')} 
+            onGoToLogin={() => navigate('/login')} 
+          />
+        } />
 
+        <Route path="/register" element={
+          <RegisterScreen onBack={() => navigate('/')} onCreateAccount={handleStartGame} />
+        } />
+
+        <Route path="/login" element={
+          <LoginScreen onBack={() => navigate('/')} onLogin={handleStartGame} />
+        } />
+
+        <Route path="/game" element={
+          username ? (
+            <GameScreen 
+              username={username}
+              boardData={boardData}
+              winner={winner}
+              connectionStatus={connectionStatus}
+              difficultyChoice={displayDifficulty as any} 
+              selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
+              sizeLabel={sizeChoice}
+              turnTimeLeft={turnTimeLeft}
+              timerVisible={timerVisible}
+              turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
+              onCellClick={handleCellClick}
+              onFetchHistory={() => fetchHistory()}
+              onExit={() => { stopTimer(); navigate('/'); }}
+              onChangeDifficulty={() => setDifficultyChoice(null)}
+              onChangeSize={() => setSizeChoice(null)}
+              onResetGame={() => resetGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy')}
+              onEndGame={async () => {
+                stopTimer();
+                setTimerVisible(false);
+                await surrender(difficultyChoice!);
+                setConnectionStatus('Has perdido (rendición)');
+                setShowResultModal(true);
+              }}
+            />
+          ) : (
+            <Navigate to="/" />
+          )
+        } />
+      </Routes>
+
+      {/* COMPONENTES GLOBALES (MODALES) */}
       <SelectionModals 
-        currentScreen={currentScreen} difficultyChoice={difficultyChoice} sizeChoice={sizeChoice} 
+        currentScreen={location.pathname === '/game' ? 'game' : 'home'} 
+        difficultyChoice={difficultyChoice} 
+        sizeChoice={sizeChoice} 
         availableDifficulties={availableDifficulties}
         onDifficultySelect={(d) => { setDifficultyChoice(d); resetGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, d); }}
         onSizeSelect={(s) => { setSizeChoice(s); resetGame(getBoardDimensionFromSizeChoice(s)!, difficultyChoice || 'Easy'); }}
