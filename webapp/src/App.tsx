@@ -6,7 +6,6 @@ import './css/App.css'
 import './css/Log.css'
 import './css/Game.css'
 import menuVideo from './assets/background_video.mp4';
-import defaultAvatar from './assets/icon/SinAvatar.png';
 
 // Pantallas
 import HomeScreen from './screens/HomeScreen';
@@ -35,9 +34,6 @@ function App() {
 
   // --- ESTADOS DE UI ---
   const [connectionStatus, setConnectionStatus] = useState('Without connection');
-  const [username, setUsername] = useState('');
-  const [userIcon, setUserIcon] = useState<string>(defaultAvatar);
-  const [currentScreen, setCurrentScreen] = useState<Screen>('home');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>(null);
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>(null);
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
@@ -113,14 +109,10 @@ function App() {
     }
   };
 
-  const startGameWithUser = async (
-    playerName: string,
-    options?: { dimension?: number | null; resetChoices?: boolean },
-    icon?: string | null
-  ) => {
-    if (!playerName.trim()) return;
-    setUsername(playerName.trim());
-    setUserIcon(icon && icon.trim() ? icon : defaultAvatar);
+  const handleStartGame = async (playerName: string) => {
+    const name = playerName.trim();
+    if (!name) return;
+    setUsername(name);
 
     try {
       setDifficultyChoice('Easy');
@@ -146,72 +138,8 @@ function App() {
     }
   };
 
-  // --- RENDERIZADO DE PANTALLAS ---
-  const renderScreen = () => {
-    switch (currentScreen) {
-      case 'home':
-        return <HomeScreen username={username} onUsernameChange={setUsername} onStart={() => startGameWithUser(username)} onGoToRegister={() => setCurrentScreen('register')} onGoToLogin={() => setCurrentScreen('login')} />;
-      case 'game':
-        // Mapeamos el valor del estado (Easy/Medium/Hard) al que espera el componente (facil/medio/dificil)
-        const displayDifficulty = difficultyChoice ? DIFFICULTY_TRANSLATIONS[difficultyChoice] : null;
-
-        return (
-          <GameScreen 
-            // --- DATOS (Las que te faltaban) ---
-            username={username}
-            playerIcon={userIcon}
-            boardData={boardData}
-            winner={winner}
-            connectionStatus={connectionStatus}
-            
-            // --- CONFIGURACIÓN ---
-            difficultyChoice={displayDifficulty as any} 
-            selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
-            sizeLabel={sizeChoice}
-
-            // --- TIEMPOS ---
-            turnTimeLeft={turnTimeLeft}
-            timerVisible={timerVisible}
-            turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
-
-            // --- FUNCIONES (Acciones) ---
-            onCellClick={handleCellClick}
-            onFetchHistory={() => fetchHistory()}
-            onExit={() => { stopTimer(); setCurrentScreen('home'); }}
-            onChangeDifficulty={() => setDifficultyChoice(null)}
-            onChangeSize={() => setSizeChoice(null)}
-            onResetGame={() => resetGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy')}
-            
-            // --- RENDICIÓN (Llamando al hook) ---
-            onEndGame={async () => {
-              stopTimer();
-              setTimerVisible(false);
-              const success = await surrender(difficultyChoice!);
-              if (success) {
-                setConnectionStatus('Has perdido (rendición)');
-                setShowResultModal(true);
-              }
-            }}
-          />
-        );
-      case 'register':
-        return (
-          <RegisterScreen
-            onBack={() => setCurrentScreen('home')}
-            onCreateAccount={(name, icon) => startGameWithUser(name, undefined, icon)}
-          />
-        );
-      case 'login':
-        return (
-          <LoginScreen
-            onBack={() => setCurrentScreen('home')}
-            onLogin={(name, icon) => startGameWithUser(name, undefined, icon)}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  // Mapeo para la interfaz
+  const displayDifficulty = difficultyChoice ? DIFFICULTY_TRANSLATIONS[difficultyChoice] : null;
 
   return (
     <div className="App">
