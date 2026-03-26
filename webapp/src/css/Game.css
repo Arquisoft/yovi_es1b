@@ -1,4 +1,4 @@
-* {
+﻿* {
   box-sizing: border-box;
 }
 
@@ -166,6 +166,45 @@ body {
   justify-content: flex-end;
 }
 
+.player-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.player-info-right {
+  align-items: flex-end;
+}
+
+.player-header-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.player-header-row-right {
+  justify-content: flex-end;
+}
+
+.player-avatar-box {
+  width: 5rem;
+  height: 5rem;
+  padding: 0.2rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 8px 20px rgba(255, 255, 255, 0.45);
+}
+
+.player-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 0.55rem;
+}
+
 .game-controls {
   background: rgba(255, 255, 255, 0.88);
   border-radius: 0.5rem;
@@ -189,6 +228,98 @@ body {
 .player-label-red {
   background: #dc3545;
   color: #fff;
+}
+
+.bot-guide-box {
+  width: 26rem;
+  min-height: 8rem;
+  max-height: 45vh;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 12, 20, 0.92);
+  color: #f7fbff;
+  line-height: 1.35;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  backdrop-filter: none;
+  overflow: auto;
+  text-align: left;
+}
+
+.match-info-title {
+  display: block;
+  text-align: center;
+  margin-bottom: 0.35rem;
+}
+
+.match-info-line {
+  text-align: left;
+}
+
+.guide-center-heading {
+  display: block;
+  text-align: center;
+}
+
+.match-info-box {
+  display: inline-block;
+  width: fit-content;
+  min-height: 0;
+  max-width: 26rem;
+  margin-bottom: 0.7rem;
+  margin-top: 0;
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(8, 12, 20, 0.92);
+  color: #f7fbff;
+  line-height: 1.4;
+  text-align: left;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.match-info-floating {
+  position: fixed;
+  right: 2.5rem;
+  top: 12.5rem;
+  z-index: 3;
+}
+
+.bot-guide-title {
+  margin: 0 0 0.6rem 0;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.bot-guide-section {
+  margin-bottom: 0.6rem;
+}
+
+.bot-guide-json {
+  margin: 0.35rem 0 0 0;
+  padding: 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: #e9f2ff;
+  font-size: 0.65rem;
+  line-height: 1.25;
+  white-space: pre;
+  word-break: break-word;
+  max-height: 8.5rem;
+  overflow: auto;
+}
+
+.bot-guide-floating {
+  position: fixed;
+  right: 2.5rem;
+  top: 20rem;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 @media (max-width: 900px) {
@@ -217,9 +348,25 @@ body {
     width: min(92vw, 22rem);
     justify-content: center;
   }
+
+  .player-slot-right {
+    position: static;
+    right: auto;
+    top: auto;
+  }
+
+  .bot-guide-floating {
+    position: static;
+    margin-top: 0.75rem;
+  }
+
+  .match-info-floating {
+    position: static;
+    margin-bottom: 0.6rem;
+  }
 }
 
-/* Barra de navegación */
+/* Barra de navegaciÃ³n */
 
 .game-navbar {
   width: 100%;
@@ -252,7 +399,7 @@ body {
   align-items: center;
 }
 
-/* Botones pequeños para el menú */
+/* Botones pequeÃ±os para el menÃº */
 .nav-btn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -264,8 +411,282 @@ body {
   transition: all 0.3s ease;
 }
 
+.nav-btn-icon-frame {
+  width: 3.4rem;
+  height: 3.4rem;
+  min-width: 3.4rem;
+  min-height: 3.4rem;
+  max-width: 3.4rem;
+  max-height: 3.4rem;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.nav-btn-difficulty-frame {
+  width: 4.2rem;
+  min-width: 4.2rem;
+  max-width: 4.2rem;
+}
+
+.nav-btn-history-img {
+  width: 3.4rem;
+  height: 3.4rem;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-btn-exit-img {
+  width: 3.4rem;
+  height: 3.4rem;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-btn-reset-img {
+  width: 3.4rem;
+  height: 3.4rem;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-btn-size-img {
+  width: 3.8rem;
+  height: 3.8rem;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-btn-difficulty-img {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-btn-with-lottie {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  width: 3.4rem;
+  height: 3.4rem;
+  min-width: 3.4rem;
+  min-height: 3.4rem;
+  max-width: 3.4rem;
+  max-height: 3.4rem;
+  padding: 0;
+  border-radius: 8px;
+  line-height: 0;
+  overflow: visible;
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.nav-btn-png {
+  width: 3.9rem;
+  height: 3.9rem;
+  object-fit: contain;
+  display: block;
+}
+
+.nav-btn-lottie-hover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6.2rem;
+  height: 6.2rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav-btn-lottie-hover svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-btn-with-lottie:hover .nav-btn-png,
+.nav-btn-with-lottie:focus-visible .nav-btn-png {
+  visibility: hidden;
+}
+
+.nav-btn-with-lottie:hover .nav-btn-lottie-hover,
+.nav-btn-with-lottie:focus-visible .nav-btn-lottie-hover {
+  display: inline-flex;
+}
+
+.nav-btn-with-logout {
+  position: relative;
+  overflow: visible;
+}
+
+.nav-btn-logout-hover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6.2rem;
+  height: 6.2rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav-btn-logout-hover svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-btn-with-logout:hover .nav-btn-exit-img,
+.nav-btn-with-logout:focus-visible .nav-btn-exit-img {
+  visibility: hidden;
+}
+
+.nav-btn-with-logout:hover .nav-btn-logout-hover,
+.nav-btn-with-logout:focus-visible .nav-btn-logout-hover {
+  display: inline-flex;
+}
+
+.nav-btn-with-history {
+  position: relative;
+  overflow: visible;
+}
+
+.nav-btn-history-hover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6.2rem;
+  height: 6.2rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav-btn-history-hover svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-btn-with-history:hover .nav-btn-history-img,
+.nav-btn-with-history:focus-visible .nav-btn-history-img {
+  visibility: hidden;
+}
+
+.nav-btn-with-history:hover .nav-btn-history-hover,
+.nav-btn-with-history:focus-visible .nav-btn-history-hover {
+  display: inline-flex;
+}
+
+.nav-btn-with-size {
+  position: relative;
+  overflow: visible;
+}
+
+.nav-btn-size-hover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 6.2rem;
+  height: 6.2rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav-btn-size-hover svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-btn-with-size:hover .nav-btn-size-img,
+.nav-btn-with-size:focus-visible .nav-btn-size-img {
+  visibility: hidden;
+}
+
+.nav-btn-with-size:hover .nav-btn-size-hover,
+.nav-btn-with-size:focus-visible .nav-btn-size-hover {
+  display: inline-flex;
+}
+
+.nav-btn-with-restart {
+  position: relative;
+  overflow: visible;
+}
+
+.nav-btn-restart-hover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4.8rem;
+  height: 4.8rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav-btn-restart-hover svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-btn-with-restart:hover .nav-btn-reset-img,
+.nav-btn-with-restart:focus-visible .nav-btn-reset-img {
+  visibility: hidden;
+}
+
+.nav-btn-with-restart:hover .nav-btn-restart-hover,
+.nav-btn-with-restart:focus-visible .nav-btn-restart-hover {
+  display: inline-flex;
+}
+
+.nav-btn-with-difficulty {
+  position: relative;
+  overflow: visible;
+}
+
+.nav-btn-difficulty-hover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 4.8rem;
+  height: 4.8rem;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.nav-btn-difficulty-hover svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-btn-with-difficulty:hover .nav-btn-difficulty-img,
+.nav-btn-with-difficulty:focus-visible .nav-btn-difficulty-img {
+  visibility: hidden;
+}
+
+.nav-btn-with-difficulty:hover .nav-btn-difficulty-hover,
+.nav-btn-with-difficulty:focus-visible .nav-btn-difficulty-hover {
+  display: inline-flex;
+}
+
 .nav-btn:hover {
-  background: #bc84ee; /* Morado suave al pasar el ratón */
+  background: #bc84ee; /* Morado suave al pasar el ratÃ³n */
   transform: translateY(-2px);
   border-color: white;
 }
@@ -286,13 +707,27 @@ body {
 /*Temporizador de turno*/
 .turn-timer {
   width: 100%;
-  max-width: 420px;
-  margin: 0 auto 18px auto;
+  max-width: 16rem;
+  margin: 0;
   padding: 10px 14px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(6px);
+  display: block;
+  align-self: stretch;
+}
+
+.turn-timer-under {
+  width: 100%;
+  max-width: 16rem;
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(6px);
+  display: block;
 }
 
 .turn-timer-header {
@@ -344,4 +779,5 @@ body {
   from { transform: scale(1); }
   to   { transform: scale(1.12); }
 }
+
 
