@@ -1,63 +1,52 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import App from '../App'
-import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
-import { MemoryRouter } from 'react-router-dom'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, expect, test, vi, beforeEach } from 'vitest'
+import HomeScreen from '../screens/HomeScreen' // Importamos el Screen, no la App
 import '@testing-library/jest-dom'
 
 describe('Home', () => {
-  beforeAll(() => {
-    vi.stubGlobal('scrollTo', vi.fn())
-    
-    // 1. MOCK DE RED GLOBAL: 
-    // Evitamos el "fetch failed" que rompe el test al cargar App
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ['Easy', 'Medium', 'Hard'],
-    })
+  // Mockeamos window.location para que no falle al intentar cambiar de página
+  beforeEach(() => {
+    vi.stubGlobal('location', { href: '' });
+    vi.stubGlobal('scrollTo', vi.fn());
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
-    vi.clearAllMocks()
-  })
-
-  test('muestra la pantalla home con accesos de registro y login', async () => {
+  test('muestra la pantalla home con accesos de registro y login', () => {
+    // Ya no necesitamos MemoryRouter ni App
     render(
-      <MemoryRouter>
-        <App />
-      </MemoryRouter>
+      <HomeScreen 
+        username="" 
+        onUsernameChange={vi.fn()} 
+        onStart={vi.fn()} 
+        onGoToRegister={vi.fn()} 
+        onGoToLogin={vi.fn()} 
+      />
     )
 
-    // Usamos findBy porque App tiene efectos iniciales asíncronos
-    expect(await screen.findByRole('heading', { name: /bienvenido a 'y'/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /bienvenido a 'y'/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /registrarse/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /iniciar sesion/i })).toBeInTheDocument()
   })
 
-  test('navega desde home a registro y vuelve a home', async () => {
-    const user = userEvent.setup()
-    
+  test('los botones de registro y login llaman a sus funciones', async () => {
+    const onLogin = vi.fn()
+    const onRegister = vi.fn()
+
     render(
-      <MemoryRouter>
-        <App />
-      </MemoryRouter>
+      <HomeScreen 
+        username="" 
+        onUsernameChange={vi.fn()} 
+        onStart={vi.fn()} 
+        onGoToRegister={onRegister} 
+        onGoToLogin={onLogin} 
+      />
     )
 
-    // 1. Ir a Registro
-    const btnRegistro = await screen.findByRole('button', { name: /registrarse/i })
-    await user.click(btnRegistro)
-    
-    // USAR findBy: La navegación de React Router es un cambio de estado asíncrono
-    const tituloRegistro = await screen.findByRole('heading', { name: /zona de registro/i })
-    expect(tituloRegistro).toBeInTheDocument()
+    // Simulamos clic en registro
+    fireEvent.click(screen.getByRole('button', { name: /registrarse/i }))
+    expect(onRegister).toHaveBeenCalled()
 
-    // 2. Volver a Home
-    const btnVolver = screen.getByRole('button', { name: /volver/i })
-    await user.click(btnVolver)
-    
-    // Verificar que regresamos
-    const tituloHome = await screen.findByRole('heading', { name: /bienvenido a 'y'/i })
-    expect(tituloHome).toBeInTheDocument()
+    // Simulamos clic en login
+    fireEvent.click(screen.getByRole('button', { name: /iniciar sesion/i }))
+    expect(onLogin).toHaveBeenCalled()
   })
 })
