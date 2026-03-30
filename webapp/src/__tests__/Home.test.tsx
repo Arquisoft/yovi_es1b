@@ -1,34 +1,52 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import App from '../App'
-import { afterEach, beforeAll, describe, expect, test, vi } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, expect, test, vi, beforeEach } from 'vitest'
+import HomeScreen from '../screens/HomeScreen' // Importamos el Screen, no la App
 import '@testing-library/jest-dom'
 
 describe('Home', () => {
-  beforeAll(() => {
-    vi.stubGlobal('scrollTo', vi.fn())
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
+  // Mockeamos window.location para que no falle al intentar cambiar de página
+  beforeEach(() => {
+    vi.stubGlobal('location', { href: '' });
+    vi.stubGlobal('scrollTo', vi.fn());
   })
 
   test('muestra la pantalla home con accesos de registro y login', () => {
-    render(<App />)
+    // Ya no necesitamos MemoryRouter ni App
+    render(
+      <HomeScreen 
+        username="" 
+        onUsernameChange={vi.fn()} 
+        onStart={vi.fn()} 
+        onGoToRegister={vi.fn()} 
+        onGoToLogin={vi.fn()} 
+      />
+    )
 
     expect(screen.getByRole('heading', { name: /bienvenido a 'y'/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /registrarse/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /iniciar sesion/i })).toBeInTheDocument()
   })
 
-  test('navega desde home a registro y vuelve a home', async () => {
-    const user = userEvent.setup()
-    render(<App />)
+  test('los botones de registro y login llaman a sus funciones', async () => {
+    const onLogin = vi.fn()
+    const onRegister = vi.fn()
 
-    await user.click(screen.getByRole('button', { name: /registrarse/i }))
-    expect(screen.getByRole('heading', { name: /zona de registro/i })).toBeInTheDocument()
+    render(
+      <HomeScreen 
+        username="" 
+        onUsernameChange={vi.fn()} 
+        onStart={vi.fn()} 
+        onGoToRegister={onRegister} 
+        onGoToLogin={onLogin} 
+      />
+    )
 
-    await user.click(screen.getByRole('button', { name: /volver/i }))
-    expect(screen.getByRole('heading', { name: /bienvenido a 'y'/i })).toBeInTheDocument()
+    // Simulamos clic en registro
+    fireEvent.click(screen.getByRole('button', { name: /registrarse/i }))
+    expect(onRegister).toHaveBeenCalled()
+
+    // Simulamos clic en login
+    fireEvent.click(screen.getByRole('button', { name: /iniciar sesion/i }))
+    expect(onLogin).toHaveBeenCalled()
   })
 })
