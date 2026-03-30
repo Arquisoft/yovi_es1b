@@ -19,6 +19,7 @@ import menuVideo from '../../assets/background_video.mp4';
 import '../../css/App.css';
 import '../../css/Game.css';
 import '../../css/Log.css';
+import '../../index.css'
 
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';

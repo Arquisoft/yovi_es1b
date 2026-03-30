@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import RegisterScreen from '../../screens/RegisterScreen'
 import '../../css/App.css'
 import '../../css/Log.css'
+import '../../index.css'
 import menuVideo from '../../assets/background_video.mp4'
 
 const RegisterPage = () => {
