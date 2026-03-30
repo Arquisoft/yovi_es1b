@@ -352,7 +352,7 @@ app.get('/users/profile/:username', async (req, res) => {
 
 
 app.get('/friends', async (req, res) => {
-  const { username } = req.query;
+  const username = String(req.query.username || "");
 
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
