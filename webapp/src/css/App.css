@@ -324,3 +324,60 @@
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
 }
+
+.friend-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  /* Esto sobreescribe el 'center' del root para que la lista sea legible */
+  text-align: left; 
+}
+
+.friend-item-row:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #444; /* Color desconectado */
+}
+
+/* El brillo verde para los que están online */
+.status-dot.online {
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
+}
+
+.friend-name {
+  color: #eee;
+  font-size: 0.95rem;
+  font-weight: 500;
+  /* Evita que el nombre empuje al botón si es muy largo */
+  flex: 1; 
+}
+
+.invite-btn {
+  background: transparent;
+  border: 1px solid #00d4ff;
+  color: #00d4ff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.invite-btn:hover {
+  background: #00d4ff;
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
