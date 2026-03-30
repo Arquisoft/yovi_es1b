@@ -23,6 +23,7 @@ interface GameScreenProps {
   onChangeDifficulty: () => void; // Permite cambiar la dificultad durante la partida
   onChangeSize: () => void; // Permite cambiar el tamaño durante la partida
   onFetchHistory: () => void; // Permite consultar el historial de partidas
+  onAddFriend: () => void; // Permite agregar un amigo
 }
 
 function GameScreen({
@@ -42,7 +43,8 @@ function GameScreen({
   onExit,
   onChangeDifficulty,
   onChangeSize,
-  onFetchHistory
+  onFetchHistory,
+  onAddFriend,
 }: GameScreenProps) {
 
   // Lógica de nombres de bots
@@ -85,6 +87,7 @@ function GameScreen({
           <button className="nav-btn" onClick={onResetGame}>Reiniciar</button>
           <button className="nav-btn danger" onClick={onEndGame}>Rendirse</button>
           <button className="nav-btn danger" onClick={onExit}>Salir</button>
+          <button className="nav-btn" onClick={onAddFriend}>Amigos</button>
         </div>
       </nav>
 
