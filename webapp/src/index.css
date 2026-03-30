@@ -25,6 +25,14 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: black;
+  /* Cargamos la imagen de fondo */
+  background-image: linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.4)), url('./assets/background_image.png');  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  
+  /* Evita que el scroll mueva el fondo */
+  background-attachment: fixed;
 }
 
 html,
