@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import HomeScreen from '../../screens/HomeScreen'
 import '../../css/App.css'
+import '../../css/Log.css'
 import menuVideo from '../../assets/background_video.mp4'
 
 const HomeApp = () => {
