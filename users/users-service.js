@@ -5,6 +5,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
+const Friendship = require('./models/friendship');
 
 const express = require('express');
 const app = express();
@@ -136,6 +137,9 @@ app.post('/users/follow', async (req, res) => {
   if (!follower || !following) {
     return res.status(400).json({ error: 'Follower y following son obligatorios' });
   }
+  if (follower === following) {
+    return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
+  }
 
   try {
     const targetUser = await User.findOne({ username: following });
@@ -152,17 +156,28 @@ app.post('/users/follow', async (req, res) => {
         ? currentFollowing.includes(targetId)
         : false;
 
-    if (!alreadyFollowing) {
-      if (typeof currentFollowing.push === 'function') {
-        currentFollowing.push(targetId);
+    if (alreadyFollowing) {
+      if (typeof currentFollowing.pull === 'function') {
+        currentFollowing.pull(targetId);
       }
       const currentFollowers = targetUser.followers || [];
-      if (typeof currentFollowers.push === 'function') {
-        currentFollowers.push(me._id);
+      if (typeof currentFollowers.pull === 'function') {
+        currentFollowers.pull(me._id);
       }
       await me.save();
       await targetUser.save();
+      return res.json({ message: `Has dejado de seguir a ${targetUser.username}` });
     }
+
+    if (typeof currentFollowing.push === 'function') {
+      currentFollowing.push(targetId);
+    }
+    const currentFollowers = targetUser.followers || [];
+    if (typeof currentFollowers.push === 'function') {
+      currentFollowers.push(me._id);
+    }
+    await me.save();
+    await targetUser.save();
 
     return res.json({ message: `Ahora sigues a ${targetUser.username}` });
   } catch (err) {
@@ -182,9 +197,58 @@ app.get('/users/profile/:username', async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    return res.json(user);
+    return res.json({
+      username: user.username,
+      age: user.age,
+      country: user.country,
+      icon: user.icon,
+      followingCount: user.following?.length || 0,
+      followersCount: user.followers?.length || 0,
+      following: user.following || [],
+      followers: user.followers || []
+    });
   } catch (err) {
     return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.get('/friends', async (req, res) => {
+  const username = String(req.query.username || '').trim();
+
+  if (!username) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+
+  try {
+    const friendships = await Friendship.find({
+      users: username,
+      status: 'accepted'
+    });
+
+    const friendsFromFriendships = friendships
+      .map((friendship) => {
+        const friendName = (friendship.users || []).find((u) => u !== username);
+        return friendName ? { name: friendName, status: 'online' } : null;
+      })
+      .filter(Boolean);
+
+    // Compatibilidad: si no hay documentos Friendship, devolvemos los seguidos del modelo User.
+    if (friendsFromFriendships.length === 0) {
+      const user = await User.findOne({ username }).populate('following', 'username');
+      if (!user) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+      const fallback = (user.following || []).map((friend) => ({
+        name: friend.username,
+        status: 'online'
+      }));
+      return res.json(fallback);
+    }
+
+    return res.json(friendsFromFriendships);
+  } catch (err) {
+    console.error('Error fetching friends:', err);
+    return res.status(500).json({ error: 'Error fetching friends' });
   }
 });
 
