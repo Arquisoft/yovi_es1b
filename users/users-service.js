@@ -117,6 +117,77 @@ app.post('/login', async (req, res) => {
   }
 })
 
+app.get('/users/search', async (req, res) => {
+  const query = String(req.query.query || '').trim();
+  try {
+    const users = await User.find({
+      username: { $regex: query, $options: 'i' }
+    }).select('username score icon');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.post('/users/follow', async (req, res) => {
+  const follower = String(req.body.follower || '').trim();
+  const following = String(req.body.following || '').trim();
+
+  if (!follower || !following) {
+    return res.status(400).json({ error: 'Follower y following son obligatorios' });
+  }
+
+  try {
+    const targetUser = await User.findOne({ username: following });
+    const me = await User.findOne({ username: follower });
+
+    if (!targetUser || !me) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const targetId = targetUser._id;
+    const currentFollowing = me.following || [];
+    const alreadyFollowing =
+      typeof currentFollowing.includes === 'function'
+        ? currentFollowing.includes(targetId)
+        : false;
+
+    if (!alreadyFollowing) {
+      if (typeof currentFollowing.push === 'function') {
+        currentFollowing.push(targetId);
+      }
+      const currentFollowers = targetUser.followers || [];
+      if (typeof currentFollowers.push === 'function') {
+        currentFollowers.push(me._id);
+      }
+      await me.save();
+      await targetUser.save();
+    }
+
+    return res.json({ message: `Ahora sigues a ${targetUser.username}` });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.get('/users/profile/:username', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+
+  try {
+    const user = await User.findOne({ username })
+      .populate('following', 'username score icon')
+      .populate('followers', 'username score icon');
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json(user);
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
 
 // New
 // Executes a move in the game

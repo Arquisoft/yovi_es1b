@@ -40,6 +40,7 @@ interface GameScreenProps {
   onChangeDifficulty: () => void; // Permite cambiar la dificultad durante la partida
   onChangeSize: () => void; // Permite cambiar el tamaÃ±o durante la partida
   onFetchHistory: () => void; // Permite consultar el historial de partidas
+  onAddFriend?: () => void; // Abre el panel de amigos
 }
 
 function GameScreen({
@@ -273,7 +274,6 @@ function GameScreen({
 }
 
 export default GameScreen;
-
 
 
 
