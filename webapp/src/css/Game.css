@@ -685,6 +685,24 @@ body {
   display: inline-flex;
 }
 
+.nav-btn-friends-img {
+  width: 2.1rem; 
+  height: 2.1rem;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+/* Efecto visual al pasar el ratón sobre el botón */
+.nav-btn:hover .nav-btn-friends-img {
+  transform: scale(1.1);
+}
+
+/* Ajuste opcional por si el botón queda muy cuadrado */
+.nav-btn-icon-frame {
+  border-radius: 12px;
+}
+
 .nav-btn:hover {
   background: #bc84ee; /* Morado suave al pasar el ratÃ³n */
   transform: translateY(-2px);

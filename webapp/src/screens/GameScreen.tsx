@@ -12,6 +12,7 @@ import reiniciarPartidaImg from '../assets/buttons/ReiniciarPartida.jpg';
 import salirMenuImg from '../assets/buttons/SalirMenu.jpg';
 import tamanoTableroImg from '../assets/buttons/TamañoTablero.png';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
+import amigosImg from '../assets/buttons/agregar-usuario.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 
 interface GameYData {
@@ -168,7 +169,9 @@ function GameScreen({
             </span>
           </button>
 
-          <button className="nav-btn" onClick={onAddFriend}>Amigos</button>
+          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
+            <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
+          </button>
         </div>
 
       </nav>
