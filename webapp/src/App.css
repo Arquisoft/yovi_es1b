@@ -3,6 +3,7 @@
   width: 100%;
   margin: 0;
   padding: 0;
+  height: 100vh;
   min-height: 100vh;
   text-align: center;
 }
@@ -10,7 +11,11 @@
 .App {
   position: relative;
   z-index: 2;
+  height: 100vh;
+  overflow: hidden;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .logo {
@@ -277,4 +282,210 @@ body {
 
 .timer.warning {
     color: red;
+}
+
+/* MENU DE AMIGOS */
+
+.friends-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10001;
+}
+
+.friends-sidebar-content {
+  position: relative;
+  width: 350px;
+  height: 100%;
+  background: rgba(10, 10, 10, 0.9); /* Casi negro traslúcido */
+  backdrop-filter: blur(25px);
+  color: white;
+  padding: 2.5rem 1.5rem;
+  border-left: 2px solid #00d4ff; /* El toque neón */
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.8);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- TÍTULOS Y TEXTOS --- */
+.sidebar-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  letter-spacing: 3px;
+  color: #00d4ff;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.list-status-label {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+/* --- PERFIL DE USUARIO --- */
+.user-mini-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.avatar-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4ff 0%, #0055ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.profile-name {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+/* --- FORMULARIO DE BÚSQUEDA --- */
+.search-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.friends-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 12px;
+  color: white;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.friends-input:focus {
+  border-color: #00d4ff;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.add-friend-btn {
+  background: #00d4ff;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.3s;
+}
+
+.add-friend-btn:hover {
+  background: #00f2ff;
+  transform: translateY(-2px);
+}
+
+/* --- LISTA VACÍA --- */
+.friends-list-area {
+  margin-top: 2rem;
+}
+
+.empty-list-box {
+  text-align: center;
+  padding: 30px 10px;
+  color: #444;
+  border: 2px dashed rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+/* --- BOTÓN CERRAR --- */
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1.2rem;
+  background: none;
+  border: none;
+  color: #444;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.close-button:hover {
+  color: #ff4444;
+}
+
+/* --- ANIMACIÓN --- */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.friend-item-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  /* Esto sobreescribe el 'center' del root para que la lista sea legible */
+  text-align: left; 
+}
+
+.friend-item-row:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #444; /* Color desconectado */
+}
+
+/* El brillo verde para los que están online */
+.status-dot.online {
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
+}
+
+.friend-name {
+  color: #eee;
+  font-size: 0.95rem;
+  font-weight: 500;
+  /* Evita que el nombre empuje al botón si es muy largo */
+  flex: 1; 
+}
+
+.invite-btn {
+  background: transparent;
+  border: 1px solid #00d4ff;
+  color: #00d4ff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.invite-btn:hover {
+  background: #00d4ff;
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
 }

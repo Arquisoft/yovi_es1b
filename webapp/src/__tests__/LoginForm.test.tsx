@@ -64,7 +64,7 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
     await waitFor(() => {
-      expect(onLogin).toHaveBeenCalledWith('Alice')
+      expect(onLogin).toHaveBeenCalledWith('Alice', null)
     })
   })
 

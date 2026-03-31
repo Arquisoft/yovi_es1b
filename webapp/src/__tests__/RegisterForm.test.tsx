@@ -58,8 +58,10 @@ describe('RegisterForm', () => {
 
     await user.type(screen.getByLabelText(/nombre/i), 'Alice')
     await user.type(screen.getByLabelText(/edad/i), '22')
-    await user.type(screen.getByLabelText(/pa/i), 'Spain')
-    await user.type(screen.getByLabelText(/contra/i), 'password123')
+    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+    await user.click(screen.getByLabelText(/seleccionar spain/i))
+    await user.type(screen.getByLabelText(/^contrasena$/i), 'password123')
+    await user.type(screen.getByLabelText(/confirmar contrasena/i), 'password123')
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     await waitFor(() => {
@@ -80,12 +82,14 @@ describe('RegisterForm', () => {
 
     await user.type(screen.getByLabelText(/nombre/i), 'Alice')
     await user.type(screen.getByLabelText(/edad/i), '25')
-    await user.type(screen.getByLabelText(/pa/i), 'Spain')
-    await user.type(screen.getByLabelText(/contra/i), 'securePass123')
+    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+    await user.click(screen.getByLabelText(/seleccionar spain/i))
+    await user.type(screen.getByLabelText(/^contrasena$/i), 'securePass123')
+    await user.type(screen.getByLabelText(/confirmar contrasena/i), 'securePass123')
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     await waitFor(() => {
-      expect(onCreate).toHaveBeenCalledWith('Alice')
+      expect(onCreate).toHaveBeenCalledWith('Alice', expect.any(String))
     })
   })
 

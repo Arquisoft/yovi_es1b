@@ -15,10 +15,29 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  birthDate: {
+    type: Date,
+    required: false
+  },
   country: {
     type: String,
     required: true
   },
+  icon: {
+    type: String,
+    required: false,
+    default: ''
+  },
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }],
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }],
   createdAt: { 
     type: Date, 
     default: Date.now

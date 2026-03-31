@@ -64,7 +64,7 @@ describe('Game UI (MPA Ready)', () => {
     await user.click(screen.getByRole('button', { name: /historial/i }))
     await user.click(screen.getByRole('button', { name: /dificultad/i }))
     await user.click(screen.getByRole('button', { name: /tamaño/i }))
-    await user.click(screen.getByRole('button', { name: /rendirse/i }))
+    await user.click(screen.getByRole('button', { name: /terminar partida/i }))
     await user.click(screen.getByRole('button', { name: /reiniciar/i })) // Ajustado el nombre
     await user.click(screen.getByRole('button', { name: /salir/i }))
 
