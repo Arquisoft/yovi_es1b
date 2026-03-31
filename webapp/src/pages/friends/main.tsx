@@ -6,9 +6,10 @@ interface FriendsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   username: string;
+  friendCode: string;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username }: FriendsPanelProps) => {
+export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsPanelProps) => {
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -42,7 +43,11 @@ export const FriendsPanel = ({ isOpen, onClose, username }: FriendsPanelProps) =
            <div className="avatar-circle">
              {username[0]?.toUpperCase()}
            </div>
-           <span className="profile-name">{username}</span>
+           <div className="profile-info-text">
+              <span className="profile-name">{username}</span>
+              <span className="profile-friend-code">#{friendCode}</span>
+           </div>
+           
         </div>
 
         {/* Buscador para añadir nuevos amigos */}

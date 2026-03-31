@@ -247,9 +247,23 @@
   box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
 }
 
+.profile-info-text {
+  display: flex;
+  flex-direction: column; /* Lo pone debajo del nombre, estilo Discord */
+  align-items: flex-start;
+  gap: 2px;
+}
+
 .profile-name {
   font-weight: 500;
   font-size: 1.1rem;
+}
+
+.profile-friend-code {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.4); /* 40% de opacidad para el toque "clarito" */
+  letter-spacing: 1px;
 }
 
 /* --- FORMULARIO DE BÚSQUEDA --- */

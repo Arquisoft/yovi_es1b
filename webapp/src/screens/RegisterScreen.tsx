@@ -46,7 +46,7 @@ interface RegisterData {
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
-  readonly onCreateAccount: (name: string, icon?: string | null) => Promise<void> | void;
+  readonly onCreateAccount: (name: string, friendCode: string, icon?: string | null) => Promise<void> | void;
 }
 
 function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
@@ -107,7 +107,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
       const data = await response.json();
 
       if (response.ok) {
-        await onCreateAccount(formData.name.trim(), selectedIcon);
+        await onCreateAccount(formData.name.trim(), data.friendCode, selectedIcon);
       } else {
         setFormError(data.error || 'Error al crear la cuenta.');
       }

@@ -21,6 +21,12 @@ app.use(metricsMiddleware);
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 
+// Para guardar un friendCode
+const { customAlphabet } = require('nanoid');
+// Alfabeto sin letras confusas (evitamos O, 0, I, l)
+const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
+
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
 
@@ -61,6 +67,16 @@ app.post('/createuser', async (req, res) => {
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password are required" });
     }
+
+    let friendCode;
+    let isUnique = false;
+    while (!isUnique) {
+      friendCode = generateFriendCode();
+      const existingCode = await User.findOne({ friendCode });
+      if (!existingCode) {
+        isUnique = true;
+      }
+    }
     
     // Encriptar
     const hashedPassword = await bcrypt.hash(password, saltRounds);
@@ -68,6 +84,7 @@ app.post('/createuser', async (req, res) => {
     const newUser = new User ({
       username,
       password: hashedPassword,
+      friendCode,
       age,
       birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : undefined,
       country,
@@ -77,7 +94,9 @@ app.post('/createuser', async (req, res) => {
     // Save the new user to the database
     await newUser.save();
 
-    res.json({ message: `Hello ${username}! Your account has been created!`
+    res.json({ 
+      message: `Hello ${username}! Your account has been created!`,
+      friendCode: `#${friendCode}`
     })
 
   } catch (err) {
@@ -107,7 +126,8 @@ app.post('/login', async (req, res) => {
         message: `Welcome back, ${username}!`,
         username: user.username,
         score: user.score,
-        icon: user.icon
+        icon: user.icon,
+        friendCode: user.friendCode
       });
     } else {
       res.status(401).json({ error: "Usuario o contraseña incorrecta" });
