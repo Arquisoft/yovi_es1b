@@ -1,6 +1,5 @@
 import { type FormEvent, useState } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from '../constants/config';
 
 interface LoginData {
   username: string;
@@ -23,7 +22,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Evita recargar la pagina
     if (!formData.username.trim() || !formData.password.trim()) {
-      setFormError('Usuario y contrasena no pueden estar en blanco.'); // Valida campos obligatorios
+      setFormError('Usuario y contraseña no pueden estar en blanco.'); // Valida campos obligatorios
       return;
     }
     setFormError(null);
