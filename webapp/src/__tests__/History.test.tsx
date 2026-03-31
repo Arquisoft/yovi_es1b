@@ -40,6 +40,7 @@ const GamePageMock = () => {
         onChangeDifficulty={vi.fn()}
         onChangeSize={vi.fn()}
         onFetchHistory={() => setShowHistory(true)}
+        onAddFriend={vi.fn()}
       />
       <HistoryModal 
         isOpen={showHistory} 

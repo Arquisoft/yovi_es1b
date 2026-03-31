@@ -5,6 +5,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
+const Friendship = require('./models/friendship');
 
 const express = require('express');
 const app = express();
@@ -348,6 +349,39 @@ app.get('/users/profile/:username', async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 });
+
+
+app.get('/friends', async (req, res) => {
+  const username = String(req.query.username || "");
+
+  if (!username) {
+    return res.status(400).json({ error: "Username is required" });
+  }
+
+  try {
+    // Buscar documentos donde el array 'users' contenga el username dado
+    const friendships = await Friendship.find({
+      users: username,
+      status: 'accepted' // Solo amigos aceptados
+    });
+
+    // Mapear para devolver solo el nombre
+    const friendsList = friendships.map(f => {
+      const friendName = f.users.find(u => u !== username); // El otro usuario en la amistad
+      return {
+        name: friendName,
+        status: 'online' // Implementar en el futuro.
+      };
+    });
+
+    res.json(friendsList);
+
+  } catch (err) {
+    console.error("Error fetching friends:", err);
+    res.status(500).json({ error: "Error fetching friends" });
+  }
+});
+
 
 
 if (require.main === module) {
