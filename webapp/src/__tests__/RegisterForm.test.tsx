@@ -73,13 +73,18 @@ describe('RegisterForm', () => {
     const user = userEvent.setup()
     const onCreate = vi.fn()
 
+    // 1. Actualizamos el mock para que devuelva el friendCode
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ ok: true }),
+      json: async () => ({ 
+        ok: true, 
+        friendCode: 'NEW-123' // Simulamos que el back genera este código
+      }),
     } as Response)
 
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
 
+    // Llenamos el formulario (esto se queda igual)
     await user.type(screen.getByLabelText(/nombre/i), 'Alice')
     await user.type(screen.getByLabelText(/edad/i), '25')
     await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
@@ -89,7 +94,13 @@ describe('RegisterForm', () => {
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     await waitFor(() => {
-      expect(onCreate).toHaveBeenCalledWith('Alice', expect.any(String))
+      // 2. ACTUALIZAMOS LA EXPECTATIVA:
+      // Esperamos: Nombre ('Alice'), FriendCode ('NEW-123') e Icono (cualquier String)
+      expect(onCreate).toHaveBeenCalledWith(
+        'Alice', 
+        'NEW-123', 
+        expect.any(String)
+      )
     })
   })
 
