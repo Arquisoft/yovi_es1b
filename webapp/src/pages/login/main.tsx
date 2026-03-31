@@ -7,12 +7,17 @@ import '../../index.css'
 import menuVideo from '../../assets/background_video.mp4'
 
 const LoginPage = () => {
-  const handleLoginSuccess = (playerName: string) => {
+  const handleLoginSuccess = (playerName: string, icon?: string | null) => {
     const name = playerName.trim();
     if (!name) return;
 
     // Guardamos en persistencia para que la página de juego lo reconozca
     localStorage.setItem('yovi_user', name);
+    if (typeof icon === 'string' && icon.trim()) {
+      localStorage.setItem('yovi_user_icon', icon);
+    } else {
+      localStorage.removeItem('yovi_user_icon');
+    }
     
     // Redirección real de navegador (MPA)
     window.location.href = '/game.html';

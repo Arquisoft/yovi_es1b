@@ -28,6 +28,7 @@ import { FriendsPanel } from '../../components/modals/FriendsPanel';
 const GameApp = () => {
   // --- SEGURIDAD Y SESIÓN ---
   const username = localStorage.getItem('yovi_user') || '';
+  const playerIcon = localStorage.getItem('yovi_user_icon');
   
   // Si no hay usuario, redirigimos inmediatamente a la home
   if (!username) {
@@ -137,6 +138,7 @@ const GameApp = () => {
       {/* Pantalla Principal */}
       <GameScreen 
         username={username}
+        playerIcon={playerIcon}
         boardData={boardData}
         winner={winner}
         connectionStatus={connectionStatus}
