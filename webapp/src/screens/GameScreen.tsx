@@ -60,7 +60,8 @@ function GameScreen({
   onExit,
   onChangeDifficulty,
   onChangeSize,
-  onFetchHistory
+  onFetchHistory,
+  onAddFriend
 }: GameScreenProps) {
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const logoutLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -166,6 +167,8 @@ function GameScreen({
               <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
             </span>
           </button>
+
+          <button className="nav-btn" onClick={onAddFriend}>Amigos</button>
         </div>
 
       </nav>
