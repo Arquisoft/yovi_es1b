@@ -12,4 +12,4 @@ const friendshipSchema = new mongoose.Schema({
 // Indexamos 'users' para que las búsquedas sean instantáneas
 friendshipSchema.index({ users: 1 });
 
-module.exports = mongoose.model('friendships', friendshipSchema, 'friendships');
+module.exports = mongoose.models.friendships || mongoose.model('friendships', friendshipSchema, 'friendships');

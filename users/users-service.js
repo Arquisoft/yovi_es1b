@@ -190,7 +190,7 @@ app.post('/users/follow', async (req, res) => {
   }
 });
 
-app.get('/users/profile/:username', async (req, res) => {
+/* app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
@@ -215,7 +215,7 @@ app.get('/users/profile/:username', async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: 'Error del servidor' });
   }
-});
+}); */
 
 app.get('/friends', async (req, res) => {
   const username = String(req.query.username || '').trim();
