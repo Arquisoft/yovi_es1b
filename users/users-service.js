@@ -5,6 +5,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
+const Friendship = require('./models/friendship');
 
 const express = require('express');
 const app = express();
@@ -20,8 +21,14 @@ app.use(metricsMiddleware);
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 
+// Para guardar un friendCode
+const { customAlphabet } = require('nanoid');
+// Alfabeto sin letras confusas (evitamos O, 0, I, l)
+const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
+
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://localhost:4000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
 
 try {
   const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
@@ -53,10 +60,22 @@ app.post('/createuser', async (req, res) => {
   const username = String(req.body.username || "");
   const password = String(req.body.password || "");
   const age = Number(req.body.age);
+  const birthDate = req.body.birthDate ? new Date(String(req.body.birthDate)) : null;
   const country = String(req.body.country || "");
+  const icon = String(req.body.icon || "");
   try {
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password are required" });
+    }
+
+    let friendCode;
+    let isUnique = false;
+    while (!isUnique) {
+      friendCode = generateFriendCode();
+      const existingCode = await User.findOne({ friendCode });
+      if (!existingCode) {
+        isUnique = true;
+      }
     }
     
     // Encriptar
@@ -65,14 +84,19 @@ app.post('/createuser', async (req, res) => {
     const newUser = new User ({
       username,
       password: hashedPassword,
+      friendCode,
       age,
-      country
+      birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : undefined,
+      country,
+      icon
     })
 
     // Save the new user to the database
     await newUser.save();
 
-    res.json({ message: `Hello ${username}! Your account has been created!`
+    res.json({ 
+      message: `Hello ${username}! Your account has been created!`,
+      friendCode: `#${friendCode}`
     })
 
   } catch (err) {
@@ -101,7 +125,9 @@ app.post('/login', async (req, res) => {
       res.json({
         message: `Welcome back, ${username}!`,
         username: user.username,
-        score: user.score
+        score: user.score,
+        icon: user.icon,
+        friendCode: user.friendCode
       });
     } else {
       res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -111,6 +137,140 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 })
+
+app.get('/users/search', async (req, res) => {
+  const query = String(req.query.query || '').trim();
+  try {
+    const users = await User.find({
+      username: { $regex: query, $options: 'i' }
+    }).select('username score icon');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.post('/users/follow', async (req, res) => {
+  const follower = String(req.body.follower || '').trim();
+  const following = String(req.body.following || '').trim();
+
+  if (!follower || !following) {
+    return res.status(400).json({ error: 'Follower y following son obligatorios' });
+  }
+  if (follower === following) {
+    return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
+  }
+
+  try {
+    const targetUser = await User.findOne({ username: following });
+    const me = await User.findOne({ username: follower });
+
+    if (!targetUser || !me) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const targetId = targetUser._id;
+    const currentFollowing = me.following || [];
+    const alreadyFollowing =
+      typeof currentFollowing.includes === 'function'
+        ? currentFollowing.includes(targetId)
+        : false;
+
+    if (alreadyFollowing) {
+      if (typeof currentFollowing.pull === 'function') {
+        currentFollowing.pull(targetId);
+      }
+      const currentFollowers = targetUser.followers || [];
+      if (typeof currentFollowers.pull === 'function') {
+        currentFollowers.pull(me._id);
+      }
+      await me.save();
+      await targetUser.save();
+      return res.json({ message: `Has dejado de seguir a ${targetUser.username}` });
+    }
+
+    if (typeof currentFollowing.push === 'function') {
+      currentFollowing.push(targetId);
+    }
+    const currentFollowers = targetUser.followers || [];
+    if (typeof currentFollowers.push === 'function') {
+      currentFollowers.push(me._id);
+    }
+    await me.save();
+    await targetUser.save();
+
+    return res.json({ message: `Ahora sigues a ${targetUser.username}` });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.get('/users/profile/:username', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+
+  try {
+    const user = await User.findOne({ username })
+      .populate('following', 'username score icon')
+      .populate('followers', 'username score icon');
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json({
+      username: user.username,
+      age: user.age,
+      country: user.country,
+      icon: user.icon,
+      followingCount: user.following?.length || 0,
+      followersCount: user.followers?.length || 0,
+      following: user.following || [],
+      followers: user.followers || []
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.get('/friends', async (req, res) => {
+  const username = String(req.query.username || '').trim();
+
+  if (!username) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+
+  try {
+    const friendships = await Friendship.find({
+      users: username,
+      status: 'accepted'
+    });
+
+    const friendsFromFriendships = friendships
+      .map((friendship) => {
+        const friendName = (friendship.users || []).find((u) => u !== username);
+        return friendName ? { name: friendName, status: 'online' } : null;
+      })
+      .filter(Boolean);
+
+    // Compatibilidad: si no hay documentos Friendship, devolvemos los seguidos del modelo User.
+    if (friendsFromFriendships.length === 0) {
+      const user = await User.findOne({ username }).populate('following', 'username');
+      if (!user) {
+        return res.status(404).json({ error: 'Usuario no encontrado' });
+      }
+      const fallback = (user.following || []).map((friend) => ({
+        name: friend.username,
+        status: 'online'
+      }));
+      return res.json(fallback);
+    }
+
+    return res.json(friendsFromFriendships);
+  } catch (err) {
+    console.error('Error fetching friends:', err);
+    return res.status(500).json({ error: 'Error fetching friends' });
+  }
+});
 
 
 // New
@@ -230,28 +390,37 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  const { username } = req.query;
+  // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
+  const { username, page = 1, limit = 10, result } = req.query;
   
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
   }
 
   try {
-    // 1. Llamamos al servicio de Rust (puerto 4000)
-    const rustResponse = await fetch(`${GAMEY_URL}/history?username=${username}`);
+    // 2. Construimos la URL como un simple string (let, no const, porque va a cambiar)
+    let rustUrl = `${GAMEY_URL}/history?username=${username}&page=${page}&limit=${limit}`;
     
+    // 3. Modificamos el string si hay filtro
+    if (result) {
+        rustUrl += `&result=${encodeURIComponent(result)}`;
+    }
+
+    // 4. AHORA SÍ, ejecutamos el fetch pasándole el string de la URL
+    const rustResponse = await fetch(rustUrl);
+
     if (!rustResponse.ok) {
       console.error(`Error en Rust: ${rustResponse.status}`);
       return res.status(rustResponse.status).json({ error: "Rust history service error" });
     }
-
-    const games = await rustResponse.json();
+    
+    const paginatedData = await rustResponse.json();
     
     // DEBUG: Mira tu terminal de Node para ver si llegan datos
-    console.log(`Historial para ${username}:`, games); 
+    console.log(`Historial para ${username}: (Pag ${page}):`, paginatedData.data);
 
-    // 2. Enviamos el array directo al Frontend
-    res.json(games); 
+    // 5. Enviamos el array directo al Frontend
+    res.json(paginatedData); 
     
   } catch (e) {
     console.error("Error de conexión con Rust:", e);

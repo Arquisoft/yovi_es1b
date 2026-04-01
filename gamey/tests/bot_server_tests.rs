@@ -59,115 +59,171 @@ async fn test_status_endpoint_returns_ok() {
 // ============================================================================
 // Choose endpoint tests - Success cases
 // ============================================================================
-/*
+
 #[tokio::test]
 async fn test_choose_endpoint_with_valid_request() {
     let app = test_app().await;
 
-    // Create a valid YEN (Y-game Exchange Notation) for a size 3 board
-    // Layout: empty board with 3 rows (size 3): row1=1cell, row2=2cells, row3=3cells
+    // 1. Creamos un tablero de tamaño 3 vacío (Y-game Exchange Notation)
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
+    let celdas_vacias_antes = yen.layout().chars().filter(|c| *c == '.').count();
+
+    // 2. Preparamos el payload con el formato nuevo que espera tu API
+    let payload = serde_json::json!({
+        "position": yen,
+        "bot_id": "random_bot"
+    });
 
     let response = app
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/v1/ybot/choose/random_bot")
+                .uri("/api/play") // Ruta actualizada
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_string(&yen).unwrap()))
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
                 .unwrap(),
         )
         .await
         .unwrap();
 
+    // 3. Assertions
     assert_eq!(response.status(), StatusCode::OK);
-    // Coordinates should be valid (we can't predict exactly which one the random bot picks)
+
+    // Verificamos que el bot ha puesto una ficha (hay una celda vacía menos)
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let play_response: PlayResponse =
+        serde_json::from_slice(&body).expect("Fallo al parsear PlayResponse");
+
+    let celdas_vacias_despues = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
+    assert_eq!(
+        celdas_vacias_despues,
+        celdas_vacias_antes - 1,
+        "El bot debería haber colocado exactamente una ficha"
+    );
 }
 
-    */
-/*
 #[tokio::test]
 async fn test_choose_endpoint_with_partially_filled_board() {
     let app = test_app().await;
 
-    // Board with some cells already filled: B in first cell, R in second
+    // 1. Tablero de tamaño 3 con algunas celdas ocupadas
+    // Layout: B en la primera celda, R en la segunda, etc.
     let yen = YEN::new(3, 2, vec!['B', 'R'], "B/R./.B.".to_string());
+    let celdas_vacias_antes = yen.layout().chars().filter(|c| *c == '.').count(); // Debería haber 3 puntos
+
+    let payload = serde_json::json!({
+        "position": yen,
+        "bot_id": "random_bot"
+    });
 
     let response = app
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/v1/ybot/choose/random_bot")
+                .uri("/api/play")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_string(&yen).unwrap()))
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
                 .unwrap(),
         )
         .await
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
+
+    let celdas_vacias_despues = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
+    assert_eq!(
+        celdas_vacias_despues,
+        celdas_vacias_antes - 1,
+        "El bot debe elegir una de las celdas vacías restantes"
+    );
 }
-*/
 // ============================================================================
 // Choose endpoint tests - Error cases
 // ============================================================================
+
 /*
 #[tokio::test]
 async fn test_choose_endpoint_with_invalid_api_version() {
     let app = test_app().await;
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
+    let payload = serde_json::json!({
+        "position": yen,
+        "bot_id": "random_bot"
+    });
 
+    // Intentamos acceder a una versión no soportada (v2) siguiendo el nuevo estilo de ruta
     let response = app
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/v2/ybot/choose/random_bot") // v2 is not supported
+                .uri("/v2/play")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_string(&yen).unwrap()))
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
                 .unwrap(),
         )
         .await
         .unwrap();
 
-    assert_eq!(response.status(), StatusCode::OK); // Axum returns 200 with error JSON
+    // Importante: Si tu router no reconoce el prefijo /v2/, esto devolverá 404 y el test fallará aquí.
+    // Si tu código maneja el versionado como un middleware o segmento dinámico, devolverá 200 con el JSON de error.
+    assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let error_response: ErrorResponse = serde_json::from_slice(&body).unwrap();
+    let error_response: ErrorResponse = serde_json::from_slice(&body)
+        .expect("La respuesta debería ser un JSON de ErrorResponse con el fallo de versión");
 
     assert!(error_response.message.contains("Unsupported API version"));
     assert_eq!(error_response.api_version, Some("v2".to_string()));
 }
     */
-/*
+
 #[tokio::test]
 async fn test_choose_endpoint_with_unknown_bot() {
     let app = test_app().await;
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
 
+    let payload = serde_json::json!({
+        "position": yen,
+        "bot_id": "unknown_bot"
+    });
+
     let response = app
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/v1/ybot/choose/unknown_bot")
+                .uri("/api/play")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_string(&yen).unwrap()))
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
                 .unwrap(),
         )
         .await
         .unwrap();
 
+    // Según tu código anterior, Axum devuelve 200 pero con un JSON de ErrorResponse
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let error_response: ErrorResponse = serde_json::from_slice(&body).unwrap();
 
-    assert!(error_response.message.contains("Bot not found"));
-    assert!(error_response.message.contains("unknown_bot"));
+    // Verificamos que el mensaje es el correcto para el usuario
+    assert!(error_response.message.to_lowercase().contains("not found"));
     assert_eq!(error_response.bot_id, Some("unknown_bot".to_string()));
 }
-*/
 
 #[tokio::test]
 async fn test_choose_endpoint_with_invalid_json() {
@@ -210,28 +266,30 @@ async fn test_choose_endpoint_with_missing_content_type() {
     // Missing content-type should return an error
     assert!(response.status().is_client_error());
 }
-
 // ============================================================================
 // Custom state tests
 // ============================================================================
-/*
 #[tokio::test]
 async fn test_choose_with_custom_bot_registry() {
-    // Create a custom registry with only the random bot
+    // 1. Setup: Registro que SOLO tiene el RandomBot
     let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot));
-    let db = get_test_db().await; // Obtenemos la DB para el test
+    let db = get_test_db().await;
     let state = AppState::new(bots, db);
     let app = test_app_with_state(state);
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
+    let payload = serde_json::json!({
+        "position": yen,
+        "bot_id": "random_bot"
+    });
 
     let response = app
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/v1/ybot/choose/random_bot")
+                .uri("/api/play") // Ruta actualizada
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_string(&yen).unwrap()))
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
                 .unwrap(),
         )
         .await
@@ -239,38 +297,42 @@ async fn test_choose_with_custom_bot_registry() {
 
     assert_eq!(response.status(), StatusCode::OK);
 }
-    */
-/*
 #[tokio::test]
 async fn test_choose_with_empty_bot_registry() {
-    // Create an empty registry
+    // 1. Setup: Registro totalmente vacío
     let bots = YBotRegistry::new();
-    let db = get_test_db().await; // Obtenemos la DB para el test
+    let db = get_test_db().await;
     let state = AppState::new(bots, db);
     let app = test_app_with_state(state);
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
+    let payload = serde_json::json!({
+        "position": yen,
+        "bot_id": "random_bot"
+    });
 
     let response = app
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/v1/ybot/choose/random_bot")
+                .uri("/api/play")
                 .header("content-type", "application/json")
-                .body(Body::from(serde_json::to_string(&yen).unwrap()))
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
                 .unwrap(),
         )
         .await
         .unwrap();
 
+    // El servidor responde 200 pero con un JSON indicando el error
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let error_response: ErrorResponse = serde_json::from_slice(&body).unwrap();
 
-    assert!(error_response.message.contains("Bot not found"));
+    // Verificamos que el mensaje es coherente con un registro vacío
+    assert!(error_response.message.to_lowercase().contains("not found"));
 }
-*/
+
 // ============================================================================
 // Route not found tests
 // ============================================================================
@@ -310,22 +372,397 @@ async fn test_wrong_method_on_status_endpoint() {
     // POST to a GET-only endpoint should return 405 Method Not Allowed
     assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
-/*
 #[tokio::test]
-async fn test_get_on_choose_endpoint_returns_method_not_allowed() {
+async fn test_get_on_play_endpoint_returns_method_not_allowed() {
     let app = test_app().await;
 
     let response = app
         .oneshot(
             Request::builder()
-                .method("GET")
-                .uri("/v1/ybot/choose/random_bot")
+                .method("GET") // El endpoint /api/play solo acepta POST
+                .uri("/api/play")
                 .body(Body::empty())
                 .unwrap(),
         )
         .await
         .unwrap();
 
+    // Ahora sí estamos testeando que el método GET está bloqueado en una ruta real
     assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
+
+// ============================================================================
+// Board size edge cases
+// ============================================================================
+
+#[tokio::test]
+async fn test_choose_with_size_1_board() {
+    let app = test_app().await;
+
+    let payload = serde_json::json!({
+        "position": YEN::new(1, 0, vec!['B', 'R'], ".".to_string()),
+        "bot_id": "random_bot"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
+    assert!(!play_response.position.layout().contains('.'));
+    assert_eq!(play_response.position.size(), 1);
+}
+
+#[tokio::test]
+async fn test_choose_with_nearly_full_board() {
+    let app = test_app().await;
+
+    let payload = serde_json::json!({
+        "position": YEN::new(3, 2, vec!['B', 'R'], "B/BR/BB.".to_string()),
+        "bot_id": "random_bot"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
+    assert!(!play_response.position.layout().contains('.'));
+    assert_eq!(play_response.position.size(), 3);
+}
+
+// ============================================================================
+// Multiple bots tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_choose_with_blocker_bot() {
+    use gamey::BlockerBot;
+
+    let bots = YBotRegistry::new()
+        .with_bot(Arc::new(RandomBot))
+        .with_bot(Arc::new(BlockerBot));
+    let db = get_test_db().await;
+    let state = AppState::new(bots, db);
+    let app = test_app_with_state(state);
+
+    let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
+    let empty_before = yen.layout().chars().filter(|c| *c == '.').count();
+
+    let payload = serde_json::json!({ "position": yen, "bot_id": "blocker_bot" });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
+    let empty_after = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
+    assert_eq!(empty_after, empty_before - 1);
+}
+
+#[tokio::test]
+async fn test_choose_with_pro_bot() {
+    use gamey::ProBot;
+
+    let bots = YBotRegistry::new()
+        .with_bot(Arc::new(RandomBot))
+        .with_bot(Arc::new(ProBot));
+    let db = get_test_db().await;
+    let state = AppState::new(bots, db);
+    let app = test_app_with_state(state);
+
+    let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
+    let empty_before = yen.layout().chars().filter(|c| *c == '.').count();
+
+    let payload = serde_json::json!({ "position": yen, "bot_id": "pro_bot" });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
+    let empty_after = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
+    assert_eq!(empty_after, empty_before - 1);
+}
+
+#[tokio::test]
+async fn test_all_bots_return_valid_moves_on_same_board() {
+    use gamey::{BlockerBot, ProBot};
+
+    let bots_config: Vec<(&str, Arc<dyn gamey::YBot>)> = vec![
+        ("random_bot", Arc::new(RandomBot) as Arc<dyn gamey::YBot>),
+        ("blocker_bot", Arc::new(BlockerBot) as Arc<dyn gamey::YBot>),
+        ("pro_bot", Arc::new(ProBot) as Arc<dyn gamey::YBot>),
+    ];
+
+    let yen = YEN::new(3, 2, vec!['B', 'R'], "B/R./.B.".to_string());
+    let empty_before = yen.layout().chars().filter(|c| *c == '.').count();
+
+    for (bot_id, bot) in bots_config {
+        let registry = YBotRegistry::new().with_bot(bot);
+        let db = get_test_db().await;
+        let state = AppState::new(registry, db);
+        let app = test_app_with_state(state);
+
+        let payload = serde_json::json!({ "position": yen, "bot_id": bot_id });
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/api/play")
+                    .header("content-type", "application/json")
+                    .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK, "Bot {} falló", bot_id);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
+        let empty_after = play_response
+            .position
+            .layout()
+            .chars()
+            .filter(|c| *c == '.')
+            .count();
+        assert_eq!(
+            empty_after,
+            empty_before - 1,
+            "Bot {} no colocó exactamente una ficha",
+            bot_id
+        );
+    }
+}
+
+// ============================================================================
+// Player turn tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_choose_with_player_1_turn() {
+    let app = test_app().await;
+
+    let yen = YEN::new(3, 1, vec!['B', 'R'], "B/../...".to_string());
+    let empty_before = yen.layout().chars().filter(|c| *c == '.').count();
+
+    let payload = serde_json::json!({ "position": yen, "bot_id": "random_bot" });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
+    let empty_after = play_response
+        .position
+        .layout()
+        .chars()
+        .filter(|c| *c == '.')
+        .count();
+    assert_eq!(empty_after, empty_before - 1);
+}
+
+// ============================================================================
+// Error response structure tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_error_response_fields_for_unknown_bot() {
+    let app = test_app().await;
+
+    let payload = serde_json::json!({
+        "position": YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string()),
+        "bot_id": "nonexistent_bot"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let error: ErrorResponse = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(error.bot_id, Some("nonexistent_bot".to_string()));
+    assert!(error.message.contains("Bot not found"));
+}
+
+#[tokio::test]
+async fn test_error_response_for_invalid_yen() {
+    let app = test_app().await;
+
+    // Layout con número de filas incorrecto para size 3
+    let payload = serde_json::json!({
+        "position": YEN::new(3, 0, vec!['B', 'R'], "B/RB".to_string()),
+        "bot_id": "random_bot"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let error: ErrorResponse = serde_json::from_slice(&body).unwrap();
+    assert!(error.message.contains("Invalid YEN"));
+}
+
+// ============================================================================
+// Status endpoint extended tests
+// ============================================================================
+
+#[tokio::test]
+async fn test_status_endpoint_multiple_requests() {
+    for _ in 0..3 {
+        let app = test_app().await;
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/status")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response.into_body().collect().await.unwrap().to_bytes();
+        assert_eq!(&body[..], b"OK");
+    }
+}
+
+// ============================================================================
+// NUEVOS TESTS: Historial y Rendición
+// ============================================================================
+
+/*
+#[tokio::test]
+async fn test_history_endpoint_filters_correctly() {
+    let app = test_app().await;
+
+    // Simulamos la petición GET que hace React con los filtros
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/history?username=Drus&page=1&limit=5&result=Victoria")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Verificamos que el servidor procesa la query y la base de datos sin explotar
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Verificamos que devuelve el JSON con la estructura paginada esperada
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json.get("data").is_some());
+    assert!(json.get("page").is_some());
+    assert!(json.get("total_pages").is_some());
+}
+
 */
+
+#[tokio::test]
+async fn test_surrender_endpoint_saves_defeat() {
+    let app = test_app().await;
+
+    // Simulamos el JSON que envía tu frontend al pulsar "Rendirse"
+    let payload = serde_json::json!({
+        "player": "Drus",
+        "difficulty": "Hard",
+        "board_size": 6
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/surrender")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Verificamos que el registro se guardó correctamente en MongoDB
+    assert_eq!(response.status(), StatusCode::OK);
+}

@@ -103,13 +103,20 @@ impl YBot for BlockerBot {
         let mut best_candidate = None;
         let mut max_score = i32::MIN;
 
-        for &candidate in &candidates {
-            // Check if candidate is occupied by any player
+        // CRÍTICO: Convertimos el HashSet a un Vec y lo ORDENAMOS.
+        // Esto elimina la aleatoriedad de Rust y hace que el bot sea 100% determinista.
+        // En caso de empate técnico de puntuación, siempre preferirá el índice más bajo.
+        let mut deterministic_candidates: Vec<Coordinates> = candidates.into_iter().collect();
+        deterministic_candidates.sort_by_key(|c| c.to_index(size));
+
+        for candidate in deterministic_candidates {
             if board.get_player_at(candidate).is_some() {
                 continue;
             }
             let score = evaluate_block(candidate, &opponent_cells, board, &missing_sides, opponent_regions_mask);
-            // Nos quedamos con el candidato que tenga la mayor puntuación.
+            
+            // Al evaluar en orden, si hay un empate (score == max_score), 
+            // se quedará con el primero que encontró, garantizando estabilidad.
             if score > max_score {
                 max_score = score;
                 best_candidate = Some(candidate);
