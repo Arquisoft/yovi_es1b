@@ -300,14 +300,14 @@ body {
 
 .friends-sidebar-content {
   position: relative;
-  width: 350px;
+  width: 380px; /* Un poco más ancho para dar aire */
   height: 100%;
-  background: rgba(10, 10, 10, 0.9); /* Casi negro traslúcido */
-  backdrop-filter: blur(25px);
+  background: var(--bg-dark-glass); 
+  backdrop-filter: blur(20px);
   color: white;
-  padding: 2.5rem 1.5rem;
-  border-left: 2px solid #00d4ff; /* El toque neón */
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.8);
+  padding: 2rem 1.5rem;
+  border-left: 1px solid var(--border-white);
+  box-shadow: -15px 0 50px rgba(0, 0, 0, 0.6);
   display: flex;
   flex-direction: column;
   animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -336,11 +336,23 @@ body {
 .user-mini-profile {
   display: flex;
   align-items: center;
-  gap: 12px;
+  background: var(--bg-input); /* Igual al fondo de tu nav */
+  padding: 15px;
+  border-radius: 14px;
   margin-bottom: 2rem;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 12px;
-  border-radius: 8px;
+  border: 1px solid var(--border-white);
+  transition: border-color 0.3s;
+}
+
+.user-mini-profile:hover {
+  border-color: var(--accent-neon-glow);
+}
+
+.profile-info-text {
+  display: flex;
+  flex-direction: column;
+  /* flex: 1;  <-- Si esto está activo, empujará al botón automáticamente */
+  flex: 1; 
 }
 
 .avatar-circle {
@@ -363,8 +375,17 @@ body {
 /* --- FORMULARIO DE BÚSQUEDA --- */
 .search-container {
   display: flex;
-  flex-direction: column;
   gap: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.search-container .add-friend-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--accent-neon);
+  color: #000;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
 }
 
 .friends-input {
@@ -400,13 +421,15 @@ body {
 
 /* --- LISTA VACÍA --- */
 .friends-list-area {
-  margin-top: 2rem;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .empty-list-box {
   text-align: center;
   padding: 30px 10px;
-  color: #444;
+  color: #868383;
   border: 2px dashed rgba(255, 255, 255, 0.05);
   border-radius: 12px;
   font-size: 0.9rem;
@@ -438,17 +461,16 @@ body {
 .friend-item-row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  margin-bottom: 8px;
-  /* Esto sobreescribe el 'center' del root para que la lista sea legible */
-  text-align: left; 
+  padding: 12px;
+  background: transparent; /* Fondo limpio */
+  border-bottom: 1px solid var(--border-white);
+  margin-bottom: 0; 
+  transition: background 0.2s;
+  text-align: left;
 }
 
 .friend-item-row:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--bg-input);
 }
 
 .status-dot {
@@ -490,4 +512,117 @@ body {
   background: #00d4ff;
   color: #000;
   box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.id-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2); 
+  border: 1px solid var(--border-white);
+  border-radius: 8px;
+  padding: 0 12px;
+  flex: 2;
+  transition: all 0.3s ease;
+}
+
+.id-input-wrapper:focus-within {
+  border-color: var(--accent-neon);
+  box-shadow: 0 0 10px var(--accent-neon-glow);
+}
+
+.static-hash {
+  color: #00d4ff; /* El color de tu ID */
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  user-select: none; /* Evita que el usuario seleccione el # */
+  margin-right: 4px;
+}
+
+.friends-input-id {
+  background: transparent !important;
+  border: none !important;
+  color: rgb(136, 133, 133);
+  padding: 8px 0;
+  width: 100%;
+  outline: none;
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 2px;
+}
+
+.friends-input-id::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: normal;
+}
+
+
+.social-tabs {
+  display: flex;
+  margin: 15px 0;
+  border-bottom: 1px solid rgb(66, 113, 141);
+  color: white;
+}
+
+.tab-link {
+  background: none;
+  border: none;
+  color: #666;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tab-link.active {
+  color: #00d4ff;
+  border-bottom: 2px solid #00d4ff;
+}
+
+.req-badge {
+  background: #ff4757;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 5px;
+}
+
+.request-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+/* --- BOTÓN PENDIENTES (SOBRE) --- */
+.pending-btn {
+  margin-left: auto; /* ESTA es la clave: empuja el botón todo lo posible a la derecha */
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  color: #00d4ff;
+  width: 44px; /* Un poco más grande para que se vea mejor */
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0; /* Evita que el botón se aplaste si el nombre es largo */
+}
+
+.pending-btn:hover {
+  background: rgba(0, 212, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Badge de notificaciones (el numerito) */
+.req-count {
+  background: #ff4757;
+  top: -8px;
+  right: -8px;
+  padding: 2px 5px;
+  font-size: 0.65rem;
 }
