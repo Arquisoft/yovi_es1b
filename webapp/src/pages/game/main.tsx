@@ -28,6 +28,7 @@ import { FriendsPanel } from '../../components/modals/FriendsPanel';
 const GameApp = () => {
   // --- SEGURIDAD Y SESIÓN ---
   const username = localStorage.getItem('yovi_user') || '';
+  const friendCode = localStorage.getItem('yovi_friend_code') || '';
   const playerIcon = localStorage.getItem('yovi_user_icon');
   
   // Si no hay usuario, redirigimos inmediatamente a la home
@@ -201,6 +202,7 @@ const GameApp = () => {
         isOpen={showFriendsMenu}
         onClose={() => setShowFriendsMenu(false)}
         username={username}
+        friendCode={friendCode}
       />
     </div>
   );
