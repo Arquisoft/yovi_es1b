@@ -23,10 +23,13 @@ import '../../index.css'
 
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
+import { FriendsPanel } from '../../components/modals/FriendsPanel';
 
 const GameApp = () => {
   // --- SEGURIDAD Y SESIÓN ---
   const username = localStorage.getItem('yovi_user') || '';
+  const friendCode = localStorage.getItem('yovi_friend_code') || '';
+  const playerIcon = localStorage.getItem('yovi_user_icon');
   
   // Si no hay usuario, redirigimos inmediatamente a la home
   if (!username) {
@@ -40,6 +43,7 @@ const GameApp = () => {
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [showFriendsMenu, setShowFriendsMenu] = useState(false);
 
   // --- ESTADOS DE HISTORIAL ---
   const [showHistory, setShowHistory] = useState(false);
@@ -117,6 +121,10 @@ const GameApp = () => {
     }
   };
 
+  const openFriendsMenu = () => {
+    setShowFriendsMenu(true);
+  };
+
   // Mapeo para la interfaz
   const displayDifficulty = difficultyChoice ? DIFFICULTY_TRANSLATIONS[difficultyChoice] : null;
 
@@ -131,6 +139,7 @@ const GameApp = () => {
       {/* Pantalla Principal */}
       <GameScreen 
         username={username}
+        playerIcon={playerIcon}
         boardData={boardData}
         winner={winner}
         connectionStatus={connectionStatus}
@@ -152,6 +161,7 @@ const GameApp = () => {
           await surrender(difficultyChoice!);
           setShowResultModal(true);
         }}
+        onAddFriend={() => openFriendsMenu()}
       />
 
       {/* Modales de Configuración */}
@@ -186,6 +196,14 @@ const GameApp = () => {
         currentFilter={historyFilter}
         onPageChange={fetchHistory}
         onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
+      />
+
+      <FriendsPanel
+        isOpen={showFriendsMenu}
+        onClose={() => setShowFriendsMenu(false)}
+        username={username}
+        friendCode={friendCode}
+        icon={playerIcon}
       />
     </div>
   );

@@ -58,8 +58,10 @@ describe('RegisterForm', () => {
 
     await user.type(screen.getByLabelText(/nombre/i), 'Alice')
     await user.type(screen.getByLabelText(/edad/i), '22')
-    await user.type(screen.getByLabelText(/pa/i), 'Spain')
-    await user.type(screen.getByLabelText(/contra/i), 'password123')
+    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+    await user.click(screen.getByLabelText(/seleccionar spain/i))
+    await user.type(screen.getByLabelText(/^contrasena$/i), 'password123')
+    await user.type(screen.getByLabelText(/confirmar contrasena/i), 'password123')
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     await waitFor(() => {
@@ -71,21 +73,34 @@ describe('RegisterForm', () => {
     const user = userEvent.setup()
     const onCreate = vi.fn()
 
+    // 1. Actualizamos el mock para que devuelva el friendCode
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => ({ ok: true }),
+      json: async () => ({ 
+        ok: true, 
+        friendCode: 'NEW-123' // Simulamos que el back genera este código
+      }),
     } as Response)
 
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
 
+    // Llenamos el formulario (esto se queda igual)
     await user.type(screen.getByLabelText(/nombre/i), 'Alice')
     await user.type(screen.getByLabelText(/edad/i), '25')
-    await user.type(screen.getByLabelText(/pa/i), 'Spain')
-    await user.type(screen.getByLabelText(/contra/i), 'securePass123')
+    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+    await user.click(screen.getByLabelText(/seleccionar spain/i))
+    await user.type(screen.getByLabelText(/^contrasena$/i), 'securePass123')
+    await user.type(screen.getByLabelText(/confirmar contrasena/i), 'securePass123')
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
     await waitFor(() => {
-      expect(onCreate).toHaveBeenCalledWith('Alice')
+      // 2. ACTUALIZAMOS LA EXPECTATIVA:
+      // Esperamos: Nombre ('Alice'), FriendCode ('NEW-123') e Icono (cualquier String)
+      expect(onCreate).toHaveBeenCalledWith(
+        'Alice', 
+        'NEW-123', 
+        expect.any(String)
+      )
     })
   })
 

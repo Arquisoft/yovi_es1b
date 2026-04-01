@@ -8,7 +8,7 @@ interface LoginData {
 
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
-  readonly onLogin: (username: string) => Promise<void> | void; // Intenta iniciar partida con ese usuario
+  readonly onLogin: (username: string, friendCode: string, icon?: string | null) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
 function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
@@ -22,7 +22,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Evita recargar la pagina
     if (!formData.username.trim() || !formData.password.trim()) {
-      setFormError('Usuario y contrasena no pueden estar en blanco.'); // Valida campos obligatorios
+      setFormError('Usuario y contraseña no pueden estar en blanco.'); // Valida campos obligatorios
       return;
     }
     setFormError(null);
@@ -43,7 +43,10 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
       if (response.ok) {
         // El estado de partida se crea en el componente padre (App) usando este username.
-        await onLogin(formData.username.trim());
+        await onLogin(
+          formData.username.trim(),
+          data.friendCode,
+          typeof data.icon === 'string' ? data.icon : null);
       } else {
         setFormError(data.error || 'Error al iniciar sesion.');
       }

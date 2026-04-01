@@ -11,20 +11,31 @@ const UserSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
+  friendCode: {
+    type: String,
+    unique: true,
+  },
   age: {
     type: Number,
     required: true
+  },
+  birthDate: {
+    type: Date,
+    required: false
   },
   country: {
     type: String,
     required: true
   },
+  icon: {
+    type: String,
+    required: false,
+    default: ''
+  },
   createdAt: { 
     type: Date, 
     default: Date.now
-  },
-  following: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
-  followers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  }
 
 });
 

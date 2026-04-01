@@ -7,11 +7,17 @@ import '../../index.css'
 import menuVideo from '../../assets/background_video.mp4'
 
 const RegisterPage = () => {
-  const handleRegisterSuccess = (playerName: string) => {
+  const handleRegisterSuccess = (playerName: string, friendCode: string, icon?: string | null) => {
     const name = playerName.trim();
     if (!name) return;
 
     localStorage.setItem('yovi_user', name);
+    localStorage.setItem('yovi_friend_code', friendCode);
+    if (typeof icon === 'string' && icon.trim()) {
+      localStorage.setItem('yovi_user_icon', icon);
+    } else {
+      localStorage.removeItem('yovi_user_icon');
+    }
     window.location.href = '/game.html';
   };
 

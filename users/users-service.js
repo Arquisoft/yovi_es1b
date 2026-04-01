@@ -5,6 +5,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
+const Friendship = require('./models/friendship');
 
 const express = require('express');
 const app = express();
@@ -19,6 +20,12 @@ app.use(metricsMiddleware);
 
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
+
+// Para guardar un friendCode
+const { customAlphabet } = require('nanoid');
+// Alfabeto sin letras confusas (evitamos O, 0, I, l)
+const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
@@ -53,10 +60,22 @@ app.post('/createuser', async (req, res) => {
   const username = String(req.body.username || "");
   const password = String(req.body.password || "");
   const age = Number(req.body.age);
+  const birthDate = req.body.birthDate ? new Date(String(req.body.birthDate)) : null;
   const country = String(req.body.country || "");
+  const icon = String(req.body.icon || "");
   try {
     if (!username || !password) {
       return res.status(400).json({ error: "Username and password are required" });
+    }
+
+    let friendCode;
+    let isUnique = false;
+    while (!isUnique) {
+      friendCode = generateFriendCode();
+      const existingCode = await User.findOne({ friendCode });
+      if (!existingCode) {
+        isUnique = true;
+      }
     }
     
     // Encriptar
@@ -65,14 +84,19 @@ app.post('/createuser', async (req, res) => {
     const newUser = new User ({
       username,
       password: hashedPassword,
+      friendCode,
       age,
-      country
+      birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : undefined,
+      country,
+      icon
     })
 
     // Save the new user to the database
     await newUser.save();
 
-    res.json({ message: `Hello ${username}! Your account has been created!`
+    res.json({ 
+      message: `Hello ${username}! Your account has been created!`,
+      friendCode: `#${friendCode}`
     })
 
   } catch (err) {
@@ -101,7 +125,9 @@ app.post('/login', async (req, res) => {
       res.json({
         message: `Welcome back, ${username}!`,
         username: user.username,
-        score: user.score
+        score: user.score,
+        icon: user.icon,
+        friendCode: user.friendCode
       });
     } else {
       res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -111,6 +137,147 @@ app.post('/login', async (req, res) => {
     res.status(500).json({ error: "Error del servidor" });
   }
 })
+
+app.get('/users/search', async (req, res) => {
+  const query = String(req.query.query || '').trim();
+  
+  try {
+    let searchCriteria = {};
+
+    // Si la búsqueda empieza por #, buscamos coincidencia exacta por friendCode
+    if (query.startsWith('#')) {
+      // Quitamos el # para buscar en la base de datos (donde se guarda como "ABC123")
+      const cleanCode = query.substring(1).toUpperCase();
+      searchCriteria = { friendCode: cleanCode };
+    } else {
+      // Si no hay #, buscamos por nombre (insensible a mayúsculas)
+      searchCriteria = { username: { $regex: query, $options: 'i' } };
+    }
+
+    const users = await User.find(searchCriteria)
+      .select('username icon friendCode')
+      .limit(10);
+
+    res.json(users);
+  } catch (err) {
+    console.error("Error en búsqueda:", err);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.post('/users/follow', async (req, res) => {
+  const { follower, following } = req.body;
+  try {
+    // Buscamos si ya existe una relación (da igual el orden)
+    const existing = await Friendship.findOne({
+      users: { $all: [follower, following] }
+    });
+
+    if (existing) {
+      return res.status(400).json({ error: 'Ya existe una solicitud o amistad' });
+    }
+
+    // Creamos la solicitud pendiente
+    const newRequest = new Friendship({
+      users: [follower, following],
+      status: 'pending'
+    });
+    await newRequest.save();
+
+    res.json({ message: 'Solicitud enviada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al enviar solicitud' });
+  }
+});
+
+/* app.get('/users/profile/:username', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+
+  try {
+    const user = await User.findOne({ username })
+      .populate('following', 'username score icon')
+      .populate('followers', 'username score icon');
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json({
+      username: user.username,
+      age: user.age,
+      country: user.country,
+      icon: user.icon,
+      followingCount: user.following?.length || 0,
+      followersCount: user.followers?.length || 0,
+      following: user.following || [],
+      followers: user.followers || []
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+}); */
+
+app.get('/friends', async (req, res) => {
+  const username = String(req.query.username || '').trim();
+  if (!username) return res.status(400).json({ error: 'Username required' });
+
+  try {
+    const friendships = await Friendship.find({
+      users: username,
+      status: 'accepted'
+    });
+
+    const friendsList = friendships.map(f => {
+      const friendName = f.users.find(u => u !== username);
+      return { name: friendName, status: 'online' };
+    });
+
+    res.json(friendsList);
+  } catch (err) {
+    res.status(500).json({ error: 'Error fetching friends' });
+  }
+});
+
+// Obtener solicitudes que me han enviado a mí (pendientes)
+app.get('/friends/requests', async (req, res) => {
+  const username = String(req.query.username || '').trim();
+  try {
+    const pendingRequests = await Friendship.find({
+      users: username,
+      status: 'pending'
+    });
+    
+    // Devolvemos solo el nombre de la persona que envió la solicitud
+    const requests = pendingRequests.map(fr => {
+        const sender = fr.users.find(u => u !== username);
+        return { sender, id: fr._id };
+    });
+    
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener solicitudes' });
+  }
+});
+
+// Aceptar o Rechazar solicitud
+app.post('/friends/respond', async (req, res) => {
+  const { requestId, action } = req.body; // action: 'accepted' o 'rejected'
+
+  try {
+    if (action === 'rejected') {
+      await Friendship.findByIdAndDelete(requestId);
+      return res.json({ message: 'Solicitud rechazada' });
+    }
+
+    const friendship = await Friendship.findByIdAndUpdate(requestId, { 
+      status: 'accepted' 
+    }, { new: true });
+
+    res.json({ message: '¡Ahora sois amigos!', friendship });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al responder solicitud' });
+  }
+});
 
 
 // New
@@ -265,87 +432,6 @@ app.get('/history', async (req, res) => {
   } catch (e) {
     console.error("Error de conexión con Rust:", e);
     res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
-  }
-});
-
-/**
- * Para buscar usuarios por nombre
- */
-app.get('/users/search', async (req, res) => {
-  const { query } = req.query;
-  try {
-    const users = await User.find({
-      username: { $regex: query, $options: 'i' } // Búsqueda insensible a mayúsculas
-    }).select('username age country');
-
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ error: "Error del servidor" });
-  }
-});
-
-/**
- * Endpoint para seguir/dejar de seguir a un usuario. 
- * Recibe el nombre de usuario del seguidor y del seguido, y actualiza ambos documentos en la base de datos.
- */
-app.post('/users/follow', async (req, res) => {
-  const { follower, following } = req.body; // nombres de usuario
-
-  try {
-    const userToFollow = await User.findOne({ username: following });
-    const me = await User.findOne({ username: follower });
-
-    if (!userToFollow || !me) {
-      return res.status(404).json({ error: "Usuario no encontrado" });
-    }
-
-    if (follower === following) {
-      return res.status(400).json({ error: "No puedes seguirte a ti mismo" });
-    }
-
-    const isAlreadyFollowing = me.following.includes(userToFollow._id);
-
-    if (isAlreadyFollowing) {
-      // Dejar de seguir
-      me.following.pull(userToFollow._id);
-      userToFollow.followers.pull(me._id);
-    } else {
-      // Seguir
-      me.following.push(userToFollow._id);
-      userToFollow.followers.push(me._id);
-    }
-
-    await me.save();
-    await userToFollow.save();
-
-    res.json({ message: isAlreadyFollowing ? `Has dejado de seguir a ${following}` : `Ahora sigues a ${following}` });
-  } catch (err) {
-    res.status(500).json({ error: "Error del servidor" });
-  }
-});
-
-/**
- * Endpoint para obtener el perfil de un usuario. 
- * Incluyendo su número de seguidores y seguidos, y la lista de usuarios que sigue
- */
-app.get('/users/profile/:username', async (req, res) => {
-  try {
-    const user = await User.findOne({ username: req.params.username })
-      .populate('following', 'username') // Popula el campo 'following' con los nombres de usuario
-      .populate('followers', 'username'); // Popula el campo 'followers' con los nombres de usuario
-    
-    if (!user) return res.status(404).json({ error: "Usuario no encontrado" });
-
-    res.json({
-      username: user.username,
-      age: user.age,
-      country: user.country,
-      followingCount: user.following.length,
-      followersCount: user.followers.length,
-      following: user.following
-    });
-  } catch (err) {
-    res.status(500).json({ error: "Error del servidor" });
   }
 });
 

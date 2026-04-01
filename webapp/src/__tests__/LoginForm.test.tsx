@@ -52,9 +52,14 @@ describe('LoginForm', () => {
     const user = userEvent.setup()
     const onLogin = vi.fn()
     
+    // 1. Actualizamos el mock para que devuelva lo que el nuevo Back envía
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ ok: true }),
+      json: async () => ({ 
+        username: 'Alice', 
+        friendCode: 'XYZ789', // Simulamos un código de amigo
+        icon: 'avatar.png'     // Simulamos un icono
+      }),
     } as Response)
 
     render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
@@ -64,7 +69,8 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
     await waitFor(() => {
-      expect(onLogin).toHaveBeenCalledWith('Alice')
+      // 2. Verificamos que se llame con los TRES argumentos correctos
+      expect(onLogin).toHaveBeenCalledWith('Alice', 'XYZ789', 'avatar.png')
     })
   })
 
