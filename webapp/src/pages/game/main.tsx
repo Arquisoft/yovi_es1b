@@ -344,6 +344,7 @@ const GameApp = () => {
         username={username}
         displayName={displayName}
         friendCode={friendCode}
+        icon={playerIcon}
       />
 
       <ProfileScreen
