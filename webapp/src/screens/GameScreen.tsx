@@ -5,6 +5,8 @@ import historyJson from '../assets/buttons/History.json';
 import updownJson from '../assets/buttons/updown.json';
 import restartJson from '../assets/buttons/Restart.json';
 import difficultyJson from '../assets/buttons/Difficulty.json';
+import settingsJson from '../assets/buttons/setting.json';
+import settingsImg from '../assets/buttons/configuracion.png';
 import botonRojo from '../assets/buttons/BotonRojo.png';
 import dificultadImg from '../assets/buttons/Dificultad.png';
 import historialImg from '../assets/buttons/Historial.jpg';
@@ -46,6 +48,7 @@ interface GameScreenProps {
   onFetchHistory: () => void; // Permite consultar el historial de partidas
   onAddFriend?: () => void; // Abre el panel de amigos
   onViewProfile?: () => void; // Abre el perfil del usuario
+  onOpenSettings?: () => void; // Abre el panel de configuracion
 }
 
 function GameScreen({
@@ -69,7 +72,8 @@ function GameScreen({
   onChangeSize,
   onFetchHistory,
   onAddFriend,
-  onViewProfile
+  onViewProfile,
+  onOpenSettings
 }: GameScreenProps) {
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const logoutLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -77,6 +81,7 @@ function GameScreen({
   const updownLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const restartLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const difficultyLottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const settingsLottieRef = useRef<LottieRefCurrentProps | null>(null);
 
   useEffect(() => {
     failedLottieRef.current?.setSpeed(0.5);
@@ -85,6 +90,7 @@ function GameScreen({
     updownLottieRef.current?.setSpeed(0.5);
     restartLottieRef.current?.setSpeed(0.5);
     difficultyLottieRef.current?.setSpeed(0.5);
+    settingsLottieRef.current?.setSpeed(0.5);
   }, []);
 
   let botName = 'Bot Player';
@@ -165,6 +171,17 @@ function GameScreen({
             <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt="Reiniciar partida" />
             <span className="nav-btn-restart-hover" aria-hidden="true">
               <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
+            </span>
+          </button>
+          <button
+            className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
+            onClick={onOpenSettings}
+            title="Configuración"
+            aria-label="Configuración"
+          >
+            <img className="nav-btn-settings-img" src={settingsImg} alt="Configuración" />
+            <span className="nav-btn-settings-hover" aria-hidden="true">
+              <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
             </span>
           </button>
           <div className="nav-btn-spacer" aria-hidden="true" />

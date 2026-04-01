@@ -156,6 +156,10 @@
   background-color: #0056b3;
 }
 
+.bg-music {
+  display: none;
+}
+
 /* Game board */
 body {
   background-color: transparent;

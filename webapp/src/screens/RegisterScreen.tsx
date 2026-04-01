@@ -127,8 +127,10 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
   return (
     <div className="register-screen">
-      <img src={logoSrc} alt="GameY" className="gamey-logo-large" />
-      <h2 className="title-log">ZONA DE REGISTRO</h2>
+      <div className="auth-header">
+        <img src={logoSrc} alt="GameY" className="gamey-logo-large auth-logo-left" />
+        <h2 className="title-log">ZONA DE REGISTRO</h2>
+      </div>
 
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}

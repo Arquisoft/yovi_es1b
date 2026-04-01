@@ -69,8 +69,14 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
   return (
     <div className="register-screen">
-      <img src={logoSrc} alt="GameY" className="gamey-logo-large" />
-      <h2 className="title-log">RECUERDAME QUIEN ERES</h2>
+      <div className="auth-header">
+        <img src={logoSrc} alt="GameY" className="gamey-logo-large auth-logo-left" />
+        <h2 className="title-log">
+          Bienvenido de vuelta a GameY
+          <br />
+          ¿Cómo era tu nombre?
+        </h2>
+      </div>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
 

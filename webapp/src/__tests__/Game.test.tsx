@@ -53,6 +53,7 @@ const baseProps = (overrides?: {
   onExit: vi.fn(),
   onAddFriend: vi.fn(),
   onViewProfile: vi.fn(),
+  onOpenSettings: vi.fn(),
 })
 
 describe('Game UI (MPA Ready)', () => {
