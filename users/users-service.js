@@ -140,72 +140,57 @@ app.post('/login', async (req, res) => {
 
 app.get('/users/search', async (req, res) => {
   const query = String(req.query.query || '').trim();
+  
   try {
-    const users = await User.find({
-      username: { $regex: query, $options: 'i' }
-    }).select('username score icon');
+    let searchCriteria = {};
+
+    // Si la búsqueda empieza por #, buscamos coincidencia exacta por friendCode
+    if (query.startsWith('#')) {
+      // Quitamos el # para buscar en la base de datos (donde se guarda como "ABC123")
+      const cleanCode = query.substring(1).toUpperCase();
+      searchCriteria = { friendCode: cleanCode };
+    } else {
+      // Si no hay #, buscamos por nombre (insensible a mayúsculas)
+      searchCriteria = { username: { $regex: query, $options: 'i' } };
+    }
+
+    const users = await User.find(searchCriteria)
+      .select('username icon friendCode')
+      .limit(10);
+
     res.json(users);
   } catch (err) {
+    console.error("Error en búsqueda:", err);
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
 
 app.post('/users/follow', async (req, res) => {
-  const follower = String(req.body.follower || '').trim();
-  const following = String(req.body.following || '').trim();
-
-  if (!follower || !following) {
-    return res.status(400).json({ error: 'Follower y following son obligatorios' });
-  }
-  if (follower === following) {
-    return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
-  }
-
+  const { follower, following } = req.body;
   try {
-    const targetUser = await User.findOne({ username: following });
-    const me = await User.findOne({ username: follower });
+    // Buscamos si ya existe una relación (da igual el orden)
+    const existing = await Friendship.findOne({
+      users: { $all: [follower, following] }
+    });
 
-    if (!targetUser || !me) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (existing) {
+      return res.status(400).json({ error: 'Ya existe una solicitud o amistad' });
     }
 
-    const targetId = targetUser._id;
-    const currentFollowing = me.following || [];
-    const alreadyFollowing =
-      typeof currentFollowing.includes === 'function'
-        ? currentFollowing.includes(targetId)
-        : false;
+    // Creamos la solicitud pendiente
+    const newRequest = new Friendship({
+      users: [follower, following],
+      status: 'pending'
+    });
+    await newRequest.save();
 
-    if (alreadyFollowing) {
-      if (typeof currentFollowing.pull === 'function') {
-        currentFollowing.pull(targetId);
-      }
-      const currentFollowers = targetUser.followers || [];
-      if (typeof currentFollowers.pull === 'function') {
-        currentFollowers.pull(me._id);
-      }
-      await me.save();
-      await targetUser.save();
-      return res.json({ message: `Has dejado de seguir a ${targetUser.username}` });
-    }
-
-    if (typeof currentFollowing.push === 'function') {
-      currentFollowing.push(targetId);
-    }
-    const currentFollowers = targetUser.followers || [];
-    if (typeof currentFollowers.push === 'function') {
-      currentFollowers.push(me._id);
-    }
-    await me.save();
-    await targetUser.save();
-
-    return res.json({ message: `Ahora sigues a ${targetUser.username}` });
+    res.json({ message: 'Solicitud enviada correctamente' });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    res.status(500).json({ error: 'Error al enviar solicitud' });
   }
 });
 
-app.get('/users/profile/:username', async (req, res) => {
+/* app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
@@ -230,14 +215,11 @@ app.get('/users/profile/:username', async (req, res) => {
   } catch (err) {
     return res.status(500).json({ error: 'Error del servidor' });
   }
-});
+}); */
 
 app.get('/friends', async (req, res) => {
   const username = String(req.query.username || '').trim();
-
-  if (!username) {
-    return res.status(400).json({ error: 'Username is required' });
-  }
+  if (!username) return res.status(400).json({ error: 'Username required' });
 
   try {
     const friendships = await Friendship.find({
@@ -245,30 +227,55 @@ app.get('/friends', async (req, res) => {
       status: 'accepted'
     });
 
-    const friendsFromFriendships = friendships
-      .map((friendship) => {
-        const friendName = (friendship.users || []).find((u) => u !== username);
-        return friendName ? { name: friendName, status: 'online' } : null;
-      })
-      .filter(Boolean);
+    const friendsList = friendships.map(f => {
+      const friendName = f.users.find(u => u !== username);
+      return { name: friendName, status: 'online' };
+    });
 
-    // Compatibilidad: si no hay documentos Friendship, devolvemos los seguidos del modelo User.
-    if (friendsFromFriendships.length === 0) {
-      const user = await User.findOne({ username }).populate('following', 'username');
-      if (!user) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-      const fallback = (user.following || []).map((friend) => ({
-        name: friend.username,
-        status: 'online'
-      }));
-      return res.json(fallback);
+    res.json(friendsList);
+  } catch (err) {
+    res.status(500).json({ error: 'Error fetching friends' });
+  }
+});
+
+// Obtener solicitudes que me han enviado a mí (pendientes)
+app.get('/friends/requests', async (req, res) => {
+  const username = String(req.query.username || '').trim();
+  try {
+    const pendingRequests = await Friendship.find({
+      users: username,
+      status: 'pending'
+    });
+    
+    // Devolvemos solo el nombre de la persona que envió la solicitud
+    const requests = pendingRequests.map(fr => {
+        const sender = fr.users.find(u => u !== username);
+        return { sender, id: fr._id };
+    });
+    
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener solicitudes' });
+  }
+});
+
+// Aceptar o Rechazar solicitud
+app.post('/friends/respond', async (req, res) => {
+  const { requestId, action } = req.body; // action: 'accepted' o 'rejected'
+
+  try {
+    if (action === 'rejected') {
+      await Friendship.findByIdAndDelete(requestId);
+      return res.json({ message: 'Solicitud rechazada' });
     }
 
-    return res.json(friendsFromFriendships);
+    const friendship = await Friendship.findByIdAndUpdate(requestId, { 
+      status: 'accepted' 
+    }, { new: true });
+
+    res.json({ message: '¡Ahora sois amigos!', friendship });
   } catch (err) {
-    console.error('Error fetching friends:', err);
-    return res.status(500).json({ error: 'Error fetching friends' });
+    res.status(500).json({ error: 'Error al responder solicitud' });
   }
 });
 

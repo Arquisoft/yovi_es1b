@@ -203,6 +203,7 @@ const GameApp = () => {
         onClose={() => setShowFriendsMenu(false)}
         username={username}
         friendCode={friendCode}
+        icon={playerIcon}
       />
     </div>
   );

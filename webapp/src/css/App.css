@@ -198,7 +198,7 @@
   backdrop-filter: blur(25px);
   color: white;
   padding: 2.5rem 1.5rem;
-  border-left: 2px solid #00d4ff; /* El toque neón */
+  border-left: 2px solid #dcfd8b; /* El toque neón */
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.8);
   display: flex;
   flex-direction: column;
@@ -210,7 +210,7 @@
   margin: 0 0 1.5rem 0;
   font-size: 1.5rem;
   letter-spacing: 3px;
-  color: #00d4ff;
+  color: #dcfd8b;
   text-transform: uppercase;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   padding-bottom: 0.5rem;
@@ -235,16 +235,22 @@
   border-radius: 8px;
 }
 
+
 .avatar-circle {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #00d4ff 0%, #0055ff 100%);
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+  background: linear-gradient(135deg, #dcfd8b 0%, #526e0a 100%);
+}
+
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Ajusta la imagen sin estirarla */
 }
 
 .profile-info-text {
@@ -284,12 +290,47 @@
 }
 
 .friends-input:focus {
-  border-color: #00d4ff;
+  border-color: #dcfd8b;
   background: rgba(0, 0, 0, 0.5);
 }
 
+.pending-friend-btn {
+  /* Reset de estilos de botón */
+  background: none !important;
+  border: none;
+  padding: 0;
+  
+  /* Estilo de enlace */
+  color: #dcfd8b; /* Amarillo */
+  font-size: 0.7rem; /* Muy pequeño */
+  font-weight: 700;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  
+  /* Ajustes de posición */
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.pending-friend-btn:hover {
+  color: #fff; /* Cambia a blanco al pasar el mouse */
+}
+
+/* Para que el numerito rojo no se vea gigante al lado del link */
+.pending-friend-btn .req-count {
+  position: relative;
+  top: -2px;
+  right: 0;
+  margin-left: 5px;
+  font-size: 0.6rem;
+  padding: 2px 5px;
+}
+
 .add-friend-btn {
-  background: #00d4ff;
+  background: #dcfd8b;
   color: #000;
   border: none;
   border-radius: 4px;
@@ -300,7 +341,7 @@
 }
 
 .add-friend-btn:hover {
-  background: #00f2ff;
+  background: #dcfd8b;
   transform: translateY(-2px);
 }
 
@@ -381,8 +422,8 @@
 
 .invite-btn {
   background: transparent;
-  border: 1px solid #00d4ff;
-  color: #00d4ff;
+  border: 1px solid #dcfd8b;
+  color: #dcfd8b;
   padding: 5px 10px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -393,7 +434,7 @@
 }
 
 .invite-btn:hover {
-  background: #00d4ff;
+  background: #dcfd8b;
   color: #000;
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+  box-shadow: 0 0 10px rgba(220, 253, 139, 0.5);
 }
