@@ -6,10 +6,11 @@ interface FriendsPanelProps {
   isOpen: boolean;
   onClose: () => void;
   username: string;
+  displayName: string;
   friendCode: string;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsPanelProps) => {
+export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode }: FriendsPanelProps) => {
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -38,15 +39,15 @@ export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsP
         <h2 className="sidebar-title">Social</h2>
         
         {/* Perfil del usuario actual */}
-        <div className="user-mini-profile">
-           <div className="avatar-circle">
-             {username[0]?.toUpperCase()}
-           </div>
-           <div className="profile-info-text">
-              <span className="profile-name">{username}</span>
+          <div className="user-mini-profile">
+             <div className="avatar-circle">
+              {displayName[0]?.toUpperCase()}
+             </div>
+             <div className="profile-info-text">
+              <span className="profile-name">{displayName}</span>
               <span className="profile-friend-code">{friendCode}</span>
-           </div>
-        </div>
+             </div>
+          </div>
 
         {/* Buscador para añadir nuevos amigos */}
         <div className="search-container">

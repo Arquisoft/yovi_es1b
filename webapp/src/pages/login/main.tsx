@@ -7,7 +7,13 @@ import '../../index.css'
 import menuVideo from '../../assets/background_video.mp4'
 
 const LoginPage = () => {
-  const handleLoginSuccess = (playerName: string, friendCode: string, icon?: string | null) => {
+  const handleLoginSuccess = (
+    playerName: string,
+    friendCode: string,
+    icon?: string | null,
+    nickname?: string | null,
+    language?: string | null
+  ) => {
     const name = playerName.trim();
     if (!name) return;
 
@@ -18,6 +24,16 @@ const LoginPage = () => {
       localStorage.setItem('yovi_user_icon', icon);
     } else {
       localStorage.removeItem('yovi_user_icon');
+    }
+    if (typeof nickname === 'string' && nickname.trim()) {
+      localStorage.setItem('yovi_user_nickname', nickname.trim());
+    } else {
+      localStorage.removeItem('yovi_user_nickname');
+    }
+    if (typeof language === 'string' && language.trim()) {
+      localStorage.setItem('yovi_user_language', language.trim());
+    } else {
+      localStorage.removeItem('yovi_user_language');
     }
     
     // Redirección real de navegador (MPA)

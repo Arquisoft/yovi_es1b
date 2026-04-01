@@ -7,7 +7,13 @@ import '../../index.css'
 import menuVideo from '../../assets/background_video.mp4'
 
 const RegisterPage = () => {
-  const handleRegisterSuccess = (playerName: string, friendCode: string, icon?: string | null) => {
+  const handleRegisterSuccess = (
+    playerName: string,
+    friendCode: string,
+    icon?: string | null,
+    language?: string | null,
+    nickname?: string | null
+  ) => {
     const name = playerName.trim();
     if (!name) return;
 
@@ -17,6 +23,16 @@ const RegisterPage = () => {
       localStorage.setItem('yovi_user_icon', icon);
     } else {
       localStorage.removeItem('yovi_user_icon');
+    }
+    if (typeof language === 'string' && language.trim()) {
+      localStorage.setItem('yovi_user_language', language.trim());
+    } else {
+      localStorage.removeItem('yovi_user_language');
+    }
+    if (typeof nickname === 'string' && nickname.trim()) {
+      localStorage.setItem('yovi_user_nickname', nickname.trim());
+    } else {
+      localStorage.removeItem('yovi_user_nickname');
     }
     window.location.href = '/game.html';
   };

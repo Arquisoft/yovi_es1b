@@ -30,6 +30,14 @@ const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
 
+const normalizeIconName = (rawValue) => {
+  const value = String(rawValue || '').trim();
+  if (!value) return 'SinAvatar.png';
+  const normalized = value.replaceAll('\\', '/');
+  const parts = normalized.split('/');
+  return parts[parts.length - 1] || 'SinAvatar.png';
+};
+
 try {
   const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
   app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -40,7 +48,7 @@ try {
 // CORS --> The server accepts requests from any origin (*)
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
@@ -58,14 +66,21 @@ app.use(express.json());
 app.post('/createuser', async (req, res) => {
   // para evitar inyecciones de codigo, convertimos a string lo que recibimos del cliente
   const username = String(req.body.username || "");
+  const nickname = String(req.body.nickname || "").trim();
   const password = String(req.body.password || "");
-  const age = Number(req.body.age);
   const birthDate = req.body.birthDate ? new Date(String(req.body.birthDate)) : null;
-  const country = String(req.body.country || "");
-  const icon = String(req.body.icon || "");
+  const language = String(req.body.language || req.body.country || "").trim();
+  const iconName = normalizeIconName(req.body.iconName || req.body.icon);
   try {
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required" });
+    if (!username || !password || !language || !birthDate || !nickname) {
+      return res.status(400).json({ error: "Username, nickname, password, language and birthDate are required" });
+    }
+    if (Number.isNaN(birthDate.getTime())) {
+      return res.status(400).json({ error: "birthDate is invalid" });
+    }
+    const existingNickname = await User.findOne({ nickname });
+    if (existingNickname) {
+      return res.status(409).json({ error: "Nickname already exists" });
     }
 
     let friendCode;
@@ -85,10 +100,10 @@ app.post('/createuser', async (req, res) => {
       username,
       password: hashedPassword,
       friendCode,
-      age,
-      birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : undefined,
-      country,
-      icon
+      birthDate,
+      language,
+      nickname,
+      iconName
     })
 
     // Save the new user to the database
@@ -96,7 +111,8 @@ app.post('/createuser', async (req, res) => {
 
     res.json({ 
       message: `Hello ${username}! Your account has been created!`,
-      friendCode: `#${friendCode}`
+      friendCode: `#${friendCode}`,
+      nickname
     })
 
   } catch (err) {
@@ -111,8 +127,10 @@ app.post('/login', async (req, res) => {
 
   try {
 
-    const secureUsername = String(username); // Para evitar inyecciones de codigo.
-    const user = await User.findOne({ username: secureUsername });
+    const loginValue = String(username || '').trim(); // Usuario o nickname.
+    const user =
+      (await User.findOne({ nickname: loginValue })) ||
+      (await User.findOne({ username: loginValue }));
 
     if (!user) {
       return res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -125,8 +143,10 @@ app.post('/login', async (req, res) => {
       res.json({
         message: `Welcome back, ${username}!`,
         username: user.username,
+        nickname: user.nickname,
+        language: user.language,
         score: user.score,
-        icon: user.icon,
+        iconName: user.iconName,
         friendCode: user.friendCode
       });
     } else {
@@ -142,8 +162,11 @@ app.get('/users/search', async (req, res) => {
   const query = String(req.query.query || '').trim();
   try {
     const users = await User.find({
-      username: { $regex: query, $options: 'i' }
-    }).select('username score icon');
+      $or: [
+        { nickname: { $regex: query, $options: 'i' } },
+        { username: { $regex: query, $options: 'i' } }
+      ]
+    }).select('username nickname score iconName');
     res.json(users);
   } catch (err) {
     res.status(500).json({ error: 'Error del servidor' });
@@ -161,12 +184,20 @@ app.post('/users/follow', async (req, res) => {
     return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
   }
 
+  const findUserByHandle = async (handle) => {
+    if (!handle) return null;
+    return (await User.findOne({ nickname: handle })) || (await User.findOne({ username: handle }));
+  };
+
   try {
-    const targetUser = await User.findOne({ username: following });
-    const me = await User.findOne({ username: follower });
+    const targetUser = await findUserByHandle(following);
+    const me = await findUserByHandle(follower);
 
     if (!targetUser || !me) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+    if (String(targetUser._id) === String(me._id)) {
+      return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
     }
 
     const targetId = targetUser._id;
@@ -209,9 +240,9 @@ app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
-    const user = await User.findOne({ username })
-      .populate('following', 'username score icon')
-      .populate('followers', 'username score icon');
+  const user = await User.findOne({ username })
+    .populate('following', 'username nickname score iconName')
+    .populate('followers', 'username nickname score iconName');
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -219,14 +250,115 @@ app.get('/users/profile/:username', async (req, res) => {
 
     return res.json({
       username: user.username,
-      age: user.age,
-      country: user.country,
-      icon: user.icon,
+      nickname: user.nickname,
+      birthDate: user.birthDate,
+      language: user.language,
+      iconName: user.iconName,
       followingCount: user.following?.length || 0,
       followersCount: user.followers?.length || 0,
       following: user.following || [],
       followers: user.followers || []
     });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.patch('/users/profile/:username', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+  const language = req.body.language !== undefined ? String(req.body.language || '').trim() : undefined;
+  const iconName = req.body.iconName !== undefined ? normalizeIconName(req.body.iconName) : undefined;
+  const nickname = req.body.nickname !== undefined ? String(req.body.nickname || '').trim() : undefined;
+  const birthDateRaw = req.body.birthDate;
+
+  if (!username) {
+    return res.status(400).json({ error: 'Username es obligatorio' });
+  }
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (language !== undefined) {
+      if (!language) {
+        return res.status(400).json({ error: 'Idioma no puede estar vacio' });
+      }
+      user.language = language;
+    }
+
+    if (nickname !== undefined) {
+      if (!nickname) {
+        return res.status(400).json({ error: 'Nickname no puede estar vacio' });
+      }
+      const existingNickname = await User.findOne({ nickname });
+      if (existingNickname && String(existingNickname._id) !== String(user._id)) {
+        return res.status(409).json({ error: 'Nickname ya existe' });
+      }
+      user.nickname = nickname;
+    }
+
+    if (iconName !== undefined) {
+      user.iconName = iconName;
+    }
+
+    if (birthDateRaw !== undefined) {
+      const parsedDate = birthDateRaw ? new Date(String(birthDateRaw)) : null;
+      if (birthDateRaw && Number.isNaN(parsedDate?.getTime?.())) {
+        return res.status(400).json({ error: 'Fecha de nacimiento invalida' });
+      }
+      user.birthDate = parsedDate;
+    }
+
+    await user.save();
+
+    return res.json({
+      message: 'Perfil actualizado correctamente',
+      username: user.username,
+      nickname: user.nickname,
+      birthDate: user.birthDate,
+      language: user.language,
+      iconName: user.iconName
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.post('/users/profile/:username/change-password', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+  const currentPassword = String(req.body.currentPassword || '');
+  const newPassword = String(req.body.newPassword || '');
+
+  if (!username || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Username, contraseña actual y nueva contraseña son obligatorios' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+  }
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const validCurrentPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validCurrentPassword) {
+      return res.status(401).json({ error: 'La contraseña actual no es correcta' });
+    }
+
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return res.status(400).json({ error: 'La nueva contraseña debe ser distinta de la actual' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, saltRounds);
+    await user.save();
+
+    return res.json({ message: 'contraseña actualizada correctamente' });
   } catch (err) {
     return res.status(500).json({ error: 'Error del servidor' });
   }
@@ -245,25 +377,36 @@ app.get('/friends', async (req, res) => {
       status: 'accepted'
     });
 
-    const friendsFromFriendships = friendships
-      .map((friendship) => {
-        const friendName = (friendship.users || []).find((u) => u !== username);
-        return friendName ? { name: friendName, status: 'online' } : null;
-      })
-      .filter(Boolean);
+  const friendsFromFriendships = friendships
+    .map((friendship) => {
+      const friendName = (friendship.users || []).find((u) => u !== username);
+      return friendName ? { name: friendName, status: 'online' } : null;
+    })
+    .filter(Boolean);
 
-    // Compatibilidad: si no hay documentos Friendship, devolvemos los seguidos del modelo User.
-    if (friendsFromFriendships.length === 0) {
-      const user = await User.findOne({ username }).populate('following', 'username');
-      if (!user) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-      const fallback = (user.following || []).map((friend) => ({
-        name: friend.username,
-        status: 'online'
-      }));
-      return res.json(fallback);
+  if (friendsFromFriendships.length > 0) {
+    const usernames = friendsFromFriendships.map((friend) => friend.name);
+    const users = await User.find({ username: { $in: usernames } }).select('username nickname');
+    const nicknameMap = new Map(users.map((u) => [u.username, u.nickname]));
+    const mapped = friendsFromFriendships.map((friend) => ({
+      ...friend,
+      name: nicknameMap.get(friend.name) || friend.name
+    }));
+    return res.json(mapped);
+  }
+
+  // Compatibilidad: si no hay documentos Friendship, devolvemos los seguidos del modelo User.
+  if (friendsFromFriendships.length === 0) {
+    const user = await User.findOne({ username }).populate('following', 'username nickname');
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
+    const fallback = (user.following || []).map((friend) => ({
+      name: friend.nickname || friend.username,
+      status: 'online'
+    }));
+    return res.json(fallback);
+  }
 
     return res.json(friendsFromFriendships);
   } catch (err) {
@@ -279,7 +422,7 @@ app.post('/move', async (req, res) => {
   const { cellIndex, username} = req.body; // NEW: Recibir difficulty
 
   try {
-    // 1. Integración: Llamada al servicio de Rust
+    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust
     const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -309,12 +452,12 @@ app.post('/move', async (req, res) => {
   }
 });
 
-// NEW: Endpoint para registrar una rendición (derrota)
+// NEW: Endpoint para registrar una rendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n (derrota)
 app.post('/surrender', async (req, res) => {
   const { username, difficulty, boardSize } = req.body;
 
   try {
-    // 1. Integración: Llamada al servicio de Rust (GameY)
+    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust (GameY)
     const rustResponse = await fetch(`${GAMEY_URL}/surrender`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -336,12 +479,12 @@ app.post('/surrender', async (req, res) => {
 
     // 3. Respuesta al Frontend
     res.json({ 
-      message: "Rendición registrada correctamente",
+      message: "RendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n registrada correctamente",
       details: data 
     });
 
   } catch (e) {
-    console.error("Error de conexión con Rust en surrender:", e);
+    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust en surrender:", e);
     res.status(500).json({ error: 'Error communicating with Rust server' });
   }
 });
@@ -390,7 +533,7 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
+  // 1. Extraemos TODOS los parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡metros de la URL, incluido 'result'
   const { username, page = 1, limit = 10, result } = req.query;
   
   if (!username) {
@@ -406,7 +549,7 @@ app.get('/history', async (req, res) => {
         rustUrl += `&result=${encodeURIComponent(result)}`;
     }
 
-    // 4. AHORA SÍ, ejecutamos el fetch pasándole el string de la URL
+    // 4. AHORA SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â, ejecutamos el fetch pasÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ndole el string de la URL
     const rustResponse = await fetch(rustUrl);
 
     if (!rustResponse.ok) {
@@ -423,7 +566,7 @@ app.get('/history', async (req, res) => {
     res.json(paginatedData); 
     
   } catch (e) {
-    console.error("Error de conexión con Rust:", e);
+    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust:", e);
     res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
   }
 });

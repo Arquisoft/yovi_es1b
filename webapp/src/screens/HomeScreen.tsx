@@ -33,8 +33,10 @@ function HomeScreen({
   onGoToRegister,
   onGoToLogin,
 }: HomeScreenProps) {
+  const logoSrc = new URL('../assets/Logo_GameY.png', import.meta.url).href;
   return (
     <div className="home-screen">
+        <img src={logoSrc} alt="GameY" className="gamey-logo-large" />
         <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
         {/* Bloque con botones para ir a registro/login */}
         <HomeActions

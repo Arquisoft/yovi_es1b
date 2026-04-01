@@ -27,8 +27,9 @@ describe('POST /createuser', () => {
             .send({ 
                 username: 'testUser', 
                 password: 'testPass',
-                age: 25,
-                country: 'Spain'
+                birthDate: '2000-01-01',
+                language: 'Spain',
+                iconName: 'hombre1.png'
             })
             .set('Accept', 'application/json')
 
@@ -43,7 +44,7 @@ describe('POST /createuser', () => {
             .send({ username: 'testUser' }) 
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('Username and password are required')
+        expect(res.body.error).toBe('Username, password, language and birthDate are required')
     })
 
     it('devuelve error 400 si el usuario ya existe', async () => {
@@ -57,8 +58,9 @@ describe('POST /createuser', () => {
             .send({ 
                 username: 'testUser', 
                 password: 'testPass',
-                age: 25,
-                country: 'Spain'
+                birthDate: '2000-01-01',
+                language: 'Spain',
+                iconName: 'hombre1.png'
             })
         
         expect(res.status).toBe(400)

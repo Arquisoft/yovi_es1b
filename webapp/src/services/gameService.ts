@@ -78,5 +78,31 @@ export const gameService = {
       body: JSON.stringify({ username, friendName }),
     });
     return res.json();
-  }
+  },
+
+  async getProfile(username: string) {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}`);
+    return res.json();
+  },
+
+  async updateProfile(
+    username: string,
+    payload: { birthDate?: string | null; language?: string; iconName?: string; nickname?: string }
+  ) {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
+  async changePassword(username: string, currentPassword: string, newPassword: string) {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return res.json();
+  },
 };

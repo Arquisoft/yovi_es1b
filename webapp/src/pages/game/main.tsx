@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -6,6 +6,7 @@ import GameScreen from '../../screens/GameScreen';
 import { HistoryModal } from '../../components/modals/HistoryModal';
 import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
+import { ProfileScreen } from '../../screens/ProfileScreen';
 
 // Hooks, Servicios y Utils
 import { useGameLogic } from '../../hooks/useGameLogic';
@@ -19,18 +20,57 @@ import menuVideo from '../../assets/background_video.mp4';
 import '../../css/App.css';
 import '../../css/Game.css';
 import '../../css/Log.css';
-import '../../index.css'
+import '../../index.css';
 
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
 
+const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
+  eager: true,
+  import: 'default',
+}) as Record<string, string>;
+
+const botIconPool = Object.entries(iconModules)
+  .filter(([path]) => !path.toLowerCase().includes('sinavatar'))
+  .map(([, src]) => src);
+
+const pickRandomBotIcon = (): string | null => {
+  const pool = botIconPool.length ? botIconPool : Object.values(iconModules);
+  if (!pool.length) return null;
+  const index = Math.floor(Math.random() * pool.length);
+  return pool[index] ?? null;
+};
+
+const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
+  const iconValue = String(rawIcon || '').trim();
+  if (!iconValue) return null;
+
+  // Si ya viene como URL/ruta válida, la usamos tal cual.
+  if (
+    iconValue.startsWith('http://') ||
+    iconValue.startsWith('https://') ||
+    iconValue.startsWith('/') ||
+    iconValue.startsWith('data:')
+  ) {
+    return iconValue;
+  }
+
+  // Si viene como nombre de archivo (ej: "hombre1.png"), lo resolvemos desde assets.
+  const match = Object.entries(iconModules).find(([path]) =>
+    path.toLowerCase().includes(iconValue.toLowerCase())
+  );
+  return match ? match[1] : iconValue;
+};
+
 const GameApp = () => {
   // --- SEGURIDAD Y SESIÓN ---
   const username = localStorage.getItem('yovi_user') || '';
   const friendCode = localStorage.getItem('yovi_friend_code') || '';
-  const playerIcon = localStorage.getItem('yovi_user_icon');
-  
+  const displayName = localStorage.getItem('yovi_user_nickname') || username;
+  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(localStorage.getItem('yovi_user_icon')));
+  const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
+
   // Si no hay usuario, redirigimos inmediatamente a la home
   if (!username) {
     window.location.href = '/index.html';
@@ -41,9 +81,12 @@ const GameApp = () => {
   const [connectionStatus, setConnectionStatus] = useState('Conectado');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
+  const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
+  const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
+  const [showProfileScreen, setShowProfileScreen] = useState(false);
 
   // --- ESTADOS DE HISTORIAL ---
   const [showHistory, setShowHistory] = useState(false);
@@ -53,36 +96,66 @@ const GameApp = () => {
   const [totalPages, setTotalPages] = useState(1);
 
   // --- HOOKS DE LÓGICA ---
-  const { 
-    boardData, 
-    winner, 
-    executeHumanMove, 
-    executeAutoMove, 
-    resetGame, 
-    surrender 
+  const {
+    boardData,
+    winner,
+    executeHumanMove,
+    executeAutoMove,
+    resetGame,
+    surrender,
   } = useGameLogic(username);
 
-  const { 
-    timeLeft: turnTimeLeft, 
-    isVisible: timerVisible, 
-    startTimer, 
-    stopTimer, 
-    setIsVisible: setTimerVisible 
+  const {
+    timeLeft: turnTimeLeft,
+    isVisible: timerVisible,
+    startTimer,
+    stopTimer,
+    setIsVisible: setTimerVisible,
   } = useGameTimer(() => handleAutoMove());
+
+  const startNewGame = (size: number, difficulty: DifficultyChoice) => {
+    setBotIcon(pickRandomBotIcon());
+    resetGame(size, difficulty);
+  };
 
   // --- EFECTOS INICIALES ---
   useEffect(() => {
     // 1. Cargar dificultades para los modales
     gameService.getDifficulties()
       .then(setAvailableDifficulties)
-      .catch(err => console.error('Error API:', err));
-    
+      .catch((err) => console.error('Error API:', err));
+
     // 2. Iniciar la partida por defecto
-    resetGame(6, 'Easy');
+    startNewGame(6, 'Easy');
   }, []);
 
-  // --- MANEJADORES DE ACCIONES ---
+  useEffect(() => {
+    let active = true;
 
+    const syncProfileIcon = async () => {
+      try {
+        const profile = await gameService.getProfile(username);
+        if (!active || profile?.error) return;
+
+        const resolvedIcon = resolveUserIcon(
+          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon
+        );
+        if (resolvedIcon) {
+          setPlayerIcon(resolvedIcon);
+          localStorage.setItem('yovi_user_icon', resolvedIcon);
+        }
+      } catch (error) {
+        // En caso de error de red, mantenemos el icono local actual.
+      }
+    };
+
+    syncProfileIcon();
+    return () => {
+      active = false;
+    };
+  }, [username]);
+
+  // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = async () => {
     setConnectionStatus('⏱️ Movimiento automático...');
     try {
@@ -96,7 +169,7 @@ const GameApp = () => {
 
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
-    setConnectionStatus(`Moviendo...`);
+    setConnectionStatus('Moviendo...');
     try {
       const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
@@ -132,18 +205,20 @@ const GameApp = () => {
     <div className="App">
       {/* Fondo de video */}
       <video className="menu-video-bg" autoPlay loop muted playsInline>
-        <source src={menuVideo} type="video/mp4"/>
+        <source src={menuVideo} type="video/mp4" />
       </video>
-      <div className="menu-video-overlay"/>
+      <div className="menu-video-overlay" />
 
       {/* Pantalla Principal */}
-      <GameScreen 
+      <GameScreen
         username={username}
+        displayName={displayName}
         playerIcon={playerIcon}
+        botIcon={botIcon}
         boardData={boardData}
         winner={winner}
         connectionStatus={connectionStatus}
-        difficultyChoice={displayDifficulty as any} 
+        difficultyChoice={displayDifficulty as any}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
         turnTimeLeft={turnTimeLeft}
@@ -152,9 +227,15 @@ const GameApp = () => {
         onCellClick={handleCellClick}
         onFetchHistory={() => fetchHistory()}
         onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
-        onChangeDifficulty={() => setDifficultyChoice(null)}
-        onChangeSize={() => setSizeChoice(null)}
-        onResetGame={() => resetGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy')}
+        onChangeDifficulty={() => {
+          setPreviousDifficultyChoice(difficultyChoice);
+          setDifficultyChoice(null);
+        }}
+        onChangeSize={() => {
+          setPreviousSizeChoice(sizeChoice);
+          setSizeChoice(null);
+        }}
+        onResetGame={() => startNewGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy')}
         onEndGame={async () => {
           stopTimer();
           setTimerVisible(false);
@@ -162,37 +243,42 @@ const GameApp = () => {
           setShowResultModal(true);
         }}
         onAddFriend={() => openFriendsMenu()}
+        onViewProfile={() => setShowProfileScreen(true)}
       />
 
       {/* Modales de Configuración */}
-      <SelectionModals 
-        currentScreen="game" 
-        difficultyChoice={difficultyChoice} 
-        sizeChoice={sizeChoice} 
+      <SelectionModals
+        currentScreen="game"
+        difficultyChoice={difficultyChoice}
+        sizeChoice={sizeChoice}
         availableDifficulties={availableDifficulties}
-        onDifficultySelect={(d) => { 
-          setDifficultyChoice(d); 
-          resetGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, d); 
+        onDifficultySelect={(d) => {
+          setDifficultyChoice(d);
+          setPreviousDifficultyChoice(d);
+          startNewGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, d);
         }}
-        onSizeSelect={(s) => { 
-          setSizeChoice(s); 
-          resetGame(getBoardDimensionFromSizeChoice(s)!, difficultyChoice || 'Easy'); 
+        onSizeSelect={(s) => {
+          setSizeChoice(s);
+          setPreviousSizeChoice(s);
+          startNewGame(getBoardDimensionFromSizeChoice(s)!, difficultyChoice || 'Easy');
         }}
+        onDifficultyCancel={() => setDifficultyChoice(previousDifficultyChoice || 'Easy')}
+        onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Tamaño 6x6x6')}
       />
 
       {/* Modales de Resultados e Historial */}
-      <ResultModal 
-        isOpen={showResultModal} 
-        winner={winner} 
-        onClose={() => setShowResultModal(false)} 
+      <ResultModal
+        isOpen={showResultModal}
+        winner={winner}
+        onClose={() => setShowResultModal(false)}
       />
 
-      <HistoryModal 
-        isOpen={showHistory} 
-        onClose={() => setShowHistory(false)} 
+      <HistoryModal
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
         data={historyData}
-        currentPage={currentPage} 
-        totalPages={totalPages} 
+        currentPage={currentPage}
+        totalPages={totalPages}
         currentFilter={historyFilter}
         onPageChange={fetchHistory}
         onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
@@ -202,7 +288,21 @@ const GameApp = () => {
         isOpen={showFriendsMenu}
         onClose={() => setShowFriendsMenu(false)}
         username={username}
+        displayName={displayName}
         friendCode={friendCode}
+      />
+
+      <ProfileScreen
+        isOpen={showProfileScreen}
+        username={username}
+        onClose={() => setShowProfileScreen(false)}
+        onIconUpdated={(newIcon) => {
+          const resolvedIcon = resolveUserIcon(newIcon);
+          setPlayerIcon(resolvedIcon);
+          if (resolvedIcon) {
+            localStorage.setItem('yovi_user_icon', resolvedIcon);
+          }
+        }}
       />
     </div>
   );

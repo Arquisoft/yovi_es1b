@@ -26,7 +26,7 @@ describe('LoginForm', () => {
     await user.type(screen.getByLabelText(/usuario/i), 'Alice')
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
-    // No debe haber llamado a la función de éxito ni cambiado de página
+    // No debe haber llamado a la funciÃƒÂ³n de ÃƒÂ©xito ni cambiado de pÃƒÂ¡gina
     expect(onLogin).not.toHaveBeenCalled()
   })
 
@@ -48,17 +48,19 @@ describe('LoginForm', () => {
     })
   })
 
-  test('con éxito llama a onLogin', async () => {
+  test('con ÃƒÂ©xito llama a onLogin', async () => {
     const user = userEvent.setup()
     const onLogin = vi.fn()
     
-    // 1. Actualizamos el mock para que devuelva lo que el nuevo Back envía
+    // 1. Actualizamos el mock para que devuelva lo que el nuevo Back envÃƒÂ­a
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ 
         username: 'Alice', 
-        friendCode: 'XYZ789', // Simulamos un código de amigo
-        icon: 'avatar.png'     // Simulamos un icono
+        friendCode: 'XYZ789', // Simulamos un cÃƒÂ³digo de amigo
+        icon: 'avatar.png',    // Simulamos un icono
+        nickname: 'Ali',
+        language: 'Spain'
       }),
     } as Response)
 
@@ -69,14 +71,14 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
     await waitFor(() => {
-      // 2. Verificamos que se llame con los TRES argumentos correctos
-      expect(onLogin).toHaveBeenCalledWith('Alice', 'XYZ789', 'avatar.png')
+      // 2. Verificamos que se llame con los argumentos correctos
+      expect(onLogin).toHaveBeenCalledWith('Alice', 'XYZ789', 'avatar.png', 'Ali', 'Spain')
     })
   })
 
-  test('el botón volver intenta regresar a index.html', async () => {
+  test('el botÃƒÂ³n volver intenta regresar a index.html', async () => {
     const user = userEvent.setup()
-    // En MPA, el botón volver suele ejecutar un window.location.href = 'index.html'
+    // En MPA, el botÃƒÂ³n volver suele ejecutar un window.location.href = 'index.html'
     // O llamar a una prop que lo hace. Verificamos la prop:
     const onBack = vi.fn(() => { window.location.href = '/index.html' })
 
