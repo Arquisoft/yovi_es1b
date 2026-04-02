@@ -169,12 +169,30 @@ pub fn create_default_state() -> AppState {
 /// - The TCP port cannot be bound (e.g., port already in use, permission denied)
 /// - The server encounters an error while running
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
-    // Leer la URI de MongoDB desde el .env
+    // Leer y validar la URI de MongoDB desde variables de entorno.
     let uri = std::env::var("MONGODB_URI")
-        .expect("La variable MONGODB_URI no está configurada en el entorno.");
+        .map_err(|_| GameYError::ServerError {
+            message: "La variable MONGODB_URI no esta configurada. Usa una URI completa, por ejemplo: mongodb://localhost:27017/gamey_db".to_string(),
+        })?;
+    let uri = uri.trim().to_string();
+
+    if uri.is_empty() {
+        return Err(GameYError::ServerError {
+            message: "La variable MONGODB_URI esta vacia. Debe incluir esquema (mongodb:// o mongodb+srv://).".to_string(),
+        });
+    }
+
+    if !uri.starts_with("mongodb://") && !uri.starts_with("mongodb+srv://") {
+        return Err(GameYError::ServerError {
+            message: format!(
+                "MONGODB_URI invalida: falta el esquema. Valor recibido: '{}'. Formato esperado: mongodb://... o mongodb+srv://...",
+                uri
+            ),
+        });
+    }
 
     // Conectar a la BBDD
-    let client = mongodb::Client::with_uri_str(uri)
+    let client = mongodb::Client::with_uri_str(&uri)
         .await
         .map_err(|e| GameYError::ServerError {
             message: format!("Error conectando a Mongo: {}", e),

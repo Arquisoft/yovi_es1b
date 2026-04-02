@@ -25,9 +25,14 @@ const baseProps = (overrides?: {
   winner?: number | null
 }) => ({
   username: 'Alice',
+  displayName: 'Ali',
+  playerIcon: 'https://example.com/avatar.png',
   difficultyChoice: overrides?.difficultyChoice ?? 'facil',
   selectedBoardDimension: overrides?.selectedBoardDimension ?? 6,
-  boardData: overrides?.boardData ?? ({
+  boardData:
+    overrides && 'boardData' in overrides
+      ? (overrides.boardData ?? null)
+      : ({
     size: 6,
     turn: 0,
     players: ['B', 'R'],
@@ -47,6 +52,8 @@ const baseProps = (overrides?: {
   onResetGame: vi.fn(),
   onExit: vi.fn(),
   onAddFriend: vi.fn(),
+  onViewProfile: vi.fn(),
+  onOpenSettings: vi.fn(),
 })
 
 describe('Game UI (MPA Ready)', () => {
@@ -67,6 +74,7 @@ describe('Game UI (MPA Ready)', () => {
     await user.click(screen.getByRole('button', { name: /terminar partida/i }))
     await user.click(screen.getByRole('button', { name: /reiniciar/i })) // Ajustado el nombre
     await user.click(screen.getByRole('button', { name: /salir/i }))
+    await user.click(screen.getByRole('button', { name: /ver mi perfil/i }))
 
     expect(props.onFetchHistory).toHaveBeenCalled()
     expect(props.onChangeDifficulty).toHaveBeenCalled()
@@ -74,6 +82,7 @@ describe('Game UI (MPA Ready)', () => {
     expect(props.onEndGame).toHaveBeenCalled()
     expect(props.onResetGame).toHaveBeenCalled()
     expect(props.onExit).toHaveBeenCalled()
+    expect(props.onViewProfile).toHaveBeenCalled()
   })
 
   test('una celda vacia dispara el callback de movimiento', async () => {
@@ -127,5 +136,21 @@ describe('Game UI (MPA Ready)', () => {
     // Verificamos que los textos de las fichas aparecen en los botones
     expect(screen.getByText('B')).toBeInTheDocument()
     expect(screen.getByText('R')).toBeInTheDocument()
+  })
+
+  test('muestra el texto de modo y el icono de perfil en el nav', () => {
+    const props = baseProps()
+    render(<GameScreen {...props} />)
+
+    expect(screen.getByText(/partida personalizada contra un bot/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /jugador:/i })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()
+    expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
+  })
+
+  test('si no hay boardData muestra mensaje de carga', () => {
+    const props = baseProps({ boardData: null })
+    render(<GameScreen {...props} />)
+    expect(screen.getByText(/carga el tablero para comenzar/i)).toBeInTheDocument()
   })
 })

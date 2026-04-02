@@ -15,23 +15,35 @@ const UserSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  age: {
-    type: Number,
-    required: true
-  },
   birthDate: {
     type: Date,
     required: false
   },
-  country: {
+  language: {
     type: String,
     required: true
   },
-  icon: {
+  nickname: {
     type: String,
     required: false,
-    default: ''
+    unique: true,
+    trim: true
   },
+  iconName: {
+    type: String,
+    required: false,
+    default: 'SinAvatar.png'
+  },
+  following: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }],
+  followers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: []
+  }],
   createdAt: { 
     type: Date, 
     default: Date.now

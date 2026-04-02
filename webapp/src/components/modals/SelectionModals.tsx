@@ -7,7 +7,15 @@ interface SelectionModalsProps {
   availableDifficulties: string[];
   onDifficultySelect: (diff: DifficultyChoice) => void;
   onSizeSelect: (size: SizeChoice) => void;
+  onDifficultyCancel: () => void;
+  onSizeCancel: () => void;
 }
+
+const SIZE_OPTIONS: SizeChoice[] = [
+  'Tamaño 6x6x6',
+  'Tamaño 9x9x9',
+  'Tamaño 12x12x12',
+];
 
 export const SelectionModals = ({
   currentScreen,
@@ -15,9 +23,10 @@ export const SelectionModals = ({
   sizeChoice,
   availableDifficulties,
   onDifficultySelect,
-  onSizeSelect
+  onSizeSelect,
+  onDifficultyCancel,
+  onSizeCancel
 }: SelectionModalsProps) => {
-  
   if (currentScreen !== 'game') return null;
 
   // Modal de Dificultad
@@ -25,12 +34,15 @@ export const SelectionModals = ({
     return (
       <div className="modal-backdrop">
         <div className="modal-box">
-          <h3>¿Con qué dificultad quieres jugar?</h3>
-          {availableDifficulties.map(diff => (
+          <h3>{'¿Con qué dificultad quieres jugar?'}</h3>
+          {availableDifficulties.map((diff) => (
             <button key={diff} className="submit-button" onClick={() => onDifficultySelect(diff)}>
               {diff}
             </button>
           ))}
+          <button type="button" className="submit-button" onClick={onDifficultyCancel}>
+            Cancelar
+          </button>
         </div>
       </div>
     );
@@ -41,12 +53,15 @@ export const SelectionModals = ({
     return (
       <div className="modal-backdrop">
         <div className="modal-box">
-          <h3>¿Con qué tamaño de tablero deseas jugar?</h3>
-          {(['Tamaño 6x6x6', 'Tamaño 9x9x9', 'Tamaño 12x12x12'] as SizeChoice[]).map(size => (
+          <h3>{'¿Con qué tamaño de tablero deseas jugar?'}</h3>
+          {SIZE_OPTIONS.map((size) => (
             <button key={size} className="submit-button" onClick={() => onSizeSelect(size)}>
               {size}
             </button>
           ))}
+          <button type="button" className="submit-button" onClick={onSizeCancel}>
+            Cancelar
+          </button>
         </div>
       </div>
     );

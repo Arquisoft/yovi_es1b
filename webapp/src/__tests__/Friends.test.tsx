@@ -15,7 +15,7 @@ describe('Friends & Social Zone', () => {
     const user = userEvent.setup()
     
     // Simulamos que el servidor devuelve un usuario encontrado
-    const mockUsers = [{ username: 'CyberPunk99', gamesPlayed: 10 }]
+    const mockUsers = [{ username: 'CyberPunk99', nickname: 'Cyber', gamesPlayed: 10 }]
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
       json: async () => mockUsers,
@@ -32,7 +32,7 @@ describe('Friends & Social Zone', () => {
     await user.click(btnSearch)
 
     // 3. Verificamos que aparece el resultado
-    expect(await screen.findByText('CyberPunk99')).toBeInTheDocument()
+    expect(await screen.findByText('Cyber')).toBeInTheDocument()
     expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('query=Cyber'))
   })
 
@@ -42,7 +42,7 @@ describe('Friends & Social Zone', () => {
     // Mock para mostrar un usuario ya en la lista
     ;(global.fetch as any).mockResolvedValueOnce({
       ok: true,
-      json: async () => [{ username: 'BotMaster', isFollowing: false }],
+      json: async () => [{ username: 'BotMaster', nickname: 'BotNick', isFollowing: false }],
     })
 
     render(<FriendsScreen currentUser="Drus" onBack={vi.fn()} />)
