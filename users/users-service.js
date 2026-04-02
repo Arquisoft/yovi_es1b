@@ -15,6 +15,9 @@ const fs = require('node:fs');
 const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
 
+const { authenticateToken, JWT_SECRET } = require('./authMiddleware');
+const jwt = require('jsonwebtoken');
+
 const metricsMiddleware = promBundle({includeMethod: true});
 app.use(metricsMiddleware);
 
@@ -41,7 +44,7 @@ try {
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -94,9 +97,12 @@ app.post('/createuser', async (req, res) => {
     // Save the new user to the database
     await newUser.save();
 
+    const token = jwt.sign({ userId: newUser._id, username: newUser.username }, JWT_SECRET, { expiresIn: '1h' });
+
     res.json({ 
       message: `Hello ${username}! Your account has been created!`,
-      friendCode: `#${friendCode}`
+      friendCode: `#${friendCode}`,
+      token: token
     })
 
   } catch (err) {
@@ -122,12 +128,14 @@ app.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
+      const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
       res.json({
         message: `Welcome back, ${username}!`,
         username: user.username,
         score: user.score,
         icon: user.icon,
-        friendCode: user.friendCode
+        friendCode: user.friendCode,
+        token: token
       });
     } else {
       res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -138,7 +146,7 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.get('/users/search', async (req, res) => {
+app.get('/users/search', authenticateToken, async (req, res) => {
   const query = String(req.query.query || '').trim();
   try {
     const users = await User.find({
@@ -150,9 +158,13 @@ app.get('/users/search', async (req, res) => {
   }
 });
 
-app.post('/users/follow', async (req, res) => {
+app.post('/users/follow', authenticateToken, async (req, res) => {
   const follower = String(req.body.follower || '').trim();
   const following = String(req.body.following || '').trim();
+
+  if (follower !== req.user.username) {
+    return res.status(403).json({ error: 'You can only perform this action for yourself.' });
+  }
 
   if (!follower || !following) {
     return res.status(400).json({ error: 'Follower y following son obligatorios' });
@@ -205,7 +217,7 @@ app.post('/users/follow', async (req, res) => {
   }
 });
 
-app.get('/users/profile/:username', async (req, res) => {
+app.get('/users/profile/:username', authenticateToken, async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
@@ -232,8 +244,12 @@ app.get('/users/profile/:username', async (req, res) => {
   }
 });
 
-app.get('/friends', async (req, res) => {
+app.get('/friends', authenticateToken, async (req, res) => {
   const username = String(req.query.username || '').trim();
+
+  if (username !== req.user.username) {
+    return res.status(403).json({ error: 'You can only view your own friends.' });
+  }
 
   if (!username) {
     return res.status(400).json({ error: 'Username is required' });
@@ -275,8 +291,12 @@ app.get('/friends', async (req, res) => {
 
 // New
 // Executes a move in the game
-app.post('/move', async (req, res) => {
+app.post('/move', authenticateToken, async (req, res) => {
   const { cellIndex, username} = req.body; // NEW: Recibir difficulty
+
+  if (username !== req.user.username) {
+    return res.status(403).json({ error: 'You can only make a move for yourself.' });
+  }
 
   try {
     // 1. Integración: Llamada al servicio de Rust
@@ -310,8 +330,12 @@ app.post('/move', async (req, res) => {
 });
 
 // NEW: Endpoint para registrar una rendición (derrota)
-app.post('/surrender', async (req, res) => {
+app.post('/surrender', authenticateToken, async (req, res) => {
   const { username, difficulty, boardSize } = req.body;
+
+  if (username !== req.user.username) {
+    return res.status(403).json({ error: 'You can only surrender for yourself.' });
+  }
 
   try {
     // 1. Integración: Llamada al servicio de Rust (GameY)
@@ -348,8 +372,12 @@ app.post('/surrender', async (req, res) => {
 
 
 // Resets the game board WITHOUT affecting stats
-app.post('/reset', async (req, res) => {
-  const { size, difficulty } = req.body;
+app.post('/reset', authenticateToken, async (req, res) => {
+  const { size, difficulty, username } = req.body;
+
+  if (username !== req.user.username) {
+    return res.status(403).json({ error: 'You can only reset for yourself.' });
+  }
 
   try {
     const requestedSize = Number(size);
@@ -361,7 +389,7 @@ app.post('/reset', async (req, res) => {
     const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize, difficulty: difficulty }),
+      body: JSON.stringify({ size: safeSize, difficulty: difficulty, username: username }),
     });
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard});
@@ -373,7 +401,7 @@ app.post('/reset', async (req, res) => {
 
 // New
 // Get available difficulties
-app.get('/difficulties', async (req, res) => {
+app.get('/difficulties', authenticateToken, async (req, res) => {
   try {
     const rustResponse = await fetch(`${GAMEY_URL}/difficulties`);
     if (!rustResponse.ok) {
@@ -389,10 +417,14 @@ app.get('/difficulties', async (req, res) => {
 
 
 // Para el historial
-app.get('/history', async (req, res) => {
+app.get('/history', authenticateToken, async (req, res) => {
   // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
   const { username, page = 1, limit = 10, result } = req.query;
   
+  if (username !== req.user.username) {
+    return res.status(403).json({ error: 'You can only view your own history.' });
+  }
+
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
   }

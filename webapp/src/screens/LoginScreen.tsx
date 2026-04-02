@@ -42,6 +42,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
       const data = await response.json();
 
       if (response.ok) {
+        sessionStorage.setItem('token', data.token);
         // El estado de partida se crea en el componente padre (App) usando este username.
         await onLogin(
           formData.username.trim(),
@@ -51,7 +52,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
         setFormError(data.error || 'Error al iniciar sesion.');
       }
       
-    } catch (error) {
+    } catch {
       setFormError('Error de conexion al iniciar sesion.');
     } finally {
       setIsLoading(false);

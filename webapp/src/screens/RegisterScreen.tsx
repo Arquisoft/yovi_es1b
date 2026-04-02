@@ -107,11 +107,12 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
       const data = await response.json();
 
       if (response.ok) {
+        sessionStorage.setItem('token', data.token);
         await onCreateAccount(formData.name.trim(), data.friendCode, selectedIcon);
       } else {
         setFormError(data.error || 'Error al crear la cuenta.');
       }
-    } catch (error) {
+    } catch {
       setFormError('Error de red al crear la cuenta.');
     }
   };
