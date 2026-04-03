@@ -48,16 +48,16 @@ describe('LoginForm', () => {
     })
   })
 
-  test('con ÃƒÂ©xito llama a onLogin', async () => {
+  test('con éxito llama a onLogin', async () => {
     const user = userEvent.setup()
     const onLogin = vi.fn()
     
-    // 1. Actualizamos el mock para que devuelva lo que el nuevo Back envÃƒÂ­a
+    // 1. Actualizamos el mock para que devuelva lo que el nuevo Back envía
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({ 
         username: 'Alice', 
-        friendCode: 'XYZ789', // Simulamos un cÃƒÂ³digo de amigo
+        friendCode: 'XYZ789', // Simulamos un código de amigo
         icon: 'avatar.png',    // Simulamos un icono
         nickname: 'Ali',
         language: 'Spain'
@@ -76,9 +76,9 @@ describe('LoginForm', () => {
     })
   })
 
-  test('el botÃƒÂ³n volver intenta regresar a index.html', async () => {
+  test('el botón volver intenta regresar a index.html', async () => {
     const user = userEvent.setup()
-    // En MPA, el botÃƒÂ³n volver suele ejecutar un window.location.href = 'index.html'
+    // En MPA, el botón volver suele ejecutar un window.location.href = 'index.html'
     // O llamar a una prop que lo hace. Verificamos la prop:
     const onBack = vi.fn(() => { window.location.href = '/index.html' })
 

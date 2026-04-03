@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react';
+import logoGameY from '../assets/Logo_GameY.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -56,7 +57,6 @@ interface RegisterScreenProps {
 }
 
 function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
-  const logoSrc = new URL('../assets/Logo_GameY.png', import.meta.url).href;
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -128,7 +128,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
   return (
     <div className="register-screen">
       <div className="auth-header">
-        <img src={logoSrc} alt="GameY" className="gamey-logo-large auth-logo-left" />
+        <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">ZONA DE REGISTRO</h2>
       </div>
 

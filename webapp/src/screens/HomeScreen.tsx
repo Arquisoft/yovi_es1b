@@ -1,3 +1,5 @@
+import logoGameY from '../assets/Logo_GameY.png';
+
 interface HomeScreenProps {
   username: string;
   onUsernameChange: (value: string) => void; // Actualiza el nick de Quick Access
@@ -33,11 +35,10 @@ function HomeScreen({
   onGoToRegister,
   onGoToLogin,
 }: HomeScreenProps) {
-  const logoSrc = new URL('../assets/Logo_GameY.png', import.meta.url).href;
   return (
     <div className="home-screen">
         <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
-        <img src={logoSrc} alt="GameY" className="gamey-logo-large" />
+        <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
         {/* Bloque con botones para ir a registro/login */}
         <HomeActions
           onGoToRegister={onGoToRegister}
