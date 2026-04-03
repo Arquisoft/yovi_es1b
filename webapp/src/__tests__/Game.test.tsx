@@ -69,10 +69,10 @@ describe('Game UI (MPA Ready)', () => {
 
     // Simulamos clics en la botonera de la Navbar
     await user.click(screen.getByRole('button', { name: /historial/i }))
-    await user.click(screen.getByRole('button', { name: /dificultad/i }))
-    await user.click(screen.getByRole('button', { name: /tamaño/i }))
+    await user.selectOptions(screen.getByLabelText(/cambiar dificultad/i), 'facil')
+    await user.selectOptions(screen.getByLabelText(/cambiar tamaño/i), 'Tamaño 9x9x9')
     await user.click(screen.getByRole('button', { name: /terminar partida/i }))
-    await user.click(screen.getByRole('button', { name: /reiniciar/i })) // Ajustado el nombre
+    await user.click(screen.getByRole('button', { name: /reiniciar/i }))
     await user.click(screen.getByRole('button', { name: /salir/i }))
     await user.click(screen.getByRole('button', { name: /ver mi perfil/i }))
 

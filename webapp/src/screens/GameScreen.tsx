@@ -2,20 +2,17 @@ import { useEffect, useRef } from 'react';
 import failedJson from '../assets/buttons/Failed.json';
 import logoutJson from '../assets/buttons/Logout.json';
 import historyJson from '../assets/buttons/History.json';
-import updownJson from '../assets/buttons/updown.json';
 import restartJson from '../assets/buttons/Restart.json';
-import difficultyJson from '../assets/buttons/Difficulty.json';
 import settingsJson from '../assets/buttons/setting.json';
 import settingsImg from '../assets/buttons/configuracion.png';
 import botonRojo from '../assets/buttons/BotonRojo.png';
-import dificultadImg from '../assets/buttons/Dificultad.png';
 import historialImg from '../assets/buttons/Historial.jpg';
 import reiniciarPartidaImg from '../assets/buttons/ReiniciarPartida.jpg';
 import salirMenuImg from '../assets/buttons/SalirMenu.jpg';
-import tamanoTableroImg from '../assets/buttons/TamañoTablero.png';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
 import amigosImg from '../assets/buttons/agregar-usuario.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
+import { type DifficultyChoice, type SizeChoice, SIZE_OPTIONS } from '../types/game';
 
 interface GameYData {
   size: number;
@@ -29,7 +26,7 @@ interface GameScreenProps {
   displayName?: string;
   playerIcon?: string | null;
   botIcon?: string | null;
-  difficultyChoice: 'facil' | 'medio' | 'dificil' | null;
+  difficultyChoice: DifficultyChoice | null;
   selectedBoardDimension: number | null;
   boardData: GameYData | null;
   winner: number | null;
@@ -42,8 +39,8 @@ interface GameScreenProps {
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
   onExit: () => void; // Sale del juego y vuelve a home
-  onChangeDifficulty: () => void; // Permite cambiar la dificultad durante la partida
-  onChangeSize: () => void; // Permite cambiar el tamaño durante la partida
+  onChangeDifficulty: (newDiff: DifficultyChoice) => void; // Permite cambiar la dificultad durante la partida
+  onChangeSize: (newSize: SizeChoice) => void; // Permite cambiar el tamaño durante la partida
   onFetchHistory: () => void; // Permite consultar el historial de partidas
   onAddFriend?: () => void; // Abre el panel de amigos
   onViewProfile?: () => void; // Abre el perfil del usuario
@@ -111,6 +108,7 @@ function GameScreen({
           : 'Sin seleccionar';
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
+  const currentSizeValue: SizeChoice = `Tamaño ${boardDimension}x${boardDimension}x${boardDimension}` as SizeChoice;
   const safePlayerIcon = playerIcon && playerIcon.trim() ? playerIcon : defaultAvatar;
   const safeBotIcon = botIcon && botIcon.trim() ? botIcon : defaultAvatar;
   const playerLabel = displayName && displayName.trim() ? displayName : username;
@@ -138,7 +136,7 @@ function GameScreen({
   return (
     <div className="game-screen">
 
-      {/* Barra de navegaciÃ³n superior */}
+      {/* Barra de navegación superior */}
 
       <nav className="game-navbar">
         <div className="nav-user-info">
@@ -147,18 +145,40 @@ function GameScreen({
         <div className="nav-center-title">Partida personalizada contra un bot</div>
 
         <div className="nav-game-settings">
-          <button className="nav-btn nav-btn-icon-frame nav-btn-with-size" onClick={onChangeSize} title="Elegir tamaño">
-            <img className="nav-btn-size-img" src={tamanoTableroImg} alt="Tamaño tablero" />
-            <span className="nav-btn-size-hover" aria-hidden="true">
-              <Lottie animationData={updownJson} loop autoplay lottieRef={updownLottieRef} />
-            </span>
-          </button>
-          <button className="nav-btn nav-btn-icon-frame nav-btn-difficulty-frame nav-btn-with-difficulty" onClick={onChangeDifficulty} title="Elegir dificultad">
-            <img className="nav-btn-difficulty-img" src={dificultadImg} alt="Dificultad" />
-            <span className="nav-btn-difficulty-hover" aria-hidden="true">
-              <Lottie animationData={difficultyJson} loop autoplay lottieRef={difficultyLottieRef} />
-            </span>
-          </button>
+          {/* COMBOBOX TAMAÑO */}
+          <div className="nav-combo-container">
+            <label htmlFor="size-select"className="nav-label-text">Cambiar tamaño</label>
+            <select 
+              id="size-select"
+              className="nav-select-field"
+              value={currentSizeValue}
+              onChange={(e) => onChangeSize(e.target.value as SizeChoice)}
+            >
+              {SIZE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* COMBOBOX DIFICULTAD */}
+          <div className="nav-combo-container">
+            <label htmlFor="diff-select" className="nav-label-text">Cambiar dificultad</label>
+            <select 
+              id="diff-select"
+              className="nav-select-field"
+              value={difficultyChoice || ''}
+              onChange={(e) => onChangeDifficulty(e.target.value as DifficultyChoice)}
+            >
+              <option value="" disabled>Seleccionar...</option>
+              {/* Aquí puedes meter las opciones fijas o mapear un array de dificultades dinámicas */}
+              <option value="facil">Fácil</option>
+              <option value="medio">Medio</option>
+              <option value="dificil">Difícil</option>
+            </select>
+          </div>
+
           <div className="nav-btn-spacer" aria-hidden="true" />
           <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title="Terminar partida">
             <img className="nav-btn-png" src={botonRojo} alt="Terminar partida" />
