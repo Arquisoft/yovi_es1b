@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { TURN_TIME_LIMIT } from '../constants/config';
+import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../constants/config';
 
 export const useGameTimer = (onTimeUp: () => void) => {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
@@ -13,7 +13,8 @@ export const useGameTimer = (onTimeUp: () => void) => {
 
   const startTimer = (difficulty: string) => {
     stopTimer();
-    const limit = TURN_TIME_LIMIT[difficulty] ?? 60;
+    const englishDiff = UI_TO_ENGLISH_DIFFICULTY[difficulty] ?? difficulty;
+    const limit = TURN_TIME_LIMIT[englishDiff] ?? 60;
     setTimeLeft(limit);
     setIsVisible(true);
 

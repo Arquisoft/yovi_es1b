@@ -13,7 +13,7 @@ import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
-import { TURN_TIME_LIMIT } from '../../constants/config';
+import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -278,7 +278,7 @@ const GameApp = () => {
         sizeLabel={sizeChoice}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
-        turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
+        turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
         onFetchHistory={() => fetchHistory()}
         onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
