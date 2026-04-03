@@ -8,7 +8,13 @@ import app from '../users-service.js'
 describe('POST /createuser', () => {
 
     beforeEach(() => {
-        vi.spyOn(User.prototype, 'save').mockResolvedValue(true) // no se inserta realmente en la bbdd, pero se simula que la operación de guardado es exitosa
+        // --- ESTO ES LO QUE FALTABA ---
+        // Mock de findOne para que el bucle 'while' del friendCode termine rápido
+        // Devolvemos 'null' para simular que NO existe el código y es único
+        vi.spyOn(User, 'findOne').mockResolvedValue(null) 
+        
+        // Tu mock original para el guardado
+        vi.spyOn(User.prototype, 'save').mockResolvedValue(true)
     })
 
     afterEach(() => {
@@ -21,8 +27,9 @@ describe('POST /createuser', () => {
             .send({ 
                 username: 'testUser', 
                 password: 'testPass',
-                age: 25,
-                country: 'Spain'
+                birthDate: '2000-01-01',
+                language: 'Spain',
+                iconName: 'hombre1.png'
             })
             .set('Accept', 'application/json')
 
@@ -34,23 +41,26 @@ describe('POST /createuser', () => {
     it('devuelve error 400 si faltan campos', async () => {
         const res = await request(app)
             .post('/createuser')
-            .send({ username: 'testUser' }) // Falta password
+            .send({ username: 'testUser' }) 
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('Username and password are required')
+        expect(res.body.error).toBe('Username, password, language and birthDate are required')
     })
 
     it('devuelve error 400 si el usuario ya existe', async () => {
-        // Esto vigila si alguien crea un usuario y pulse el boton guardar
-        vi.spyOn(User.prototype, 'save').mockRejectedValue(new Error('User already exists')) // Obliga a fallar inmediatamente.
+        // IMPORTANTE: Mantenemos el findOne en null para que pase el bucle
+        vi.spyOn(User, 'findOne').mockResolvedValue(null)
+        // Y forzamos el error en el save
+        vi.spyOn(User.prototype, 'save').mockRejectedValue(new Error('User already exists'))
 
         const res = await request(app)
             .post('/createuser')
             .send({ 
                 username: 'testUser', 
                 password: 'testPass',
-                age: 25,
-                country: 'Spain'
+                birthDate: '2000-01-01',
+                language: 'Spain',
+                iconName: 'hombre1.png'
             })
         
         expect(res.status).toBe(400)

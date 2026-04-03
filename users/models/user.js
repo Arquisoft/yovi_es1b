@@ -11,18 +11,34 @@ const UserSchema = new mongoose.Schema({
     type: String, 
     required: true 
   },
-  age: {
-    type: Number,
-    required: true
+  friendCode: {
+    type: String,
+    unique: true,
   },
-  country: {
+  birthDate: {
+    type: Date,
+    required: false
+  },
+  language: {
     type: String,
     required: true
+  },
+  nickname: {
+    type: String,
+    required: false,
+    unique: true,
+    trim: true
+  },
+  iconName: {
+    type: String,
+    required: false,
+    default: 'SinAvatar.png'
   },
   createdAt: { 
     type: Date, 
     default: Date.now
   }
+
 });
 
 const User = mongoose.models.User || mongoose.model('User', UserSchema);

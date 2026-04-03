@@ -1,6 +1,5 @@
 import { type FormEvent, useState } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+import { API_BASE_URL } from '../constants/config';
 
 interface LoginData {
   username: string;
@@ -9,10 +8,17 @@ interface LoginData {
 
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
-  readonly onLogin: (username: string) => Promise<void> | void; // Intenta iniciar partida con ese usuario
+  readonly onLogin: (
+    username: string,
+    friendCode: string,
+    icon?: string | null,
+    nickname?: string | null,
+    language?: string | null
+  ) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
 function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
+  const logoSrc = new URL('../assets/Logo_GameY.png', import.meta.url).href;
   const [formData, setFormData] = useState<LoginData>({
     username: '',
     password: '',
@@ -23,7 +29,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Evita recargar la pagina
     if (!formData.username.trim() || !formData.password.trim()) {
-      setFormError('Usuario y contrasena no pueden estar en blanco.'); // Valida campos obligatorios
+      setFormError('Usuario y contraseña no pueden estar en blanco.'); // Valida campos obligatorios
       return;
     }
     setFormError(null);
@@ -44,7 +50,12 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
       if (response.ok) {
         // El estado de partida se crea en el componente padre (App) usando este username.
-        await onLogin(formData.username.trim());
+        await onLogin(
+          formData.username.trim(),
+          data.friendCode,
+          typeof data.iconName === 'string' ? data.iconName : (typeof data.icon === 'string' ? data.icon : null),
+          typeof data.nickname === 'string' ? data.nickname : null,
+          typeof data.language === 'string' ? data.language : null);
       } else {
         setFormError(data.error || 'Error al iniciar sesion.');
       }
@@ -58,7 +69,14 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
   return (
     <div className="register-screen">
-      <h2 className="title-log">RECUERDAME QUIEN ERES</h2>
+      <div className="auth-header">
+        <img src={logoSrc} alt="GameY" className="gamey-logo-large auth-logo-left" />
+        <h2 className="title-log">
+          Bienvenido de vuelta a GameY
+          <br />
+          ¿Cómo era tu nombre?
+        </h2>
+      </div>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
 

@@ -3,6 +3,7 @@
   width: 100%;
   margin: 0;
   padding: 0;
+  height: 100vh;
   min-height: 100vh;
   text-align: center;
 }
@@ -10,7 +11,11 @@
 .App {
   position: relative;
   z-index: 2;
+  height: 100vh;
+  overflow: hidden;
   min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .logo {
@@ -55,6 +60,7 @@
   z-index: 2;
   width: 100%;
   min-height: 100vh;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -148,6 +154,10 @@
 
 .submit-button:hover {
   background-color: #0056b3;
+}
+
+.bg-music {
+  display: none;
 }
 
 /* Game board */
@@ -267,6 +277,7 @@ body {
   z-index: 2;
   background-color: transparent;
   min-height: 100vh;
+  overflow-y: auto;
 }
 
 .timer {
@@ -277,4 +288,345 @@ body {
 
 .timer.warning {
     color: red;
+}
+
+/* MENU DE AMIGOS */
+
+.friends-sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 10001;
+}
+
+.friends-sidebar-content {
+  position: relative;
+  width: 380px; /* Un poco más ancho para dar aire */
+  height: 100%;
+  background: var(--bg-dark-glass); 
+  backdrop-filter: blur(20px);
+  color: white;
+  padding: 2rem 1.5rem;
+  border-left: 1px solid var(--border-white);
+  box-shadow: -15px 0 50px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* --- TÍTULOS Y TEXTOS --- */
+.sidebar-title {
+  margin: 0 0 1.5rem 0;
+  font-size: 1.5rem;
+  letter-spacing: 3px;
+  color: #00d4ff;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 0.5rem;
+}
+
+.list-status-label {
+  font-size: 0.75rem;
+  color: #666;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  letter-spacing: 1px;
+}
+
+/* --- PERFIL DE USUARIO --- */
+.user-mini-profile {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input); /* Igual al fondo de tu nav */
+  padding: 15px;
+  border-radius: 14px;
+  margin-bottom: 2rem;
+  border: 1px solid var(--border-white);
+  transition: border-color 0.3s;
+}
+
+.user-mini-profile:hover {
+  border-color: var(--accent-neon-glow);
+}
+
+.profile-info-text {
+  display: flex;
+  flex-direction: column;
+  /* flex: 1;  <-- Si esto está activo, empujará al botón automáticamente */
+  flex: 1; 
+}
+
+.avatar-circle {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #00d4ff 0%, #0055ff 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.profile-name {
+  font-weight: 500;
+  font-size: 1.1rem;
+}
+
+/* --- FORMULARIO DE BÚSQUEDA --- */
+.search-container {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+}
+
+.search-container .add-friend-btn {
+  flex: 1;
+  padding: 10px;
+  background: var(--accent-neon);
+  color: #000;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.friends-input {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 12px;
+  color: white;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.friends-input:focus {
+  border-color: #00d4ff;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.add-friend-btn {
+  background: #00d4ff;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  padding: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.3s;
+}
+
+.add-friend-btn:hover {
+  background: #00f2ff;
+  transform: translateY(-2px);
+}
+
+/* --- LISTA VACÍA --- */
+.friends-list-area {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 5px;
+}
+
+.empty-list-box {
+  text-align: center;
+  padding: 30px 10px;
+  color: #868383;
+  border: 2px dashed rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  font-size: 0.9rem;
+}
+
+/* --- BOTÓN CERRAR --- */
+.close-button {
+  position: absolute;
+  top: 1rem;
+  right: 1.2rem;
+  background: none;
+  border: none;
+  color: #444;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: color 0.3s;
+}
+
+.close-button:hover {
+  color: #ff4444;
+}
+
+/* --- ANIMACIÓN --- */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.friend-item-row {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: transparent; /* Fondo limpio */
+  border-bottom: 1px solid var(--border-white);
+  margin-bottom: 0; 
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.friend-item-row:hover {
+  background: var(--bg-input);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #444; /* Color desconectado */
+}
+
+/* El brillo verde para los que están online */
+.status-dot.online {
+  background: #00ff88;
+  box-shadow: 0 0 8px #00ff88;
+}
+
+.friend-name {
+  color: #eee;
+  font-size: 0.95rem;
+  font-weight: 500;
+  /* Evita que el nombre empuje al botón si es muy largo */
+  flex: 1; 
+}
+
+.invite-btn {
+  background: transparent;
+  border: 1px solid #00d4ff;
+  color: #00d4ff;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.invite-btn:hover {
+  background: #00d4ff;
+  color: #000;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+}
+
+.id-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2); 
+  border: 1px solid var(--border-white);
+  border-radius: 8px;
+  padding: 0 12px;
+  flex: 2;
+  transition: all 0.3s ease;
+}
+
+.id-input-wrapper:focus-within {
+  border-color: var(--accent-neon);
+  box-shadow: 0 0 10px var(--accent-neon-glow);
+}
+
+.static-hash {
+  color: #00d4ff; /* El color de tu ID */
+  font-weight: bold;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1rem;
+  user-select: none; /* Evita que el usuario seleccione el # */
+  margin-right: 4px;
+}
+
+.friends-input-id {
+  background: transparent !important;
+  border: none !important;
+  color: rgb(136, 133, 133);
+  padding: 8px 0;
+  width: 100%;
+  outline: none;
+  font-family: 'Courier New', Courier, monospace;
+  letter-spacing: 2px;
+}
+
+.friends-input-id::placeholder {
+  color: rgba(255, 255, 255, 0.2);
+  letter-spacing: normal;
+}
+
+
+.social-tabs {
+  display: flex;
+  margin: 15px 0;
+  border-bottom: 1px solid rgb(66, 113, 141);
+  color: white;
+}
+
+.tab-link {
+  background: none;
+  border: none;
+  color: #666;
+  padding: 8px 15px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.tab-link.active {
+  color: #00d4ff;
+  border-bottom: 2px solid #00d4ff;
+}
+
+.req-badge {
+  background: #ff4757;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 10px;
+  margin-left: 5px;
+}
+
+.request-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+/* --- BOTÓN PENDIENTES (SOBRE) --- */
+.pending-btn {
+  margin-left: auto; /* ESTA es la clave: empuja el botón todo lo posible a la derecha */
+  background: rgba(0, 212, 255, 0.1);
+  border: 1px solid rgba(0, 212, 255, 0.4);
+  color: #00d4ff;
+  width: 44px; /* Un poco más grande para que se vea mejor */
+  height: 44px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0; /* Evita que el botón se aplaste si el nombre es largo */
+}
+
+.pending-btn:hover {
+  background: rgba(0, 212, 255, 0.2);
+  transform: scale(1.05);
+}
+
+/* Badge de notificaciones (el numerito) */
+.req-count {
+  background: #ff4757;
+  top: -8px;
+  right: -8px;
+  padding: 2px 5px;
+  font-size: 0.65rem;
 }
