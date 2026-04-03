@@ -1062,3 +1062,75 @@ body {
 }
 
 
+
+/* Contenedor relativo para que la lista se posicione respecto a él */
+.custom-dropdown-container {
+  position: relative;
+  display: inline-block;
+  margin: 0 10px;
+}
+
+/* Estilo del botón (Trigger) */
+.dropdown-trigger {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.dropdown-trigger:hover, .dropdown-trigger.active {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #00d4ff; /* Color cian */
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+}
+
+/* La lista flotante */
+.dropdown-floating-list {
+  position: absolute;
+  top: calc(100% + 5px); /* Aparece justo debajo del botón */
+  left: 0;
+  background: #1a1a1a; /* Fondo oscuro sólido */
+  border: 1px solid #333;
+  border-radius: 8px;
+  min-width: 100%;
+  z-index: 9999; /* Asegura que flote sobre el tablero */
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  animation: fadeInDown 0.2s ease-out;
+}
+
+/* Los items de la lista */
+.dropdown-item {
+  padding: 12px 16px;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 0.85rem;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.dropdown-item:hover {
+  background: #00d4ff;
+  color: #000;
+  font-weight: bold;
+}
+
+/* Animación de entrada */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+

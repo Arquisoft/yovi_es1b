@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import failedJson from '../assets/buttons/Failed.json';
 import logoutJson from '../assets/buttons/Logout.json';
 import historyJson from '../assets/buttons/History.json';
@@ -78,6 +78,8 @@ function GameScreen({
   const restartLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const difficultyLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const settingsLottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const [showSizeMenu, setShowSizeMenu] = useState(false);
+  const [showDiffMenu, setShowDiffMenu] = useState(false);
 
   useEffect(() => {
     failedLottieRef.current?.setSpeed(0.5);
@@ -108,7 +110,7 @@ function GameScreen({
           : 'Sin seleccionar';
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
-  const currentSizeValue: SizeChoice = `Tamaño ${boardDimension}x${boardDimension}x${boardDimension}` as SizeChoice;
+  //const currentSizeValue: SizeChoice = `Tamaño ${boardDimension}x${boardDimension}x${boardDimension}` as SizeChoice;
   const safePlayerIcon = playerIcon && playerIcon.trim() ? playerIcon : defaultAvatar;
   const safeBotIcon = botIcon && botIcon.trim() ? botIcon : defaultAvatar;
   const playerLabel = displayName && displayName.trim() ? displayName : username;
@@ -145,38 +147,58 @@ function GameScreen({
         <div className="nav-center-title">Partida personalizada contra un bot</div>
 
         <div className="nav-game-settings">
-          {/* COMBOBOX TAMAÑO */}
-          <div className="nav-combo-container">
-            <label htmlFor="size-select"className="nav-label-text">Cambiar tamaño</label>
-            <select 
-              id="size-select"
-              className="nav-select-field"
-              value={currentSizeValue}
-              onChange={(e) => onChangeSize(e.target.value as SizeChoice)}
+          {/* MENÚ TAMAÑO */}
+          <div className="custom-dropdown-container">
+            <button 
+              className={`dropdown-trigger ${showSizeMenu ? 'active' : ''}`}
+              onClick={() => { setShowSizeMenu(!showSizeMenu); setShowDiffMenu(false); }}
             >
-              {SIZE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+              Cambiar Tamaño ▾
+            </button>
+            
+            {showSizeMenu && (
+              <div className="dropdown-floating-list">
+                {SIZE_OPTIONS.map((option) => (
+                  <div 
+                    key={option} 
+                    className="dropdown-item"
+                    onClick={() => {
+                      onChangeSize(option);
+                      setShowSizeMenu(false);
+                    }}
+                  >
+                    {option}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          {/* COMBOBOX DIFICULTAD */}
-          <div className="nav-combo-container">
-            <label htmlFor="diff-select" className="nav-label-text">Cambiar dificultad</label>
-            <select 
-              id="diff-select"
-              className="nav-select-field"
-              value={difficultyChoice || ''}
-              onChange={(e) => onChangeDifficulty(e.target.value as DifficultyChoice)}
+          {/* MENÚ DIFICULTAD */}
+          <div className="custom-dropdown-container">
+            <button 
+              className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
+              onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
             >
-              <option value="" disabled>Seleccionar...</option>
-              {/* Aquí puedes meter las opciones fijas o mapear un array de dificultades dinámicas */}
-              <option value="facil">Fácil</option>
-              <option value="medio">Medio</option>
-              <option value="dificil">Difícil</option>
-            </select>
+              Dificultad: {difficultyChoice || 'Medio'} ▾
+            </button>
+            
+            {showDiffMenu && (
+              <div className="dropdown-floating-list">
+                {['facil', 'medio', 'dificil'].map((diff) => (
+                  <div 
+                    key={diff} 
+                    className="dropdown-item"
+                    onClick={() => {
+                      onChangeDifficulty(diff as DifficultyChoice);
+                      setShowDiffMenu(false);
+                    }}
+                  >
+                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />
