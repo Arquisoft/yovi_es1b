@@ -99,7 +99,7 @@ function GameScreen({
   } else if (difficultyChoice === 'medio') {
     botName = 'Bot Player (medio)';
   } else if (difficultyChoice === 'dificil') {
-    botName = 'Bot Player (dif­ícil)';
+    botName = 'Bot Player (difícil)';
   }
 
   const difficultyLabel =
@@ -143,7 +143,7 @@ function GameScreen({
 
       <nav className="game-navbar">
         <div className="nav-user-info">
-          <img src={gameyLogo} alt="GameY" className="nav-gamey-logo" />
+          <h2>Jugador: <span>{username}</span></h2>
         </div>
         <div className="nav-center-title">Partida personalizada contra un bot</div>
 

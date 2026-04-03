@@ -162,12 +162,6 @@ app.get('/users/search', async (req, res) => {
   const query = String(req.query.query || '').trim();
   
   try {
-    const users = await User.find({
-      $or: [
-        { nickname: { $regex: query, $options: 'i' } },
-        { username: { $regex: query, $options: 'i' } }
-      ]
-    }).select('username nickname score iconName');
     let searchCriteria = {};
 
     // Si la búsqueda empieza por #, buscamos coincidencia exacta por friendCode
@@ -192,38 +186,6 @@ app.get('/users/search', async (req, res) => {
 });
 
 app.post('/users/follow', async (req, res) => {
-  const follower = String(req.body.follower || '').trim();
-  const following = String(req.body.following || '').trim();
-
-  if (!follower || !following) {
-    return res.status(400).json({ error: 'Follower y following son obligatorios' });
-  }
-  if (follower === following) {
-    return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
-  }
-
-  const findUserByHandle = async (handle) => {
-    if (!handle) return null;
-    return (await User.findOne({ nickname: handle })) || (await User.findOne({ username: handle }));
-  };
-
-  try {
-    const targetUser = await findUserByHandle(following);
-    const me = await findUserByHandle(follower);
-
-    if (!targetUser || !me) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-    if (String(targetUser._id) === String(me._id)) {
-      return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
-    }
-
-    const targetId = targetUser._id;
-    const currentFollowing = me.following || [];
-    const alreadyFollowing =
-      typeof currentFollowing.includes === 'function'
-        ? currentFollowing.includes(targetId)
-        : false;
   const { follower, following } = req.body;
   try {
     // Buscamos si ya existe una relación (da igual el orden)
@@ -386,29 +348,6 @@ app.get('/friends', async (req, res) => {
       status: 'accepted'
     });
 
-  const friendsFromFriendships = friendships
-    .map((friendship) => {
-      const friendName = (friendship.users || []).find((u) => u !== username);
-      return friendName ? { name: friendName, status: 'online' } : null;
-    })
-    .filter(Boolean);
-
-  if (friendsFromFriendships.length > 0) {
-    const usernames = friendsFromFriendships.map((friend) => friend.name);
-    const users = await User.find({ username: { $in: usernames } }).select('username nickname');
-    const nicknameMap = new Map(users.map((u) => [u.username, u.nickname]));
-    const mapped = friendsFromFriendships.map((friend) => ({
-      ...friend,
-      name: nicknameMap.get(friend.name) || friend.name
-    }));
-    return res.json(mapped);
-  }
-
-  // Compatibilidad: si no hay documentos Friendship, devolvemos los seguidos del modelo User.
-  if (friendsFromFriendships.length === 0) {
-    const user = await User.findOne({ username }).populate('following', 'username nickname');
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
     const friendsList = friendships.map(f => {
       const friendName = f.users.find(u => u !== username);
       return { name: friendName, status: 'online' };
@@ -450,12 +389,6 @@ app.post('/friends/respond', async (req, res) => {
       await Friendship.findByIdAndDelete(requestId);
       return res.json({ message: 'Solicitud rechazada' });
     }
-    const fallback = (user.following || []).map((friend) => ({
-      name: friend.nickname || friend.username,
-      status: 'online'
-    }));
-    return res.json(fallback);
-  }
 
     const friendship = await Friendship.findByIdAndUpdate(requestId, { 
       status: 'accepted' 

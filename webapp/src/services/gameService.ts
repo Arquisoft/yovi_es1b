@@ -105,7 +105,7 @@ export const gameService = {
     });
     return res.json();
   },
-};
+  
   // 1. Buscar usuario específicamente por su Friend Code (#ABC123)
   async searchUserByCode(code: string) {
     // Le añadimos el # nosotros para que el buscador del back sepa que es un ID
