@@ -15,7 +15,6 @@ import salirMenuImg from '../assets/buttons/SalirMenu.jpg';
 import tamanoTableroImg from '../assets/buttons/TamañoTablero.png';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
 import amigosImg from '../assets/buttons/agregar-usuario.png';
-import gameyLogo from '../assets/Logo_GameY.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 
 interface GameYData {

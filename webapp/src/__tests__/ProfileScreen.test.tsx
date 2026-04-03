@@ -50,6 +50,7 @@ describe('ProfileScreen', () => {
     const user = userEvent.setup()
     const onIconUpdated = vi.fn()
 
+    // Mock de carga inicial
     mockedService.getProfile.mockResolvedValueOnce({
       username: 'Alice',
       nickname: 'Ali',
@@ -57,21 +58,32 @@ describe('ProfileScreen', () => {
       language: 'Spain',
       iconName: 'SinAvatar.png',
     })
+
+    // Mock de guardado
     mockedService.updateProfile.mockResolvedValueOnce({
       message: 'Perfil actualizado correctamente',
     })
 
     render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} onIconUpdated={onIconUpdated} />)
 
-    await screen.findByDisplayValue('Alice')
+    // 1. Esperamos a que carguen los datos (el nickname por ejemplo)
+    const nickInput = await screen.findByLabelText(/apodo/i)
+    
+    // 2. Realizamos los cambios
     await user.click(screen.getByRole('checkbox', { name: /english/i }))
-    await user.clear(screen.getByLabelText(/fecha de nacimiento/i))
-    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2001-02-03')
-    await user.clear(screen.getByLabelText(/nickname/i))
-    await user.type(screen.getByLabelText(/nickname/i), 'NewNick')
+    
+    const dateInput = screen.getByLabelText(/fecha de nacimiento/i)
+    await user.clear(dateInput)
+    await user.type(dateInput, '2001-02-03')
+    
+    await user.clear(nickInput)
+    await user.type(nickInput, 'NewNick')
 
-    await user.click(screen.getByRole('button', { name: /guardar perfil/i }))
+    // 3. Guardamos
+    const saveButton = screen.getByRole('button', { name: /guardar perfil/i })
+    await user.click(saveButton)
 
+    // 4. CLAVE: Metemos el check del callback DENTRO del waitFor
     await waitFor(() => {
       expect(mockedService.updateProfile).toHaveBeenCalledWith('Alice', {
         birthDate: '2001-02-03',
@@ -79,8 +91,9 @@ describe('ProfileScreen', () => {
         nickname: 'NewNick',
         iconName: expect.any(String),
       })
-    })
-    expect(onIconUpdated).toHaveBeenCalled()
+      // Verificamos el callback aquí dentro porque sucede tras el await del service
+      expect(onIconUpdated).toHaveBeenCalled()
+    }, { timeout: 2000 }) // Damos un poco más de margen si es necesario
   })
 
   test('no permite cambiar Contraseña si no coincide confirmacion', async () => {

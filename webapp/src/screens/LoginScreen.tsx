@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
+import logoGameY from '../assets/Logo_GameY.png';
 
 interface LoginData {
   username: string;
@@ -18,7 +19,6 @@ interface LoginScreenProps {
 }
 
 function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
-  const logoSrc = new URL('../assets/Logo_GameY.png', import.meta.url).href;
   const [formData, setFormData] = useState<LoginData>({
     username: '',
     password: '',
@@ -70,7 +70,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
   return (
     <div className="register-screen">
       <div className="auth-header">
-        <img src={logoSrc} alt="GameY" className="gamey-logo-large auth-logo-left" />
+        <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">
           Bienvenido de vuelta a GameY
           <br />
