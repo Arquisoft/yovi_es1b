@@ -280,13 +280,17 @@ const GameApp = () => {
         onCellClick={handleCellClick}
         onFetchHistory={() => fetchHistory()}
         onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
-        onChangeDifficulty={() => {
-          setPreviousDifficultyChoice(difficultyChoice);
-          setDifficultyChoice(null);
+        onChangeDifficulty={(newDiff: DifficultyChoice) => {
+          setPreviousDifficultyChoice(newDiff);
+          setDifficultyChoice(newDiff);
+          const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
+          startNewGame(dimension, newDiff);
         }}
-        onChangeSize={() => {
-          setPreviousSizeChoice(sizeChoice);
-          setSizeChoice(null);
+        onChangeSize={(newSize: SizeChoice) => {
+          setPreviousSizeChoice(newSize);
+          setSizeChoice(newSize);
+          const dimension = getBoardDimensionFromSizeChoice(newSize) || 6;
+          startNewGame(dimension, difficultyChoice || 'Easy');
         }}
         onResetGame={() => startNewGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy')}
         onEndGame={async () => {
