@@ -73,9 +73,9 @@ describe('Game UI (MPA Ready)', () => {
     await user.click(screen.getByRole('button', { name: /historial/i }))
     // 1. Cambiar Dificultad
     // Hacemos clic en el botón que abre el menú
-    await user.click(screen.getByText(/Dificultad: facil/i))
+    await user.click(screen.getByRole('button', { name: /Dificultad: facil/i }))
     // Luego hacemos clic en la opción que queremos
-    await user.click(screen.getByText(/^Facil$/i))
+    await user.click(screen.getByText(/^Fácil$/i))
 
     // 2. Cambiar Tamaño
     // Hacemos clic en el botón de "Cambiar Tamaño"
