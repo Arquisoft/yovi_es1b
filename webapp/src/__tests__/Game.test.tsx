@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
 import GameScreen from '../screens/GameScreen'
 
@@ -200,7 +200,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     render(<GameScreen {...props} />)
     expect(screen.getByText(/carga el tablero para comenzar/i)).toBeInTheDocument()
   })
-})
+
   test('muestra 0s cuando el tiempo se ha agotado', () => {
     render(
         <GameScreen
@@ -211,7 +211,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     expect(screen.getByText(/0s/i)).toBeInTheDocument()
   })
 
-  // ── Estado de urgencia (≤ 5 segundos) ────────
+  // ── Estado de "urgencia" (≤ 5 segundos) ────────
 
   test('aplica la clase de urgencia cuando quedan 5 segundos o menos', () => {
     render(
