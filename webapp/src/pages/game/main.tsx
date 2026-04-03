@@ -120,6 +120,8 @@ const GameApp = () => {
   } = useGameTimer(() => handleAutoMove());
 
   const startNewGame = (size: number, difficulty: DifficultyChoice) => {
+    stopTimer();
+    setTimerVisible(false);
     setBotIcon(pickRandomBotIcon());
     resetGame(size, difficulty);
   };
