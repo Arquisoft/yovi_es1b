@@ -180,7 +180,7 @@ function GameScreen({
               className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
               onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
             >
-              Dificultad: {difficultyChoice || 'Medio'} ▾
+              Dificultad: ▾
             </button>
             
             {showDiffMenu && (
