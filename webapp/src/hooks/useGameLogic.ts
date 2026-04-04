@@ -56,7 +56,8 @@ export const useGameLogic = (username: string) => {
     return result;
   };
 
-  const resetGame = async (dimension: number, difficulty: string) => {
+  const resetGame = async (dimension: number, difficulty: string, stopTimer?: () => void) => {
+    stopTimer?.();                  // ← Para el timer ANTES de resetear
     const board = await gameService.resetBoard(dimension, difficulty, username);
     setBoardData(board);
     setWinner(null);
