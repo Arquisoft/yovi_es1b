@@ -46,11 +46,16 @@ fn test_new_game_all_cells_available() {
 }
 
 #[test]
-fn test_single_cell_board_initialization() {
-    let game = GameY::new(1);
-    assert_eq!(game.board_size(), 1);
-    assert_eq!(game.total_cells(), 1);
-    assert_eq!(game.available_cells().len(), 1);
+fn test_game_initialization() {
+    let game = GameY::new(7);
+    
+    assert_eq!(game.board_size(), 7); 
+    
+    // CORRECCIÓN: Usamos *next_player para desreferenciar el valor
+    assert!(
+        matches!(game.status(), GameStatus::Ongoing { next_player } if *next_player == PlayerId::new(0)),
+        "Game should be ongoing with player 0"
+    );
 }
 
 // ============================================================================
@@ -892,3 +897,16 @@ fn test_union_find_correctly_merges_components() {
     }
 }
 
+#[test]
+fn test_save_game_io_error() {
+    let game = GameY::new(3);
+    
+    let result = game.save_to_file("/ruta_invalida_que_no_existe/archivo.json"); 
+    
+    assert!(result.is_err());
+    
+    match result.unwrap_err() {
+        GameYError::IoError { .. } => (), 
+        _ => panic!("Expected IoError"),
+    }
+}
