@@ -9,9 +9,10 @@ interface FriendsPanelProps {
   displayName: string;
   friendCode: string;
   icon?: string | null;
+  onTriggerPublicProfile: (username: string) => void;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon }: FriendsPanelProps) => {
+export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon, onTriggerPublicProfile }: FriendsPanelProps) => {
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchCode, setSearchCode] = useState('');
@@ -84,6 +85,21 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     }
   };
 
+  const handleViewProfileFromSearch = async () => {
+    if (!searchCode.trim()) return;
+
+    try {
+      const targetUser = await gameService.searchUserByCode(searchCode);
+      if (targetUser) {
+        onTriggerPublicProfile(targetUser.username);
+      }else {
+        alert("No se encontró ningún jugador con ese código.");
+      }
+    } catch (error) {
+      alert("Error al buscar el perfil.");
+    }
+  }
+
 
   if (!isOpen) return null;
 
@@ -132,9 +148,15 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
               onChange={handleInputChange}
             />
           </div>
-          <button className="add-friend-btn" onClick={handleAddFriend}>
-            Añadir
-          </button>
+          <div className="search-button-group">
+            <button className="view-profile-btn" onClick={handleViewProfileFromSearch}>
+              Ver Perfil
+            </button>
+            <button className="add-friend-btn" onClick={handleAddFriend}>
+              Añadir
+            </button>
+          </div>
+          
         </div>
 
         {/* Área dinámica de la lista */}
@@ -186,6 +208,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
             </>
           )}
         </div>
+
       </div>
     </div>,
     document.body

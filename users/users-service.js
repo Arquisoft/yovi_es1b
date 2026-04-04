@@ -210,33 +210,6 @@ app.post('/users/follow', async (req, res) => {
   }
 });
 
-app.get('/users/profile/:username', async (req, res) => {
-  const username = String(req.params.username || '').trim();
-
-  try {
-  const user = await User.findOne({ username })
-    .populate('following', 'username nickname score iconName')
-    .populate('followers', 'username nickname score iconName');
-
-    if (!user) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
-    }
-
-    return res.json({
-      username: user.username,
-      nickname: user.nickname,
-      birthDate: user.birthDate,
-      language: user.language,
-      iconName: user.iconName,
-      followingCount: user.following?.length || 0,
-      followersCount: user.followers?.length || 0,
-      following: user.following || [],
-      followers: user.followers || []
-    });
-  } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
-  }
-}); 
 
 app.patch('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
@@ -400,8 +373,52 @@ app.post('/friends/respond', async (req, res) => {
   }
 });
 
+/**
+ * Endpoint para obtener el perfil público de un usuario, incluyendo estadísticas de juego.
+ */
+app.get('/users/public-profile/:username', async (req, res) => {
+  const targetUsername = String(req.params.username || '').trim();
 
-// New
+  try {
+    // Buscar los campos públicos del usuario
+    const user = await User.findOne({ username: targetUsername })
+      .select('username nickname iconName friendCode');
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Pedir estadisticas de juego al servicio de Rust
+    let gameStats = { wins: 0, losses: 0, totalGames: 0 };
+
+    try {
+      const rustResponse = await fetch(`${GAMEY_URL}/stats?username=${targetUsername}`);
+      if (rustResponse.ok) {
+        const history = await rustResponse.json();
+        const records = history.data || [];
+        gameStats.wins = records.filter(r => r.result === 'win').length;
+        gameStats.losses = records.filter(r => r.result === 'loss').length;
+        gameStats.totalGames = records.length;
+      }
+    }catch (e) {
+      console.error("Error fetching stats from Rust:", e);
+    }
+
+    res.json({
+      username: user.username,
+      nickname: user.nickname,
+      iconName: user.iconName,
+      friendCode: user.friendCode,
+      stats: gameStats
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+})
+
+
+
 // Executes a move in the game
 app.post('/move', async (req, res) => {
   const { cellIndex, username} = req.body; // NEW: Recibir difficulty

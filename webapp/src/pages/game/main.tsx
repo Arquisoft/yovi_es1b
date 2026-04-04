@@ -6,6 +6,7 @@ import GameScreen from '../../screens/GameScreen';
 import { HistoryModal } from '../../components/modals/HistoryModal';
 import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
+import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
 
 // Hooks, Servicios y Utils
@@ -26,6 +27,7 @@ import '../../index.css';
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
+
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -89,6 +91,7 @@ const GameApp = () => {
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.4);
   const [isVideoPaused, setIsVideoPaused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -349,7 +352,15 @@ const GameApp = () => {
         displayName={displayName}
         friendCode={friendCode}
         icon={playerIcon}
+        onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
+
+      {publicProfileToView && (
+        <PublicProfileModal
+          username={publicProfileToView}
+          onClose={() => setPublicProfileToView(null)}
+        />
+      )}
 
       <ProfileScreen
         isOpen={showProfileScreen}

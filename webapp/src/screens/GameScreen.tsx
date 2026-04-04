@@ -140,7 +140,14 @@ function GameScreen({
 
       {/* Barra de navegación superior */}
 
+      
+
       <nav className="game-navbar">
+
+        <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title="Ver mi perfil">
+          <img className="nav-btn-profile-img" src={safePlayerIcon} alt="Ver mi perfil" />
+        </button>
+
         <div className="nav-user-info">
           <h2>Jugador: <span>{username}</span></h2>
         </div>
@@ -235,9 +242,7 @@ function GameScreen({
           <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
             <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
           </button>
-          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title="Ver mi perfil">
-            <img className="nav-btn-profile-img" src={safePlayerIcon} alt="Ver mi perfil" />
-          </button>
+          
           <div className="nav-btn-spacer" aria-hidden="true" />
           <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title="Volver al menú">
             <img className="nav-btn-exit-img" src={salirMenuImg} alt="Salir" />

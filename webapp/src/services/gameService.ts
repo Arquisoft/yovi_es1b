@@ -157,5 +157,16 @@ export const gameService = {
     const res = await fetch(`${API_BASE_URL}/friends/requests?username=${encodeURIComponent(username)}`);
     if (!res.ok) throw new Error('No se pudieron obtener las solicitudes');
     return res.json();
+  },
+
+  /**
+   * Obtiene el perfil público de un usuario, incluyendo estadísticas de juego.
+   * @param targetUsername 
+   * @returns el perfil público del usuario con estadísticas de juego
+   */
+  async getPublicProfile(targetUsername: string) {
+    const response = await fetch(`${API_BASE_URL}/users/public-profile/${targetUsername}`);
+    if (!response.ok) throw new Error('No se pudo obtener el perfil público');
+    return await response.json();
   }
 };

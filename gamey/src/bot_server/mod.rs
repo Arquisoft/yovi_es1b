@@ -65,6 +65,15 @@ pub struct HistoryQuery {
     pub limit: Option<i64>,
     pub result: Option<String>,
 }
+
+/**
+ * Estructura para recibir la consulta de estadísticas de un usuario específico.
+ */
+#[derive(Deserialize)]
+pub struct StatsQuery {
+    pub username: String,
+}
+
 // Estructura de respuesta para el historial paginado
 #[derive(serde::Serialize)]
 pub struct PaginatedHistoryResponse {
@@ -81,6 +90,13 @@ pub struct SurrenderRequest {
     player: String,
     difficulty: String,
     board_size: i32,
+}
+
+#[derive(serde::Serialize)]
+pub struct UserStats {
+    pub wins: i64,
+    pub losses: i64,
+    pub total: i64,
 }
 
 use utoipa::OpenApi;
@@ -134,11 +150,12 @@ pub struct GameRecord {
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .route("/status", axum::routing::get(status))
-        .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
+        .route("/execute-move", axum::routing::post(realizar_movimiento))
         .route("/history", axum::routing::get(obtener_historial))
-        .route("/reset", axum::routing::post(reiniciar_juego)) // new
-        .route("/difficulties", axum::routing::get(listar_dificultades)) // new
+        .route("/reset", axum::routing::post(reiniciar_juego))
+        .route("/difficulties", axum::routing::get(listar_dificultades))
         .route("/surrender", axum::routing::post(rendirse))
+        .route("/stats", axum::routing::get(obtener_estadisticas))
         .route("/api/play", axum::routing::post(play::play))
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
@@ -513,4 +530,27 @@ pub async fn rendirse(
         "status": "ok",
         "message": "Rendición registrada correctamente"
     }))
+}
+
+
+pub async fn obtener_estadisticas(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<StatsQuery>,
+) -> impl axum::response::IntoResponse {
+    let collection = state.db.collection::<serde_json::Value>("partidas");
+
+    // Contar victorias
+    let wins_filter = doc! { "player": &params.username, "result": "Victoria" };
+    let wins = collection.count_documents(wins_filter).await.unwrap_or(0);
+
+    // Contar derrotas
+    let losses_filter = doc! { "player": &params.username, "result": "Derrota" };
+    let losses = collection.count_documents(losses_filter).await.unwrap_or(0);
+
+    // Devolver la estructura
+    axum::Json(UserStats {
+        wins: wins as i64,
+        losses: losses as i64,
+        total: (wins + losses) as i64,
+    })
 }
