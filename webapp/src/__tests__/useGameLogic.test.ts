@@ -27,6 +27,16 @@ const mockBoard = {
 describe('useGameLogic', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+
+        Object.defineProperty(window, 'crypto', {
+            value: {
+                getRandomValues: (array: Uint32Array) => {
+                    array[0] = 0
+                    return array
+                }
+            },
+            configurable: true,
+        })
     })
 
     // ── resetGame ──────────────────────────────
