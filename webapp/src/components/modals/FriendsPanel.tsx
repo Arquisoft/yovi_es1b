@@ -20,6 +20,7 @@ interface FriendsPanelProps {
   displayName: string;
   friendCode: string;
   icon?: string | null;
+  onTriggerPublicProfile: (username: string) => void;
 }
 
 export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon }: FriendsPanelProps) => {
@@ -28,6 +29,43 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
   const [loading, setLoading] = useState(false);
   const [searchCode, setSearchCode] = useState('');
   const [showRequests, setShowRequests] = useState(false);
+
+  // --- 1. FUNCIÓN DE CARGA CENTRALIZADA ---
+  const fetchSocialData = async (showLoader = false) => {
+    if (!username) return;
+    if (showLoader) setLoading(true);
+
+    try {
+      // Lanzamos ambas peticiones a la vez para ir más rápido
+      const [friendsData, requestsData] = await Promise.all([
+        gameService.getFriends(username),
+        gameService.getPendingRequests(username)
+      ]);
+
+      setFriends(friendsData);
+      setRequests(requestsData);
+    } catch (err) {
+      console.error("Error cargando datos sociales:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---  EFECTO DE AUTO-REFRESCO (POLLING) ---
+  useEffect(() => {
+    if (isOpen && username) {
+      // Carga inicial
+      fetchSocialData(true);
+
+      // Creamos un intervalo para que se recargue solo cada 15 segundos
+      const interval = setInterval(() => {
+        fetchSocialData(false); // Recarga silenciosa (sin loader)
+      }, 15000);
+
+      return () => clearInterval(interval); // Limpiamos al cerrar
+    }
+  }, [isOpen, username]);
+
 
   useEffect(() => {
     if (!isOpen) return;
@@ -54,6 +92,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     loadSocialData();
   }, [isOpen]);
 
+  // Maneja la limpieza del input (solo mayúsculas y quita almohadillas accidentales)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace('#', '').toUpperCase();
     if (value.length <= 8) setSearchCode(value);
@@ -63,13 +102,17 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     if (!searchCode.trim()) return;
 
     try {
+      // 1. Buscamos al dueño de ese código
       const targetUser = await gameService.searchUserByCode(searchCode);
 
       if (targetUser) {
         await gameService.followUser(targetUser.username);
         alert(`¡Ahora sigues a ${targetUser.username}!`);
-        setSearchCode('');
+        setSearchCode(''); // Limpiamos el buscador
 
+        fetchSocialData();
+
+        // 3. Opcional: Refrescar la lista de amigos
         const updatedFriends = await gameService.getFriends();
         setFriends(updatedFriends);
       } else {
@@ -83,10 +126,15 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
 
   const handleRespond = async (requestId: string, action: 'accepted' | 'rejected') => {
     try {
+      // 1. Llamamos al servicio (Lógica de Red)
       await gameService.respondToFriendRequest(requestId, action);
 
+      fetchSocialData();
+
+      // 2. Actualizamos la UI localmente (Lógica de Interfaz)
       setRequests(prev => prev.filter(r => r.id !== requestId));
 
+      // 3. Si aceptamos, traemos la lista de amigos actualizada
       if (action === 'accepted') {
         const updatedFriends = await gameService.getFriends();
         setFriends(updatedFriends);
@@ -97,103 +145,132 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     }
   };
 
+  const handleViewProfileFromSearch = async () => {
+    if (!searchCode.trim()) return;
+
+    try {
+      const targetUser = await gameService.searchUserByCode(searchCode);
+      if (targetUser) {
+        onTriggerPublicProfile(targetUser.username);
+      }else {
+        alert("No se encontró ningún jugador con ese código.");
+      }
+    } catch (error) {
+      alert("Error al buscar el perfil.");
+    }
+  }
+
+
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
-      <div className="friends-sidebar-overlay" onClick={onClose}>
-        <div className="friends-sidebar-content" onClick={e => e.stopPropagation()}>
-          <button className="close-button" onClick={onClose} aria-label="Cerrar">&times;</button>
-
-          <h2 className="sidebar-title">Social</h2>
-
-          <div className="user-mini-profile">
-            <div className="avatar-circle">
+    <div className="friends-sidebar-overlay" onClick={onClose}>
+      <div className="friends-sidebar-content" onClick={e => e.stopPropagation()}>
+        <button className="close-button" onClick={onClose}>&times;</button>
+        
+        <h2 className="sidebar-title">Social</h2>
+        
+        {/* Perfil del usuario con botón de pendientes al lado */}
+        <div className="user-mini-profile">
+           <div className="avatar-circle">
               {icon ? (
-                  <img src={icon} alt="Avatar" className="avatar-img" />
+                <img src={icon} alt="Avatar" className="avatar-img" />
               ) : (
-                  username[0]?.toUpperCase()
+                username[0]?.toUpperCase()
               )}
             </div>
-            <div className="profile-info-text">
+           <div className="profile-info-text">
               <span className="profile-name">{displayName || username}</span>
-              <span className="profile-friend-code">{friendCode}</span>
-            </div>
-
-            <button
-                type="button"
-                className="pending-friend-btn"
-                onClick={() => setShowRequests(true)}
-                style={{ marginLeft: 'auto', position: 'relative' }}
+              <span className="profile-friend-code">#{friendCode}</span>
+           </div>
+           
+           {/* Botón de Solicitudes Pendientes */}
+           <button 
+              type="button"
+              className="pending-friend-btn"
+              onClick={() => setShowRequests(true)}
+              style={{ marginLeft: 'auto', position: 'relative' }} 
             >
-              SOLICITUDES
+              SOLICITUDES PENDIENTES
               {requests.length > 0 && <span className="req-count">{requests.length}</span>}
             </button>
-          </div>
+        </div>
 
-          <div className="search-container">
-            <div className="id-input-wrapper">
-              <span className="static-hash">#</span>
-              <input
-                  type="text"
-                  className="friends-input-id"
-                  placeholder="CÓDIGO"
-                  value={searchCode}
-                  onChange={handleInputChange}
-              />
-            </div>
+        {/* Buscador para añadir nuevos amigos */}
+        <div className="search-container">
+          <div className="id-input-wrapper">
+            <span className="static-hash">#</span>
+            <input 
+              type="text" 
+              className="friends-input-id" 
+              placeholder="CÓDIGO" 
+              value={searchCode}
+              onChange={handleInputChange}
+            />
+          </div>
+          <div className="search-button-group">
+            <button className="view-profile-btn" onClick={handleViewProfileFromSearch}>
+              Ver Perfil
+            </button>
             <button className="add-friend-btn" onClick={handleAddFriend}>
               Añadir
             </button>
           </div>
 
-          <div className="friends-list-area">
-            {loading ? (
-                <div className="empty-list-box">Cargando datos...</div>
-            ) : showRequests ? (
-                <>
-                  <div className="list-header">
-                    <p className="list-status-label">Solicitudes recibidas</p>
-                    <button
-                        type="button"
-                        className="pending-friend-btn"
-                        onClick={() => setShowRequests(false)}
-                    >
-                      Ver amigos
-                    </button>
-                  </div>
-                  {requests.length > 0 ? (
-                      requests.map((req) => (
-                          <div key={req.id} className="friend-item-row request-row">
-                            <span className="friend-name">{req.sender}</span>
-                            <div className="request-actions">
-                              <button className="action-btn accept" onClick={() => handleRespond(req.id, 'accepted')}>✅</button>
-                              <button className="action-btn reject" onClick={() => handleRespond(req.id, 'rejected')}>❌</button>
-                            </div>
-                          </div>
-                      ))
-                  ) : (
-                      <div className="empty-list-box">No hay solicitudes pendientes</div>
-                  )}
-                </>
-            ) : (
-                <>
-                  <p className="list-status-label">Amigos — {friends.length}</p>
-                  {friends.length > 0 ? (
-                      friends.map((friend, index) => (
-                          <div key={`${friend.name}-${index}`} className="friend-item-row">
-                            <div className={`status-dot ${friend.status}`}></div>
-                            <span className="friend-name">{friend.name}</span>
-                            <button className="invite-btn">Invitar</button>
-                          </div>
-                      ))
-                  ) : (
-                      <div className="empty-list-box">Tu lista está vacía</div>
-                  )}
-                </>
-            )}
-          </div>
         </div>
-      </div>,
-      document.body
+
+        {/* Área dinámica de la lista */}
+        <div className="friends-list-area">
+          {loading ? (
+            <div className="empty-list-box">Cargando...</div>
+          ) : showRequests ? (
+            /* VISTA DE SOLICITUDES PENDIENTES */
+            <>
+              <div className="list-header">
+                <p className="list-status-label">Solicitudes recibidas</p>
+                <button 
+                  type="button"
+                  className="pending-friend-btn"
+                  onClick={() => setShowRequests(false)}
+                >
+                  Volver a amigos
+                </button>
+              </div>
+              {requests.length > 0 ? (
+                requests.map((req) => (
+                  <div key={req.id} className="friend-item-row request-row">
+                    <span className="friend-name">{req.sender}</span>
+                    <div className="request-actions">
+                      <button className="action-btn accept" onClick={() => handleRespond(req.id, 'accepted')}>✅</button>
+                      <button className="action-btn reject" onClick={() => handleRespond(req.id, 'rejected')}>❌</button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-list-box">No hay solicitudes pendientes</div>
+              )}
+            </>
+          ) : (
+            /* VISTA DE AMIGOS (Por defecto) */
+            <>
+              <p className="list-status-label">Amigos conectados — {friends.length}</p>
+              {friends.length > 0 ? (
+                friends.map((friend, index) => (
+                  <div key={index} className="friend-item-row">
+                    <div className={`status-dot ${friend.status}`}></div>
+                    <span className="friend-name">{friend.name}</span>
+                    <button className="invite-btn">Invitar</button>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-list-box">Tu lista está vacía</div>
+              )}
+            </>
+          )}
+        </div>
+
+      </div>
+    </div>,
+    document.body
   );
 };
