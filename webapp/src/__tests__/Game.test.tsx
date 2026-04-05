@@ -76,13 +76,13 @@ describe('Game UI (MPA Ready)', () => {
 
     // 2. Cambiar Dificultad
     // Primero abrimos el menú (buscamos el disparador específico del Nav)
-    const triggerDificultad = screen.getByText(/Dificultad: ▾/i)
+    const triggerDificultad = screen.getByRole('button', { name: /Dificultad/i });    
     await user.click(triggerDificultad)
     
     // Buscamos "Facil" (exacto, sin tilde como en tu .map) dentro de los dropdown-items
-    const opcionFacil = await screen.findByText(/^Facil$/) 
+    const opcionFacil = await screen.findByText(/^Fácil$/) 
     await user.click(opcionFacil)
-    expect(props.onChangeDifficulty).toHaveBeenCalledWith('facil')
+    expect(props.onChangeDifficulty).toHaveBeenCalledWith('Fácil')
 
     // 3. Cambiar Tamaño
     const triggerTamaño = screen.getByText(/Cambiar Tamaño ▾/i)
