@@ -80,6 +80,32 @@ export const gameService = {
     return res.json();
   },
 
+  async getProfile(username: string) {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}`);
+    return res.json();
+  },
+
+  async updateProfile(
+    username: string,
+    payload: { birthDate?: string | null; language?: string; iconName?: string; nickname?: string }
+  ) {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
+  async changePassword(username: string, currentPassword: string, newPassword: string) {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+    return res.json();
+  },
+  
   // 1. Buscar usuario específicamente por su Friend Code (#ABC123)
   async searchUserByCode(code: string) {
     // Le añadimos el # nosotros para que el buscador del back sepa que es un ID
@@ -131,5 +157,31 @@ export const gameService = {
     const res = await fetch(`${API_BASE_URL}/friends/requests?username=${encodeURIComponent(username)}`);
     if (!res.ok) throw new Error('No se pudieron obtener las solicitudes');
     return res.json();
-  }
+  },
+
+  /**
+   * Obtiene el perfil público de un usuario, incluyendo estadísticas de juego.
+   * @param targetUsername 
+   * @returns el perfil público del usuario con estadísticas de juego
+   */
+  async getPublicProfile(targetUsername: string, myUsername: string) {
+    const response = await fetch(`${API_BASE_URL}/users/public-profile/${targetUsername}?requester=${myUsername}`);
+    if (!response.ok) throw new Error('No se pudo obtener el perfil público');
+    return await response.json();
+  },
+
+  /**
+   * Cancela una solicitud de amistad pendiente.
+   * @param follower 
+   * @param following 
+   * @returns 
+   */
+  async cancelFriendRequest(follower: string, following: string) {
+  const response = await fetch(`${API_BASE_URL}/friends/cancel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ follower, following })
+  });
+  return await response.json();
+}
 };

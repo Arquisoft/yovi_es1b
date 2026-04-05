@@ -1,19 +1,18 @@
-﻿import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import failedJson from '../assets/buttons/Failed.json';
 import logoutJson from '../assets/buttons/Logout.json';
 import historyJson from '../assets/buttons/History.json';
-import updownJson from '../assets/buttons/updown.json';
 import restartJson from '../assets/buttons/Restart.json';
-import difficultyJson from '../assets/buttons/Difficulty.json';
+import settingsJson from '../assets/buttons/setting.json';
+import settingsImg from '../assets/buttons/configuracion.png';
 import botonRojo from '../assets/buttons/BotonRojo.png';
-import dificultadImg from '../assets/buttons/Dificultad.png';
 import historialImg from '../assets/buttons/Historial.jpg';
 import reiniciarPartidaImg from '../assets/buttons/ReiniciarPartida.jpg';
 import salirMenuImg from '../assets/buttons/SalirMenu.jpg';
-import tamanoTableroImg from '../assets/buttons/TamañoTablero.png';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
 import amigosImg from '../assets/buttons/agregar-usuario.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
+import { type DifficultyChoice, type SizeChoice, SIZE_OPTIONS } from '../types/game';
 
 interface GameYData {
   size: number;
@@ -24,8 +23,10 @@ interface GameYData {
 
 interface GameScreenProps {
   username: string;
+  displayName?: string;
   playerIcon?: string | null;
-  difficultyChoice: 'facil' | 'medio' | 'dificil' | null;
+  botIcon?: string | null;
+  difficultyChoice: DifficultyChoice | null;
   selectedBoardDimension: number | null;
   boardData: GameYData | null;
   winner: number | null;
@@ -38,15 +39,19 @@ interface GameScreenProps {
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
   onExit: () => void; // Sale del juego y vuelve a home
-  onChangeDifficulty: () => void; // Permite cambiar la dificultad durante la partida
-  onChangeSize: () => void; // Permite cambiar el tamaÃ±o durante la partida
+  onChangeDifficulty: (newDiff: DifficultyChoice) => void; // Permite cambiar la dificultad durante la partida
+  onChangeSize: (newSize: SizeChoice) => void; // Permite cambiar el tamaño durante la partida
   onFetchHistory: () => void; // Permite consultar el historial de partidas
   onAddFriend?: () => void; // Abre el panel de amigos
+  onViewProfile?: () => void; // Abre el perfil del usuario
+  onOpenSettings?: () => void; // Abre el panel de configuracion
 }
 
 function GameScreen({
   username,
+  displayName,
   playerIcon,
+  botIcon,
   difficultyChoice,
   selectedBoardDimension,
   boardData,
@@ -62,7 +67,9 @@ function GameScreen({
   onChangeDifficulty,
   onChangeSize,
   onFetchHistory,
-  onAddFriend
+  onAddFriend,
+  onViewProfile,
+  onOpenSettings
 }: GameScreenProps) {
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const logoutLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -70,6 +77,9 @@ function GameScreen({
   const updownLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const restartLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const difficultyLottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const settingsLottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const [showSizeMenu, setShowSizeMenu] = useState(false);
+  const [showDiffMenu, setShowDiffMenu] = useState(false);
 
   useEffect(() => {
     failedLottieRef.current?.setSpeed(0.5);
@@ -78,28 +88,22 @@ function GameScreen({
     updownLottieRef.current?.setSpeed(0.5);
     restartLottieRef.current?.setSpeed(0.5);
     difficultyLottieRef.current?.setSpeed(0.5);
+    settingsLottieRef.current?.setSpeed(0.5);
   }, []);
 
-  let botName = 'Bot Player';
-  if (difficultyChoice === 'facil') {
-    botName = 'Bot Player (fácil)';
-  } else if (difficultyChoice === 'medio') {
-    botName = 'Bot Player (medio)';
-  } else if (difficultyChoice === 'dificil') {
-    botName = 'Bot Player (dif­ícil)';
-  }
+  // Etiqueta para la UI: Directa, sin diccionarios extra aquí para no liarnos
+  const difficultyLabel = difficultyChoice || 'Sin seleccionar';
 
-  const difficultyLabel =
-    difficultyChoice === 'facil'
-      ? 'Fácil'
-      : difficultyChoice === 'medio'
-        ? 'Media'
-        : difficultyChoice === 'dificil'
-          ? 'Difícil'
-          : 'Sin seleccionar';
+  // Nombre del Bot: Dinámico según lo que recibimos
+  const botName = difficultyLabel !== 'Sin seleccionar' 
+    ? `Bot Player (${difficultyLabel})` 
+    : 'Bot Player';
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
+  //const currentSizeValue: SizeChoice = `Tamaño ${boardDimension}x${boardDimension}x${boardDimension}` as SizeChoice;
   const safePlayerIcon = playerIcon && playerIcon.trim() ? playerIcon : defaultAvatar;
+  const safeBotIcon = botIcon && botIcon.trim() ? botIcon : defaultAvatar;
+  const playerLabel = displayName && displayName.trim() ? displayName : username;
 
   const rawLayout = boardData?.layout ?? '';
   const expectedTotalCells = (boardDimension * (boardDimension + 1)) / 2;
@@ -124,24 +128,81 @@ function GameScreen({
   return (
     <div className="game-screen">
 
-      {/* Barra de navegaciÃ³n superior */}
+      {/* Barra de navegación superior */}
+
+      
 
       <nav className="game-navbar">
+
+        <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title="Ver mi perfil">
+          <img className="nav-btn-profile-img" src={safePlayerIcon} alt="Ver mi perfil" />
+        </button>
+
         <div className="nav-user-info">
           <h2>Jugador: <span>{username}</span></h2>
         </div>
+        <div className="nav-center-title">Partida personalizada contra un bot</div>
 
         <div className="nav-game-settings">
-          <button className="nav-btn nav-btn-icon-frame nav-btn-difficulty-frame nav-btn-with-difficulty" onClick={onChangeDifficulty} title="Elegir dificultad">
-            <img className="nav-btn-difficulty-img" src={dificultadImg} alt="Dificultad" />
-            <span className="nav-btn-difficulty-hover" aria-hidden="true">
-              <Lottie animationData={difficultyJson} loop autoplay lottieRef={difficultyLottieRef} />
-            </span>
-          </button>
-          <button className="nav-btn nav-btn-icon-frame nav-btn-with-size" onClick={onChangeSize} title="Elegir tamaño">
-            <img className="nav-btn-size-img" src={tamanoTableroImg} alt="Tamaño tablero" />
-            <span className="nav-btn-size-hover" aria-hidden="true">
-              <Lottie animationData={updownJson} loop autoplay lottieRef={updownLottieRef} />
+          {/* MENÚ TAMAÑO */}
+          <div className="custom-dropdown-container">
+            <button 
+              className={`dropdown-trigger ${showSizeMenu ? 'active' : ''}`}
+              onClick={() => { setShowSizeMenu(!showSizeMenu); setShowDiffMenu(false); }}
+            >
+              Cambiar Tamaño ▾
+            </button>
+            
+            {showSizeMenu && (
+              <div className="dropdown-floating-list">
+                {SIZE_OPTIONS.map((option) => (
+                  <div 
+                    key={option} 
+                    className="dropdown-item"
+                    onClick={() => {
+                      onChangeSize(option);
+                      setShowSizeMenu(false);
+                    }}
+                  >
+                    {option}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* MENÚ DIFICULTAD */}
+          <div className="custom-dropdown-container">
+            <button 
+              className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
+              onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
+            >
+              Dificultad: {difficultyLabel} ▾
+            </button>
+            
+            {showDiffMenu && (
+              <div className="dropdown-floating-list">
+                {['Fácil', 'Medio', 'Difícil'].map((diff) => (
+                  <div 
+                    key={diff} 
+                    className="dropdown-item"
+                    onClick={() => {
+                      onChangeDifficulty(diff as DifficultyChoice);
+                      setShowDiffMenu(false);
+                    }}
+                  >
+                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="nav-btn-spacer" aria-hidden="true" />
+          <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title="Terminar partida">
+            <img className="nav-btn-png" src={botonRojo} alt="Terminar partida" />
+            <span className="nav-btn-lottie-hover" aria-hidden="true">
+              <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
             </span>
           </button>
           <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title="Reiniciar partida">
@@ -150,27 +211,34 @@ function GameScreen({
               <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
             </span>
           </button>
-          <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title="Terminar partida">
-            <img className="nav-btn-png" src={botonRojo} alt="Terminar partida" />
-            <span className="nav-btn-lottie-hover" aria-hidden="true">
-              <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
+          <button
+            className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
+            onClick={onOpenSettings}
+            title="Configuración"
+            aria-label="Configuración"
+          >
+            <img className="nav-btn-settings-img" src={settingsImg} alt="Configuración" />
+            <span className="nav-btn-settings-hover" aria-hidden="true">
+              <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
             </span>
           </button>
+          <div className="nav-btn-spacer" aria-hidden="true" />
           <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title="Ver historial">
             <img className="nav-btn-history-img" src={historialImg} alt="Historial" />
             <span className="nav-btn-history-hover" aria-hidden="true">
               <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
             </span>
           </button>
+          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
+            <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
+          </button>
+          
+          <div className="nav-btn-spacer" aria-hidden="true" />
           <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title="Volver al menú">
             <img className="nav-btn-exit-img" src={salirMenuImg} alt="Salir" />
             <span className="nav-btn-logout-hover" aria-hidden="true">
               <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
             </span>
-          </button>
-
-          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
-            <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
           </button>
         </div>
 
@@ -178,16 +246,15 @@ function GameScreen({
 
       {/* Contenedor principal del tablero y controles */}
 
-      <h2 className="game-title">Partida personalizada contra un bot</h2>
         <div className="game-main-content">
           <div className="board-area">
             <div className="player-slot player-slot-left" aria-label="Jugador humano">
               <div className="player-info">
                 <div className="player-header-row">
                   <div className="player-avatar-box">
-                    <img src={safePlayerIcon} alt={`Avatar de ${username}`} className="player-avatar-image" />
+                    <img src={safePlayerIcon} alt={`Avatar de ${playerLabel}`} className="player-avatar-image" />
                   </div>
-                  <p className="player-label player-label-blue">Jugador: {username}</p>
+                  <p className="player-label player-label-blue">Jugador: {playerLabel}</p>
                 </div>
                 {timerVisible && turnTimeLimit !== null && winner === null && (
                   <div className="turn-timer-under" style={{ width: '100%', maxWidth: '16rem' }}>
@@ -242,7 +309,7 @@ function GameScreen({
                 <div className="player-header-row player-header-row-right">
                   <p className="player-label player-label-red">{botName}</p>
                   <div className="player-avatar-box">
-                    <img src={defaultAvatar} alt="Avatar del bot" className="player-avatar-image" />
+                    <img src={safeBotIcon} alt="Avatar del bot" className="player-avatar-image" />
                   </div>
                 </div>
               </div>

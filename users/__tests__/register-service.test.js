@@ -1,19 +1,16 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import request from 'supertest'
-
 import User from '../models/user.js'
-
 import app from '../users-service.js'
 
 describe('POST /createuser', () => {
 
     beforeEach(() => {
-        // --- ESTO ES LO QUE FALTABA ---
-        // Mock de findOne para que el bucle 'while' del friendCode termine rápido
-        // Devolvemos 'null' para simular que NO existe el código y es único
+        // 1. Mock de findOne para que el bucle 'while' del friendCode termine y el nickname sea válido.
+        // Devolvemos 'null' para simular que NO existe ni el nickname ni el friendCode.
         vi.spyOn(User, 'findOne').mockResolvedValue(null) 
         
-        // Tu mock original para el guardado
+        // 2. Mock para el guardado exitoso
         vi.spyOn(User.prototype, 'save').mockResolvedValue(true)
     })
 
@@ -26,15 +23,17 @@ describe('POST /createuser', () => {
             .post('/createuser')
             .send({ 
                 username: 'testUser', 
+                nickname: 'testNick', // Nuevo campo
                 password: 'testPass',
-                age: 25,
-                country: 'Spain'
+                birthDate: '2000-01-01', // Nuevo campo
+                language: 'Spain' // Cambiado de country a language
             })
             .set('Accept', 'application/json')
 
         expect(res.status).toBe(200)
         expect(res.body).toHaveProperty('message')
         expect(res.body.message).toBe('Hello testUser! Your account has been created!')
+        expect(res.body).toHaveProperty('friendCode') // Verificamos que devuelve el código
     })
 
     it('devuelve error 400 si faltan campos', async () => {
@@ -43,22 +42,42 @@ describe('POST /createuser', () => {
             .send({ username: 'testUser' }) 
 
         expect(res.status).toBe(400)
-        expect(res.body.error).toBe('Username and password are required')
+        // El mensaje ahora debe incluir todos los campos obligatorios
+        expect(res.body.error).toBe('Username, nickname, password, language and birthDate are required')
     })
 
-    it('devuelve error 400 si el usuario ya existe', async () => {
-        // IMPORTANTE: Mantenemos el findOne en null para que pase el bucle
-        vi.spyOn(User, 'findOne').mockResolvedValue(null)
-        // Y forzamos el error en el save
-        vi.spyOn(User.prototype, 'save').mockRejectedValue(new Error('User already exists'))
+    it('devuelve error 409 si el nickname ya existe', async () => {
+        // Forzamos que findOne devuelva algo (el usuario existente)
+        vi.spyOn(User, 'findOne').mockResolvedValue({ nickname: 'testNick' })
 
         const res = await request(app)
             .post('/createuser')
             .send({ 
                 username: 'testUser', 
+                nickname: 'testNick',
                 password: 'testPass',
-                age: 25,
-                country: 'Spain'
+                birthDate: '2000-01-01',
+                language: 'Spain'
+            })
+        
+        expect(res.status).toBe(409)
+        expect(res.body.error).toBe('Nickname already exists')
+    })
+
+    it('devuelve error 400 si hay un error de base de datos al guardar', async () => {
+        // findOne devuelve null para pasar las validaciones previas y el bucle
+        vi.spyOn(User, 'findOne').mockResolvedValue(null)
+        // Forzamos el error en el save() para entrar en el catch
+        vi.spyOn(User.prototype, 'save').mockRejectedValue(new Error('DB Error'))
+
+        const res = await request(app)
+            .post('/createuser')
+            .send({ 
+                username: 'testUser', 
+                nickname: 'testNick',
+                password: 'testPass',
+                birthDate: '2000-01-01',
+                language: 'Spain'
             })
         
         expect(res.status).toBe(400)

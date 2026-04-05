@@ -65,6 +65,15 @@ pub struct HistoryQuery {
     pub limit: Option<i64>,
     pub result: Option<String>,
 }
+
+/**
+ * Estructura para recibir la consulta de estadísticas de un usuario específico.
+ */
+#[derive(Deserialize)]
+pub struct StatsQuery {
+    pub username: String,
+}
+
 // Estructura de respuesta para el historial paginado
 #[derive(serde::Serialize)]
 pub struct PaginatedHistoryResponse {
@@ -81,6 +90,13 @@ pub struct SurrenderRequest {
     player: String,
     difficulty: String,
     board_size: i32,
+}
+
+#[derive(serde::Serialize)]
+pub struct UserStats {
+    pub wins: i64,
+    pub losses: i64,
+    pub total: i64,
 }
 
 use utoipa::OpenApi;
@@ -133,17 +149,21 @@ pub struct GameRecord {
 /// This is useful for testing the API without binding to a network port.
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
-        .route("/status", axum::routing::get(status))
-        .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
-        .route("/history", axum::routing::get(obtener_historial))
-        .route("/reset", axum::routing::post(reiniciar_juego)) // new
-        .route("/difficulties", axum::routing::get(listar_dificultades)) // new
-        .route("/surrender", axum::routing::post(rendirse))
-        .route("/api/play", axum::routing::post(play::play))
+
+        // 1. Ponemos Swagger al principio para que nada lo intercepte
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
                 .url("/api-docs/openapi.json", ApiDoc::openapi()),
         )
+        // 2. El resto de tus rutas
+        .route("/status", axum::routing::get(status))
+        .route("/execute-move", axum::routing::post(realizar_movimiento))
+        .route("/history", axum::routing::get(obtener_historial))
+        .route("/reset", axum::routing::post(reiniciar_juego))
+        .route("/difficulties", axum::routing::get(listar_dificultades))
+        .route("/surrender", axum::routing::post(rendirse))
+        .route("/stats", axum::routing::get(obtener_estadisticas))
+        .route("/api/play", axum::routing::post(play::play))
         .with_state(state)
 }
 
@@ -169,12 +189,30 @@ pub fn create_default_state() -> AppState {
 /// - The TCP port cannot be bound (e.g., port already in use, permission denied)
 /// - The server encounters an error while running
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
-    // Leer la URI de MongoDB desde el .env
+    // Leer y validar la URI de MongoDB desde variables de entorno.
     let uri = std::env::var("MONGODB_URI")
-        .expect("La variable MONGODB_URI no está configurada en el entorno.");
+        .map_err(|_| GameYError::ServerError {
+            message: "La variable MONGODB_URI no esta configurada. Usa una URI completa, por ejemplo: mongodb://localhost:27017/gamey_db".to_string(),
+        })?;
+    let uri = uri.trim().to_string();
+
+    if uri.is_empty() {
+        return Err(GameYError::ServerError {
+            message: "La variable MONGODB_URI esta vacia. Debe incluir esquema (mongodb:// o mongodb+srv://).".to_string(),
+        });
+    }
+
+    if !uri.starts_with("mongodb://") && !uri.starts_with("mongodb+srv://") {
+        return Err(GameYError::ServerError {
+            message: format!(
+                "MONGODB_URI invalida: falta el esquema. Valor recibido: '{}'. Formato esperado: mongodb://... o mongodb+srv://...",
+                uri
+            ),
+        });
+    }
 
     // Conectar a la BBDD
-    let client = mongodb::Client::with_uri_str(uri)
+    let client = mongodb::Client::with_uri_str(&uri)
         .await
         .map_err(|e| GameYError::ServerError {
             message: format!("Error conectando a Mongo: {}", e),
@@ -495,4 +533,30 @@ pub async fn rendirse(
         "status": "ok",
         "message": "Rendición registrada correctamente"
     }))
+}
+
+
+pub async fn obtener_estadisticas(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<StatsQuery>,
+) -> impl axum::response::IntoResponse {
+    let collection = state.db.collection::<serde_json::Value>("partidas");
+
+    // Contar victorias
+    let wins_filter = doc! { "player": &params.username, "result": "Victoria" };
+    let wins = collection.count_documents(wins_filter).await.unwrap_or(0);
+
+    // Contar derrotas
+    let losses_filter = doc! { "player": &params.username, "result": "Derrota" };
+    let losses = collection.count_documents(losses_filter).await.unwrap_or(0);
+
+    println!("Victorias: {}, Derrotas: {}", wins, losses);
+    println!("-------------------");
+
+    // Devolver la estructura
+    axum::Json(UserStats {
+        wins: wins as i64,
+        losses: losses as i64,
+        total: (wins + losses) as i64,
+    })
 }

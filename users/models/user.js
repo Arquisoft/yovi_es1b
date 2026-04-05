@@ -15,22 +15,24 @@ const UserSchema = new mongoose.Schema({
     type: String,
     unique: true,
   },
-  age: {
-    type: Number,
-    required: true
-  },
   birthDate: {
     type: Date,
     required: false
   },
-  country: {
+  language: {
     type: String,
     required: true
   },
-  icon: {
+  nickname: {
     type: String,
     required: false,
-    default: ''
+    unique: true,
+    trim: true
+  },
+  iconName: {
+    type: String,
+    required: false,
+    default: 'SinAvatar.png'
   },
   createdAt: { 
     type: Date, 

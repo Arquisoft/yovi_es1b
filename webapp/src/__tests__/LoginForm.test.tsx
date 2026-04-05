@@ -26,7 +26,7 @@ describe('LoginForm', () => {
     await user.type(screen.getByLabelText(/usuario/i), 'Alice')
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
-    // No debe haber llamado a la función de éxito ni cambiado de página
+    // No debe haber llamado a la funciÃƒÂ³n de ÃƒÂ©xito ni cambiado de pÃƒÂ¡gina
     expect(onLogin).not.toHaveBeenCalled()
   })
 
@@ -58,7 +58,9 @@ describe('LoginForm', () => {
       json: async () => ({ 
         username: 'Alice', 
         friendCode: 'XYZ789', // Simulamos un código de amigo
-        icon: 'avatar.png'     // Simulamos un icono
+        icon: 'avatar.png',    // Simulamos un icono
+        nickname: 'Ali',
+        language: 'Spain'
       }),
     } as Response)
 
@@ -69,8 +71,8 @@ describe('LoginForm', () => {
     await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
 
     await waitFor(() => {
-      // 2. Verificamos que se llame con los TRES argumentos correctos
-      expect(onLogin).toHaveBeenCalledWith('Alice', 'XYZ789', 'avatar.png')
+      // 2. Verificamos que se llame con los argumentos correctos
+      expect(onLogin).toHaveBeenCalledWith('Alice', 'XYZ789', 'avatar.png', 'Ali', 'Spain')
     })
   })
 

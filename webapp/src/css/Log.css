@@ -3,6 +3,7 @@
   z-index: 2;
   width: 100%;
   height: 100vh;
+  overflow-y: auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -12,11 +13,35 @@
   padding: 1.5rem;
 }
 
+.gamey-logo-large {
+  width: min(70vw, 20rem);
+  height: auto;
+  display: block;
+  margin: 0 auto 0.25rem;
+  filter: drop-shadow(0 0.6rem 1.2rem rgba(0, 0, 0, 0.25));
+}
+
+.auth-header {
+  width: min(48rem, 92vw);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  justify-content: start;
+  margin-top: 3rem;
+}
+
+.auth-logo-left {
+  width: 15rem;
+  margin: 0.75rem 0 0;
+}
+
 .home-screen > .welcome-title {
   display: inline-block;
   position: relative;
   margin-top: 0;
-  transform: translateY(-16vh);
+  transform: translateY(0);
+  margin-bottom: 0.5rem;
   z-index: 3;
   padding: 0.0625rem 0.125rem;
   border-radius: 0.75rem;
@@ -63,14 +88,14 @@
   position: relative;
   z-index: 2;
   width: 100%;
-  min-height: 100vh;
-  height: auto;
+  height: 100vh;
+  overflow-y: auto;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.125rem;
+  gap: 0.6rem;
   padding: 1.5rem;
   text-align: center;
 }
@@ -79,7 +104,7 @@
   display: inline-block;
   position: relative;
   width: fit-content;
-  margin-top: 0;
+  margin-top: 0.5rem;
   margin-left: auto;
   margin-right: auto;
   z-index: 3;
@@ -87,7 +112,7 @@
   border-radius: 0.75rem;
   color: #d63a29;
   box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
-  font-size: 2.4rem;
+  font-size: 3.1rem;
   text-shadow: 0 0.25rem 0.875rem rgba(0, 0, 0, 0.7);
 }
 
@@ -183,6 +208,7 @@
   background: #ffffff;
   border: 1px solid #e2e7ee;
   font-size: 1.02rem;
+  overflow: hidden;
 }
 
 .country-checkbox-left {
@@ -193,15 +219,17 @@
 
 .country-flag-icon,
 .country-flag-fallback {
-  width: 1.4rem;
-  height: 1.4rem;
+  width: 2rem;
+  height: 2rem;
+  min-width: 2rem;
   border-radius: 0.2rem;
-  display: inline-block;
+  display: block;
+  overflow: hidden;
 }
 
 .country-flag-icon {
   object-fit: cover;
-  border: 1px solid #c9d3df;
+  border: 0;
 }
 
 .country-flag-fallback {

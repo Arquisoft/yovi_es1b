@@ -76,14 +76,18 @@
   z-index: 2;
 }
 
+/* Fondo oscuro que cubre toda la pantalla */
 .modal-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: 9999;
-  background: rgba(0, 0, 0, 0.65);
-  display: grid;
-  place-items: center;
-  padding: 1rem;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
 }
 
 .modal-box {
@@ -187,7 +191,7 @@
   backdrop-filter: blur(4px);
   display: flex;
   justify-content: flex-end;
-  z-index: 10001;
+  z-index: 1000;
 }
 
 .friends-sidebar-content {
@@ -330,8 +334,9 @@
 }
 
 .add-friend-btn {
-  background: #dcfd8b;
-  color: #000;
+  flex: 1;
+  background: #d4ff5e; 
+  color: black;
   border: none;
   border-radius: 4px;
   padding: 12px;
@@ -339,6 +344,7 @@
   cursor: pointer;
   transition: transform 0.2s, background 0.3s;
 }
+
 
 .add-friend-btn:hover {
   background: #dcfd8b;
@@ -437,4 +443,265 @@
   background: #dcfd8b;
   color: #000;
   box-shadow: 0 0 10px rgba(220, 253, 139, 0.5);
+}
+
+
+/* Grupo de botones en el buscador */
+.search-button-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.view-profile-btn {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid #444;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.view-profile-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #00d4ff;
+}
+
+
+
+/* Nombre de amigo interactivo */
+.friend-name.clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.friend-name.clickable:hover {
+  color: #d4ff5e;
+  text-decoration: underline;
+}
+
+.profile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.7); /* Oscurece todo, incluido el menú de amigos */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000; 
+}
+
+.profile-card {
+  background: #1a1a1a;
+  border: 2px solid #d4ff5e;
+  z-index: 2001;
+}
+
+
+/* --- PERFIL PÚBLICO ESTILO SOCIAL --- */
+
+/* Fondo oscuro que cubre toda la pantalla con desenfoque */
+.profile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.75); /* Oscuro semi-transparente */
+    backdrop-filter: blur(8px); /* Desenfoque de cristal de fondo */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000; /* Aseguramos que esté por encima del panel social y navbar */
+}
+
+/* La tarjeta de perfil en sí */
+.profile-card {
+    position: relative;
+    width: min(90vw, 360px); /* Un poco más ancha para las stats */
+    background: rgba(15, 15, 15, 0.95); /* Fondo casi negro traslúcido como el sidebar */
+    backdrop-filter: blur(25px); /* Desenfoque intenso interno */
+    border: 2px solid #dcfd8b; /* Borde amarillo neón idéntico al del sidebar */
+    border-radius: 16px;
+    padding: 2.5rem 1.5rem;
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(220, 253, 139, 0.1);
+    color: white;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    /* Animación de aparición */
+    animation: fadeInScale 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInScale {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Contenedor del avatar circular */
+.profile-avatar-wrapper {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    margin: 0 auto 0.5rem;
+    overflow: hidden;
+    border: 3px solid #dcfd8b; /* Borde neón */
+    box-shadow: 0 0 15px rgba(220, 253, 139, 0.3); /* Resplandor neón */
+    background: #222; /* Fondo de respaldo si falla la imagen */
+}
+
+.profile-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Apodo (nickname) grande y blanco */
+.profile-nickname {
+    font-size: 1.8rem;
+    color: #535353;
+    margin: 0;
+    letter-spacing: 1px;
+}
+
+/* Código de amigo (#...) estilo Discord */
+.profile-friend-code {
+    font-family: 'Courier New', Courier, monospace;
+    color: #888; /* Gris claro traslúcido */
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+}
+
+/* Grilla de estadísticas (Victorias, Derrotas, Ratio) */
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 1rem;
+}
+
+/* Cajas individuales de estadísticas */
+.profile-stat-box {
+    background: rgba(255, 255, 255, 0.05); /* Ligeramente más claro que el fondo */
+    padding: 12px 5px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Números de estadísticas en neón */
+.stat-num {
+    color: black; /* Amarillo neón */
+
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+/* Etiquetas de estadísticas (Victorias, Derrotas...) */
+.stat-desc {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: 1px;
+}
+
+/* Botón cerrar del perfil (estilo X del panel social) */
+.profile-close-button {
+    position: absolute;
+    top: 1rem;
+    right: 1.2rem;
+    background: none;
+    border: none;
+    color: #666; /* Gris oscuro por defecto */
+    font-size: 1.8rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.profile-close-button:hover {
+    color: #ff4444; /* Rojo al pasar el ratón */
+}
+
+/* Estilo para el texto de carga neón */
+.loader-neon {
+    color: #dcfd8b;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; text-shadow: 0 0 10px #dcfd8b; }
+    100% { opacity: 0.5; }
+}
+
+.profile-add-btn {
+    margin-top: 15px;
+    background: #dcfd8b; /* Tu color neón */
+    color: #000;
+    border: 2px solid #000;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(220, 253, 139, 0.2);
+}
+
+.profile-add-btn:hover:not(:disabled) {
+    background: #7e8f54;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(220, 253, 139, 0.4);
+}
+
+.profile-add-btn:disabled {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.3);
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Estado cuando ya se ha enviado */
+.profile-add-btn.sent {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: transparent;
+    color: #dcfd8b;
+}
+
+/* Botón cuando ya sois amigos (Verde pero sutil) */
+.profile-add-btn.accepted {
+    background: rgba(221, 253, 139, 0.301);
+    color: #888;
+    border: 1px solid #3c4428;
+    cursor: default;
+    box-shadow: none;
+}
+
+/* Botón cuando está pendiente (Naranja o gris) */
+.profile-add-btn.cancel {
+    background: rgba(255, 255, 255, 0.05);
+    color: #852b2b;
+    border: 1px solid #852b2b;
+}
+
+/* Botón para ti mismo */
+.profile-add-btn.disabled {
+    background: transparent;
+    color: #444;
+    border: 1px dashed #444;
+    cursor: default;
 }

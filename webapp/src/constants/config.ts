@@ -16,6 +16,11 @@ export const DIFFICULTY_TRANSLATIONS: Record<string, "facil" | "medio" | "difici
   Hard: "dificil",
 };
 
+export const UI_TO_ENGLISH_DIFFICULTY: Record<string, string> = {
+  'Fácil': 'Easy', 'Medio': 'Medium', 'Difícil': 'Hard',
+  'Easy': 'Easy', 'Medium': 'Medium', 'Hard': 'Hard',
+};
+
 // Y si necesitas el inverso para enviar datos al backend:
 export const REVERSE_DIFFICULTY_MAP: Record<string, string> = {
   facil: "Easy",

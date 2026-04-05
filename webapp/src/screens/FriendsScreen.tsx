@@ -4,6 +4,7 @@ import { API_BASE_URL } from '../constants/config';
 // Definimos la interfaz para los usuarios que busquemos
 interface UserResult {
   username: string;
+  nickname?: string;
   isFollowing?: boolean;
 }
 
@@ -67,18 +68,20 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
         </button>
 
         <div className="results-container" style={{ marginTop: '1rem' }}>
-          {results.map((user) => (
+          {results.map((user) => {
+            const displayName = user.nickname || user.username;
+            return (
             <div key={user.username} className="user-result-item" >
-              <span>{user.username}</span>
+              <span>{displayName}</span>
               <button 
                 className="nav-btn" 
                 style={{ fontSize: '0.7rem', padding: '4px 8px' }}
-                onClick={() => handleFollow(user.username)}
+                onClick={() => handleFollow(displayName)}
               >
                 Seguir
               </button>
             </div>
-          ))}
+          )})}
           {results.length === 0 && searchQuery && (
             <p>No se han encontrado usuarios.</p>
           )}

@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
+import logoGameY from '../assets/Logo_GameY.png';
 
 interface LoginData {
   username: string;
@@ -8,7 +9,13 @@ interface LoginData {
 
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
-  readonly onLogin: (username: string, friendCode: string, icon?: string | null) => Promise<void> | void; // Intenta iniciar partida con ese usuario
+  readonly onLogin: (
+    username: string,
+    friendCode: string,
+    icon?: string | null,
+    nickname?: string | null,
+    language?: string | null
+  ) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
 function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
@@ -46,7 +53,9 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
         await onLogin(
           formData.username.trim(),
           data.friendCode,
-          typeof data.icon === 'string' ? data.icon : null);
+          typeof data.iconName === 'string' ? data.iconName : (typeof data.icon === 'string' ? data.icon : null),
+          typeof data.nickname === 'string' ? data.nickname : null,
+          typeof data.language === 'string' ? data.language : null);
       } else {
         setFormError(data.error || 'Error al iniciar sesion.');
       }
@@ -60,7 +69,14 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
   return (
     <div className="register-screen">
-      <h2 className="title-log">RECUERDAME QUIEN ERES</h2>
+      <div className="auth-header">
+        <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
+        <h2 className="title-log">
+          Bienvenido de vuelta a GameY
+          <br />
+          ¿Cómo era tu nombre?
+        </h2>
+      </div>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
 
