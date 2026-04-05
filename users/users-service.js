@@ -52,7 +52,9 @@ try {
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // MODIFICA ESTA LÍNEA PARA INCLUIR Authorization
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -243,7 +245,7 @@ app.get('/users/profile/:username', async (req, res) => {
       followers: user.followers || []
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    return res.status(500).json({ error: 'Error del servidor'+err.message });
   }
 }); 
 
@@ -486,25 +488,34 @@ app.post('/surrender', async (req, res) => {
 
 // Resets the game board WITHOUT affecting stats
 app.post('/reset', async (req, res) => {
-  const { size, difficulty } = req.body;
+  // CORRECCIÓN: Añadimos username a la extracción del body
+  const { size, difficulty, username } = req.body;
 
   try {
     const requestedSize = Number(size);
-    const safeSize =
-      Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
+    const safeSize = Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
         ? Math.floor(requestedSize)
         : 5;
 
     const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize, difficulty: difficulty ,player:username}),
+      body: JSON.stringify({
+        size: safeSize,
+        difficulty: difficulty,
+        player: username //
+      }),
     });
+
+    if (!rustResponse.ok) {
+      throw new Error(`Rust error: ${rustResponse.status}`);
+    }
+
     const newBoard = await rustResponse.json();
-    res.json({ responseFromRust: newBoard});
-  }
-  catch (e) {
-    res.status(500).json({error: 'Error communicating with Rust server'});
+    res.json({ responseFromRust: newBoard });
+  } catch (e) {
+    console.error("Fallo en reset:", e.message);
+    res.status(500).json({ error: 'Error communicating with Rust server' });
   }
 });
 
