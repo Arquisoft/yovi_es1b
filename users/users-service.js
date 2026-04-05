@@ -20,6 +20,9 @@ app.use(metricsMiddleware);
 
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
+//imports para tokens
+const { authMiddleware, JWT_SECRET } = require('./authMiddleware');
+const jwt = require('jsonwebtoken');
 
 // Para guardar un friendCode
 const { customAlphabet } = require('nanoid');
@@ -140,8 +143,14 @@ app.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
+      const token = jwt.sign(
+          { username: user.username, nickname: user.nickname },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+      );
       res.json({
         message: `Welcome back, ${username}!`,
+        token,//enviar el token a frontend
         username: user.username,
         nickname: user.nickname,
         language: user.language,

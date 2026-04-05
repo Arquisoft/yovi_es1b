@@ -256,7 +256,10 @@ pub async fn realizar_movimiento(
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
 ) -> impl IntoResponse {
     // 1. Bloqueamos el Mutex
-    let mut game = state.game.lock().unwrap();
+    let session = ax_state.get_or_create_session(&payload.player).await;
+    let mut game = session.game.lock().await; // Bloqueo de sesión privada
+    let mut current_difficulty_guard = session.current_difficulty.lock().await;
+    let active_bot_name = session.active_bot.lock().await.clone();
 
     // 2. Movimiento Humano (Azul)
     // El índice se interpreta usando el tamaño REAL del juego activo en servidor.
@@ -371,13 +374,11 @@ pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
 ) -> impl IntoResponse {
-    let mut game = state.game.lock().unwrap();
-    // Tamaño efectivo del reset:
-    // - usa size enviado por cliente si existe
-    // - si no existe, usa 5
-    // - siempre acotado a [3..20]
-    let size = payload.size.unwrap_or(5).clamp(3, 20);
+    let username = "default_user"; // TODO: Recibir esto en el payload
+    let session = ax_state.get_or_create_session(username).await;
 
+    let mut game = session.game.lock().await;
+    let size = payload.size.unwrap_or(5).clamp(3, 20);
     *game = crate::core::game::GameY::new(size);
 
     // Actualizar dificultad si se proporciona
