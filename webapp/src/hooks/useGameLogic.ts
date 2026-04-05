@@ -3,7 +3,7 @@ import { gameService } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
 import type { GameYData } from '../types/game';
 
-export const useGameLogic = (username: string) => {
+export const useGameLogic = () => {
   const [boardData, setBoardData] = useState<GameYData | null>(null);
   const [winner, setWinner] = useState<number | null>(null);
 
@@ -28,9 +28,10 @@ export const useGameLogic = (username: string) => {
   // Movimiento del Jugador
   const executeHumanMove = async (index: number, difficulty: string, stopTimer: () => void, startTimer: (d: string) => void) => {
     stopTimer();
-    const data = await gameService.makeMove(index, username, difficulty, boardData?.size);
+    // ELIMINADO: username ya no se envía como argumento aquí
+    const data = await gameService.makeMove(index, difficulty, boardData?.size);
     const result = updateBoardState(data, index);
-    
+
     if (result.winner === null) {
       setTimeout(() => startTimer(difficulty), 300);
     }
@@ -43,14 +44,15 @@ export const useGameLogic = (username: string) => {
 
     const flat = boardData.layout.replaceAll('/', '');
     const emptyCells = [...flat].map((c, i) => (c === '.' ? i : -1)).filter((i) => i !== -1);
-    
+
     if (emptyCells.length === 0) return;
-    //const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+
     const array = new Uint32Array(1);
     window.crypto.getRandomValues(array);
     const randomIndex = emptyCells[array[0] % emptyCells.length];
 
-    const data = await gameService.makeMove(randomIndex, username, difficulty, boardData?.size);
+    // ELIMINADO: username ya no se envía como argumento aquí
+    const data = await gameService.makeMove(randomIndex, difficulty, boardData?.size);
     const result = updateBoardState(data, randomIndex);
 
     if (result.winner === null) {
@@ -60,15 +62,17 @@ export const useGameLogic = (username: string) => {
   };
 
   const resetGame = async (dimension: number, difficulty: string, stopTimer?: () => void) => {
-    stopTimer?.();                  // ← Para el timer ANTES de resetear
-    const board = await gameService.resetBoard(dimension, difficulty, username);
+    stopTimer?.();
+    // ELIMINADO: username ya no se envía como argumento aquí
+    const board = await gameService.resetBoard(dimension, difficulty);
     setBoardData(board);
     setWinner(null);
     return board;
   };
 
   const surrender = async (difficulty: string) => {
-    await gameService.surrender(username, difficulty, boardData?.size);
+    // ELIMINADO: username ya no se envía como argumento aquí
+    await gameService.surrender(difficulty, boardData?.size);
     setWinner(1);
   };
 

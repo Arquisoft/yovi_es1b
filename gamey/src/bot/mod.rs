@@ -16,6 +16,7 @@ pub mod attacker_bot;
 pub mod ybot;
 pub mod ybot_registry;
 pub mod edge_bot;
+pub mod bot_utils;
 
 pub use blocker_bot::*;
 pub use pro_bot::*;
@@ -24,6 +25,7 @@ pub use ybot::*;
 pub use ybot_registry::*;
 pub use edge_bot::*;
 pub use attacker_bot::*;
+pub use bot_utils::*;
 
 /// Creates a new bot registry and populates it with all available bots.
 ///

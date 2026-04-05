@@ -2,83 +2,51 @@ use crate::YBotRegistry;
 use crate::core::game::GameY;
 use mongodb::Database;
 use std::sync::Arc;
-use std::sync::Mutex;
+use tokio::sync::Mutex; // Cambiamos std::sync::Mutex por tokio::sync::Mutex para async
 use crate::BotDifficulty;
+use dashmap::DashMap; // Necesitas añadir dashmap = "6.1" en Cargo.toml
 
-/// Shared application state for the bot server.
-///
-/// This struct holds the bot registry and is shared across all request handlers
-/// via Axum's state extraction. It uses `Arc` internally to allow cheap cloning
-/// for concurrent request handling.
-#[derive(Clone)]
-pub struct AppState {
-    /// The registry of available bots, wrapped in Arc for thread-safe sharing.
-    bots: Arc<YBotRegistry>,
-    pub game: Arc<Mutex<GameY>>, // NEW: The actual game state, wrapped in Arc and Mutex for safe concurrent access
-    pub current_difficulty: Arc<Mutex<BotDifficulty>>, // NEW: The current difficulty level
-    pub db: Database,
-    pub active_bot: Arc<Mutex<String>>,
+/// Nueva estructura para aislar los datos de cada jugador
+pub struct UserSession {
+    pub game: Mutex<GameY>,
+    pub current_difficulty: Mutex<BotDifficulty>,
+    pub active_bot: Mutex<String>,
 }
 
-
+#[derive(Clone)]
+pub struct AppState {
+    bots: Arc<YBotRegistry>,
+    /// Mapa concurrente que asocia "username" -> Sesión individual
+    pub sessions: Arc<DashMap<String, Arc<UserSession>>>,
+    pub db: Database,
+}
 
 impl AppState {
-    /// Creates a new application state with the given bot registry.
     pub fn new(bots: YBotRegistry, db: Database) -> Self {
         Self {
             bots: Arc::new(bots),
-            game: Arc::new(Mutex::new(GameY::new(5))), // NEW: Initialize the game state with a new GameY instance of size 5
-            current_difficulty: Arc::new(Mutex::new(BotDifficulty::Easy)), // Default difficulty
-            db,                                        // Guardar la conexion
-            active_bot: Arc::new(Mutex::new("random_bot".to_string())), // Default active bot
+            sessions: Arc::new(DashMap::new()),
+            db,
         }
     }
 
-    /// Returns a clone of the Arc-wrapped bot registry.
+    /// Método de utilidad para recuperar la partida de un usuario o crear una nueva si no existe
+    pub async fn get_or_create_session(&self, username: &str) -> Arc<UserSession> {
+        if let Some(session) = self.sessions.get(username) {
+            return Arc::clone(session.value());
+        }
+
+        let new_session = Arc::new(UserSession {
+            game: Mutex::new(GameY::new(5)),
+            current_difficulty: Mutex::new(BotDifficulty::Easy),
+            active_bot: Mutex::new("random_bot".to_string()),
+        });
+
+        self.sessions.insert(username.to_string(), Arc::clone(&new_session));
+        new_session
+    }
+
     pub fn bots(&self) -> Arc<YBotRegistry> {
         Arc::clone(&self.bots)
     }
 }
-
-/*
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::RandomBot;
-
-    #[test]
-    fn test_new_state() {
-        let registry = YBotRegistry::new();
-        let state = AppState::new(registry);
-        assert!(state.bots().names().is_empty());
-    }
-
-    #[test]
-    fn test_state_with_bot() {
-        let registry = YBotRegistry::new().with_bot(Arc::new(RandomBot));
-        let state = AppState::new(registry);
-        assert!(state.bots().names().contains(&"random_bot".to_string()));
-    }
-
-    #[test]
-    fn test_state_clone() {
-        let registry = YBotRegistry::new().with_bot(Arc::new(RandomBot));
-        let state = AppState::new(registry);
-        let cloned = state.clone();
-        // Both should reference the same underlying data
-        assert_eq!(state.bots().names(), cloned.bots().names());
-    }
-
-    #[test]
-    fn test_bots_arc_clone() {
-        let registry = YBotRegistry::new().with_bot(Arc::new(RandomBot));
-        let state = AppState::new(registry);
-        let bots1 = state.bots();
-        let bots2 = state.bots();
-        // Both Arcs should point to the same registry
-        assert_eq!(bots1.names(), bots2.names());
-    }
-}
-
-*/
