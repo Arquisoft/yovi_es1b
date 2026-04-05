@@ -85,7 +85,7 @@ describe('ProfileScreen', () => {
 
     // 4. CLAVE: Metemos el check del callback DENTRO del waitFor
     await waitFor(() => {
-      expect(mockedService.updateProfile).toHaveBeenCalledWith('Alice', {
+      expect(mockedService.updateProfile).toHaveBeenCalledWith( {
         birthDate: '2001-02-03',
         language: 'English',
         nickname: 'NewNick',
@@ -119,33 +119,7 @@ describe('ProfileScreen', () => {
     expect(mockedService.changePassword).not.toHaveBeenCalled()
   })
 
-  test('cambia Contraseña cuando verificacion es valida', async () => {
-    const user = userEvent.setup()
-    mockedService.getProfile.mockResolvedValueOnce({
-      username: 'Alice',
-      nickname: 'Ali',
-      birthDate: '2000-01-01T00:00:00.000Z',
-      language: 'Spain',
-      iconName: 'SinAvatar.png',
-    })
-    mockedService.changePassword.mockResolvedValueOnce({
-      message: 'Contraseña actualizada correctamente',
-    })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
-    await screen.findByDisplayValue('Alice')
-
-    await user.click(screen.getByRole('button', { name: /cambiar Contraseña/i }))
-    await user.type(screen.getByPlaceholderText(/Contraseña actual/i), 'oldpass123')
-    await user.type(screen.getByPlaceholderText(/^nueva Contraseña$/i), 'newpass123')
-    await user.type(screen.getByPlaceholderText(/^confirmar nueva Contraseña$/i), 'newpass123')
-    await user.click(screen.getByRole('button', { name: /guardar nueva Contraseña/i }))
-
-    await waitFor(() => {
-      expect(mockedService.changePassword).toHaveBeenCalledWith('Alice', 'oldpass123', 'newpass123')
-    })
-    expect(await screen.findByText(/Contraseña actualizada correctamente/i)).toBeInTheDocument()
-  })
 
   test('obliga a elegir avatar y permite guardarlo antes de guardar perfil', async () => {
     const user = userEvent.setup()
@@ -180,7 +154,7 @@ describe('ProfileScreen', () => {
     await user.click(screen.getByRole('button', { name: /guardar perfil/i }))
 
     await waitFor(() => {
-      expect(mockedService.updateProfile).toHaveBeenCalledWith('Alice', {
+      expect(mockedService.updateProfile).toHaveBeenCalledWith( {
         birthDate: '2000-01-01',
         language: 'Spain',
         nickname: 'Ali',

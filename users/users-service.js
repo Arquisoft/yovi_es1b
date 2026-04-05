@@ -221,11 +221,14 @@ app.post('/users/follow', async (req, res) => {
   }
 });
 
+// En users-service.js (alrededor de la línea 170)
 app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
-  const user = await User.findOne({ username });
+    const user = await User.findOne({ username });
+    // Si decides usar populate, asegúrate de que el modelo esté bien definido,
+    // si da error 500, comenta las líneas de populate.
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -236,10 +239,13 @@ app.get('/users/profile/:username', async (req, res) => {
       nickname: user.nickname,
       birthDate: user.birthDate,
       language: user.language,
-      iconName: user.iconName
+      iconName: user.iconName,
+      // Usamos el tamaño del array directamente si no vas a popular
+      followingCount: user.following?.length || 0,
+      followersCount: user.followers?.length || 0
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor'+err.message });
+    return res.status(500).json({ error: 'Error del servidor: ' + err.message });
   }
 }); 
 

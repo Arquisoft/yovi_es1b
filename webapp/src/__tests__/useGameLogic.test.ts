@@ -26,9 +26,22 @@ const mockJsonResponse = (data: unknown, ok = true) =>
     } as Response)
 
 describe('gameService', () => {
+    // Al principio del archivo, después de los imports
     beforeEach(() => {
-        vi.clearAllMocks()
-    })
+        vi.clearAllMocks();
+        // Forzamos que cada vez que el código pida el usuario, devuelva 'alice'
+        vi.stubGlobal('sessionStorage', {
+            getItem: vi.fn().mockReturnValue('alice'),
+            setItem: vi.fn(),
+            clear: vi.fn(),
+        });
+        // Si usas localStorage en lugar de sessionStorage, haz lo mismo con localStorage
+        vi.stubGlobal('localStorage', {
+            getItem: vi.fn().mockReturnValue('alice'),
+            setItem: vi.fn(),
+            clear: vi.fn(),
+        });
+    });
 
     // ── getDifficulties ────────────────────────
 

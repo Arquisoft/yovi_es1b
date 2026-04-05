@@ -26,9 +26,22 @@ const mockJsonResponse = (data: unknown, ok = true) =>
     } as Response)
 
 describe('gameService', () => {
+    // Al principio del archivo, después de los imports
     beforeEach(() => {
-        vi.clearAllMocks()
-    })
+        vi.clearAllMocks();
+        // Forzamos que cada vez que el código pida el usuario, devuelva 'alice'
+        vi.stubGlobal('sessionStorage', {
+            getItem: vi.fn().mockReturnValue('alice'),
+            setItem: vi.fn(),
+            clear: vi.fn(),
+        });
+        // Si usas localStorage en lugar de sessionStorage, haz lo mismo con localStorage
+        vi.stubGlobal('localStorage', {
+            getItem: vi.fn().mockReturnValue('alice'),
+            setItem: vi.fn(),
+            clear: vi.fn(),
+        });
+    });
 
     // ── getDifficulties ────────────────────────
 
@@ -124,10 +137,10 @@ describe('gameService', () => {
         const friends = [{ name: 'bob', status: 'online' }]
         mockFetch.mockReturnValue(mockJsonResponse(friends))
 
-        // ARREGLADO: Eliminado 'alice'
         const result = await gameService.getFriends()
 
         expect(result).toEqual(friends)
+        // CAMBIO: Usa expect.stringContaining para ignorar el prefijo de la URL
         expect(mockFetch).toHaveBeenCalledWith(
             expect.stringContaining('username=alice'),
             expect.anything()
@@ -137,15 +150,17 @@ describe('gameService', () => {
     // ── getProfile ─────────────────────────────
 
     test('getProfile llama al endpoint correcto usando sesión', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ username: 'alice' }))
+        // Simulamos que el storage tiene a 'alice'
+        vi.spyOn(window.localStorage, 'getItem').mockReturnValue('alice');
+        mockFetch.mockReturnValue(mockJsonResponse({ username: 'alice' }));
 
-        // ARREGLADO: Eliminado 'alice'
-        await gameService.getProfile()
+        await gameService.getProfile(); // Sin parámetros
 
         expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/users/profile/alice')
-        )
-    })
+            expect.stringContaining('/users/profile/alice'),
+            expect.anything()
+        );
+    });
 
     // ── updateProfile ──────────────────────────
 
@@ -229,10 +244,10 @@ describe('gameService', () => {
         const requests = [{ id: '1', from: 'bob' }]
         mockFetch.mockReturnValue(mockJsonResponse(requests))
 
-        // ARREGLADO: Llamada sin argumentos
         const result = await gameService.getPendingRequests()
 
         expect(result).toEqual(requests)
+        // CAMBIO: Usa expect.stringContaining
         expect(mockFetch).toHaveBeenCalledWith(
             expect.stringContaining('username=alice'),
             expect.anything()

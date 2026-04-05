@@ -78,8 +78,15 @@ export const gameService = {
     return res.json();
   },
 
-  async getProfile() {
-    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}`);
+  async getProfile(username?: string): Promise<any> {
+    // Si pasan un username (ej. un amigo), usamos ese.
+    // Si NO pasan nada, usamos el de la sesión activa.
+    const targetUser = username || getCurrentUser();
+
+    const res = await fetch(`${API_BASE_URL}/users/profile/${targetUser}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    });
     return res.json();
   },
 

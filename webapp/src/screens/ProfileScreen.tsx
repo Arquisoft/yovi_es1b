@@ -101,7 +101,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
       '      setInfoMessage(\'\');\n' +
       '      try {\n' +
       '        // CAMBIO: Ya no pasamos \'username\', el servicio usa getCurrentUser()\n' +
-      '        const data = await gameService.getProfile();\n' +
+      '        const data = await gameService.getProfile(username);\n' +
       '        \n' +
       '        if (!active) return;\n' +
       '        if (data?.error) {\n' +
