@@ -70,23 +70,20 @@ impl YBot for AttackerBot {
 
             let connectivity_bonus = self.check_connectivity_bonus(coords, board, my_id);
 
-            // INTELIGENCIA DINÁMICA APLICADA 
-            // Si el potencial del oponente es masivo, el multiplicador DEBE superar al 10.0 de mi propio ataque.
             let opp_threat_level = if opp_p > 2000.0 {
-                25.0 // EMERGENCIA: Abandona el ataque, bloquea la red enemiga a toda costa.
+                25.0 
             } else if opp_p > 800.0 {
-                12.0 // PELIGRO ALTO: Prioriza molestar al oponente un poco más que tu propio avance.
+                12.0 
             } else if opp_p > 300.0 {
-                5.0  // MEDIO: Mantén un ojo en él, pero sigue atacando (5.0 < 10.0).
+                5.0  
             } else {
-                0.5  // IGNORAR: El oponente no va a ningún lado.
+                0.5  
             };
 
-            // Ajustamos el peso del centro. En 12x12, el centro pierde valor rápido a medida que el tablero se llena.
             let adjusted_centrality = if board.available_cells().len() > (size * size / 2) as usize {
-                centrality_bonus * 5.0 // Muy importante al principio
+                centrality_bonus * 5.0 
             } else {
-                centrality_bonus // Irrelevante al final
+                centrality_bonus 
             };
 
             let total_score = (my_p * 10.0) + (opp_p * opp_threat_level) + adjusted_centrality + connectivity_bonus;
@@ -153,16 +150,10 @@ impl AttackerBot {
 
     fn get_exponential_potential(&self, coords: Coordinates, dists: &HashMap<u32, Vec<i32>>, size: u32) -> f32 {
         let idx = coords.to_index(size) as usize;
-        
-        // Obtenemos las tres distancias a los lados para esta celda
         let d1 = dists.get(&0).unwrap()[idx] as f32;
         let d2 = dists.get(&1).unwrap()[idx] as f32;
         let d3 = dists.get(&2).unwrap()[idx] as f32;
-
-        // Suma de los cuadrados de las distancias
         let sum_of_squares = (d1 * d1) + (d2 * d2) + (d3 * d3);
-        
-        // Esta fórmula premia el equilibrio (el centro) y castiga las esquinas aisladas
         50000.0 / (sum_of_squares + 1.0)
     }
 
@@ -182,9 +173,9 @@ impl AttackerBot {
             }
         }
         match unique_neighbors.len() {
-            0 => -50.0,   // Ligeramente malo poner fichas sueltas
-            1 => 150.0,   // Bueno para extender líneas
-            2 => 300.0,   // Muy bueno para crear nodos fuertes
+            0 => -50.0, 
+            1 => 150.0, 
+            2 => 300.0, 
             _ => 500.0,
         }
     }
