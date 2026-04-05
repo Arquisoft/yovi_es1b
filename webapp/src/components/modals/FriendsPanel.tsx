@@ -162,7 +162,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
             </div>
            <div className="profile-info-text">
               <span className="profile-name">{displayName || username}</span>
-              <span className="profile-friend-code">{friendCode}</span>
+              <span className="profile-friend-code">#{friendCode}</span>
            </div>
            
            {/* Botón de Solicitudes Pendientes */}
