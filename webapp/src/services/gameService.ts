@@ -9,7 +9,7 @@ export const gameService = {
   },
 
   // Realizar un movimiento
-  async makeMove(cellIndex: number, username: string, difficulty: string, boardSize?: number) {
+  async makeMove(cellIndex: number,  difficulty: string, boardSize?: number) {
     const res = await fetch(`${API_BASE_URL}/move`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -19,37 +19,37 @@ export const gameService = {
   },
 
   // Reiniciar tablero
-  async resetBoard(size: number | null, difficulty: string, username: string): Promise<GameYData> {
+  async resetBoard(size: number | null, difficulty: string): Promise<GameYData> {
     const res = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ size, difficulty, username }),
+      body: JSON.stringify({ size, difficulty, username: getCurrentUser() }),
     });
     const data = await res.json();
     return data.responseFromRust ?? data;
   },
 
   // Rendirse
-  async surrender(username: string, difficulty: string, boardSize?: number) {
+  async surrender( difficulty: string, boardSize?: number) {
     return fetch(`${API_BASE_URL}/surrender`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ username, difficulty, boardSize }),
+      body: JSON.stringify({ username: getCurrentUser(), difficulty, boardSize }),
     });
   },
 
   // Historial
-  async getHistory(username: string, page: number, filter?: string | null) {
-    let url = `${API_BASE_URL}/history?username=${username}&page=${page}&limit=5`;
+  async getHistory( page: number, filter?: string | null) {
+    let url = `${API_BASE_URL}/history?username=${getCurrentUser()}&page=${page}&limit=5`;
     if (filter) url += `&result=${encodeURIComponent(filter)}`;
     const res = await fetch(url);
     return res.json();
   },
 
-  async getFriends(username: string): Promise<{ name: string, status: string }[]> {
+  async getFriends(): Promise<{ name: string, status: string }[]> {
     try {
       // Usamos encodeURIComponent por seguridad si el nombre tiene espacios o caracteres especiales
-      const url = `${API_BASE_URL}/friends?username=${encodeURIComponent(username)}`;
+      const url = `${API_BASE_URL}/friends?username=${encodeURIComponent( getCurrentUser())}`;
       
       const res = await fetch(url, {
         method: 'GET',
@@ -69,25 +69,25 @@ export const gameService = {
     }
   },
 
-  async addFriend(username: string, friendName: string) {
+  async addFriend( friendName: string) {
     const res = await fetch(`${API_BASE_URL}/friends/add`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ username, friendName }),
+      body: JSON.stringify({ username: getCurrentUser(), friendName }),
     });
     return res.json();
   },
 
-  async getProfile(username: string) {
-    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}`);
+  async getProfile() {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}`);
     return res.json();
   },
 
   async updateProfile(
-    username: string,
+
     payload: { birthDate?: string | null; language?: string; iconName?: string; nickname?: string }
   ) {
-    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}`, {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}`, {
       method: 'PATCH',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
@@ -95,8 +95,8 @@ export const gameService = {
     return res.json();
   },
 
-  async changePassword(username: string, currentPassword: string, newPassword: string) {
-    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(username)}/change-password`, {
+  async changePassword( currentPassword: string, newPassword: string) {
+    const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}/change-password`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ currentPassword, newPassword }),
@@ -118,12 +118,12 @@ export const gameService = {
   },
 
   // 2. Seguir/Añadir amigo (Ajustado a tu endpoint /users/follow)
-  async followUser(myUsername: string, targetUsername: string) {
+  async followUser( targetUsername: string) {
     const res = await fetch(`${API_BASE_URL}/users/follow`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ 
-        follower: myUsername, 
+        follower: getCurrentUser(),
         following: targetUsername 
       }),
     });
@@ -151,8 +151,8 @@ export const gameService = {
     return res.json();
   },
 
-  async getPendingRequests(username: string) {
-    const res = await fetch(`${API_BASE_URL}/friends/requests?username=${encodeURIComponent(username)}`);
+  async getPendingRequests() {
+    const res = await fetch(`${API_BASE_URL}/friends/requests?username=${encodeURIComponent(getCurrentUser())}`);
     if (!res.ok) throw new Error('No se pudieron obtener las solicitudes');
     return res.json();
   }
