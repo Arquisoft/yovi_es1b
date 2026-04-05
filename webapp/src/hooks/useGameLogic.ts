@@ -45,7 +45,10 @@ export const useGameLogic = (username: string) => {
     const emptyCells = [...flat].map((c, i) => (c === '.' ? i : -1)).filter((i) => i !== -1);
     
     if (emptyCells.length === 0) return;
-    const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    //const randomIndex = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+    const array = new Uint32Array(1);
+    window.crypto.getRandomValues(array);
+    const randomIndex = emptyCells[array[0] % emptyCells.length];
 
     const data = await gameService.makeMove(randomIndex, username, difficulty, boardData?.size);
     const result = updateBoardState(data, randomIndex);
@@ -56,7 +59,8 @@ export const useGameLogic = (username: string) => {
     return result;
   };
 
-  const resetGame = async (dimension: number, difficulty: string) => {
+  const resetGame = async (dimension: number, difficulty: string, stopTimer?: () => void) => {
+    stopTimer?.();                  // ← Para el timer ANTES de resetear
     const board = await gameService.resetBoard(dimension, difficulty, username);
     setBoardData(board);
     setWinner(null);

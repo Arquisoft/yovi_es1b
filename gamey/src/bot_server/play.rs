@@ -10,6 +10,7 @@ pub struct PlayRequest {
     pub position: YEN,
     /// ID del bot a utilizar (ej: "random_bot").
     pub bot_id: Option<String>,
+
 }
 
 /// Respuesta que el bot devuelve al cliente

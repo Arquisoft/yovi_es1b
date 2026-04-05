@@ -766,3 +766,89 @@ async fn test_surrender_endpoint_saves_defeat() {
     // Verificamos que el registro se guardó correctamente en MongoDB
     assert_eq!(response.status(), StatusCode::OK);
 }
+
+#[tokio::test]
+async fn test_play_without_bot_id_uses_default() {
+    let app = test_app().await;
+
+    // Petición SIN el campo "bot_id", cumpliendo el requisito de que sea opcional
+    let payload = serde_json::json!({
+        "position": YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string())
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // El servidor no debe fallar, debe usar un bot por defecto y devolver OK
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_play_on_completely_full_board() {
+    let app = test_app().await;
+
+    // Tablero size 3 completamente lleno, no hay movimientos posibles
+    let payload = serde_json::json!({
+        "position": YEN::new(3, 0, vec!['B', 'R'], "B/BR/RBB".to_string()),
+        "bot_id": "random_bot"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Verificamos que el servidor detecta que no puede jugar y devuelve error
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let error: ErrorResponse = serde_json::from_slice(&body).expect("Expected an ErrorResponse for a full board");
+    
+    // El mensaje exacto dependerá de vuestra implementación, pero debe dar error
+    assert!(!error.message.is_empty());
+}
+
+
+#[tokio::test]
+async fn test_play_size_layout_mismatch() {
+    let app = test_app().await;
+
+    // Contradicción crítica: Declaramos size 12, pero mandamos un layout de size 3
+    let payload = serde_json::json!({
+        "position": YEN::new(12, 0, vec!['B', 'R'], "./../...".to_string()),
+        "bot_id": "random_bot"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/api/play")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // El servidor debe escupir un error y no intentar parsearlo (evitando un panic)
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let error: ErrorResponse = serde_json::from_slice(&body).unwrap();
+    
+    assert!(error.message.contains("Invalid") || error.message.contains("size"), 
+            "El mensaje de error debería indicar la discrepancia de tamaños");
+}

@@ -91,23 +91,13 @@ function GameScreen({
     settingsLottieRef.current?.setSpeed(0.5);
   }, []);
 
-  let botName = 'Bot Player';
-  if (difficultyChoice === 'facil') {
-    botName = 'Bot Player (fácil)';
-  } else if (difficultyChoice === 'medio') {
-    botName = 'Bot Player (medio)';
-  } else if (difficultyChoice === 'dificil') {
-    botName = 'Bot Player (difícil)';
-  }
+  // Etiqueta para la UI: Directa, sin diccionarios extra aquí para no liarnos
+  const difficultyLabel = difficultyChoice || 'Sin seleccionar';
 
-  const difficultyLabel =
-    difficultyChoice === 'facil'
-      ? 'Fácil'
-      : difficultyChoice === 'medio'
-        ? 'Media'
-        : difficultyChoice === 'dificil'
-          ? 'Difícil'
-          : 'Sin seleccionar';
+  // Nombre del Bot: Dinámico según lo que recibimos
+  const botName = difficultyLabel !== 'Sin seleccionar' 
+    ? `Bot Player (${difficultyLabel})` 
+    : 'Bot Player';
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
   //const currentSizeValue: SizeChoice = `Tamaño ${boardDimension}x${boardDimension}x${boardDimension}` as SizeChoice;
@@ -187,12 +177,12 @@ function GameScreen({
               className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
               onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
             >
-              Dificultad: ▾
+              Dificultad: {difficultyLabel} ▾
             </button>
             
             {showDiffMenu && (
               <div className="dropdown-floating-list">
-                {['facil', 'medio', 'dificil'].map((diff) => (
+                {['Fácil', 'Medio', 'Difícil'].map((diff) => (
                   <div 
                     key={diff} 
                     className="dropdown-item"

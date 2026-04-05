@@ -14,7 +14,7 @@ import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
-import { DIFFICULTY_TRANSLATIONS, TURN_TIME_LIMIT } from '../../constants/config';
+import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -82,7 +82,7 @@ const GameApp = () => {
 
   // --- ESTADOS DE UI ---
   const [connectionStatus, setConnectionStatus] = useState('Conectado');
-  const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
+  const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
   const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
@@ -123,6 +123,8 @@ const GameApp = () => {
   } = useGameTimer(() => handleAutoMove());
 
   const startNewGame = (size: number, difficulty: DifficultyChoice) => {
+    stopTimer();
+    setTimerVisible(false);
     setBotIcon(pickRandomBotIcon());
     resetGame(size, difficulty);
   };
@@ -254,7 +256,7 @@ const GameApp = () => {
   };
 
   // Mapeo para la interfaz
-  const displayDifficulty = difficultyChoice ? DIFFICULTY_TRANSLATIONS[difficultyChoice] : null;
+  //const displayDifficulty = difficultyChoice;
 
   return (
     <div className="App">
@@ -274,20 +276,32 @@ const GameApp = () => {
         boardData={boardData}
         winner={winner}
         connectionStatus={connectionStatus}
-        difficultyChoice={displayDifficulty as any}
+        difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
-        turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[difficultyChoice] ?? null) : null}
+        turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
         onFetchHistory={() => fetchHistory()}
         onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
-        onChangeDifficulty={(newDiff: DifficultyChoice) => {
-          setPreviousDifficultyChoice(newDiff);
-          setDifficultyChoice(newDiff);
+        onChangeDifficulty={(uiDiff: string) => {
+          // 1. Mapa de traducción para el Backend
+          const backendMap: Record<string, string> = {
+            'Fácil': 'facil' as any,
+            'Medio': 'medio' as any,
+            'Difícil': 'dificil' as any
+          };
+
+          const valueForBackend = backendMap[uiDiff] || 'facil';
+
+          // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
+          setDifficultyChoice(uiDiff as any);
+          setPreviousDifficultyChoice(uiDiff as any);
+          
+          // 3. Llamamos al servicio con el valor que entiende el Backend
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
-          startNewGame(dimension, newDiff);
+          startNewGame(dimension, valueForBackend as any);
         }}
         onChangeSize={(newSize: SizeChoice) => {
           setPreviousSizeChoice(newSize);
