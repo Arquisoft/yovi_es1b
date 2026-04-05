@@ -214,9 +214,7 @@ app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
-  const user = await User.findOne({ username })
-    .populate('following', 'username nickname score iconName')
-    .populate('followers', 'username nickname score iconName');
+  const user = await User.findOne({ username });
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -227,16 +225,13 @@ app.get('/users/profile/:username', async (req, res) => {
       nickname: user.nickname,
       birthDate: user.birthDate,
       language: user.language,
-      iconName: user.iconName,
-      followingCount: user.following?.length || 0,
-      followersCount: user.followers?.length || 0,
-      following: user.following || [],
-      followers: user.followers || []
+      iconName: user.iconName
     });
   } catch (err) {
     return res.status(500).json({ error: 'Error del servidor' });
   }
 }); 
+
 
 app.patch('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
@@ -400,8 +395,83 @@ app.post('/friends/respond', async (req, res) => {
   }
 });
 
+/**
+ * Endpoint para obtener el perfil público de un usuario, incluyendo estadísticas de juego.
+ */
+app.get('/users/public-profile/:username', async (req, res) => {
+  const targetUsername = String(req.params.username || '').trim();
+  const requester = String(req.query.requester || '').trim(); // Usuario que hace la petición
+  try {
+    // Buscar los campos públicos del usuario
+    const user = await User.findOne({ username: targetUsername })
+      .select('username nickname iconName friendCode');
 
-// New
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Buscar relacion
+    let relationship = 'none';
+    if (requester === targetUsername) {
+      relationship = 'self';
+    } else {
+      const friendship = await Friendship.findOne({
+        users: {$all: [requester, targetUsername] } 
+      });
+      if (friendship) {
+        relationship = friendship.status; // pending, accepted, etc.
+      }
+    }
+
+    // Pedir estadisticas de juego al servicio de Rust
+    let gameStats = { wins: 0, losses: 0, totalGames: 0 };
+
+    try {
+      const rustResponse = await fetch(`${GAMEY_URL}/stats?username=${targetUsername}`);
+      if (rustResponse.ok) {
+
+        const rustStats = await rustResponse.json();
+        gameStats = {
+          wins: rustStats.wins,
+          losses: rustStats.losses,
+          totalGames: rustStats.total // Transformamos "total" en "totalGames"
+        };
+      }
+    }catch (e) {
+      console.error("Error fetching stats from Rust:", e);
+    }
+
+    res.json({
+      username: user.username,
+      nickname: user.nickname,
+      iconName: user.iconName,
+      friendCode: user.friendCode,
+      stats: gameStats,
+      relationship
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+})
+
+/**
+ * Endpoint para cancelar una solicitud de amistad pendiente
+ */
+app.post('/friends/cancel', async (req, res) => {
+  const { follower, following } = req.body;
+  try {
+    // Buscamos la relación pendiente donde nosotros somos uno de los involucrados
+    await Friendship.findOneAndDelete({
+      users: { $all: [follower, following] },
+      status: 'pending'
+    });
+    res.json({ message: 'Solicitud cancelada' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al cancelar la solicitud' });
+  }
+});
+
 // Executes a move in the game
 app.post('/move', async (req, res) => {
   const { cellIndex, username} = req.body; // NEW: Recibir difficulty

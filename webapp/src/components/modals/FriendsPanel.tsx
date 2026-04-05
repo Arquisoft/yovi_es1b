@@ -9,14 +9,52 @@ interface FriendsPanelProps {
   displayName: string;
   friendCode: string;
   icon?: string | null;
+  onTriggerPublicProfile: (username: string) => void;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon }: FriendsPanelProps) => {
+export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon, onTriggerPublicProfile }: FriendsPanelProps) => {
   const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchCode, setSearchCode] = useState('');
   const [requests, setRequests] = useState<any[]>([]);
   const [showRequests, setShowRequests] = useState(false); // Estado para alternar entre lista y solicitudes
+
+  // --- 1. FUNCIÓN DE CARGA CENTRALIZADA ---
+  const fetchSocialData = async (showLoader = false) => {
+    if (!username) return;
+    if (showLoader) setLoading(true);
+    
+    try {
+      // Lanzamos ambas peticiones a la vez para ir más rápido
+      const [friendsData, requestsData] = await Promise.all([
+        gameService.getFriends(username),
+        gameService.getPendingRequests(username)
+      ]);
+      
+      setFriends(friendsData);
+      setRequests(requestsData);
+    } catch (err) {
+      console.error("Error cargando datos sociales:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---  EFECTO DE AUTO-REFRESCO (POLLING) ---
+  useEffect(() => {
+    if (isOpen && username) {
+      // Carga inicial
+      fetchSocialData(true);
+
+      // Creamos un intervalo para que se recargue solo cada 15 segundos
+      const interval = setInterval(() => {
+        fetchSocialData(false); // Recarga silenciosa (sin loader)
+      }, 15000); 
+
+      return () => clearInterval(interval); // Limpiamos al cerrar
+    }
+  }, [isOpen, username]);
+
 
   useEffect(() => {
     if (isOpen && username) {
@@ -53,6 +91,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
         
         alert(`¡Ahora sigues a ${targetUser.username}!`);
         setSearchCode(''); // Limpiamos el buscador
+
+        fetchSocialData();
         
         // 3. Opcional: Refrescar la lista de amigos
         const updatedFriends = await gameService.getFriends(username);
@@ -70,6 +110,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       // 1. Llamamos al servicio (Lógica de Red)
       await gameService.respondToFriendRequest(requestId, action);
 
+      fetchSocialData();
+
       // 2. Actualizamos la UI localmente (Lógica de Interfaz)
       setRequests(prev => prev.filter(r => r.id !== requestId));
 
@@ -83,6 +125,21 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       alert("No se pudo procesar la respuesta.");
     }
   };
+
+  const handleViewProfileFromSearch = async () => {
+    if (!searchCode.trim()) return;
+
+    try {
+      const targetUser = await gameService.searchUserByCode(searchCode);
+      if (targetUser) {
+        onTriggerPublicProfile(targetUser.username);
+      }else {
+        alert("No se encontró ningún jugador con ese código.");
+      }
+    } catch (error) {
+      alert("Error al buscar el perfil.");
+    }
+  }
 
 
   if (!isOpen) return null;
@@ -105,7 +162,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
             </div>
            <div className="profile-info-text">
               <span className="profile-name">{displayName || username}</span>
-              <span className="profile-friend-code">{friendCode}</span>
+              <span className="profile-friend-code">#{friendCode}</span>
            </div>
            
            {/* Botón de Solicitudes Pendientes */}
@@ -132,9 +189,15 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
               onChange={handleInputChange}
             />
           </div>
-          <button className="add-friend-btn" onClick={handleAddFriend}>
-            Añadir
-          </button>
+          <div className="search-button-group">
+            <button className="view-profile-btn" onClick={handleViewProfileFromSearch}>
+              Ver Perfil
+            </button>
+            <button className="add-friend-btn" onClick={handleAddFriend}>
+              Añadir
+            </button>
+          </div>
+          
         </div>
 
         {/* Área dinámica de la lista */}
@@ -186,6 +249,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
             </>
           )}
         </div>
+
       </div>
     </div>,
     document.body
