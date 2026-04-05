@@ -54,7 +54,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
     const handleAddFriend = async () => {
         if (!myUsername || !data) return;
         try {
-            await gameService.followUser(myUsername, data.username);
+            await gameService.followUser( data.username);
             // Refrescamos sin mostrar el loader para que el botón cambie suavemente
             fetchProfile(false); 
         } catch (error: any) {

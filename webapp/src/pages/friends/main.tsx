@@ -16,7 +16,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsP
   useEffect(() => {
     if (isOpen && username) {
       setLoading(true);
-      gameService.getFriends(username)
+      gameService.getFriends()
         .then(data => {
           setFriends(data);
           setLoading(false);
