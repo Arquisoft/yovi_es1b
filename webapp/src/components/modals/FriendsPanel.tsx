@@ -23,7 +23,7 @@ interface FriendsPanelProps {
   onTriggerPublicProfile: (username: string) => void;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon }: FriendsPanelProps) => {
+export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon,onTriggerPublicProfile }: FriendsPanelProps) => {
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -38,8 +38,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     try {
       // Lanzamos ambas peticiones a la vez para ir más rápido
       const [friendsData, requestsData] = await Promise.all([
-        gameService.getFriends(username),
-        gameService.getPendingRequests(username)
+        gameService.getFriends(),
+        gameService.getPendingRequests()
       ]);
 
       setFriends(friendsData);
@@ -151,14 +151,15 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     try {
       const targetUser = await gameService.searchUserByCode(searchCode);
       if (targetUser) {
+        // Pasamos el username del usuario ENCONTRADO, no el nuestro
         onTriggerPublicProfile(targetUser.username);
-      }else {
+      } else {
         alert("No se encontró ningún jugador con ese código.");
       }
     } catch (error) {
       alert("Error al buscar el perfil.");
     }
-  }
+  };
 
 
   if (!isOpen) return null;

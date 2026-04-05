@@ -359,28 +359,32 @@ const GameApp = () => {
         onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
       />
 
+      {/* 1. Panel de Amigos: el emisor del evento */}
       <FriendsPanel
-        isOpen={showFriendsMenu}
-        onClose={() => setShowFriendsMenu(false)}
-        username={username}
-        displayName={displayName}
-        friendCode={friendCode}
-        icon={playerIcon}
-        onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
+          isOpen={showFriendsMenu}
+          onClose={() => setShowFriendsMenu(false)}
+          username={username} // Tu sesión
+          displayName={displayName}
+          friendCode={friendCode}
+          icon={playerIcon}
+          // Captura el nombre del amigo y lo guarda en el estado local de main.tsx
+          onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
 
+      {/* 2. Modal de Perfil Público: el receptor */}
+      {/* Solo se monta si hay un nombre en el estado 'publicProfileToView' */}
       {publicProfileToView && (
-        <PublicProfileModal
-          username={publicProfileToView}
-          onClose={() => setPublicProfileToView(null)}
-        />
+          <PublicProfileModal
+              username={publicProfileToView} // El usuario a consultar (distinto al de la sesión)
+              onClose={() => setPublicProfileToView(null)} // Al cerrar, limpiamos para poder abrir otro
+          />
       )}
 
+      {/* 3. Tu propio perfil (Session Storage) */}
       <ProfileScreen
-        isOpen={showProfileScreen}
-        username={username}
-        onClose={() => setShowProfileScreen(false)}
-        
+          isOpen={showProfileScreen}
+          username={username} // Tu sesión activa
+          onClose={() => setShowProfileScreen(false)}
       />
 
       {showSettings && (
