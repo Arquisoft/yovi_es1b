@@ -498,7 +498,7 @@ app.post('/reset', async (req, res) => {
     const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize, difficulty: difficulty }),
+      body: JSON.stringify({ size: safeSize, difficulty: difficulty ,player:username}),
     });
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard});
