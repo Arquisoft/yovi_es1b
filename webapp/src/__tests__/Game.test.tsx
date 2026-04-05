@@ -67,31 +67,44 @@ describe('Game UI (MPA Ready)', () => {
 
     render(<GameScreen {...props} />)
 
-    // Simulamos clics en la botonera de la Navbar
-    await user.click(screen.getByRole('button', { name: /historial/i }))
-    // 1. Cambiar Dificultad
-    // Hacemos clic en el botón que abre el menú
-    await user.click(screen.getByText(/Dificultad: facil/i))
-    // Luego hacemos clic en la opción que queremos
-    await user.click(screen.getByText(/^Facil$/i))
-
-    // 2. Cambiar Tamaño
-    // Hacemos clic en el botón de "Cambiar Tamaño"
-    await user.click(screen.getByText(/Cambiar Tamaño/i))
-    // Luego seleccionamos el tamaño deseado de la lista que aparece
-    await user.click(screen.getByText(/Tamaño 9x9x9/i))
-    await user.click(screen.getByRole('button', { name: /terminar partida/i }))
-    await user.click(screen.getByRole('button', { name: /reiniciar/i }))
-    await user.click(screen.getByRole('button', { name: /salir/i }))
-    await user.click(screen.getByRole('button', { name: /ver mi perfil/i }))
-
+    // 1. Historial (Usamos el title del botón)
+    await user.click(screen.getByTitle(/ver historial/i))
     expect(props.onFetchHistory).toHaveBeenCalled()
-    expect(props.onChangeDifficulty).toHaveBeenCalled()
-    expect(props.onChangeSize).toHaveBeenCalled()
+
+    // 2. Cambiar Dificultad
+    // Primero abrimos el menú (buscamos el disparador específico del Nav)
+    const triggerDificultad = screen.getByText(/Dificultad: ▾/i)
+    await user.click(triggerDificultad)
+    
+    // Buscamos "Facil" (exacto, sin tilde como en tu .map) dentro de los dropdown-items
+    const opcionFacil = await screen.findByText(/^Facil$/) 
+    await user.click(opcionFacil)
+    expect(props.onChangeDifficulty).toHaveBeenCalledWith('facil')
+
+    // 3. Cambiar Tamaño
+    const triggerTamaño = screen.getByText(/Cambiar Tamaño ▾/i)
+    await user.click(triggerTamaño)
+    
+    // Buscamos la opción 9x9x9 que está en tus SIZE_OPTIONS
+    const opcionTamaño = await screen.findByText(/Tamaño 9x9x9/i)
+    await user.click(opcionTamaño)
+    expect(props.onChangeSize).toHaveBeenCalledWith('Tamaño 9x9x9')
+
+    // 4. Terminar Partida (por title)
+    await user.click(screen.getByTitle(/terminar partida/i))
     expect(props.onEndGame).toHaveBeenCalled()
+
+    // 5. Reiniciar (por title)
+    await user.click(screen.getByTitle(/reiniciar partida/i))
     expect(props.onResetGame).toHaveBeenCalled()
-    expect(props.onExit).toHaveBeenCalled()
+
+    // 6. Perfil (por title)
+    await user.click(screen.getByTitle(/ver mi perfil/i))
     expect(props.onViewProfile).toHaveBeenCalled()
+
+    // 7. Salir (por title)
+    await user.click(screen.getByTitle(/volver al menú/i))
+    expect(props.onExit).toHaveBeenCalled()
   })
 
   test('una celda vacia dispara el callback de movimiento', async () => {

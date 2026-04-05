@@ -22,9 +22,7 @@ describe('Profile endpoints', () => {
       nickname: 'Ali',
       birthDate: new Date('2000-01-01T00:00:00.000Z'),
       language: 'Spain',
-      iconName: 'hombre1.png',
-      following: [],
-      followers: [],
+      iconName: 'hombre1.png'
     }
 
     // Mock para la cadena .findOne().populate().populate()

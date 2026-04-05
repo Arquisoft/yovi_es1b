@@ -210,6 +210,28 @@ app.post('/users/follow', async (req, res) => {
   }
 });
 
+app.get('/users/profile/:username', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+
+  try {
+  const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    return res.json({
+      username: user.username,
+      nickname: user.nickname,
+      birthDate: user.birthDate,
+      language: user.language,
+      iconName: user.iconName
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+}); 
+
 
 app.patch('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
