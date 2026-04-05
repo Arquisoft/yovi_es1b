@@ -109,7 +109,7 @@ const GameApp = () => {
     executeAutoMove,
     resetGame,
     surrender,
-  } = useGameLogic(username);
+  } = useGameLogic();
 
   const {
     timeLeft: turnTimeLeft,
@@ -188,7 +188,7 @@ const GameApp = () => {
 
     const syncProfileIcon = async () => {
       try {
-        const profile = await gameService.getProfile(username);
+        const profile = await gameService.getProfile();
         if (!active || profile?.error) return;
 
         const resolvedIcon = resolveUserIcon(
@@ -238,7 +238,7 @@ const GameApp = () => {
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
     try {
-      const result = await gameService.getHistory(username, page, filter);
+      const result = await gameService.getHistory( page, filter);
       setHistoryData(result.data || []);
       setTotalPages(result.total_pages || 1);
       setCurrentPage(result.page || 1);
