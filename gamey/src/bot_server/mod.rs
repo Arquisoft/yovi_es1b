@@ -133,17 +133,19 @@ pub struct GameRecord {
 /// This is useful for testing the API without binding to a network port.
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
-        .route("/status", axum::routing::get(status))
-        .route("/execute-move", axum::routing::post(realizar_movimiento)) // new
-        .route("/history", axum::routing::get(obtener_historial))
-        .route("/reset", axum::routing::post(reiniciar_juego)) // new
-        .route("/difficulties", axum::routing::get(listar_dificultades)) // new
-        .route("/surrender", axum::routing::post(rendirse))
-        .route("/api/play", axum::routing::post(play::play))
+        // 1. Ponemos Swagger al principio para que nada lo intercepte
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
                 .url("/api-docs/openapi.json", ApiDoc::openapi()),
         )
+        // 2. El resto de tus rutas
+        .route("/status", axum::routing::get(status))
+        .route("/execute-move", axum::routing::post(realizar_movimiento))
+        .route("/history", axum::routing::get(obtener_historial))
+        .route("/reset", axum::routing::post(reiniciar_juego))
+        .route("/difficulties", axum::routing::get(listar_dificultades))
+        .route("/surrender", axum::routing::post(rendirse))
+        .route("/api/play", axum::routing::post(play::play))
         .with_state(state)
 }
 
