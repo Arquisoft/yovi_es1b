@@ -19,6 +19,43 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
   const [requests, setRequests] = useState<any[]>([]);
   const [showRequests, setShowRequests] = useState(false); // Estado para alternar entre lista y solicitudes
 
+  // --- 1. FUNCIÓN DE CARGA CENTRALIZADA ---
+  const fetchSocialData = async (showLoader = false) => {
+    if (!username) return;
+    if (showLoader) setLoading(true);
+    
+    try {
+      // Lanzamos ambas peticiones a la vez para ir más rápido
+      const [friendsData, requestsData] = await Promise.all([
+        gameService.getFriends(username),
+        gameService.getPendingRequests(username)
+      ]);
+      
+      setFriends(friendsData);
+      setRequests(requestsData);
+    } catch (err) {
+      console.error("Error cargando datos sociales:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---  EFECTO DE AUTO-REFRESCO (POLLING) ---
+  useEffect(() => {
+    if (isOpen && username) {
+      // Carga inicial
+      fetchSocialData(true);
+
+      // Creamos un intervalo para que se recargue solo cada 15 segundos
+      const interval = setInterval(() => {
+        fetchSocialData(false); // Recarga silenciosa (sin loader)
+      }, 15000); 
+
+      return () => clearInterval(interval); // Limpiamos al cerrar
+    }
+  }, [isOpen, username]);
+
+
   useEffect(() => {
     if (isOpen && username) {
       setLoading(true);
@@ -54,6 +91,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
         
         alert(`¡Ahora sigues a ${targetUser.username}!`);
         setSearchCode(''); // Limpiamos el buscador
+
+        fetchSocialData();
         
         // 3. Opcional: Refrescar la lista de amigos
         const updatedFriends = await gameService.getFriends(username);
@@ -70,6 +109,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     try {
       // 1. Llamamos al servicio (Lógica de Red)
       await gameService.respondToFriendRequest(requestId, action);
+
+      fetchSocialData();
 
       // 2. Actualizamos la UI localmente (Lógica de Interfaz)
       setRequests(prev => prev.filter(r => r.id !== requestId));

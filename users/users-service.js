@@ -378,7 +378,7 @@ app.post('/friends/respond', async (req, res) => {
  */
 app.get('/users/public-profile/:username', async (req, res) => {
   const targetUsername = String(req.params.username || '').trim();
-
+  const requester = String(req.query.requester || '').trim(); // Usuario que hace la petición
   try {
     // Buscar los campos públicos del usuario
     const user = await User.findOne({ username: targetUsername })
@@ -388,17 +388,32 @@ app.get('/users/public-profile/:username', async (req, res) => {
       return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
+    // Buscar relacion
+    let relationship = 'none';
+    if (requester === targetUsername) {
+      relationship = 'self';
+    } else {
+      const friendship = await Friendship.findOne({
+        users: {$all: [requester, targetUsername] } 
+      });
+      if (friendship) {
+        relationship = friendship.status; // pending, accepted, etc.
+      }
+    }
+
     // Pedir estadisticas de juego al servicio de Rust
     let gameStats = { wins: 0, losses: 0, totalGames: 0 };
 
     try {
       const rustResponse = await fetch(`${GAMEY_URL}/stats?username=${targetUsername}`);
       if (rustResponse.ok) {
-        const history = await rustResponse.json();
-        const records = history.data || [];
-        gameStats.wins = records.filter(r => r.result === 'win').length;
-        gameStats.losses = records.filter(r => r.result === 'loss').length;
-        gameStats.totalGames = records.length;
+
+        const rustStats = await rustResponse.json();
+        gameStats = {
+          wins: rustStats.wins,
+          losses: rustStats.losses,
+          totalGames: rustStats.total // Transformamos "total" en "totalGames"
+        };
       }
     }catch (e) {
       console.error("Error fetching stats from Rust:", e);
@@ -409,7 +424,8 @@ app.get('/users/public-profile/:username', async (req, res) => {
       nickname: user.nickname,
       iconName: user.iconName,
       friendCode: user.friendCode,
-      stats: gameStats
+      stats: gameStats,
+      relationship
     });
 
   } catch (err) {
@@ -417,7 +433,22 @@ app.get('/users/public-profile/:username', async (req, res) => {
   }
 })
 
-
+/**
+ * Endpoint para cancelar una solicitud de amistad pendiente
+ */
+app.post('/friends/cancel', async (req, res) => {
+  const { follower, following } = req.body;
+  try {
+    // Buscamos la relación pendiente donde nosotros somos uno de los involucrados
+    await Friendship.findOneAndDelete({
+      users: { $all: [follower, following] },
+      status: 'pending'
+    });
+    res.json({ message: 'Solicitud cancelada' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al cancelar la solicitud' });
+  }
+});
 
 // Executes a move in the game
 app.post('/move', async (req, res) => {

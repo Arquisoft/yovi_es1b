@@ -366,13 +366,7 @@ const GameApp = () => {
         isOpen={showProfileScreen}
         username={username}
         onClose={() => setShowProfileScreen(false)}
-        onIconUpdated={(newIcon) => {
-          const resolvedIcon = resolveUserIcon(newIcon);
-          setPlayerIcon(resolvedIcon);
-          if (resolvedIcon) {
-            localStorage.setItem('yovi_user_icon', resolvedIcon);
-          }
-        }}
+        
       />
 
       {showSettings && (

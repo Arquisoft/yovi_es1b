@@ -547,6 +547,9 @@ pub async fn obtener_estadisticas(
     let losses_filter = doc! { "player": &params.username, "result": "Derrota" };
     let losses = collection.count_documents(losses_filter).await.unwrap_or(0);
 
+    println!("Victorias: {}, Derrotas: {}", wins, losses);
+    println!("-------------------");
+
     // Devolver la estructura
     axum::Json(UserStats {
         wins: wins as i64,
