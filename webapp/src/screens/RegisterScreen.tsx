@@ -1,5 +1,6 @@
-import { type FormEvent, useState } from 'react';
+﻿import { type FormEvent, useState } from 'react';
 import logoGameY from '../assets/Logo_GameY.png';
+import settingsImg from '../assets/buttons/configuracion.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -47,6 +48,7 @@ interface RegisterData {
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
+  readonly onOpenSettings?: () => void;
   readonly onCreateAccount: (
     name: string,
     friendCode: string,
@@ -56,7 +58,7 @@ interface RegisterScreenProps {
   ) => Promise<void> | void;
 }
 
-function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
+function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -127,9 +129,20 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
   return (
     <div className="register-screen">
-      <div className="auth-header">
+      <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">ZONA DE REGISTRO</h2>
+        {onOpenSettings && (
+          <button
+            type="button"
+            className="header-settings-btn"
+            onClick={onOpenSettings}
+            title="Configuración"
+            aria-label="Configuración de elementos de fondo"
+          >
+            <img src={settingsImg} alt="" className="floating-settings-icon" />
+          </button>
+        )}
       </div>
 
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
@@ -313,3 +326,5 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 }
 
 export default RegisterScreen;
+
+

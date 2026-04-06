@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+﻿import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
@@ -16,7 +16,7 @@ interface GameYData {
 const makeTriangularLayout = (size: number, fill = '.'): string =>
   Array.from({ length: size }, (_, row) => fill.repeat(row + 1)).join('/')
 
-// Función para generar las props necesarias para el test
+// FunciÃ³n para generar las props necesarias para el test
 const baseProps = (overrides?: {
   difficultyChoice?: Difficulty
   selectedBoardDimension?: number | null
@@ -42,7 +42,7 @@ const baseProps = (overrides?: {
   } as GameYData),
   winner: overrides?.winner ?? null,
   connectionStatus: 'Conectado', // Prop requerida en el nuevo GameScreen
-  sizeLabel: 'Tamaño 6x6x6',
+  sizeLabel: 'Pequeño',
   timerVisible: overrides?.timerVisible ?? false,
   turnTimeLeft: overrides?.turnTimeLeft ?? null,
   turnTimeLimit: overrides?.turnTimeLimit ?? null,
@@ -69,13 +69,13 @@ describe('Game UI (MPA Ready)', () => {
 
     render(<GameScreen {...props} />)
 
-    // 1. Historial (Usamos el title del botón)
+    // 1. Historial (Usamos el title del botÃ³n)
     await user.click(screen.getByTitle(/ver historial/i))
 
     expect(props.onFetchHistory).toHaveBeenCalled()
 
     // 2. Cambiar Dificultad
-    // Primero abrimos el menú (buscamos el disparador específico del Nav)
+    // Primero abrimos el menú (buscamos el disparador especÃ­fico del Nav)
     const triggerDificultad = screen.getByRole('button', { name: /Dificultad/i });    
     await user.click(triggerDificultad)
     
@@ -85,13 +85,13 @@ describe('Game UI (MPA Ready)', () => {
     expect(props.onChangeDifficulty).toHaveBeenCalledWith('Fácil')
 
     // 3. Cambiar Tamaño
-    const triggerTamaño = screen.getByText(/Cambiar Tamaño ▾/i)
-    await user.click(triggerTamaño)
+    const triggerTamano = screen.getByText(/Cambiar Tamaño ▾/i)
+    await user.click(triggerTamano)
     
-    // Buscamos la opción 9x9x9 que está en tus SIZE_OPTIONS
-    const opcionTamaño = await screen.findByText(/Tamaño 9x9x9/i)
-    await user.click(opcionTamaño)
-    expect(props.onChangeSize).toHaveBeenCalledWith('Tamaño 9x9x9')
+    // Buscamos la opciÃ³n 9x9x9 que estÃ¡ en tus SIZE_OPTIONS
+    const opcionTamano = await screen.findByText(/Mediano/i)
+    await user.click(opcionTamano)
+    expect(props.onChangeSize).toHaveBeenCalledWith('Mediano')
 
     // 4. Terminar Partida (por title)
     await user.click(screen.getByTitle(/terminar partida/i))
@@ -123,7 +123,7 @@ describe('Game UI (MPA Ready)', () => {
   })
 
   test('si la partida esta terminada, no permite pulsar celdas', async () => {
-    const props = baseProps({ winner: 1 }) // Simulamos que alguien ya ganó
+    const props = baseProps({ winner: 1 }) // Simulamos que alguien ya ganÃ³
 
     render(<GameScreen {...props} />)
 
@@ -173,9 +173,9 @@ describe('Game UI (MPA Ready)', () => {
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
   })
 })
-describe('Temporizador — renderizado en GameScreen', () => {
+describe('Temporizador â€” renderizado en GameScreen', () => {
 
-  // ── Visibilidad ──────────────────────────────
+  // â”€â”€ Visibilidad â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   test('no muestra el temporizador cuando timerVisible es false', () => {
     render(<GameScreen {...baseProps({ timerVisible: false })} />)
@@ -184,7 +184,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
   })
 
   test('no muestra el temporizador cuando turnTimeLimit es null aunque timerVisible sea true', () => {
-    // Sin límite definido no hay barra que mostrar
+    // Sin lÃ­mite definido no hay barra que mostrar
     render(<GameScreen {...baseProps({ timerVisible: true, turnTimeLeft: 30, turnTimeLimit: null })} />)
 
     expect(screen.queryByText(/tu turno/i)).not.toBeInTheDocument()
@@ -206,7 +206,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     expect(screen.queryByText(/tu turno/i)).not.toBeInTheDocument()
   })
 
-  // ── Valores mostrados ────────────────────────
+  // â”€â”€ Valores mostrados â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   test('muestra correctamente los segundos restantes', () => {
     render(
@@ -234,7 +234,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     expect(screen.getByText(/0s/i)).toBeInTheDocument()
   })
 
-  // ── Estado de "urgencia" (≤ 5 segundos) ────────
+  // â”€â”€ Estado de "urgencia" (â‰¤ 5 segundos) â”€â”€â”€â”€â”€â”€â”€â”€
 
   test('aplica la clase de urgencia cuando quedan 5 segundos o menos', () => {
     render(
@@ -260,7 +260,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     expect(barra).toHaveClass('turn-timer-bar-urgent')
   })
 
-  test('NO aplica la clase de urgencia cuando quedan más de 5 segundos', () => {
+  test('NO aplica la clase de urgencia cuando quedan mÃ¡s de 5 segundos', () => {
     render(
         <GameScreen
             {...baseProps({ timerVisible: true, turnTimeLeft: 20, turnTimeLimit: 60 })}
@@ -271,7 +271,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     expect(segundosEl).not.toHaveClass('turn-timer-urgent')
   })
 
-  // ── Anchura de la barra de progreso ──────────
+  // â”€â”€ Anchura de la barra de progreso â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   test('la barra de progreso ocupa el 100% al inicio', () => {
     render(
@@ -306,7 +306,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     expect(barra.style.width).toBe('0%')
   })
 
-  // ── Distintos límites de tiempo por dificultad ─
+  // â”€â”€ Distintos lÃ­mites de tiempo por dificultad â”€
 
   test.each([
     { difficulty: 'facil',   turnTimeLimit: 60, turnTimeLeft: 45, expectedWidth: '75%' },
@@ -331,3 +331,6 @@ describe('Temporizador — renderizado en GameScreen', () => {
       }
   )
 })
+
+
+

@@ -1,4 +1,4 @@
-import type { DifficultyChoice, SizeChoice } from '../../types/game';
+﻿import { SIZE_OPTIONS, type DifficultyChoice, type SizeChoice } from '../../types/game';
 
 interface SelectionModalsProps {
   currentScreen: string;
@@ -10,12 +10,6 @@ interface SelectionModalsProps {
   onDifficultyCancel: () => void;
   onSizeCancel: () => void;
 }
-
-const SIZE_OPTIONS: SizeChoice[] = [
-  'Tamaño 6x6x6',
-  'Tamaño 9x9x9',
-  'Tamaño 12x12x12',
-];
 
 export const SelectionModals = ({
   currentScreen,
@@ -29,12 +23,11 @@ export const SelectionModals = ({
 }: SelectionModalsProps) => {
   if (currentScreen !== 'game') return null;
 
-  // Modal de Dificultad
   if (difficultyChoice === null) {
     return (
       <div className="modal-backdrop">
         <div className="modal-box">
-          <h3>{'¿Con qué dificultad quieres jugar?'}</h3>
+          <h3>¿Con qué dificultad quieres jugar?</h3>
           {availableDifficulties.map((diff) => (
             <button key={diff} className="submit-button" onClick={() => onDifficultySelect(diff)}>
               {diff}
@@ -48,12 +41,11 @@ export const SelectionModals = ({
     );
   }
 
-  // Modal de Tamaño
   if (sizeChoice === null) {
     return (
       <div className="modal-backdrop">
         <div className="modal-box">
-          <h3>{'¿Con qué tamaño de tablero deseas jugar?'}</h3>
+          <h3>¿Con qué tamaño de tablero deseas jugar?</h3>
           {SIZE_OPTIONS.map((size) => (
             <button key={size} className="submit-button" onClick={() => onSizeSelect(size)}>
               {size}

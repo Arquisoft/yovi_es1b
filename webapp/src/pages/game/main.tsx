@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -49,7 +49,7 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
   const iconValue = String(rawIcon || '').trim();
   if (!iconValue) return null;
 
-  // Si ya viene como URL/ruta válida, la usamos tal cual.
+  // Si ya viene como URL/ruta vÃ¡lida, la usamos tal cual.
   if (
     iconValue.startsWith('http://') ||
     iconValue.startsWith('https://') ||
@@ -67,7 +67,7 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
 };
 
 const GameApp = () => {
-  // --- SEGURIDAD Y SESIÓN ---
+  // --- SEGURIDAD Y SESIÃ“N ---
   const username = localStorage.getItem('yovi_user') || '';
   const friendCode = localStorage.getItem('yovi_friend_code') || '';
   const displayName = localStorage.getItem('yovi_user_nickname') || username;
@@ -83,9 +83,9 @@ const GameApp = () => {
   // --- ESTADOS DE UI ---
   const [connectionStatus, setConnectionStatus] = useState('Conectado');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
-  const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
+  const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
-  const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
+  const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
@@ -104,7 +104,7 @@ const GameApp = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // --- HOOKS DE LÓGICA ---
+  // --- HOOKS DE LÃ“GICA ---
   const {
     boardData,
     winner,
@@ -214,13 +214,13 @@ const GameApp = () => {
 
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = async () => {
-    setConnectionStatus('⏱️ Movimiento automático...');
+    setConnectionStatus('â±ï¸ Movimiento automÃ¡tico...');
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data?.winner !== null) setShowResultModal(true);
       setConnectionStatus('Conectado');
     } catch (error) {
-      setConnectionStatus('Error en movimiento automático');
+      setConnectionStatus('Error en movimiento automÃ¡tico');
     }
   };
 
@@ -286,11 +286,11 @@ const GameApp = () => {
         onFetchHistory={() => fetchHistory()}
         onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
         onChangeDifficulty={(uiDiff: string) => {
-          // 1. Mapa de traducción para el Backend
+          // 1. Mapa de traducciÃ³n para el Backend
           const backendMap: Record<string, string> = {
             'Fácil': 'facil' as any,
             'Medio': 'medio' as any,
-            'Difícil': 'dificil' as any
+            'DifÃ­cil': 'dificil' as any
           };
 
           const valueForBackend = backendMap[uiDiff] || 'facil';
@@ -338,7 +338,7 @@ const GameApp = () => {
           startNewGame(getBoardDimensionFromSizeChoice(s)!, difficultyChoice || 'Easy');
         }}
         onDifficultyCancel={() => setDifficultyChoice(previousDifficultyChoice || 'Easy')}
-        onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Tamaño 6x6x6')}
+        onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Pequeño')}
       />
 
       {/* Modales de Resultados e Historial */}
@@ -363,7 +363,7 @@ const GameApp = () => {
       <FriendsPanel
           isOpen={showFriendsMenu}
           onClose={() => setShowFriendsMenu(false)}
-          username={username} // Tu sesión
+          username={username} // Tu sesiÃ³n
           displayName={displayName}
           friendCode={friendCode}
           icon={playerIcon}
@@ -371,11 +371,11 @@ const GameApp = () => {
           onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
 
-      {/* 2. Modal de Perfil Público: el receptor */}
+      {/* 2. Modal de Perfil PÃºblico: el receptor */}
       {/* Solo se monta si hay un nombre en el estado 'publicProfileToView' */}
       {publicProfileToView && (
           <PublicProfileModal
-              username={publicProfileToView} // El usuario a consultar (distinto al de la sesión)
+              username={publicProfileToView} // El usuario a consultar (distinto al de la sesiÃ³n)
               onClose={() => setPublicProfileToView(null)} // Al cerrar, limpiamos para poder abrir otro
           />
       )}
@@ -383,7 +383,7 @@ const GameApp = () => {
       {/* 3. Tu propio perfil (Session Storage) */}
       <ProfileScreen
           isOpen={showProfileScreen}
-          username={username} // Tu sesión activa
+          username={username} // Tu sesiÃ³n activa
           onClose={() => setShowProfileScreen(false)}
       />
 
@@ -428,3 +428,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameApp />
   </React.StrictMode>
 );
+
+
+

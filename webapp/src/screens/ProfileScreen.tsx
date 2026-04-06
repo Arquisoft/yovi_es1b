@@ -52,175 +52,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
   const [profileName, setProfileName] = useState(username);
   const [nickname, setNickname] = useState(() => localStorage.getItem('yovi_user_nickname') || '');
   const [birthDate, setBirthDate] = useState('');
-  const [language, setLanguage] = useState(() => localStorage.getItem('yoviimport { useEffect, useMemo, useState } from \'react\';\n' +
-      'import { gameService } from \'../services/gameService\';\n' +
-      'import defaultAvatar from \'../assets/icon/SinAvatar.png\';\n' +
-      '\n' +
-      '// ... (Las constantes languageModules, getLanguageIcon, countryOptions, iconModules, \n' +
-      '// availableIcons, noAvatarIcon, maleIcons, femaleIcons y findIconSrcByName se mantienen igual)\n' +
-      '\n' +
-      'interface ProfileScreenProps {\n' +
-      '  isOpen: boolean;\n' +
-      '  username: string; // Se mantiene para mostrarlo en el input "Nombre" (solo lectura)\n' +
-      '  onClose: () => void;\n' +
-      '  onIconUpdated?: (icon: string) => void;\n' +
-      '}\n' +
-      '\n' +
-      'export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: ProfileScreenProps) => {\n' +
-      '  const [profileName, setProfileName] = useState(username);\n' +
-      '  const [nickname, setNickname] = useState(() => localStorage.getItem(\'yovi_user_nickname\') || \'\');\n' +
-      '  const [birthDate, setBirthDate] = useState(\'\');\n' +
-      '  const [language, setLanguage] = useState(() => localStorage.getItem(\'yovi_user_language\') || \'\');\n' +
-      '  const [iconName, setIconName] = useState(\'SinAvatar.png\');\n' +
-      '  const [isLoading, setIsLoading] = useState(false);\n' +
-      '  const [infoMessage, setInfoMessage] = useState(\'\');\n' +
-      '  const [errorMessage, setErrorMessage] = useState(\'\');\n' +
-      '  const [avatarError, setAvatarError] = useState(\'\');\n' +
-      '\n' +
-      '  const [showPasswordEditor, setShowPasswordEditor] = useState(false);\n' +
-      '  const [showAvatarEditor, setShowAvatarEditor] = useState(false);\n' +
-      '  const [avatarDraft, setAvatarDraft] = useState(\'\');\n' +
-      '  const [currentPassword, setCurrentPassword] = useState(\'\');\n' +
-      '  const [newPassword, setNewPassword] = useState(\'\');\n' +
-      '  const [confirmPassword, setConfirmPassword] = useState(\'\');\n' +
-      '\n' +
-      '  const selectedIcon = findIconSrcByName(iconName);\n' +
-      '\n' +
-      '  const formattedBirthDate = useMemo(() => {\n' +
-      '    if (!birthDate) return \'\';\n' +
-      '    return birthDate.slice(0, 10);\n' +
-      '  }, [birthDate]);\n' +
-      '\n' +
-      '  useEffect(() => {\n' +
-      '    if (!isOpen) return;\n' +
-      '    let active = true;\n' +
-      '\n' +
-      '    const loadProfile = async () => {\n' +
-      '      setIsLoading(true);\n' +
-      '      setErrorMessage(\'\');\n' +
-      '      setInfoMessage(\'\');\n' +
-      '      try {\n' +
-      '        // CAMBIO: Ya no pasamos \'username\', el servicio usa getCurrentUser()\n' +
-      '        const data = await gameService.getProfile(username);\n' +
-      '        \n' +
-      '        if (!active) return;\n' +
-      '        if (data?.error) {\n' +
-      '          setErrorMessage(data.error);\n' +
-      '          return;\n' +
-      '        }\n' +
-      '        setProfileName(data.username || username);\n' +
-      '        const resolvedNickname = data.nickname || data.username || \'\';\n' +
-      '        setNickname(resolvedNickname);\n' +
-      '        if (resolvedNickname) {\n' +
-      '          localStorage.setItem(\'yovi_user_nickname\', resolvedNickname);\n' +
-      '        } else {\n' +
-      '          localStorage.removeItem(\'yovi_user_nickname\');\n' +
-      '        }\n' +
-      '        setBirthDate(data.birthDate ? String(data.birthDate).slice(0, 10) : \'\');\n' +
-      '        const resolvedLanguage = data.language || \'\';\n' +
-      '        setLanguage(resolvedLanguage);\n' +
-      '        if (resolvedLanguage) {\n' +
-      '          localStorage.setItem(\'yovi_user_language\', resolvedLanguage);\n' +
-      '        } else {\n' +
-      '          localStorage.removeItem(\'yovi_user_language\');\n' +
-      '        }\n' +
-      '        const resolvedIconName =\n' +
-      '          typeof data.iconName === \'string\'\n' +
-      '            ? data.iconName\n' +
-      '            : typeof data.icon === \'string\'\n' +
-      '              ? data.icon\n' +
-      '              : \'SinAvatar.png\';\n' +
-      '        setIconName(resolvedIconName || \'SinAvatar.png\');\n' +
-      '      } catch (error) {\n' +
-      '        if (active) setErrorMessage(\'No se pudo cargar el perfil.\');\n' +
-      '      } finally {\n' +
-      '        if (active) setIsLoading(false);\n' +
-      '      }\n' +
-      '    };\n' +
-      '\n' +
-      '    loadProfile();\n' +
-      '    return () => {\n' +
-      '      active = false;\n' +
-      '    };\n' +
-      '  }, [isOpen, username]);\n' +
-      '\n' +
-      '  if (!isOpen) return null;\n' +
-      '\n' +
-      '  // ... (Funciones openAvatarEditor, cancelAvatarEditor y applyAvatarSelection se mantienen igual)\n' +
-      '\n' +
-      '  const handleSaveProfile = async () => {\n' +
-      '    setErrorMessage(\'\');\n' +
-      '    setInfoMessage(\'\');\n' +
-      '    setIsLoading(true);\n' +
-      '    try {\n' +
-      '      // CAMBIO: Ya no pasamos \'username\' como primer argumento\n' +
-      '      const data = await gameService.updateProfile({\n' +
-      '        birthDate: birthDate || null,\n' +
-      '        language,\n' +
-      '        nickname,\n' +
-      '        iconName,\n' +
-      '      });\n' +
-      '      if (data?.error) {\n' +
-      '        setErrorMessage(data.error);\n' +
-      '      } else {\n' +
-      '        setInfoMessage(\'Perfil actualizado correctamente.\');\n' +
-      '        if (language) {\n' +
-      '          localStorage.setItem(\'yovi_user_language\', language);\n' +
-      '        } else {\n' +
-      '          localStorage.removeItem(\'yovi_user_language\');\n' +
-      '        }\n' +
-      '        if (nickname) {\n' +
-      '          localStorage.setItem(\'yovi_user_nickname\', nickname);\n' +
-      '        } else {\n' +
-      '          localStorage.removeItem(\'yovi_user_nickname\');\n' +
-      '        }\n' +
-      '        if (onIconUpdated) onIconUpdated(iconName);\n' +
-      '      }\n' +
-      '    } catch (error) {\n' +
-      '      setErrorMessage(\'No se pudo actualizar el perfil.\');\n' +
-      '    } finally {\n' +
-      '      setIsLoading(false);\n' +
-      '    }\n' +
-      '  };\n' +
-      '\n' +
-      '  const handleChangePassword = async () => {\n' +
-      '    setErrorMessage(\'\');\n' +
-      '    setInfoMessage(\'\');\n' +
-      '\n' +
-      '    if (!currentPassword || !newPassword || !confirmPassword) {\n' +
-      '      setErrorMessage(\'Completa los tres campos de Contraseña.\');\n' +
-      '      return;\n' +
-      '    }\n' +
-      '    if (newPassword !== confirmPassword) {\n' +
-      '      setErrorMessage(\'La nueva Contraseña y su confirmacion no coinciden.\');\n' +
-      '      return;\n' +
-      '    }\n' +
-      '\n' +
-      '    setIsLoading(true);\n' +
-      '    try {\n' +
-      '      // CAMBIO: Ya no pasamos \'username\' como primer argumento\n' +
-      '      const data = await gameService.changePassword(currentPassword, newPassword);\n' +
-      '      if (data?.error) {\n' +
-      '        setErrorMessage(data.error);\n' +
-      '      } else {\n' +
-      '        setInfoMessage(\'Contraseña actualizada correctamente.\');\n' +
-      '        setCurrentPassword(\'\');\n' +
-      '        setNewPassword(\'\');\n' +
-      '        setConfirmPassword(\'\');\n' +
-      '        setShowPasswordEditor(false);\n' +
-      '      }\n' +
-      '    } catch (error) {\n' +
-      '      setErrorMessage(\'No se pudo actualizar la Contraseña.\');\n' +
-      '    } finally {\n' +
-      '      setIsLoading(false);\n' +
-      '    }\n' +
-      '  };\n' +
-      '\n' +
-      '  // ... (El resto del renderizado del componente se mantiene exactamente igual)\n' +
-      '  return (\n' +
-      '    // ... JSX original\n' +
-      '  );\n' +
-      '};_user_language') || '');
+  const [language, setLanguage] = useState(() => localStorage.getItem('yovi_user_language') || '');
   const [iconName, setIconName] = useState('SinAvatar.png');
   const [isLoading, setIsLoading] = useState(false);
   const [infoMessage, setInfoMessage] = useState('');
@@ -298,6 +130,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
     setErrorMessage('');
     setInfoMessage('');
     setAvatarError('');
+    setShowPasswordEditor(false);
     setAvatarDraft('');
     setShowAvatarEditor(true);
   };
@@ -460,7 +293,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               </div>
             </div>
 
-            <div className="profile-card">
+            <div className="profile-password-section">
               <div className="form-group">
                 <label htmlFor="profile-password">Contraseña</label>
                 <div className="profile-password-row">
