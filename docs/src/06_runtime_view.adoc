@@ -3,34 +3,60 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-runtime-view]]
 == Vista de Ejecución
 
-=== Escenario de Registro de Usuario
+=== Escenario 1: Registro de un Nuevo Usuario
+Este escenario describe cómo un usuario crea una cuenta. Es un proceso crítico de escritura donde la Webapp captura los datos y el servicio de usuarios asegura la persistencia.
 
-This scenario describes how a new user registers in the application. The Webapp captures the data and communicates with the Users Service to store the information.
-
-* *Notably*: The separation between the frontend (Webapp) and the backend (Users Service) allows the logic to be decoupled.
-* *API Usage*: The Users Service exposes a REST API on port 3000.
+* *Interacción*: El usuario utiliza el formulario identificado con selectores únicos (como `login-username`) para garantizar la trazabilidad en las pruebas E2E.
+* *Seguridad*: El Users Service cifra la contraseña antes de almacenarla en MongoDB.
 
 [plantuml,"Registration_Sequence",png]
 ----
 actor Usuario
 participant "Webapp (React)" as Webapp
 participant "Users Service (Node)" as Users
+database "MongoDB" as DB
 
-Usuario -> Webapp: Introduce credenciales
+Usuario -> Webapp: Introduce nuevos datos de cuenta
 activate Webapp
-Webapp -> Users: POST /login (user/pass)
+Webapp -> Users: POST /adduser (username, password...)
 activate Users
-note right of Users: Valida credenciales \nen Base de Datos
-Users --> Webapp: 200 OK (JWT/Sesión)
+Users -> DB: save(newUser)
+note right of Users: Cifrado de password \ny validación de esquema
+DB --> Users: 201 Created
+Users --> Webapp: 200 OK (Registro exitoso)
+deactivate Users
+Webapp --> Usuario: Redirección automática al Login
+deactivate Webapp
+----
+
+=== Escenario 2: Inicio de Sesión (Autenticación)
+Describe el acceso de un usuario ya existente. Este flujo es el que se valida principalmente en los tests funcionales de la aplicación.
+
+* *API*: El Users Service expone un endpoint REST en el puerto 3000.
+* *Resultado*: Se genera un token JWT que la Webapp almacenará para futuras peticiones.
+
+[plantuml,"Login_Sequence",png]
+----
+actor Usuario
+participant "Webapp (React)" as Webapp
+participant "Users Service (Node)" as Users
+
+Usuario -> Webapp: Introduce credenciales (#login-username)
+activate Webapp
+Webapp -> Users: POST /login (user, pass)
+activate Users
+note right of Users: Valida credenciales \ncontra MongoDB
+Users --> Webapp: 200 OK (JWT + Datos de sesión)
 deactivate Users
 Webapp --> Usuario: Acceso concedido al Menú Principal
 deactivate Webapp
 ----
-=== Escenario de Inicialización de Partida 
-El motor de Rust ahora mantiene un **estado persistente** durante la partida. Este escenario es crucial porque es donde el servidor "elige" su personalidad.
 
-* *Consistencia*: Una vez elegida la dificultad, el bot asignado no cambia hasta que se reinicie el tablero.
-* *Estado compartido*: Se utiliza un `AppState` con `Arc<Mutex<String>>` para recordar el bot activo.
+=== Escenario 3: Inicialización de Partida y Selección de Bot
+El motor de Rust mantiene un **estado persistente** mediante un `AppState` que utiliza `Arc<Mutex<String>>` para gestionar la concurrencia de forma segura.
+
+* *Lógica de Negocio*: La dificultad seleccionada filtra la estrategia de la IA (Edge, Attacker, etc.).
+* *Persistencia en Memoria*: El bot elegido queda fijado en el estado del servidor hasta el fin de la partida.
 
 [plantuml,"Game_Init_Sequence",png]
 ----
@@ -42,18 +68,18 @@ Usuario -> Webapp: Selecciona Tamaño y Dificultad
 activate Webapp
 Webapp -> Gamey: POST /reset {size, difficulty}
 activate Gamey
-note right of Gamey: 1. Crea nueva instancia GameY\n2. Filtra bots por dificultad\n3. Fija **active_bot** en memoria
-Gamey --> Webapp: 200 OK (Tablero inicializado)
+note right of Gamey: 1. Reinicia instancia GameY\n2. Filtra bots por dificultad\n3. Fija **active_bot** en AppState
+Gamey --> Webapp: 200 OK (Tablero listo)
 deactivate Gamey
-Webapp --> Usuario: Muestra tablero vacío listo para jugar
+Webapp --> Usuario: Renderiza tablero vacío
 deactivate Webapp
 ----
 
-=== Escenario de Turno de Juego y Persistencia
-Este escenario ilustra el ciclo de vida de un movimiento. El motor de Rust no solo calcula la respuesta, sino que detecta el final de la partida y persiste el resultado.
+=== Escenario 4: Turno de Juego y Persistencia de Resultados
+Este escenario ilustra el ciclo de vida de un movimiento. El motor de Rust calcula la respuesta de la IA y, si detecta el fin del juego, persiste el récord.
 
-* *Inteligencia*: El motor delega la jugada al bot guardado en el `active_bot`.
-* *Persistencia*: Al detectar un ganador, el servicio de Rust se comunica directamente con MongoDB.
+* *Inteligencia*: El motor delega la jugada al `active_bot` guardado previamente.
+* *Integración*: El servicio de Rust se comunica directamente con MongoDB para guardar el histórico.
 
 [plantuml,"Game_Move_Sequence",png]
 ----
@@ -62,19 +88,18 @@ participant "Webapp (React)" as Webapp
 participant "GameY Engine (Rust)" as Gamey
 database "MongoDB" as DB
 
-Usuario -> Webapp: Pulsa en una celda
+Usuario -> Webapp: Selecciona celda del tablero
 activate Webapp
 Webapp -> Gamey: POST /execute-move {index}
 activate Gamey
-note right of Gamey: 1. Aplica mov. humano\n2. Carga IA asignada\n3. Calcula respuesta
-Gamey -> Gamey: El bot ejecuta su estrategia (Edge/Attacker...)
+note right of Gamey: 1. Procesa mov. humano\n2. Ejecuta estrategia de IA activa\n3. Verifica condición de victoria
 alt Si la partida termina (Winner != null)
     Gamey -> DB: insert_one(PartidaRecord)
-    note right of DB: Guarda fecha, oponente,\ndificultad y resultado real
+    note right of DB: Almacena fecha, oponente,\ndificultad y resultado
 end
-Gamey --> Webapp: 200 OK (Tablero YEN + Winner ID)
+Gamey --> Webapp: 200 OK (Estado YEN + Winner ID)
 deactivate Gamey
-Webapp -> Webapp: Actualiza UI (Celdas coloreadas)
-Webapp --> Usuario: Muestra el estado actual del juego
+Webapp -> Webapp: Actualiza UI (Celdas y ganador)
+Webapp --> Usuario: Muestra resultado final
 deactivate Webapp
 ----

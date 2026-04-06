@@ -16,20 +16,56 @@ endif::arc42help[]
 |===
 | *Riesgo* | *Descripción* | *Prioridad*
 
-| *Tiempo* | El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo tiene otras obligaciones laborales. 
+| *Tiempo*
+| El tiempo dedicado al proyecto es limitado debido a que el equipo de desarrollo
+tiene otras obligaciones estudiantiles.
 | Medium
 
-| *Poca experiencia en Rust y Docker* | El equipo encuentra dificultades debido al conocimiento limitado del lenguaje Rust y la herramienta Docker. Para mitigarlo, se fomenta el aprendizaje activo y el intercambio de dudas.
+| *Poca experiencia en Rust y Docker*
+| El equipo encuentra dificultades debido al conocimiento limitado del lenguaje Rust
+y la herramienta Docker. Para mitigarlo, se fomenta el aprendizaje activo y el
+intercambio de dudas.
 | High
 
-| *Pérdida de datos* | Posible pérdida de información por errores en el sistema, fallos de hardware o eliminaciones accidentales que podrían ralentizar el desarrollo del proyecto. 
+| *Pérdida de datos*
+| Posible pérdida de información por errores en el sistema, fallos de hardware o
+eliminaciones accidentales que podrían ralentizar el desarrollo del proyecto.
 | High
 
-| *Fallos de conexión* | Un fallo en la conexión a internet podría interrumpir el acceso a servidores en la nube y al repositorio de GitHub, retrasando el progreso. 
+| *Fallos de conexión*
+| Un fallo en la conexión a internet podría interrumpir el acceso a servidores en
+la nube y al repositorio de GitHub, retrasando el progreso.
+| Medium
+
+| *Desincronización de package-lock.json*
+| Las actualizaciones de dependencias (especialmente vitest/vite) entre ramas pueden
+dejar el `package-lock.json` desactualizado, bloqueando el CI con errores de `npm ci`.
+Para mitigarlo, regenerar el archivo tras cualquier actualización de dependencias y
+hacer commit del resultado.
 | Medium
 |===
 
 === Deudas Técnicas
-La deuda técnica representa el costo del retrabajo adicional causado por la elección de una solución rápida en lugar de la más efectiva a largo plazo. 
+La deuda técnica representa el costo del retrabajo adicional causado por la elección
+de una solución rápida en lugar de la más efectiva a largo plazo.
 
-* *Falta de tests automatizados:* Se ha priorizado el desarrollo de funcionalidades sobre la cobertura de tests, lo que podría generar errores en el futuro.
+* *Cobertura de tests insuficiente en webapp:* El archivo `main.tsx` no tiene tests
+unitarios por ser el punto de entrada de la aplicación (ReactDOM, useEffect de
+audio/vídeo, localStorage). Está excluido del análisis de SonarCloud mediante
+`sonar.coverage.exclusions`.
+
+* *Falta de autenticación por tokens:* Actualmente la sesión se gestiona mediante
+`localStorage` sin tokens JWT ni sesiones seguras en servidor. Requiere trabajo futuro
+para proteger los endpoints.
+
+* *Warnings de ESLint en main.tsx:* Existen warnings de hooks condicionales y variables
+no utilizadas en `main.tsx` que no bloquean el build pero reducen la calidad del código.
+
+* *Mapeo de dificultades inconsistente:* Las dificultades se manejan en tres formatos
+distintos a lo largo del sistema (español para UI, inglés para `TURN_TIME_LIMIT`,
+minúsculas para el backend). El mapa `UI_TO_ENGLISH_DIFFICULTY` en `constants/config.ts`
+mitiga el problema pero añade complejidad al sistema.
+
+* *Sin sistema de roles ni autorización:* Cualquier usuario autenticado puede consultar
+el perfil o historial de cualquier otro usuario, ya que no existe control de acceso
+por roles. Requiere implementación futura de tokens JWT o sesiones seguras.

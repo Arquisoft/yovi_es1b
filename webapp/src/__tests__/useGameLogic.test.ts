@@ -35,7 +35,6 @@ describe('gameService', () => {
             setItem: vi.fn(),
             clear: vi.fn(),
         });
-        // Si usas localStorage en lugar de sessionStorage, haz lo mismo con localStorage
         vi.stubGlobal('localStorage', {
             getItem: vi.fn().mockReturnValue('alice'),
             setItem: vi.fn(),
@@ -59,7 +58,6 @@ describe('gameService', () => {
     test('makeMove envía el movimiento correctamente sin pasar username manual', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({ winner: null }))
 
-        // ARREGLADO: Eliminado 'alice' de los parámetros
         await gameService.makeMove(5, 'Easy', 6)
 
         expect(mockFetch).toHaveBeenCalledWith(
@@ -78,7 +76,6 @@ describe('gameService', () => {
         const board = { size: 6, turn: 0, players: ['B', 'R'], layout: '.' }
         mockFetch.mockReturnValue(mockJsonResponse({ responseFromRust: board }))
 
-        // ARREGLADO: Eliminado 'alice'
         const result = await gameService.resetBoard(6, 'Easy')
 
         expect(result).toEqual(board)
@@ -95,7 +92,6 @@ describe('gameService', () => {
     test('surrender envía los datos correctamente usando sesión', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({}))
 
-        // ARREGLADO: Eliminado 'alice'
         await gameService.surrender('Easy', 6)
 
         expect(mockFetch).toHaveBeenCalledWith(
@@ -112,7 +108,6 @@ describe('gameService', () => {
     test('getHistory construye la URL correctamente usando sesión', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({ data: [], total_pages: 1, page: 1 }))
 
-        // ARREGLADO: Eliminado 'alice'
         await gameService.getHistory(1)
 
         expect(mockFetch).toHaveBeenCalledWith(
@@ -123,7 +118,6 @@ describe('gameService', () => {
     test('getHistory añade el filtro a la URL si se pasa', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({ data: [], total_pages: 1, page: 1 }))
 
-        // ARREGLADO: Eliminado 'alice'
         await gameService.getHistory(1, 'win')
 
         expect(mockFetch).toHaveBeenCalledWith(
@@ -137,7 +131,6 @@ describe('gameService', () => {
         const friends = [{ name: 'bob', status: 'online' }]
         mockFetch.mockReturnValue(mockJsonResponse(friends))
 
-        // ARREGLADO: Eliminado 'alice'
         const result = await gameService.getFriends()
 
         expect(result).toEqual(friends)
@@ -152,11 +145,16 @@ describe('gameService', () => {
     /*test('getProfile llama al endpoint correcto usando sesión', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({ username: 'alice' }))
 
-        // ARREGLADO: Eliminado 'alice'
         await gameService.getProfile()
 
         expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/users/profile/alice')
+            expect.stringContaining('/users/profile/alice'),
+            expect.objectContaining({
+                method: 'GET',
+                headers: expect.objectContaining({
+                    'Content-Type': 'application/json',
+                }),
+            })
         )
     })*/
 
@@ -165,7 +163,6 @@ describe('gameService', () => {
     test('updateProfile envía PATCH usando sesión', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({ ok: true }))
 
-        // ARREGLADO: Eliminado 'alice'
         await gameService.updateProfile({ nickname: 'Ali', language: 'es' })
 
         expect(mockFetch).toHaveBeenCalledWith(
@@ -182,7 +179,6 @@ describe('gameService', () => {
     test('changePassword envía las contraseñas correctamente usando sesión', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({ ok: true }))
 
-        // ARREGLADO: Eliminado 'alice'
         await gameService.changePassword('oldpass', 'newpass')
 
         expect(mockFetch).toHaveBeenCalledWith(
@@ -210,7 +206,6 @@ describe('gameService', () => {
     test('followUser envía follower (sesión) y following correctamente', async () => {
         mockFetch.mockReturnValue(mockJsonResponse({ ok: true }))
 
-        // ARREGLADO: Solo pasamos a quién queremos seguir ('bob')
         await gameService.followUser('bob')
 
         expect(mockFetch).toHaveBeenCalledWith(
@@ -242,13 +237,11 @@ describe('gameService', () => {
         const requests = [{ id: '1', from: 'bob' }]
         mockFetch.mockReturnValue(mockJsonResponse(requests))
 
-        // ARREGLADO: Llamada sin argumentos
         const result = await gameService.getPendingRequests()
 
         expect(result).toEqual(requests)
         expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('username=alice'),
-            expect.anything()
+            expect.stringContaining('username=alice')
         )
     })*/
 })
