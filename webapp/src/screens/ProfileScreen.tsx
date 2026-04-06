@@ -7,7 +7,7 @@ const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,web
   import: 'default',
 }) as Record<string, string>;
 
-const getLanguageIcon = (token: string): string | null => {
+export const getLanguageIcon = (token: string): string | null => {
   const entry = Object.entries(languageModules).find(([path]) => path.toLowerCase().includes(token.toLowerCase()));
   return entry ? entry[1] : null;
 };
@@ -26,17 +26,22 @@ const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}',
 
 const availableIcons = Object.entries(iconModules)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, src], index) => ({
-    id: `${index}-${path.split('/').pop() ?? 'icon'}`,
-    src,
-    name: path.split('/').pop() ?? `Icono ${index + 1}`,
-  }));
+  .map(([path, src], index) => {
+    const fileName = path.substring(path.lastIndexOf('/') + 1);
+    return {
+      id: `${index}-${fileName}`,
+      src,
+      name: fileName,
+    };
+  });
+
+export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
 const noAvatarIcon = availableIcons.find((icon) => icon.name.toLowerCase().includes('sinavatar'));
 const maleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('hombre')).slice(0, 4);
 const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('mujer')).slice(0, 4);
 
-const findIconSrcByName = (iconName: string): string => {
+export const findIconSrcByName = (iconName: string): string => {
   const match = availableIcons.find((icon) => icon.name === iconName);
   return match?.src || defaultAvatar;
 };
@@ -274,11 +279,17 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
                   return (
                     <label key={option.value} className="country-checkbox-item">
                       <span className="country-checkbox-left">
-                        {option.icon ? (
-                          <img src={option.icon} alt={option.value} className="country-flag-icon" />
-                        ) : (
-                          <span className="country-flag-fallback" aria-hidden="true" />
-                        )}
+                        <img
+                          src={option.icon || ''}
+                          alt={option.value}
+                          className="country-flag-icon"
+                          style={{ display: option.icon ? 'block' : 'none' }}
+                        />
+                        <span
+                          className="country-flag-fallback"
+                          aria-hidden="true"
+                          style={{ display: option.icon ? 'none' : 'block' }}
+                        />
                         <span>{option.value}</span>
                       </span>
                       <input
@@ -355,7 +366,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
             <h3>Selecciona un avatar</h3>
             {avatarError && <small className="error-message">{avatarError}</small>}
             <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
-              {availableIcons.length === 0 ? (
+              {shouldShowNoIconsMessage(availableIcons) ? (
                 <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
               ) : (
                 <>

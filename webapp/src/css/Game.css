@@ -367,7 +367,7 @@ body {
   }
 }
 
-/* Barra de navegaciÃ³n */
+/* Barra de navegación */
 
 .game-navbar {
   width: 100%;
@@ -440,7 +440,7 @@ body {
   border-radius: 999px;
 }
 
-/* Botones pequeños para el menÃº */
+/* Botones pequeños para el menú */
 .nav-btn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -945,7 +945,7 @@ body {
 }
 
 .nav-btn:hover {
-  background: #bc84ee; /* Morado suave al pasar el ratÃ³n */
+  background: #bc84ee; /* Morado suave al pasar el ratón */
   transform: translateY(-2px);
   border-color: white;
 }

@@ -8,7 +8,7 @@ const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,web
   import: 'default',
 }) as Record<string, string>;
 
-const getLanguageIcon = (token: string): string | null => {
+export const getLanguageIcon = (token: string): string | null => {
   const entry = Object.entries(languageModules).find(([path]) => path.toLowerCase().includes(token.toLowerCase()));
   return entry ? entry[1] : null;
 };
@@ -27,15 +27,20 @@ const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}',
 
 const availableIcons = Object.entries(iconModules)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, src], index) => ({
-    id: `${index}-${path.split('/').pop() ?? 'icon'}`,
-    src,
-    name: path.split('/').pop() ?? `Icono ${index + 1}`,
-  }));
+  .map(([path, src], index) => {
+    const fileName = path.substring(path.lastIndexOf('/') + 1);
+    return {
+      id: `${index}-${fileName}`,
+      src,
+      name: fileName,
+    };
+  });
 
 const noAvatarIcon = availableIcons.find((icon) => icon.name.toLowerCase().includes('sinavatar'));
 const maleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('hombre')).slice(0, 4);
 const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('mujer')).slice(0, 4);
+
+export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
 interface RegisterData {
   name: string;
@@ -70,7 +75,7 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
 
   const [formError, setFormError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [selectedIconName, setSelectedIconName] = useState<string>(noAvatarIcon?.name ?? availableIcons[0]?.name ?? 'SinAvatar.png');
+  const [selectedIconName, setSelectedIconName] = useState<string>('SinAvatar.png');
 
   const handleChange = (field: keyof RegisterData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -243,7 +248,7 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
             <div className="form-group">
               <label>Elige tu icono</label>
               <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
-                {availableIcons.length === 0 ? (
+                {shouldShowNoIconsMessage(availableIcons) ? (
                   <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
                 ) : (
                   <>

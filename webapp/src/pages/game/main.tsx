@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -49,7 +49,7 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
   const iconValue = String(rawIcon || '').trim();
   if (!iconValue) return null;
 
-  // Si ya viene como URL/ruta vÃ¡lida, la usamos tal cual.
+  // Si ya viene como URL/ruta válida, la usamos tal cual.
   if (
     iconValue.startsWith('http://') ||
     iconValue.startsWith('https://') ||
@@ -67,7 +67,7 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
 };
 
 const GameApp = () => {
-  // --- SEGURIDAD Y SESIÃ“N ---
+  // --- SEGURIDAD Y SESIÓN ---
   const username = localStorage.getItem('yovi_user') || '';
   const friendCode = localStorage.getItem('yovi_friend_code') || '';
   const displayName = localStorage.getItem('yovi_user_nickname') || username;
@@ -104,7 +104,7 @@ const GameApp = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // --- HOOKS DE LÃ“GICA ---
+  // --- HOOKS DE LÓGICA ---
   const {
     boardData,
     winner,
@@ -214,13 +214,13 @@ const GameApp = () => {
 
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = async () => {
-    setConnectionStatus('â±ï¸ Movimiento automÃ¡tico...');
+    setConnectionStatus('⏱️ Movimiento automático...');
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data?.winner !== null) setShowResultModal(true);
       setConnectionStatus('Conectado');
     } catch (error) {
-      setConnectionStatus('Error en movimiento automÃ¡tico');
+      setConnectionStatus('Error en movimiento automático');
     }
   };
 
@@ -286,11 +286,11 @@ const GameApp = () => {
         onFetchHistory={() => fetchHistory()}
         onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
         onChangeDifficulty={(uiDiff: string) => {
-          // 1. Mapa de traducciÃ³n para el Backend
+          // 1. Mapa de traducción para el backend
           const backendMap: Record<string, string> = {
-            'Fácil': 'facil' as any,
-            'Medio': 'medio' as any,
-            'DifÃ­cil': 'dificil' as any
+            'Fácil': 'facil',
+            'Medio': 'medio',
+            'Difícil': 'dificil'
           };
 
           const valueForBackend = backendMap[uiDiff] || 'facil';
@@ -363,7 +363,7 @@ const GameApp = () => {
       <FriendsPanel
           isOpen={showFriendsMenu}
           onClose={() => setShowFriendsMenu(false)}
-          username={username} // Tu sesiÃ³n
+          username={username} // Tu sesión
           displayName={displayName}
           friendCode={friendCode}
           icon={playerIcon}
@@ -371,11 +371,11 @@ const GameApp = () => {
           onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
 
-      {/* 2. Modal de Perfil PÃºblico: el receptor */}
+      {/* 2. Modal de Perfil Público: el receptor */}
       {/* Solo se monta si hay un nombre en el estado 'publicProfileToView' */}
       {publicProfileToView && (
           <PublicProfileModal
-              username={publicProfileToView} // El usuario a consultar (distinto al de la sesiÃ³n)
+              username={publicProfileToView} // El usuario a consultar (distinto al de la sesión)
               onClose={() => setPublicProfileToView(null)} // Al cerrar, limpiamos para poder abrir otro
           />
       )}
@@ -383,7 +383,7 @@ const GameApp = () => {
       {/* 3. Tu propio perfil (Session Storage) */}
       <ProfileScreen
           isOpen={showProfileScreen}
-          username={username} // Tu sesiÃ³n activa
+          username={username} // Tu sesión activa
           onClose={() => setShowProfileScreen(false)}
       />
 
