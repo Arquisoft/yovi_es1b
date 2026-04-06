@@ -20,6 +20,9 @@ app.use(metricsMiddleware);
 
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
+//imports para tokens
+const { authMiddleware, JWT_SECRET } = require('./authMiddleware');
+const jwt = require('jsonwebtoken');
 
 // Para guardar un friendCode
 const { customAlphabet } = require('nanoid');
@@ -49,7 +52,9 @@ try {
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  // MODIFICA ESTA LÍNEA PARA INCLUIR Authorization
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -140,8 +145,14 @@ app.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
+      const token = jwt.sign(
+          { username: user.username, nickname: user.nickname },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+      );
       res.json({
         message: `Welcome back, ${username}!`,
+        token,//enviar el token a frontend
         username: user.username,
         nickname: user.nickname,
         language: user.language,
@@ -210,11 +221,14 @@ app.post('/users/follow', async (req, res) => {
   }
 });
 
+// En users-service.js (alrededor de la línea 170)
 app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
-  const user = await User.findOne({ username });
+    const user = await User.findOne({ username });
+    // Si decides usar populate, asegúrate de que el modelo esté bien definido,
+    // si da error 500, comenta las líneas de populate.
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -225,10 +239,13 @@ app.get('/users/profile/:username', async (req, res) => {
       nickname: user.nickname,
       birthDate: user.birthDate,
       language: user.language,
-      iconName: user.iconName
+      iconName: user.iconName,
+      // Usamos el tamaño del array directamente si no vas a popular
+      followingCount: user.following?.length || 0,
+      followersCount: user.followers?.length || 0
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    return res.status(500).json({ error: 'Error del servidor: ' + err.message });
   }
 }); 
 
@@ -547,25 +564,34 @@ app.post('/surrender', async (req, res) => {
 
 // Resets the game board WITHOUT affecting stats
 app.post('/reset', async (req, res) => {
-  const { size, difficulty } = req.body;
+  // CORRECCIÓN: Añadimos username a la extracción del body
+  const { size, difficulty, username } = req.body;
 
   try {
     const requestedSize = Number(size);
-    const safeSize =
-      Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
+    const safeSize = Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
         ? Math.floor(requestedSize)
         : 5;
 
     const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize, difficulty: difficulty }),
+      body: JSON.stringify({
+        size: safeSize,
+        difficulty: difficulty,
+        player: username //
+      }),
     });
+
+    if (!rustResponse.ok) {
+      throw new Error(`Rust error: ${rustResponse.status}`);
+    }
+
     const newBoard = await rustResponse.json();
-    res.json({ responseFromRust: newBoard});
-  }
-  catch (e) {
-    res.status(500).json({error: 'Error communicating with Rust server'});
+    res.json({ responseFromRust: newBoard });
+  } catch (e) {
+    console.error("Fallo en reset:", e.message);
+    res.status(500).json({ error: 'Error communicating with Rust server' });
   }
 });
 
