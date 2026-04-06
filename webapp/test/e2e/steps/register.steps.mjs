@@ -2,11 +2,19 @@ import { Given, When, Then } from '@cucumber/cucumber'
 import assert from 'assert'
 
 Given('the register page is open', async function () {
-  const page = this.page
-  await page.goto('http://localhost:5173/login.html') 
+  const page = this.page;
+  await page.goto('http://localhost:5173/login.html'); // Prueba con /login.html
   
-  await page.waitForSelector('#username', { state: 'visible', timeout: 10000 })
-})
+  try {
+    await page.waitForSelector('#username', { state: 'visible', timeout: 10000 });
+  } catch (error) {
+    // Si falla, imprimimos el HTML para ver si estamos en un 404 o una página vacía
+    console.log("--- DEBUG: HTML DE LA PÁGINA ---");
+    console.log(await page.content());
+    console.log("--- FIN DEBUG ---");
+    throw error;
+  }
+});
 When('I enter {string} as the username and submit', async function (username) {
   const page = this.page
   if (!page) throw new Error('Page not initialized')
