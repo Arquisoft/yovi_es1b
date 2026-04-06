@@ -113,6 +113,7 @@ pub struct ApiDoc;
 pub struct ResetRequest {
     pub size: Option<u32>,
     pub difficulty: Option<String>, // NEW: Optional difficulty parameter
+    pub username: String, // NEW: Username to identify session
 }
 
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -255,12 +256,12 @@ pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
 ) -> impl IntoResponse {
-    // 1. Bloqueamos el Mutex
-    let mut game = state.game.lock().unwrap();
+    let username = payload.player.clone();
+    let mut session = state.get_or_create_session(&username);
 
     // 2. Movimiento Humano (Azul)
     // El índice se interpreta usando el tamaño REAL del juego activo en servidor.
-    let b_size = game.board_size();
+    let b_size = session.game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
 
     let human_movement = crate::Movement::Placement {
@@ -270,35 +271,34 @@ pub async fn realizar_movimiento(
 
     // Intentamos añadir el movimiento
     // Si falla (ocupada/fuera de rango/turno inválido), el tablero no cambia.
-    if let Err(e) = game.add_move(human_movement) {
+    if let Err(e) = session.game.add_move(human_movement) {
         println!("Aviso: Movimiento humano no válido: {:?}", e);
     }
 
     // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
-    if !game.check_game_over() {
+    if !session.game.check_game_over() {
         // Obtener la dificultad actual
-        //let current_diff = *state.current_difficulty.lock().unwrap();
-        let active_bot_name = state.active_bot.lock().unwrap().clone();
+        let active_bot_name = session.active_bot.clone();
 
         // Buscar un bot adecuado para esa dificultad
         if let Some(bot) = state.bots().find(&active_bot_name) {
             // Desreferenciamos el mutex guard con &*game
-            if let Some(bot_coords) = bot.choose_move(&*game) {
+            if let Some(bot_coords) = bot.choose_move(&session.game) {
                 let bot_move = crate::Movement::Placement {
                     player: crate::PlayerId::new(1),
                     coords: bot_coords,
                 };
-                let _ = game.add_move(bot_move);
+                let _ = session.game.add_move(bot_move);
             }
         } else {
             // Fallback: RandomBot si no hay bot para esa dificultad (no debería pasar con el registro completo)
             if let Some(bot) = state.bots().find("random_bot") {
-                if let Some(bot_coords) = bot.choose_move(&*game) {
+                if let Some(bot_coords) = bot.choose_move(&session.game) {
                     let bot_move = crate::Movement::Placement {
                         player: crate::PlayerId::new(1),
                         coords: bot_coords,
                     };
-                    let _ = game.add_move(bot_move);
+                    let _ = session.game.add_move(bot_move);
                 }
             }
         }
@@ -306,7 +306,7 @@ pub async fn realizar_movimiento(
 
     // 4. Extraer el ganador
     // Ganador leído desde el estado final tras aplicar jugadas válidas.
-    let winner_id = match game.status() {
+    let winner_id = match session.game.status() {
         &crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
         _ => None,
     };
@@ -314,8 +314,8 @@ pub async fn realizar_movimiento(
     if winner_id.is_some() {
         println!("¡Tenemos un ganador!: {:?}", winner_id);
 
-        let final_bot_name = state.active_bot.lock().unwrap().clone();
-        let final_difficulty = state.current_difficulty.lock().unwrap().to_string();
+        let final_bot_name = session.active_bot.clone();
+        let final_difficulty = session.current_difficulty.to_string();
 
         // Guardar la partida en MongoDB
         let db = state.db.clone();
@@ -344,7 +344,7 @@ pub async fn realizar_movimiento(
 
     // 5. Respuesta (Convertimos a YEN)
     // Respuesta para el front: tablero actualizado + ganador.
-    let yen_data: crate::YEN = (&*game).into();
+    let yen_data: crate::YEN = (&session.game).into();
 
     axum::Json(serde_json::json!({
         "board": yen_data,
@@ -371,26 +371,25 @@ pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
 ) -> impl IntoResponse {
-    let mut game = state.game.lock().unwrap();
+    let mut session = state.get_or_create_session(&payload.username);
+
     // Tamaño efectivo del reset:
     // - usa size enviado por cliente si existe
     // - si no existe, usa 5
     // - siempre acotado a [3..20]
     let size = payload.size.unwrap_or(5).clamp(3, 20);
 
-    *game = crate::core::game::GameY::new(size);
+    session.game = crate::core::game::GameY::new(size);
 
     // Actualizar dificultad si se proporciona
     if let Some(diff_str) = payload.difficulty {
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
-            let mut current_diff = state.current_difficulty.lock().unwrap();
-            *current_diff = diff;
+            session.current_difficulty = diff;
 
             // Elegimos un bot al azar de esa dificultad y GUARDAMOS SU NOMBRE para toda la partida
             if let Some(chosen_bot) = state.bots().get_random_bot_by_difficulty(diff) {
-                let mut active_bot = state.active_bot.lock().unwrap();
-                *active_bot = chosen_bot.name().to_string();
-                println!("Nueva partida iniciada. Bot asignado: {}", *active_bot);
+                session.active_bot = chosen_bot.name().to_string();
+                println!("Nueva partida iniciada. Bot asignado: {}", session.active_bot);
             }
 
             println!("--> Dificultad actualizada a: {}", diff);
@@ -399,7 +398,7 @@ pub async fn reiniciar_juego(
 
     println!("--> Juego reiniciado con tamaño {}.", size);
 
-    let yen_data: crate::YEN = (&*game).into();
+    let yen_data: crate::YEN = (&session.game).into();
     axum::Json(yen_data)
 }
 
@@ -490,7 +489,10 @@ pub async fn rendirse(
     axum::extract::Json(payload): axum::extract::Json<SurrenderRequest>,
 ) -> impl IntoResponse {
     // 1. Obtener contexto del juego actual (Bot que estaba jugando)
-    let active_bot_name = state.active_bot.lock().unwrap().clone();
+    let active_bot_name = {
+        let session = state.get_or_create_session(&payload.player);
+        session.active_bot.clone()
+    };
     let db = state.db.clone();
 
     // 2. Guardar la derrota en MongoDB (usamos tokio::spawn como en realizar_movimiento)

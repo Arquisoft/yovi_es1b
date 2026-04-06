@@ -1,10 +1,23 @@
 import { API_BASE_URL } from '../constants/config';
 import type { GameYData } from '../types/game';
 
+const getAuthHeaders = (): HeadersInit => {
+  const token = sessionStorage.getItem('token');
+  const headers: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
 export const gameService = {
   // Obtener dificultades
   async getDifficulties(): Promise<string[]> {
-    const res = await fetch(`${API_BASE_URL}/difficulties`);
+    const res = await fetch(`${API_BASE_URL}/difficulties`, {
+      headers: getAuthHeaders(),
+    });
     return res.json();
   },
 
@@ -12,7 +25,7 @@ export const gameService = {
   async makeMove(cellIndex: number, username: string, difficulty: string, boardSize?: number) {
     const res = await fetch(`${API_BASE_URL}/move`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ cellIndex, username, difficulty, boardSize }),
     });
     return res.json();
@@ -22,7 +35,7 @@ export const gameService = {
   async resetBoard(size: number | null, difficulty: string, username: string): Promise<GameYData> {
     const res = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ size, difficulty, username }),
     });
     const data = await res.json();
@@ -33,7 +46,7 @@ export const gameService = {
   async surrender(username: string, difficulty: string, boardSize?: number) {
     return fetch(`${API_BASE_URL}/surrender`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ username, difficulty, boardSize }),
     });
   },
@@ -42,7 +55,9 @@ export const gameService = {
   async getHistory(username: string, page: number, filter?: string | null) {
     let url = `${API_BASE_URL}/history?username=${username}&page=${page}&limit=5`;
     if (filter) url += `&result=${encodeURIComponent(filter)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: getAuthHeaders(),
+    });
     return res.json();
   },
 
@@ -53,9 +68,7 @@ export const gameService = {
       
       const res = await fetch(url, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: getAuthHeaders(),
       });
 
       if (!res.ok) {
@@ -74,7 +87,7 @@ export const gameService = {
   async addFriend(username: string, friendName: string) {
     const res = await fetch(`${API_BASE_URL}/friends/add`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getAuthHeaders(),
       body: JSON.stringify({ username, friendName }),
     });
     return res.json();

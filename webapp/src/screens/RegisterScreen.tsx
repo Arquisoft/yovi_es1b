@@ -1,5 +1,4 @@
-import { type FormEvent, useState } from 'react';
-import logoGameY from '../assets/Logo_GameY.png';
+﻿import { type FormEvent, useState } from 'react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -14,7 +13,7 @@ const getLanguageIcon = (token: string): string | null => {
 
 const countryOptions = [
   { value: 'Spain', icon: getLanguageIcon('espana') },
-  { value: 'English', icon: getLanguageIcon('reino-unido') },
+  { value: 'United Kingdom', icon: getLanguageIcon('reino-unido') },
   { value: 'German', icon: getLanguageIcon('alemania') },
   { value: 'Portuguese', icon: getLanguageIcon('portugal') },
 ];
@@ -38,37 +37,32 @@ const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().incl
 
 interface RegisterData {
   name: string;
-  nickname: string;
+  age: string;
   birthDate: string;
-  language: string;
+  country: string;
   password: string;
   confirmPassword: string;
 }
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
-  readonly onCreateAccount: (
-    name: string,
-    friendCode: string,
-    icon?: string | null,
-    language?: string | null,
-    nickname?: string | null
-  ) => Promise<void> | void;
+  readonly onCreateAccount: (name: string, friendCode: string, icon?: string | null) => Promise<void> | void;
 }
 
 function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
-    nickname: '',
+    age: '',
     birthDate: '',
-    language: '',
+    country: '',
     password: '',
     confirmPassword: '',
   });
 
+  const [ageError, setAgeError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [selectedIconName, setSelectedIconName] = useState<string>(noAvatarIcon?.name ?? availableIcons[0]?.name ?? 'SinAvatar.png');
+  const [selectedIcon, setSelectedIcon] = useState<string | null>(noAvatarIcon?.src ?? availableIcons[0]?.src ?? null);
 
   const handleChange = (field: keyof RegisterData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -77,21 +71,24 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!formData.name.trim() || !formData.nickname.trim() || !formData.password.trim() || !formData.confirmPassword.trim() || !formData.birthDate) {
-      setFormError('Nombre, nickname, fecha de nacimiento, Contraseña y confirmacion no pueden estar en blanco.');
-      return;
-    }
-    if (!formData.language.trim()) {
-      setFormError('Debes seleccionar un idioma para continuar.');
+    if (!formData.name.trim() || !formData.country.trim() || !formData.password.trim() || !formData.confirmPassword.trim() || !formData.birthDate) {
+      setFormError('Nombre, pais, fecha de nacimiento, contrasena y confirmacion no pueden estar en blanco.');
       return;
     }
     setFormError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      setPasswordError('La confirmacion de Contraseña no coincide.');
+      setPasswordError('La confirmacion de contrasena no coincide.');
       return;
     }
     setPasswordError(null);
+
+    const age = Number(formData.age);
+    if (!Number.isFinite(age) || age < 3 || age > 100) {
+      setAgeError('La edad debe estar entre 3 y 100 anos.');
+      return;
+    }
+    setAgeError(null);
 
     try {
       const response = await fetch(`${API_BASE_URL}/createuser`, {
@@ -99,38 +96,30 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: formData.name.trim(),
-          nickname: formData.nickname.trim(),
           password: formData.password.trim(),
+          age,
           birthDate: formData.birthDate,
-          language: formData.language.trim(),
-          iconName: selectedIconName,
+          country: formData.country.trim(),
+          icon: selectedIcon,
         }),
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        await onCreateAccount(
-          formData.name.trim(),
-          data.friendCode,
-          selectedIconName,
-          formData.language.trim(),
-          formData.nickname.trim()
-        );
+        sessionStorage.setItem('token', data.token);
+        await onCreateAccount(formData.name.trim(), data.friendCode, selectedIcon);
       } else {
         setFormError(data.error || 'Error al crear la cuenta.');
       }
-    } catch (error) {
+    } catch {
       setFormError('Error de red al crear la cuenta.');
     }
   };
 
   return (
     <div className="register-screen">
-      <div className="auth-header">
-        <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log">ZONA DE REGISTRO</h2>
-      </div>
+      <h2 className="title-log">ZONA DE REGISTRO</h2>
 
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
@@ -151,15 +140,20 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-nickname">Apodo</label>
+              <label htmlFor="register-age">Edad</label>
               <input
-                id="register-nickname"
+                id="register-age"
                 className="form-input"
-                type="text"
-                value={formData.nickname}
-                onChange={(e) => handleChange('nickname', e.target.value)}
+                type="number"
+                min="3"
+                max="100"
+                value={formData.age}
+                onChange={(e) => handleChange('age', e.target.value)}
                 required
               />
+              {ageError && (
+                <small className="error-message">{ageError}</small>
+              )}
             </div>
 
             <div className="form-group">
@@ -175,7 +169,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-password">Contraseña</label>
+              <label htmlFor="register-password">Contrasena</label>
               <input
                 id="register-password"
                 className="form-input"
@@ -187,7 +181,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-confirm-password">Confirmar Contraseña</label>
+              <label htmlFor="register-confirm-password">Confirmar contrasena</label>
               <input
                 id="register-confirm-password"
                 className="form-input"
@@ -201,10 +195,10 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
           <div className="register-right-zone">
             <div className="form-group">
-              <label>Idioma</label>
-              <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
+              <label>Pais</label>
+              <div className="country-checkbox-box" role="group" aria-label="Seleccion de pais">
                 {countryOptions.map((option) => {
-                  const checked = formData.language === option.value;
+                  const checked = formData.country === option.value;
                   return (
                     <label key={option.value} className="country-checkbox-item">
                       <span className="country-checkbox-left">
@@ -218,7 +212,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                       <input
                         type="checkbox"
                         checked={checked}
-                        onChange={(e) => handleChange('language', e.target.checked ? option.value : '')}
+                        onChange={(e) => handleChange('country', e.target.checked ? option.value : '')}
                         aria-label={`Seleccionar ${option.value}`}
                       />
                     </label>
@@ -240,11 +234,11 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                         <div className="icon-row-grid icon-row-grid-single">
                           <button
                             type="button"
-                            className={`icon-option ${selectedIconName === noAvatarIcon.name ? 'icon-option-selected' : ''}`}
-                            onClick={() => setSelectedIconName(noAvatarIcon.name)}
+                            className={`icon-option ${selectedIcon === noAvatarIcon.src ? 'icon-option-selected' : ''}`}
+                            onClick={() => setSelectedIcon(noAvatarIcon.src)}
                             title="Sin Avatar"
                             aria-label="Elegir Sin Avatar"
-                            aria-pressed={selectedIconName === noAvatarIcon.name}
+                            aria-pressed={selectedIcon === noAvatarIcon.src}
                           >
                             <img src={noAvatarIcon.src} alt="Sin Avatar" className="icon-option-img" />
                           </button>
@@ -255,13 +249,13 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                     <div className="icon-row-label">Hombre</div>
                     <div className="icon-row-grid">
                       {maleIcons.map((icon) => {
-                        const isSelected = selectedIconName === icon.name;
+                        const isSelected = selectedIcon === icon.src;
                         return (
                           <button
                             key={icon.id}
                             type="button"
                             className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-                            onClick={() => setSelectedIconName(icon.name)}
+                            onClick={() => setSelectedIcon(icon.src)}
                             title={icon.name}
                             aria-label={`Elegir ${icon.name}`}
                             aria-pressed={isSelected}
@@ -275,13 +269,13 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                     <div className="icon-row-label">Mujer</div>
                     <div className="icon-row-grid">
                       {femaleIcons.map((icon) => {
-                        const isSelected = selectedIconName === icon.name;
+                        const isSelected = selectedIcon === icon.src;
                         return (
                           <button
                             key={icon.id}
                             type="button"
                             className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-                            onClick={() => setSelectedIconName(icon.name)}
+                            onClick={() => setSelectedIcon(icon.src)}
                             title={icon.name}
                             aria-label={`Elegir ${icon.name}`}
                             aria-pressed={isSelected}
@@ -299,9 +293,9 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
         </div>
 
         <div className="register-actions">
-        <button type="submit" className="submit-button" disabled={!formData.language.trim()}>
-          Crear cuenta
-        </button>
+          <button type="submit" className="submit-button">
+            Crear cuenta
+          </button>
 
           <button type="button" className="submit-button" onClick={onBack}>
             Volver
