@@ -658,24 +658,17 @@ app.get('/', (req, res) => {
 });
 
 if (require.main === module) {
-    // 2. Construcción limpia de la URI
-    const baseUri = process.env.MONGODB_URI_USERS;
-    const extraOptions = process.env.MONGODB_OPTIONS || "";
-    
-    // Si la base ya tiene '?', unimos con '&', si no, con '?'
-    const finalUri = baseUri.includes('?') 
-        ? `${baseUri}${extraOptions.replace('?', '&')}` 
-        : `${baseUri}${extraOptions}`;
-
-    mongoose.connect(finalUri)
-        .then(() => console.log('Connected to MongoDB'))
-        .catch(err => {
-            console.error('Could not connect to MongoDB', err);
-            process.exit(1); // Crítico: si no hay DB, el servicio debe morir para que GitHub se entere
-        });
-
-    app.listen(port, () => {
+  mongoose.connect(finalUri)
+    .then(() => {
+      console.log('Connected to MongoDB');
+      // SOLO arrancamos el servidor cuando la base de datos esté LISTA
+      app.listen(port, () => {
         console.log(`User Service listening at http://localhost:${port}`);
+      });
+    })
+    .catch(err => {
+      console.error('Could not connect to MongoDB', err);
+      process.exit(1);
     });
 }
 
