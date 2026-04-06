@@ -32,6 +32,15 @@ jobs:
         node-version: 22
     - run: npm --prefix users ci
     - run: npm --prefix webapp ci
+    - name: Users tests with coverage
+      env:
+        MONGODB_URI_USERS: mongodb://localhost:27017/users_test
+      run: npm --prefix users run test:coverage
+
+    - name: Webapp tests with coverage
+      # Si tu webapp también necesita conectar con el backend o la DB:
+      env:
+        MONGODB_URI_USERS: mongodb://localhost:27017/users_test
     - run: npm --prefix users run test:coverage
     - run: npm --prefix webapp run test:coverage
     - name: Install cargo-llvm-cov
