@@ -49,19 +49,29 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
       const data = await response.json();
 
       if (response.ok) {
-        sessionStorage.setItem('token', data.token);
+        // --- NUEVO: GUARDAR SESIÓN ---
+        // Guardamos el token para las cabeceras Authorization: Bearer <token>
+        if (data.token) {
+          sessionStorage.setItem('token', data.token);
+        }
+        // Guardamos el username para que getCurrentUser() funcione en gameService
+        // Usamos data.username porque es el valor normalizado que viene del servidor
+        sessionStorage.setItem('username', data.username || formData.username.trim());
+        // -----------------------------
+
         // El estado de partida se crea en el componente padre (App) usando este username.
         await onLogin(
-          formData.username.trim(),
-          data.friendCode,
-          typeof data.iconName === 'string' ? data.iconName : (typeof data.icon === 'string' ? data.icon : null),
-          typeof data.nickname === 'string' ? data.nickname : null,
-          typeof data.language === 'string' ? data.language : null);
+            data.username || formData.username.trim(), // Usamos el del server si existe
+            data.friendCode,
+            typeof data.iconName === 'string' ? data.iconName : (typeof data.icon === 'string' ? data.icon : null),
+            typeof data.nickname === 'string' ? data.nickname : null,
+            typeof data.language === 'string' ? data.language : null
+        );
       } else {
         setFormError(data.error || 'Error al iniciar sesion.');
       }
       
-    } catch {
+    } catch  {
       setFormError('Error de conexion al iniciar sesion.');
     } finally {
       setIsLoading(false);

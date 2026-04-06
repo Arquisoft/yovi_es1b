@@ -2,68 +2,51 @@ use crate::YBotRegistry;
 use crate::core::game::GameY;
 use mongodb::Database;
 use std::sync::Arc;
-use dashmap::DashMap;
+use tokio::sync::Mutex; // Cambiamos std::sync::Mutex por tokio::sync::Mutex para async
 use crate::BotDifficulty;
+use dashmap::DashMap; // Necesitas añadir dashmap = "6.1" en Cargo.toml
 
-/// A single player's session
-pub struct GameSession {
-    pub game: GameY,
-    pub current_difficulty: BotDifficulty,
-    pub active_bot: String,
+/// Nueva estructura para aislar los datos de cada jugador
+pub struct UserSession {
+    pub game: Mutex<GameY>,
+    pub current_difficulty: Mutex<BotDifficulty>,
+    pub active_bot: Mutex<String>,
 }
 
-impl GameSession {
-    pub fn new(size: u32) -> Self {
-        Self {
-            game: GameY::new(size),
-            current_difficulty: BotDifficulty::Easy,
-            active_bot: "random_bot".to_string(),
-        }
-    }
-}
-
-/// Shared application state for the bot server.
-///
-/// This struct holds the bot registry and is shared across all request handlers
-/// via Axum's state extraction. It uses `Arc` internally to allow cheap cloning
-/// for concurrent request handling.
 #[derive(Clone)]
 pub struct AppState {
-    /// The registry of available bots, wrapped in Arc for thread-safe sharing.
     bots: Arc<YBotRegistry>,
-    pub sessions: Arc<DashMap<String, GameSession>>, // NEW: Sessions keyed by username
+    /// Mapa concurrente que asocia "username" -> Sesión individual
+    pub sessions: Arc<DashMap<String, Arc<UserSession>>>,
     pub db: Database,
 }
 
 impl AppState {
-    /// Creates a new application state with the given bot registry.
     pub fn new(bots: YBotRegistry, db: Database) -> Self {
         Self {
             bots: Arc::new(bots),
             sessions: Arc::new(DashMap::new()),
-            db,                                        // Guardar la conexion
+            db,
         }
     }
 
-    /// Returns a clone of the Arc-wrapped bot registry.
+    /// Método de utilidad para recuperar la partida de un usuario o crear una nueva si no existe
+    pub async fn get_or_create_session(&self, username: &str) -> Arc<UserSession> {
+        if let Some(session) = self.sessions.get(username) {
+            return Arc::clone(session.value());
+        }
+
+        let new_session = Arc::new(UserSession {
+            game: Mutex::new(GameY::new(5)),
+            current_difficulty: Mutex::new(BotDifficulty::Easy),
+            active_bot: Mutex::new("random_bot".to_string()),
+        });
+
+        self.sessions.insert(username.to_string(), Arc::clone(&new_session));
+        new_session
+    }
+
     pub fn bots(&self) -> Arc<YBotRegistry> {
         Arc::clone(&self.bots)
     }
-
-    /// Retrieves a session for a user, creating one if it doesn't exist
-    pub fn get_or_create_session<'a>(&'a self, username: &str) -> dashmap::mapref::one::RefMut<'a, String, GameSession> {
-        self.sessions.entry(username.to_string()).or_insert_with(|| GameSession::new(5))
-    }
 }
-
-/*
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::RandomBot;
-
-    // ... updated tests would go here ...
-}
-
-*/

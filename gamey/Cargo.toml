@@ -24,6 +24,9 @@ path = "src/lib.rs"
 
 
 [dependencies]
+dashmap = "6.1"
+jsonwebtoken = "9.3"
+# ... otras dependencias
 anyhow = "1.0"
 axum = { version = "0.8", features = ["macros"] }
 clap = { version = "4.0", features = ["derive"] }

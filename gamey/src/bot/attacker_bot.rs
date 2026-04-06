@@ -1,95 +1,51 @@
-use crate::core::topology::TriangularTopology;
+use crate::bot::bot_utils;
 use crate::{Coordinates, GameY, PlayerId, YBot, BotDifficulty};
-use std::collections::{HashMap, VecDeque, HashSet};
+use std::collections::{HashMap, HashSet};
 
 pub struct AttackerBot;
 
 impl YBot for AttackerBot {
-    fn name(&self) -> &str {
-        "attacker_bot"
-    }
-
-    fn difficulty(&self) -> BotDifficulty {
-        BotDifficulty::Hard 
-    }
+    fn name(&self) -> &str { "attacker_bot" }
+    fn difficulty(&self) -> BotDifficulty { BotDifficulty::Hard }
 
     fn choose_move(&self, board: &GameY) -> Option<Coordinates> {
         let my_id = board.next_player()?;
-        let opponent_id = if my_id == PlayerId::new(0) {
-            PlayerId::new(1)
-        } else {
-            PlayerId::new(0)
-        };
+        let opponent_id = bot_utils::get_opponent_id(my_id);
         let size = board.board_size();
 
-        // 1. INSTINTO ASESINO
-        for &idx in board.available_cells() {
-            let coords = Coordinates::from_index(idx, size);
-            let mut simulated_board = board.clone();
-            let test_move = crate::Movement::Placement { player: my_id, coords };
-            
-            if simulated_board.add_move(test_move).is_ok() {
-                if let crate::core::game::GameStatus::Finished { winner } = simulated_board.status() {
-                    if PlayerId::new(winner.id()) == my_id {
-                        return Some(coords);
+        // 1. Prioridades de simulación (Victoria/Bloqueo)
+        for id in [my_id, opponent_id] {
+            for &idx in board.available_cells() {
+                let coords = Coordinates::from_index(idx, size);
+                let mut sim = board.clone();
+                if sim.add_move(crate::Movement::Placement { player: id, coords }).is_ok() {
+                    if let crate::core::game::GameStatus::Finished { winner } = sim.status() {
+                        if PlayerId::new(winner.id()) == id { return Some(coords); }
                     }
                 }
             }
         }
 
-        // 2. BOTÓN DE PÁNICO
-        for &idx in board.available_cells() {
-            let coords = Coordinates::from_index(idx, size);
-            let mut simulated_board = board.clone();
-            
-            let test_move = crate::Movement::Placement { player: opponent_id, coords };
-            if simulated_board.add_move(test_move).is_ok() {
-                if let crate::core::game::GameStatus::Finished { winner } = simulated_board.status() {
-                    if PlayerId::new(winner.id()) == opponent_id {
-                        return Some(coords);
-                    }
-                }
-            }
-        }
-
-        // 3. ESTRATEGIA DE ATAQUE DINÁMICA
-        let my_dists = self.calculate_all_distances(board, my_id);
-        let opp_dists = self.calculate_all_distances(board, opponent_id);
-
+        // 2. Cálculo de distancias (Usa la utilidad común)
+        let my_dists = bot_utils::calculate_all_distances(board, my_id, 100);
+        let opp_dists = bot_utils::calculate_all_distances(board, opponent_id, 100);
+        
         let mut best_move = None;
         let mut best_score = f32::MIN;
 
         for &idx in board.available_cells() {
             let coords = Coordinates::from_index(idx, size);
+            
+            // Fórmula específica: Suma de cuadrados
+            let my_p = self.get_attacker_potential(coords, &my_dists, size);
+            let opp_p = self.get_attacker_potential(coords, &opp_dists, size);
 
-            let my_p = self.get_exponential_potential(coords, &my_dists, size);
-            let opp_p = self.get_exponential_potential(coords, &opp_dists, size);
+            let centrality = bot_utils::dist_to_center(coords, size);
+            let connectivity = self.check_connectivity_bonus(coords, board, my_id);
 
-            let center_dist = self.dist_to_center(coords, size);
-            let centrality_bonus = size as f32 / (1.0 + center_dist); 
-
-            let connectivity_bonus = self.check_connectivity_bonus(coords, board, my_id);
-
-            // INTELIGENCIA DINÁMICA APLICADA 
-            // Si el potencial del oponente es masivo, el multiplicador DEBE superar al 10.0 de mi propio ataque.
-            let opp_threat_level = if opp_p > 2000.0 {
-                25.0 // EMERGENCIA: Abandona el ataque, bloquea la red enemiga a toda costa.
-            } else if opp_p > 800.0 {
-                12.0 // PELIGRO ALTO: Prioriza molestar al oponente un poco más que tu propio avance.
-            } else if opp_p > 300.0 {
-                5.0  // MEDIO: Mantén un ojo en él, pero sigue atacando (5.0 < 10.0).
-            } else {
-                0.5  // IGNORAR: El oponente no va a ningún lado.
-            };
-
-            // Ajustamos el peso del centro. En 12x12, el centro pierde valor rápido a medida que el tablero se llena.
-            let adjusted_centrality = if board.available_cells().len() > (size * size / 2) as usize {
-                centrality_bonus * 5.0 // Muy importante al principio
-            } else {
-                centrality_bonus // Irrelevante al final
-            };
-
-            let total_score = (my_p * 10.0) + (opp_p * opp_threat_level) + adjusted_centrality + connectivity_bonus;
+            let threat_level = if opp_p > 2000.0 { 25.0 } else if opp_p > 800.0 { 12.0 } else { 0.5 };
+            
+            let total_score = (my_p * 10.0) + (opp_p * threat_level) + (size as f32 / (1.0 + centrality)) + connectivity;
 
             if total_score > best_score {
                 best_score = total_score;
@@ -101,91 +57,19 @@ impl YBot for AttackerBot {
 }
 
 impl AttackerBot {
-    fn calculate_all_distances(&self, board: &GameY, player: PlayerId) -> HashMap<u32, Vec<i32>> {
-        let mut map = HashMap::new();
-        map.insert(0, self.bfs_to_side(board, player, TriangularTopology::side_a()));
-        map.insert(1, self.bfs_to_side(board, player, TriangularTopology::side_b()));
-        map.insert(2, self.bfs_to_side(board, player, TriangularTopology::side_c()));
-        map
-    }
-
-    fn bfs_to_side(&self, board: &GameY, player: PlayerId, side_mask: u32) -> Vec<i32> {
-        let size = board.board_size();
-        let total = board.total_cells();
-        let mut dists = vec![100; total as usize];
-        let mut queue = VecDeque::new();
-
-        for i in 0..total {
-            let c = Coordinates::from_index(i, size);
-            if (board.get_cell_regions(c) & side_mask) != 0 {
-                match board.get_player_at(c) {
-                    Some(p) if p == player => {
-                        dists[i as usize] = 0;
-                        queue.push_back(i);
-                    }
-                    None => {
-                        dists[i as usize] = 1;
-                        queue.push_back(i);
-                    }
-                    _ => {} 
-                }
-            }
-        }
-
-        while let Some(curr) = queue.pop_front() {
-            let curr_c = Coordinates::from_index(curr, size);
-            for neighbor in board.get_neighbors(&curr_c) {
-                let n_idx = neighbor.to_index(size);
-                let weight = match board.get_player_at(neighbor) {
-                    Some(p) if p == player => 0, 
-                    None => 1,                   
-                    _ => 100, 
-                };
-                let new_dist = dists[curr as usize] + weight;
-                if new_dist < dists[n_idx as usize] && new_dist < 50 {
-                    dists[n_idx as usize] = new_dist;
-                    queue.push_back(n_idx);
-                }
-            }
-        }
-        dists
-    }
-
-    fn get_exponential_potential(&self, coords: Coordinates, dists: &HashMap<u32, Vec<i32>>, size: u32) -> f32 {
+    fn get_attacker_potential(&self, coords: Coordinates, dists: &HashMap<u32, Vec<i32>>, size: u32) -> f32 {
         let idx = coords.to_index(size) as usize;
-        
-        // Obtenemos las tres distancias a los lados para esta celda
-        let d1 = dists.get(&0).unwrap()[idx] as f32;
-        let d2 = dists.get(&1).unwrap()[idx] as f32;
-        let d3 = dists.get(&2).unwrap()[idx] as f32;
-
-        // Suma de los cuadrados de las distancias
-        let sum_of_squares = (d1 * d1) + (d2 * d2) + (d3 * d3);
-        
-        // Esta fórmula premia el equilibrio (el centro) y castiga las esquinas aisladas
-        50000.0 / (sum_of_squares + 1.0)
-    }
-
-    fn dist_to_center(&self, coords: Coordinates, size: u32) -> f32 {
-        let target = (size as f32) / 3.0;
-        let dx = (coords.x() as f32 - target).abs();
-        let dy = (coords.y() as f32 - target).abs();
-        let dz = (coords.z() as f32 - target).abs();
-        dx + dy + dz
+        let d1 = dists[&0][idx] as f32;
+        let d2 = dists[&1][idx] as f32;
+        let d3 = dists[&2][idx] as f32;
+        50000.0 / (d1*d1 + d2*d2 + d3*d3 + 1.0)
     }
 
     fn check_connectivity_bonus(&self, coords: Coordinates, board: &GameY, my_id: PlayerId) -> f32 {
-        let mut unique_neighbors = HashSet::new();
+        let mut unique = HashSet::new();
         for n in board.get_neighbors(&coords) {
-            if board.get_player_at(n) == Some(my_id) {
-                unique_neighbors.insert(n.to_index(board.board_size())); 
-            }
+            if board.get_player_at(n) == Some(my_id) { unique.insert(n.to_index(board.board_size())); }
         }
-        match unique_neighbors.len() {
-            0 => -50.0,   // Ligeramente malo poner fichas sueltas
-            1 => 150.0,   // Bueno para extender líneas
-            2 => 300.0,   // Muy bueno para crear nodos fuertes
-            _ => 500.0,
-        }
+        match unique.len() { 0 => -50.0, 1 => 150.0, 2 => 300.0, _ => 500.0 }
     }
 }

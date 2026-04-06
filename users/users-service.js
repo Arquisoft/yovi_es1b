@@ -15,14 +15,14 @@ const fs = require('node:fs');
 const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
 
-const { authenticateToken, JWT_SECRET } = require('./authMiddleware');
-const jwt = require('jsonwebtoken');
-
 const metricsMiddleware = promBundle({includeMethod: true});
 app.use(metricsMiddleware);
 
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
+//imports para tokens
+const { authMiddleware, JWT_SECRET } = require('./authMiddleware');
+const jwt = require('jsonwebtoken');
 
 // Para guardar un friendCode
 const { customAlphabet } = require('nanoid');
@@ -32,6 +32,14 @@ const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
+
+const normalizeIconName = (rawValue) => {
+  const value = String(rawValue || '').trim();
+  if (!value) return 'SinAvatar.png';
+  const normalized = value.replaceAll('\\', '/');
+  const parts = normalized.split('/');
+  return parts[parts.length - 1] || 'SinAvatar.png';
+};
 
 try {
   const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
@@ -43,8 +51,10 @@ try {
 // CORS --> The server accepts requests from any origin (*)
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
+  // MODIFICA ESTA LÍNEA PARA INCLUIR Authorization
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -61,14 +71,21 @@ app.use(express.json());
 app.post('/createuser', async (req, res) => {
   // para evitar inyecciones de codigo, convertimos a string lo que recibimos del cliente
   const username = String(req.body.username || "");
+  const nickname = String(req.body.nickname || "").trim();
   const password = String(req.body.password || "");
-  const age = Number(req.body.age);
   const birthDate = req.body.birthDate ? new Date(String(req.body.birthDate)) : null;
-  const country = String(req.body.country || "");
-  const icon = String(req.body.icon || "");
+  const language = String(req.body.language || req.body.country || "").trim();
+  const iconName = normalizeIconName(req.body.iconName || req.body.icon);
   try {
-    if (!username || !password) {
-      return res.status(400).json({ error: "Username and password are required" });
+    if (!username || !password || !language || !birthDate || !nickname) {
+      return res.status(400).json({ error: "Username, nickname, password, language and birthDate are required" });
+    }
+    if (Number.isNaN(birthDate.getTime())) {
+      return res.status(400).json({ error: "birthDate is invalid" });
+    }
+    const existingNickname = await User.findOne({ nickname });
+    if (existingNickname) {
+      return res.status(409).json({ error: "Nickname already exists" });
     }
 
     let friendCode;
@@ -88,21 +105,19 @@ app.post('/createuser', async (req, res) => {
       username,
       password: hashedPassword,
       friendCode,
-      age,
-      birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : undefined,
-      country,
-      icon
+      birthDate,
+      language,
+      nickname,
+      iconName
     })
 
     // Save the new user to the database
     await newUser.save();
 
-    const token = jwt.sign({ userId: newUser._id, username: newUser.username }, JWT_SECRET, { expiresIn: '1h' });
-
     res.json({ 
       message: `Hello ${username}! Your account has been created!`,
       friendCode: `#${friendCode}`,
-      token: token
+      nickname
     })
 
   } catch (err) {
@@ -117,8 +132,10 @@ app.post('/login', async (req, res) => {
 
   try {
 
-    const secureUsername = String(username); // Para evitar inyecciones de codigo.
-    const user = await User.findOne({ username: secureUsername });
+    const loginValue = String(username || '').trim(); // Usuario o nickname.
+    const user =
+      (await User.findOne({ nickname: loginValue })) ||
+      (await User.findOne({ username: loginValue }));
 
     if (!user) {
       return res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -128,14 +145,20 @@ app.post('/login', async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (isMatch) {
-      const token = jwt.sign({ userId: user._id, username: user.username }, JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign(
+          { username: user.username, nickname: user.nickname },
+          JWT_SECRET,
+          { expiresIn: '24h' }
+      );
       res.json({
         message: `Welcome back, ${username}!`,
+        token,//enviar el token a frontend
         username: user.username,
+        nickname: user.nickname,
+        language: user.language,
         score: user.score,
-        icon: user.icon,
-        friendCode: user.friendCode,
-        token: token
+        iconName: user.iconName,
+        friendCode: user.friendCode
       });
     } else {
       res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -146,84 +169,66 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.get('/users/search', authenticateToken, async (req, res) => {
+app.get('/users/search', async (req, res) => {
   const query = String(req.query.query || '').trim();
+  
   try {
-    const users = await User.find({
-      username: { $regex: query, $options: 'i' }
-    }).select('username score icon');
+    let searchCriteria = {};
+
+    // Si la búsqueda empieza por #, buscamos coincidencia exacta por friendCode
+    if (query.startsWith('#')) {
+      // Quitamos el # para buscar en la base de datos (donde se guarda como "ABC123")
+      const cleanCode = query.substring(1).toUpperCase();
+      searchCriteria = { friendCode: cleanCode };
+    } else {
+      // Si no hay #, buscamos por nombre (insensible a mayúsculas)
+      searchCriteria = { username: { $regex: query, $options: 'i' } };
+    }
+
+    const users = await User.find(searchCriteria)
+      .select('username icon friendCode')
+      .limit(10);
+
     res.json(users);
   } catch (err) {
+    console.error("Error en búsqueda:", err);
     res.status(500).json({ error: 'Error del servidor' });
   }
 });
 
-app.post('/users/follow', authenticateToken, async (req, res) => {
-  const follower = String(req.body.follower || '').trim();
-  const following = String(req.body.following || '').trim();
-
-  if (follower !== req.user.username) {
-    return res.status(403).json({ error: 'You can only perform this action for yourself.' });
-  }
-
-  if (!follower || !following) {
-    return res.status(400).json({ error: 'Follower y following son obligatorios' });
-  }
-  if (follower === following) {
-    return res.status(400).json({ error: 'No puedes seguirte a ti mismo' });
-  }
-
+app.post('/users/follow', async (req, res) => {
+  const { follower, following } = req.body;
   try {
-    const targetUser = await User.findOne({ username: following });
-    const me = await User.findOne({ username: follower });
+    // Buscamos si ya existe una relación (da igual el orden)
+    const existing = await Friendship.findOne({
+      users: { $all: [follower, following] }
+    });
 
-    if (!targetUser || !me) {
-      return res.status(404).json({ error: 'Usuario no encontrado' });
+    if (existing) {
+      return res.status(400).json({ error: 'Ya existe una solicitud o amistad' });
     }
 
-    const targetId = targetUser._id;
-    const currentFollowing = me.following || [];
-    const alreadyFollowing =
-      typeof currentFollowing.includes === 'function'
-        ? currentFollowing.includes(targetId)
-        : false;
+    // Creamos la solicitud pendiente
+    const newRequest = new Friendship({
+      users: [follower, following],
+      status: 'pending'
+    });
+    await newRequest.save();
 
-    if (alreadyFollowing) {
-      if (typeof currentFollowing.pull === 'function') {
-        currentFollowing.pull(targetId);
-      }
-      const currentFollowers = targetUser.followers || [];
-      if (typeof currentFollowers.pull === 'function') {
-        currentFollowers.pull(me._id);
-      }
-      await me.save();
-      await targetUser.save();
-      return res.json({ message: `Has dejado de seguir a ${targetUser.username}` });
-    }
-
-    if (typeof currentFollowing.push === 'function') {
-      currentFollowing.push(targetId);
-    }
-    const currentFollowers = targetUser.followers || [];
-    if (typeof currentFollowers.push === 'function') {
-      currentFollowers.push(me._id);
-    }
-    await me.save();
-    await targetUser.save();
-
-    return res.json({ message: `Ahora sigues a ${targetUser.username}` });
+    res.json({ message: 'Solicitud enviada correctamente' });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    res.status(500).json({ error: 'Error al enviar solicitud' });
   }
 });
 
-app.get('/users/profile/:username', authenticateToken, async (req, res) => {
+// En users-service.js (alrededor de la línea 170)
+app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
-    const user = await User.findOne({ username })
-      .populate('following', 'username score icon')
-      .populate('followers', 'username score icon');
+    const user = await User.findOne({ username });
+    // Si decides usar populate, asegúrate de que el modelo esté bien definido,
+    // si da error 500, comenta las líneas de populate.
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -231,29 +236,123 @@ app.get('/users/profile/:username', authenticateToken, async (req, res) => {
 
     return res.json({
       username: user.username,
-      age: user.age,
-      country: user.country,
-      icon: user.icon,
+      nickname: user.nickname,
+      birthDate: user.birthDate,
+      language: user.language,
+      iconName: user.iconName,
+      // Usamos el tamaño del array directamente si no vas a popular
       followingCount: user.following?.length || 0,
-      followersCount: user.followers?.length || 0,
-      following: user.following || [],
-      followers: user.followers || []
+      followersCount: user.followers?.length || 0
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor: ' + err.message });
+  }
+}); 
+
+
+app.patch('/users/profile/:username', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+  const language = req.body.language !== undefined ? String(req.body.language || '').trim() : undefined;
+  const iconName = req.body.iconName !== undefined ? normalizeIconName(req.body.iconName) : undefined;
+  const nickname = req.body.nickname !== undefined ? String(req.body.nickname || '').trim() : undefined;
+  const birthDateRaw = req.body.birthDate;
+
+  if (!username) {
+    return res.status(400).json({ error: 'Username es obligatorio' });
+  }
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    if (language !== undefined) {
+      if (!language) {
+        return res.status(400).json({ error: 'Idioma no puede estar vacio' });
+      }
+      user.language = language;
+    }
+
+    if (nickname !== undefined) {
+      if (!nickname) {
+        return res.status(400).json({ error: 'Nickname no puede estar vacio' });
+      }
+      const existingNickname = await User.findOne({ nickname });
+      if (existingNickname && String(existingNickname._id) !== String(user._id)) {
+        return res.status(409).json({ error: 'Nickname ya existe' });
+      }
+      user.nickname = nickname;
+    }
+
+    if (iconName !== undefined) {
+      user.iconName = iconName;
+    }
+
+    if (birthDateRaw !== undefined) {
+      const parsedDate = birthDateRaw ? new Date(String(birthDateRaw)) : null;
+      if (birthDateRaw && Number.isNaN(parsedDate?.getTime?.())) {
+        return res.status(400).json({ error: 'Fecha de nacimiento invalida' });
+      }
+      user.birthDate = parsedDate;
+    }
+
+    await user.save();
+
+    return res.json({
+      message: 'Perfil actualizado correctamente',
+      username: user.username,
+      nickname: user.nickname,
+      birthDate: user.birthDate,
+      language: user.language,
+      iconName: user.iconName
     });
   } catch (err) {
     return res.status(500).json({ error: 'Error del servidor' });
   }
 });
 
-app.get('/friends', authenticateToken, async (req, res) => {
+app.post('/users/profile/:username/change-password', async (req, res) => {
+  const username = String(req.params.username || '').trim();
+  const currentPassword = String(req.body.currentPassword || '');
+  const newPassword = String(req.body.newPassword || '');
+
+  if (!username || !currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Username, contraseña actual y nueva contraseña son obligatorios' });
+  }
+
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+  }
+
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    const validCurrentPassword = await bcrypt.compare(currentPassword, user.password);
+    if (!validCurrentPassword) {
+      return res.status(401).json({ error: 'La contraseña actual no es correcta' });
+    }
+
+    const isSamePassword = await bcrypt.compare(newPassword, user.password);
+    if (isSamePassword) {
+      return res.status(400).json({ error: 'La nueva contraseña debe ser distinta de la actual' });
+    }
+
+    user.password = await bcrypt.hash(newPassword, saltRounds);
+    await user.save();
+
+    return res.json({ message: 'contraseña actualizada correctamente' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+
+app.get('/friends', async (req, res) => {
   const username = String(req.query.username || '').trim();
-
-  if (username !== req.user.username) {
-    return res.status(403).json({ error: 'You can only view your own friends.' });
-  }
-
-  if (!username) {
-    return res.status(400).json({ error: 'Username is required' });
-  }
+  if (!username) return res.status(400).json({ error: 'Username required' });
 
   try {
     const friendships = await Friendship.find({
@@ -261,45 +360,141 @@ app.get('/friends', authenticateToken, async (req, res) => {
       status: 'accepted'
     });
 
-    const friendsFromFriendships = friendships
-      .map((friendship) => {
-        const friendName = (friendship.users || []).find((u) => u !== username);
-        return friendName ? { name: friendName, status: 'online' } : null;
-      })
-      .filter(Boolean);
+    const friendsList = friendships.map(f => {
+      const friendName = f.users.find(u => u !== username);
+      return { name: friendName, status: 'online' };
+    });
 
-    // Compatibilidad: si no hay documentos Friendship, devolvemos los seguidos del modelo User.
-    if (friendsFromFriendships.length === 0) {
-      const user = await User.findOne({ username }).populate('following', 'username');
-      if (!user) {
-        return res.status(404).json({ error: 'Usuario no encontrado' });
-      }
-      const fallback = (user.following || []).map((friend) => ({
-        name: friend.username,
-        status: 'online'
-      }));
-      return res.json(fallback);
-    }
-
-    return res.json(friendsFromFriendships);
+    res.json(friendsList);
   } catch (err) {
-    console.error('Error fetching friends:', err);
-    return res.status(500).json({ error: 'Error fetching friends' });
+    res.status(500).json({ error: 'Error fetching friends' });
   }
 });
 
-
-// New
-// Executes a move in the game
-app.post('/move', authenticateToken, async (req, res) => {
-  const { cellIndex, username} = req.body; // NEW: Recibir difficulty
-
-  if (username !== req.user.username) {
-    return res.status(403).json({ error: 'You can only make a move for yourself.' });
+// Obtener solicitudes que me han enviado a mí (pendientes)
+app.get('/friends/requests', async (req, res) => {
+  const username = String(req.query.username || '').trim();
+  try {
+    const pendingRequests = await Friendship.find({
+      users: username,
+      status: 'pending'
+    });
+    
+    // Devolvemos solo el nombre de la persona que envió la solicitud
+    const requests = pendingRequests.map(fr => {
+        const sender = fr.users.find(u => u !== username);
+        return { sender, id: fr._id };
+    });
+    
+    res.json(requests);
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener solicitudes' });
   }
+});
+
+// Aceptar o Rechazar solicitud
+app.post('/friends/respond', async (req, res) => {
+  const { requestId, action } = req.body; // action: 'accepted' o 'rejected'
 
   try {
-    // 1. Integración: Llamada al servicio de Rust
+    if (action === 'rejected') {
+      await Friendship.findByIdAndDelete(requestId);
+      return res.json({ message: 'Solicitud rechazada' });
+    }
+
+    const friendship = await Friendship.findByIdAndUpdate(requestId, { 
+      status: 'accepted' 
+    }, { new: true });
+
+    res.json({ message: '¡Ahora sois amigos!', friendship });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al responder solicitud' });
+  }
+});
+
+/**
+ * Endpoint para obtener el perfil público de un usuario, incluyendo estadísticas de juego.
+ */
+app.get('/users/public-profile/:username', async (req, res) => {
+  const targetUsername = String(req.params.username || '').trim();
+  const requester = String(req.query.requester || '').trim(); // Usuario que hace la petición
+  try {
+    // Buscar los campos públicos del usuario
+    const user = await User.findOne({ username: targetUsername })
+      .select('username nickname iconName friendCode');
+
+    if (!user) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
+    }
+
+    // Buscar relacion
+    let relationship = 'none';
+    if (requester === targetUsername) {
+      relationship = 'self';
+    } else {
+      const friendship = await Friendship.findOne({
+        users: {$all: [requester, targetUsername] } 
+      });
+      if (friendship) {
+        relationship = friendship.status; // pending, accepted, etc.
+      }
+    }
+
+    // Pedir estadisticas de juego al servicio de Rust
+    let gameStats = { wins: 0, losses: 0, totalGames: 0 };
+
+    try {
+      const rustResponse = await fetch(`${GAMEY_URL}/stats?username=${targetUsername}`);
+      if (rustResponse.ok) {
+
+        const rustStats = await rustResponse.json();
+        gameStats = {
+          wins: rustStats.wins,
+          losses: rustStats.losses,
+          totalGames: rustStats.total // Transformamos "total" en "totalGames"
+        };
+      }
+    }catch (e) {
+      console.error("Error fetching stats from Rust:", e);
+    }
+
+    res.json({
+      username: user.username,
+      nickname: user.nickname,
+      iconName: user.iconName,
+      friendCode: user.friendCode,
+      stats: gameStats,
+      relationship
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+})
+
+/**
+ * Endpoint para cancelar una solicitud de amistad pendiente
+ */
+app.post('/friends/cancel', async (req, res) => {
+  const { follower, following } = req.body;
+  try {
+    // Buscamos la relación pendiente donde nosotros somos uno de los involucrados
+    await Friendship.findOneAndDelete({
+      users: { $all: [follower, following] },
+      status: 'pending'
+    });
+    res.json({ message: 'Solicitud cancelada' });
+  } catch (err) {
+    res.status(500).json({ error: 'Error al cancelar la solicitud' });
+  }
+});
+
+// Executes a move in the game
+app.post('/move', async (req, res) => {
+  const { cellIndex, username} = req.body; // NEW: Recibir difficulty
+
+  try {
+    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust
     const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -329,16 +524,12 @@ app.post('/move', authenticateToken, async (req, res) => {
   }
 });
 
-// NEW: Endpoint para registrar una rendición (derrota)
-app.post('/surrender', authenticateToken, async (req, res) => {
+// NEW: Endpoint para registrar una rendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n (derrota)
+app.post('/surrender', async (req, res) => {
   const { username, difficulty, boardSize } = req.body;
 
-  if (username !== req.user.username) {
-    return res.status(403).json({ error: 'You can only surrender for yourself.' });
-  }
-
   try {
-    // 1. Integración: Llamada al servicio de Rust (GameY)
+    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust (GameY)
     const rustResponse = await fetch(`${GAMEY_URL}/surrender`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -360,48 +551,53 @@ app.post('/surrender', authenticateToken, async (req, res) => {
 
     // 3. Respuesta al Frontend
     res.json({ 
-      message: "Rendición registrada correctamente",
+      message: "RendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n registrada correctamente",
       details: data 
     });
 
   } catch (e) {
-    console.error("Error de conexión con Rust en surrender:", e);
+    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust en surrender:", e);
     res.status(500).json({ error: 'Error communicating with Rust server' });
   }
 });
 
 
 // Resets the game board WITHOUT affecting stats
-app.post('/reset', authenticateToken, async (req, res) => {
+app.post('/reset', async (req, res) => {
+  // CORRECCIÓN: Añadimos username a la extracción del body
   const { size, difficulty, username } = req.body;
-
-  if (username !== req.user.username) {
-    return res.status(403).json({ error: 'You can only reset for yourself.' });
-  }
 
   try {
     const requestedSize = Number(size);
-    const safeSize =
-      Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
+    const safeSize = Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
         ? Math.floor(requestedSize)
         : 5;
 
     const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ size: safeSize, difficulty: difficulty, username: username }),
+      body: JSON.stringify({
+        size: safeSize,
+        difficulty: difficulty,
+        player: username //
+      }),
     });
+
+    if (!rustResponse.ok) {
+      throw new Error(`Rust error: ${rustResponse.status}`);
+    }
+
     const newBoard = await rustResponse.json();
-    res.json({ responseFromRust: newBoard});
-  }
-  catch (e) {
-    res.status(500).json({error: 'Error communicating with Rust server'});
+    res.json({ responseFromRust: newBoard });
+  } catch (e) {
+    console.error("Fallo en reset:", e.message);
+    res.status(500).json({ error: 'Error communicating with Rust server' });
   }
 });
 
 // New
 // Get available difficulties
-app.get('/difficulties', authenticateToken, async (req, res) => {
+app.get('/difficulties', async (req, res) => {
   try {
     const rustResponse = await fetch(`${GAMEY_URL}/difficulties`);
     if (!rustResponse.ok) {
@@ -417,14 +613,10 @@ app.get('/difficulties', authenticateToken, async (req, res) => {
 
 
 // Para el historial
-app.get('/history', authenticateToken, async (req, res) => {
-  // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
+app.get('/history', async (req, res) => {
+  // 1. Extraemos TODOS los parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡metros de la URL, incluido 'result'
   const { username, page = 1, limit = 10, result } = req.query;
   
-  if (username !== req.user.username) {
-    return res.status(403).json({ error: 'You can only view your own history.' });
-  }
-
   if (!username) {
     return res.status(400).json({ error: "Username is required" });
   }
@@ -438,7 +630,7 @@ app.get('/history', authenticateToken, async (req, res) => {
         rustUrl += `&result=${encodeURIComponent(result)}`;
     }
 
-    // 4. AHORA SÍ, ejecutamos el fetch pasándole el string de la URL
+    // 4. AHORA SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â, ejecutamos el fetch pasÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ndole el string de la URL
     const rustResponse = await fetch(rustUrl);
 
     if (!rustResponse.ok) {
@@ -455,7 +647,7 @@ app.get('/history', authenticateToken, async (req, res) => {
     res.json(paginatedData); 
     
   } catch (e) {
-    console.error("Error de conexión con Rust:", e);
+    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust:", e);
     res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
   }
 });

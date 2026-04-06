@@ -6,6 +6,7 @@ import GameScreen from '../../screens/GameScreen';
 import { HistoryModal } from '../../components/modals/HistoryModal';
 import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
+import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
 
 // Hooks, Servicios y Utils
@@ -26,6 +27,7 @@ import '../../index.css';
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
+
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -89,6 +91,7 @@ const GameApp = () => {
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.4);
   const [isVideoPaused, setIsVideoPaused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -109,7 +112,7 @@ const GameApp = () => {
     executeAutoMove,
     resetGame,
     surrender,
-  } = useGameLogic(username);
+  } = useGameLogic();
 
   const {
     timeLeft: turnTimeLeft,
@@ -188,7 +191,7 @@ const GameApp = () => {
 
     const syncProfileIcon = async () => {
       try {
-        const profile = await gameService.getProfile(username);
+        const profile = await gameService.getProfile();
         if (!active || profile?.error) return;
 
         const resolvedIcon = resolveUserIcon(
@@ -238,7 +241,7 @@ const GameApp = () => {
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
     try {
-      const result = await gameService.getHistory(username, page, filter);
+      const result = await gameService.getHistory( page, filter);
       setHistoryData(result.data || []);
       setTotalPages(result.total_pages || 1);
       setCurrentPage(result.page || 1);
@@ -356,26 +359,32 @@ const GameApp = () => {
         onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
       />
 
+      {/* 1. Panel de Amigos: el emisor del evento */}
       <FriendsPanel
-        isOpen={showFriendsMenu}
-        onClose={() => setShowFriendsMenu(false)}
-        username={username}
-        displayName={displayName}
-        friendCode={friendCode}
-        icon={playerIcon}
+          isOpen={showFriendsMenu}
+          onClose={() => setShowFriendsMenu(false)}
+          username={username} // Tu sesión
+          displayName={displayName}
+          friendCode={friendCode}
+          icon={playerIcon}
+          // Captura el nombre del amigo y lo guarda en el estado local de main.tsx
+          onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
 
+      {/* 2. Modal de Perfil Público: el receptor */}
+      {/* Solo se monta si hay un nombre en el estado 'publicProfileToView' */}
+      {publicProfileToView && (
+          <PublicProfileModal
+              username={publicProfileToView} // El usuario a consultar (distinto al de la sesión)
+              onClose={() => setPublicProfileToView(null)} // Al cerrar, limpiamos para poder abrir otro
+          />
+      )}
+
+      {/* 3. Tu propio perfil (Session Storage) */}
       <ProfileScreen
-        isOpen={showProfileScreen}
-        username={username}
-        onClose={() => setShowProfileScreen(false)}
-        onIconUpdated={(newIcon) => {
-          const resolvedIcon = resolveUserIcon(newIcon);
-          setPlayerIcon(resolvedIcon);
-          if (resolvedIcon) {
-            localStorage.setItem('yovi_user_icon', resolvedIcon);
-          }
-        }}
+          isOpen={showProfileScreen}
+          username={username} // Tu sesión activa
+          onClose={() => setShowProfileScreen(false)}
       />
 
       {showSettings && (

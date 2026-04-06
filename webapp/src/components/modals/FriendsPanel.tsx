@@ -2,6 +2,17 @@ import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { gameService } from '../../services/gameService';
 
+// --- INTERFACES DE DATOS ---
+interface Friend {
+  name: string;
+  status: string; // Cambiado de unión literal a string para evitar el error de asignación TS2345
+}
+
+interface FriendRequest {
+  id: string;
+  sender: string;
+}
+
 interface FriendsPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -9,30 +20,77 @@ interface FriendsPanelProps {
   displayName: string;
   friendCode: string;
   icon?: string | null;
+  onTriggerPublicProfile: (username: string) => void;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon }: FriendsPanelProps) => {
-  const [friends, setFriends] = useState<any[]>([]);
+export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon,onTriggerPublicProfile }: FriendsPanelProps) => {
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchCode, setSearchCode] = useState('');
-  const [requests, setRequests] = useState<any[]>([]);
-  const [showRequests, setShowRequests] = useState(false); // Estado para alternar entre lista y solicitudes
+  const [showRequests, setShowRequests] = useState(false);
 
+  // --- 1. FUNCIÓN DE CARGA CENTRALIZADA ---
+  const fetchSocialData = async (showLoader = false) => {
+    if (!username) return;
+    if (showLoader) setLoading(true);
+
+    try {
+      // Lanzamos ambas peticiones a la vez para ir más rápido
+      const [friendsData, requestsData] = await Promise.all([
+        gameService.getFriends(),
+        gameService.getPendingRequests()
+      ]);
+
+      setFriends(friendsData);
+      setRequests(requestsData);
+    } catch (err) {
+      console.error("Error cargando datos sociales:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ---  EFECTO DE AUTO-REFRESCO (POLLING) ---
   useEffect(() => {
     if (isOpen && username) {
-      setLoading(true);
-      // cargar amigos
-      gameService.getFriends(username)
-        .then(data => setFriends(data))
-        .finally(() => setLoading(false));
-        
-        // Cargar Solicitudes Pendientes
-      gameService.getPendingRequests(username)
-        .then(data => setRequests(data))
-        .catch(err => console.error("Error cargando solicitudes", err));
+      // Carga inicial
+      fetchSocialData(true);
+
+      // Creamos un intervalo para que se recargue solo cada 15 segundos
+      const interval = setInterval(() => {
+        fetchSocialData(false); // Recarga silenciosa (sin loader)
+      }, 15000);
+
+      return () => clearInterval(interval); // Limpiamos al cerrar
     }
   }, [isOpen, username]);
 
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const loadSocialData = async () => {
+      setLoading(true);
+      try {
+        // Ejecución en paralelo para optimizar la carga
+        const [friendsData, requestsData] = await Promise.all([
+          gameService.getFriends(),
+          gameService.getPendingRequests()
+        ]);
+
+        // TypeScript ahora aceptará esto correctamente
+        setFriends(friendsData);
+        setRequests(requestsData);
+      } catch (err) {
+        console.error("Error cargando datos sociales:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSocialData();
+  }, [isOpen]);
 
   // Maneja la limpieza del input (solo mayúsculas y quita almohadillas accidentales)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,20 +106,21 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       const targetUser = await gameService.searchUserByCode(searchCode);
 
       if (targetUser) {
-        // 2. Si existe, lo seguimos
-        await gameService.followUser(username, targetUser.username);
-        
+        await gameService.followUser(targetUser.username);
         alert(`¡Ahora sigues a ${targetUser.username}!`);
         setSearchCode(''); // Limpiamos el buscador
-        
+
+        fetchSocialData();
+
         // 3. Opcional: Refrescar la lista de amigos
-        const updatedFriends = await gameService.getFriends(username);
+        const updatedFriends = await gameService.getFriends();
         setFriends(updatedFriends);
       } else {
         alert("No se encontró ningún jugador con ese código.");
       }
-    } catch (error: any) {
-      alert(error.message || "Error al añadir amigo");
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Error al añadir amigo";
+      alert(message);
     }
   };
 
@@ -70,17 +129,35 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       // 1. Llamamos al servicio (Lógica de Red)
       await gameService.respondToFriendRequest(requestId, action);
 
+      fetchSocialData();
+
       // 2. Actualizamos la UI localmente (Lógica de Interfaz)
       setRequests(prev => prev.filter(r => r.id !== requestId));
 
       // 3. Si aceptamos, traemos la lista de amigos actualizada
       if (action === 'accepted') {
-        const updatedFriends = await gameService.getFriends(username);
+        const updatedFriends = await gameService.getFriends();
         setFriends(updatedFriends);
       }
-    } catch (error: any) {
-      console.error("Error al responder solicitud:", error.message);
+    } catch (error: unknown) {
+      console.error("Error al responder solicitud:", error);
       alert("No se pudo procesar la respuesta.");
+    }
+  };
+
+  const handleViewProfileFromSearch = async () => {
+    if (!searchCode.trim()) return;
+
+    try {
+      const targetUser = await gameService.searchUserByCode(searchCode);
+      if (targetUser) {
+        // Pasamos el username del usuario ENCONTRADO, no el nuestro
+        onTriggerPublicProfile(targetUser.username);
+      } else {
+        alert("No se encontró ningún jugador con ese código.");
+      }
+    } catch (error) {
+      alert("Error al buscar el perfil.");
     }
   };
 
@@ -105,7 +182,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
             </div>
            <div className="profile-info-text">
               <span className="profile-name">{displayName || username}</span>
-              <span className="profile-friend-code">{friendCode}</span>
+              <span className="profile-friend-code">#{friendCode}</span>
            </div>
            
            {/* Botón de Solicitudes Pendientes */}
@@ -132,9 +209,15 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
               onChange={handleInputChange}
             />
           </div>
-          <button className="add-friend-btn" onClick={handleAddFriend}>
-            Añadir
-          </button>
+          <div className="search-button-group">
+            <button className="view-profile-btn" onClick={handleViewProfileFromSearch}>
+              Ver Perfil
+            </button>
+            <button className="add-friend-btn" onClick={handleAddFriend}>
+              Añadir
+            </button>
+          </div>
+
         </div>
 
         {/* Área dinámica de la lista */}
@@ -186,6 +269,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
             </>
           )}
         </div>
+
       </div>
     </div>,
     document.body

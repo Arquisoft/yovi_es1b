@@ -65,6 +65,15 @@ pub struct HistoryQuery {
     pub limit: Option<i64>,
     pub result: Option<String>,
 }
+
+/**
+ * Estructura para recibir la consulta de estadísticas de un usuario específico.
+ */
+#[derive(Deserialize)]
+pub struct StatsQuery {
+    pub username: String,
+}
+
 // Estructura de respuesta para el historial paginado
 #[derive(serde::Serialize)]
 pub struct PaginatedHistoryResponse {
@@ -81,6 +90,13 @@ pub struct SurrenderRequest {
     player: String,
     difficulty: String,
     board_size: i32,
+}
+
+#[derive(serde::Serialize)]
+pub struct UserStats {
+    pub wins: i64,
+    pub losses: i64,
+    pub total: i64,
 }
 
 use utoipa::OpenApi;
@@ -112,8 +128,8 @@ pub struct ApiDoc;
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct ResetRequest {
     pub size: Option<u32>,
-    pub difficulty: Option<String>, // NEW: Optional difficulty parameter
-    pub username: String, // NEW: Username to identify session
+    pub difficulty: Option<String>,
+    pub player: Option<String>, // <--- AÑADE ESTA LÍNEA
 }
 
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -134,6 +150,7 @@ pub struct GameRecord {
 /// This is useful for testing the API without binding to a network port.
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
+
         // 1. Ponemos Swagger al principio para que nada lo intercepte
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
@@ -146,6 +163,7 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/reset", axum::routing::post(reiniciar_juego))
         .route("/difficulties", axum::routing::get(listar_dificultades))
         .route("/surrender", axum::routing::post(rendirse))
+        .route("/stats", axum::routing::get(obtener_estadisticas))
         .route("/api/play", axum::routing::post(play::play))
         .with_state(state)
 }
@@ -256,12 +274,16 @@ pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
 ) -> impl IntoResponse {
-    let username = payload.player.clone();
-    let mut session = state.get_or_create_session(&username);
+    // 1. Obtener la sesión del usuario (Corregido de ax_state a state)
+    let session = state.get_or_create_session(&payload.player).await;
 
-    // 2. Movimiento Humano (Azul)
-    // El índice se interpreta usando el tamaño REAL del juego activo en servidor.
-    let b_size = session.game.board_size();
+    // Bloqueamos la sesión privada (Añadidos tipos explícitos para ayudar al compilador)
+    let mut game = session.game.lock().await;
+    let current_difficulty_guard = session.current_difficulty.lock().await;
+    let active_bot_name = session.active_bot.lock().await.clone();
+
+    // 2. Movimiento Humano
+    let b_size = game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
 
     let human_movement = crate::Movement::Placement {
@@ -269,83 +291,51 @@ pub async fn realizar_movimiento(
         coords,
     };
 
-    // Intentamos añadir el movimiento
-    // Si falla (ocupada/fuera de rango/turno inválido), el tablero no cambia.
-    if let Err(e) = session.game.add_move(human_movement) {
+    if let Err(e) = game.add_move(human_movement) {
         println!("Aviso: Movimiento humano no válido: {:?}", e);
     }
 
-    // 3. Turno del Bot (Rojo) (si no ha ganado el humano ya)
-    if !session.game.check_game_over() {
-        // Obtener la dificultad actual
-        let active_bot_name = session.active_bot.clone();
-
-        // Buscar un bot adecuado para esa dificultad
+    // 3. Turno del Bot
+    if !game.check_game_over() {
+        // Buscamos un bot usando el nombre guardado en la sesión
         if let Some(bot) = state.bots().find(&active_bot_name) {
-            // Desreferenciamos el mutex guard con &*game
-            if let Some(bot_coords) = bot.choose_move(&session.game) {
+            if let Some(bot_coords) = bot.choose_move(&*game) {
                 let bot_move = crate::Movement::Placement {
                     player: crate::PlayerId::new(1),
                     coords: bot_coords,
                 };
-                let _ = session.game.add_move(bot_move);
-            }
-        } else {
-            // Fallback: RandomBot si no hay bot para esa dificultad (no debería pasar con el registro completo)
-            if let Some(bot) = state.bots().find("random_bot") {
-                if let Some(bot_coords) = bot.choose_move(&session.game) {
-                    let bot_move = crate::Movement::Placement {
-                        player: crate::PlayerId::new(1),
-                        coords: bot_coords,
-                    };
-                    let _ = session.game.add_move(bot_move);
-                }
+                let _ = game.add_move(bot_move);
             }
         }
     }
 
-    // 4. Extraer el ganador
-    // Ganador leído desde el estado final tras aplicar jugadas válidas.
-    let winner_id = match session.game.status() {
+    // 4. Extraer el ganador y guardar en DB
+    let winner_id = match game.status() {
         &crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
         _ => None,
     };
 
     if winner_id.is_some() {
-        println!("¡Tenemos un ganador!: {:?}", winner_id);
-
-        let final_bot_name = session.active_bot.clone();
-        let final_difficulty = session.current_difficulty.to_string();
-
-        // Guardar la partida en MongoDB
         let db = state.db.clone();
-        let b_size_clone = b_size;
-        let res_text = if winner_id == Some(0) {
-            "Victoria"
-        } else {
-            "Derrota"
-        };
+        let final_bot_name = active_bot_name.clone();
+        let final_difficulty = current_difficulty_guard.to_string();
+        let player_name = payload.player.clone();
 
-        // Guardar en un hilo para no ralentizar
         tokio::spawn(async move {
             let collection = db.collection::<serde_json::Value>("partidas");
             let record = serde_json::json!({
-                "player": payload.player,
+                "player": player_name,
                 "date": Utc::now().to_rfc3339(),
                 "opponent": final_bot_name,
-                "board_size": b_size_clone,
+                "board_size": b_size,
                 "difficulty": final_difficulty,
-                "result": res_text
+                "result": if winner_id == Some(0) { "Victoria" } else { "Derrota" }
             });
-
             let _ = collection.insert_one(record).await;
         });
     }
 
-    // 5. Respuesta (Convertimos a YEN)
-    // Respuesta para el front: tablero actualizado + ganador.
-    let yen_data: crate::YEN = (&session.game).into();
-
+    let yen_data: crate::YEN = (&*game).into();
     axum::Json(serde_json::json!({
         "board": yen_data,
         "winner": winner_id
@@ -371,34 +361,28 @@ pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
 ) -> impl IntoResponse {
-    let mut session = state.get_or_create_session(&payload.username);
 
-    // Tamaño efectivo del reset:
-    // - usa size enviado por cliente si existe
-    // - si no existe, usa 5
-    // - siempre acotado a [3..20]
+    let username = payload.player.as_deref().unwrap_or("default_user");
+    let session = state.get_or_create_session(username).await;
+
+    let mut game = session.game.lock().await;
     let size = payload.size.unwrap_or(5).clamp(3, 20);
+    *game = crate::core::game::GameY::new(size);
 
-    session.game = crate::core::game::GameY::new(size);
-
-    // Actualizar dificultad si se proporciona
     if let Some(diff_str) = payload.difficulty {
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
-            session.current_difficulty = diff;
+            // Actualizamos la dificultad DENTRO de la sesión
+            let mut current_diff = session.current_difficulty.lock().await;
+            *current_diff = diff;
 
-            // Elegimos un bot al azar de esa dificultad y GUARDAMOS SU NOMBRE para toda la partida
             if let Some(chosen_bot) = state.bots().get_random_bot_by_difficulty(diff) {
-                session.active_bot = chosen_bot.name().to_string();
-                println!("Nueva partida iniciada. Bot asignado: {}", session.active_bot);
+                let mut active_bot = session.active_bot.lock().await;
+                *active_bot = chosen_bot.name().to_string();
             }
-
-            println!("--> Dificultad actualizada a: {}", diff);
         }
     }
 
-    println!("--> Juego reiniciado con tamaño {}.", size);
-
-    let yen_data: crate::YEN = (&session.game).into();
+    let yen_data: crate::YEN = (&*game).into();
     axum::Json(yen_data)
 }
 
@@ -488,14 +472,11 @@ pub async fn rendirse(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<SurrenderRequest>,
 ) -> impl IntoResponse {
-    // 1. Obtener contexto del juego actual (Bot que estaba jugando)
-    let active_bot_name = {
-        let session = state.get_or_create_session(&payload.player);
-        session.active_bot.clone()
-    };
+    // Buscamos la sesión para saber contra qué bot estaba perdiendo
+    let session = state.get_or_create_session(&payload.player).await;
+    let active_bot_name = session.active_bot.lock().await.clone();
     let db = state.db.clone();
 
-    // 2. Guardar la derrota en MongoDB (usamos tokio::spawn como en realizar_movimiento)
     tokio::spawn(async move {
         let collection = db.collection::<serde_json::Value>("partidas");
         let record = serde_json::json!({
@@ -504,17 +485,37 @@ pub async fn rendirse(
             "opponent": active_bot_name,
             "board_size": payload.board_size,
             "difficulty": payload.difficulty,
-            "result": "Derrota" // Al rendirse, el resultado es siempre derrota
+            "result": "Derrota"
         });
-
-        if let Err(e) = collection.insert_one(record).await {
-            eprintln!("Error al guardar la rendición en MongoDB: {:?}", e);
-        }
+        let _ = collection.insert_one(record).await;
     });
 
-    // 3. Responder al Gateway
-    axum::Json(serde_json::json!({
-        "status": "ok",
-        "message": "Rendición registrada correctamente"
-    }))
+    axum::Json(serde_json::json!({ "status": "ok", "message": "Rendición registrada" }))
+
+}
+
+
+pub async fn obtener_estadisticas(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Query(params): axum::extract::Query<StatsQuery>,
+) -> impl axum::response::IntoResponse {
+    let collection = state.db.collection::<serde_json::Value>("partidas");
+
+    // Contar victorias
+    let wins_filter = doc! { "player": &params.username, "result": "Victoria" };
+    let wins = collection.count_documents(wins_filter).await.unwrap_or(0);
+
+    // Contar derrotas
+    let losses_filter = doc! { "player": &params.username, "result": "Derrota" };
+    let losses = collection.count_documents(losses_filter).await.unwrap_or(0);
+
+    println!("Victorias: {}, Derrotas: {}", wins, losses);
+    println!("-------------------");
+
+    // Devolver la estructura
+    axum::Json(UserStats {
+        wins: wins as i64,
+        losses: losses as i64,
+        total: (wins + losses) as i64,
+    })
 }
