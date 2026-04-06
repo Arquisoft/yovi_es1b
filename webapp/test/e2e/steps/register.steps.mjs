@@ -4,9 +4,9 @@ import assert from 'assert'
 Given('the register page is open', async function () {
   const page = this.page
   await page.goto('http://localhost:5173/login.html') 
+  
   await page.waitForSelector('#username', { state: 'visible', timeout: 10000 })
 })
-
 When('I enter {string} as the username and submit', async function (username) {
   const page = this.page
   if (!page) throw new Error('Page not initialized')
