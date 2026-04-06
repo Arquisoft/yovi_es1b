@@ -81,4 +81,69 @@ describe('Social & Friends Endpoints (Mocks)', () => {
         });
     });
 
+    // ── GET /friends ───────────────────────────
+
+    describe('GET /friends', () => {
+        it('devuelve lista de amigos aceptados', async () => {
+            vi.spyOn(Friendship, 'find').mockResolvedValue([
+                { users: ['Alice', 'Bob'], status: 'accepted' },
+            ])
+
+            const res = await request(app).get('/friends?username=Alice')
+
+            expect(res.status).toBe(200)
+            expect(res.body[0].name).toBe('Bob')
+            expect(res.body[0].status).toBe('online')
+        })
+
+        it('devuelve 400 si no se pasa username', async () => {
+            const res = await request(app).get('/friends')
+            expect(res.status).toBe(400)
+        })
+    })
+
+    // ── GET /friends/requests ──────────────────
+
+    describe('GET /friends/requests', () => {
+        it('devuelve solicitudes pendientes', async () => {
+            vi.spyOn(Friendship, 'find').mockResolvedValue([
+                { users: ['Bob', 'Alice'], status: 'pending', _id: 'req1' },
+            ])
+
+            const res = await request(app).get('/friends/requests?username=Alice')
+
+            expect(res.status).toBe(200)
+            expect(res.body[0].sender).toBe('Bob')
+            expect(res.body[0].id).toBe('req1')
+        })
+    })
+
+    // ── POST /friends/respond ──────────────────
+
+    describe('POST /friends/respond', () => {
+        it('acepta una solicitud de amistad', async () => {
+            vi.spyOn(Friendship, 'findByIdAndUpdate').mockResolvedValue({
+                _id: 'req1',
+                status: 'accepted',
+            })
+
+            const res = await request(app)
+                .post('/friends/respond')
+                .send({ requestId: 'req1', action: 'accepted' })
+
+            expect(res.status).toBe(200)
+            expect(res.body.message).toMatch(/ahora sois amigos/i)
+        })
+
+        it('rechaza una solicitud de amistad', async () => {
+            vi.spyOn(Friendship, 'findByIdAndDelete').mockResolvedValue(true)
+
+            const res = await request(app)
+                .post('/friends/respond')
+                .send({ requestId: 'req1', action: 'rejected' })
+
+            expect(res.status).toBe(200)
+            expect(res.body.message).toMatch(/rechazada/i)
+        })
+    })
 });

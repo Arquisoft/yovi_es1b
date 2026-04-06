@@ -84,20 +84,25 @@ Bloques de Construcción de Contenidos::
 |*Webapp*
 |Interfaz gráfica SPA (Single Page Application) construida con React, Vite y TypeScript.
 Gestiona las pantallas de inicio, registro, login y partida. Renderiza el tablero
-triangular en formato YEN, controla el temporizador de turno y se comunica con el
-backend mediante llamadas REST.
+triangular en formato YEN, controla el temporizador de turno (con límites de 60s/30s/15s
+según dificultad Easy/Medium/Hard) y se comunica con el backend mediante llamadas REST.
+Incluye panel de amigos, gestión de perfil de usuario con avatares, configuración de música
+de fondo y vídeo de menú.
 |*Users*
 |Servicio backend construido con Node.js y Express. Gestiona el registro y autenticación
-de usuarios, el historial de partidas y actúa de intermediario entre la webapp y el
-motor de juego Gamey. Expone métricas para Prometheus.
+de usuarios con contraseñas hasheadas (bcryptjs), el historial de partidas, la gestión de
+amistades (solicitudes, aceptación y rechazo) y actúa de intermediario entre la webapp y
+el motor de juego Gamey. Expone métricas para Prometheus. Cada usuario recibe un friendCode
+único al registrarse, generado con nanoid, que permite identificarle de forma inequívoca
+para añadirle como amigo.
 |*Gamey*
 |Motor de juego implementado en Rust. Implementa la lógica completa del juego Y sobre
 un tablero triangular con coordenadas trilineales (x,y,z). Expone una API REST para
 gestionar partidas y ofrece tres niveles de bot: RandomBot (fácil), BlockerBot (medio)
 y ProBot (difícil).
 |*MongoDB*
-|Base de datos NoSQL que almacena los usuarios registrados y el historial de partidas,
-utilizada tanto por el servicio Users como por Gamey.
+|Base de datos NoSQL que almacena los usuarios registrados, el historial de partidas y
+las relaciones de amistad, utilizada tanto por el servicio Users como por Gamey.
 |*Prometheus*
 |Sistema de monitorización que recolecta métricas del servicio Users.
 |*Grafana*
@@ -118,12 +123,19 @@ tras el movimiento del jugador y la respuesta del bot.
 |REST `/surrender`|Webapp → Users|Registra la rendición del jugador y actualiza
 el historial de partidas en MongoDB.
 |REST `/history`|Webapp → Users|Consulta el historial de partidas del usuario
-autenticado almacenado en MongoDB.
+autenticado almacenado en MongoDB, con soporte de paginación y filtros por resultado.
 |REST `/difficulties`|Webapp → Users|Devuelve la lista de dificultades disponibles
 (Easy, Medium, Hard).
-|REST `/play`|Users → Gamey|Reenvía los movimientos al motor de juego Rust,
-que ejecuta la lógica del tablero y devuelve el nuevo estado YEN junto con
-el resultado (ganador o partida en curso).
+|REST `/users/profile/:username`|Webapp → Users|Consulta y actualiza el perfil del
+usuario: nickname, idioma, avatar e icono.
+|REST `/users/follow`|Webapp → Users|Envía una solicitud de amistad a otro usuario
+identificado por su friendCode.
+|REST `/friends/requests`|Webapp → Users|Consulta las solicitudes de amistad pendientes
+recibidas.
+|REST `/friends/respond`|Webapp → Users|Acepta o rechaza una solicitud de amistad.
+|REST `/execute-move`|Users → Gamey|Reenvía el índice de celda al motor de juego Rust,
+que ejecuta el movimiento del jugador, calcula la respuesta del bot y devuelve el nuevo
+estado YEN junto con el ganador si lo hay.
 |===
 
 ifdef::arc42help[]
@@ -181,6 +193,8 @@ El temporizador de turno opera en cliente con intervalos de 1 segundo.
 
 *Purpose/Responsibility*: Gestionar la autenticación y registro de usuarios, el historial
 de partidas y actuar como API Gateway entre la webapp y el motor de juego Gamey.
+Al registrarse, cada usuario recibe un friendCode único generado automáticamente que
+permite identificarle para añadirle como amigo.
 
 *Interface(s)*: Expone una API REST en el puerto 3000. Se conecta a MongoDB para
 persistencia y a Gamey (puerto 4000) para la lógica del juego.
@@ -227,8 +241,7 @@ ifdef::arc42help[]
 ****
 endif::arc42help[]
 
-La webapp está organizada en pantallas independientes gestionadas por un router
-interno en `App.tsx`:
+La webapp está organizada en pantallas y hooks independientes:
 
 [cols="1,2" options="header"]
 |===
@@ -236,12 +249,24 @@ interno en `App.tsx`:
 |`HomeScreen`|Pantalla inicial con acceso a registro e inicio de sesión.
 |`RegisterScreen`|Formulario de registro de nuevos usuarios.
 |`LoginScreen`|Formulario de autenticación de usuarios existentes.
-|`GameScreen`|Pantalla principal de juego. Renderiza el tablero triangular YEN,
-muestra el temporizador de turno con barra de progreso, y gestiona las acciones
-de reiniciar, rendirse, cambiar dificultad/tamaño y consultar historial.
-|`App.tsx`|Componente raíz. Contiene toda la lógica de estado: gestión de turnos,
-temporizador automático (60s/30s/15s según dificultad), comunicación con el backend
-y navegación entre pantallas.
+|`GameScreen`|Pantalla principal de juego. Renderiza el tablero triangular YEN con
+celdas interactivas, muestra el temporizador de turno con barra de progreso y estado
+de urgencia (≤5s), y gestiona las acciones de reiniciar, rendirse, cambiar
+dificultad/tamaño y consultar historial.
+|`ProfileScreen`|Pantalla de perfil del usuario. Permite actualizar nickname, idioma,
+avatar e icono, y cambiar la contraseña.
+|`FriendsPanel`|Panel lateral de amigos. Permite buscar usuarios por friendCode, enviar
+solicitudes de amistad, ver amigos activos y gestionar solicitudes pendientes.
+|`SelectionModals`|Modales de selección de dificultad y tamaño de tablero. Se muestran
+cuando el jugador quiere cambiar estos parámetros durante la partida.
+|`useGameLogic`|Hook que encapsula la lógica de movimientos: movimiento humano, movimiento
+automático del bot, reset de partida y rendición.
+|`useGameTimer`|Hook que gestiona el temporizador de turno. Soporta múltiples dificultades
+mediante el mapa `UI_TO_ENGLISH_DIFFICULTY` y lanza el movimiento automático al agotarse el tiempo.
+|`gameService`|Servicio de comunicación con el backend. Encapsula todas las llamadas REST a la
+API de Users.
+|`boardUtils`|Utilidades del tablero: conversión de tamaño de tablero y parcheado visual del layout
+triangular YEN.
 |===
 
 ==== White Box _Gamey_
@@ -286,8 +311,14 @@ endif::arc42help[]
 |===
 |Módulo|Descripción
 |`users-service.js`|Servicio principal Express. Define los endpoints REST,
-gestiona la conexión a MongoDB y reenvía las peticiones de juego a Gamey.
-|`models/user.js`|Modelo Mongoose para usuarios y historial de partidas.
+gestiona la conexión a MongoDB, hashea contraseñas con bcryptjs y reenvía
+las peticiones de juego a Gamey.
+|`models/user.js`|Modelo Mongoose para usuarios. Incluye los campos username, nickname,
+password (hasheado con bcryptjs), friendCode (código único de 6 caracteres generado con
+nanoid al registrarse, usado para identificar al usuario en el sistema de amigos),
+birthDate, language, iconName, score, following y followers.
+|`models/friendship.js`|Modelo Mongoose para relaciones de amistad. Gestiona el estado
+(pending/accepted) entre pares de usuarios identificados por su friendCode.
 |`monitoring/prometheus`|Configuración de Prometheus para recolección de métricas.
 |`monitoring/grafana`|Dashboards de Grafana para visualización de métricas.
 |===
@@ -351,7 +382,7 @@ Los tres lados del triángulo corresponden a x=0, y=0 y z=0 respectivamente.
 de las celdas y detecta la victoria mediante Union-Find sobre los tres lados.
 |===
 
-==== White Box _Temporizador de turno (App.tsx)_
+==== White Box _Temporizador de turno (useGameTimer)_
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -363,13 +394,17 @@ endif::arc42help[]
 [cols="1,2" options="header"]
 |===
 |Elemento|Descripción
+|`UI_TO_ENGLISH_DIFFICULTY`|Mapa de traducción de dificultades de UI (Fácil/Medio/Difícil)
+a claves internas (Easy/Medium/Hard), definido en `constants/config.ts`. Cubre también
+los valores ya en inglés para mayor robustez.
 |`TURN_TIME_LIMIT`|Constante que define el límite en segundos por dificultad:
 Easy=60s, Medium=30s, Hard=15s.
-|`startTurnTimer()`|Arranca un intervalo de 1 segundo que decrementa `turnTimeLeft`.
-Al llegar a 0 llama a `triggerAutoMove()`.
-|`stopTurnTimer()`|Detiene el intervalo activo y resetea `turnTimeLeft` a null.
-Se invoca al hacer clic en una celda, rendirse, salir o terminar la partida.
-|`triggerAutoMove()`|Selecciona una celda vacía aleatoria del layout actual y
-ejecuta la misma lógica que `handleCellClick()`, usando refs para evitar
-problemas de stale closure con el estado de React.
+|`startTimer(difficulty)`|Arranca un intervalo de 1 segundo que decrementa `timeLeft`. Traduce
+automáticamente el nombre de dificultad mediante `UI_TO_ENGLISH_DIFFICULTY`. Al llegar a 0 llama a
+`onTimeUp()`.
+|`stopTimer()`|Detiene el intervalo activo. Se invoca al hacer clic en una celda,
+al reiniciar partida (mediante `startNewGame`), al rendirse, al terminar o al salir.
+|`startNewGame()`|Llama a `stopTimer()` y `setTimerVisible(false)` antes de resetear el tablero,
+asegurando que el temporizador se reinicia correctamente al cambiar dificultad, tamaño o pulsar
+reiniciar.
 |===
