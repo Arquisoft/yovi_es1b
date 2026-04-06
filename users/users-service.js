@@ -652,38 +652,16 @@ app.get('/history', async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-    res.status(200).json({ status: 'User Service Ready' });
-});
 
 if (require.main === module) {
-    // 2. Definición de variables (ESTO ES LO QUE TE FALTABA)
-    const baseUri = process.env.MONGODB_URI_USERS;
-    const extraOptions = process.env.MONGODB_OPTIONS || "";
 
-    if (!baseUri) {
-        console.error("ERROR CRÍTICO: La variable MONGODB_URI_USERS no está definida.");
-        process.exit(1);
-    }
+  mongoose.connect(process.env.MONGODB_URI)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('Could not connect to MongoDB', err));
 
-    // Construimos la URI final gestionando los símbolos '?' y '&'
-    const finalUri = baseUri.includes('?') 
-        ? `${baseUri}${extraOptions.replace('?', '&')}` 
-        : `${baseUri}${extraOptions}`;
-
-    // 3. Conexión y arranque
-    mongoose.connect(finalUri)
-        .then(() => {
-            console.log('Connected to MongoDB');
-            // SOLO escuchamos cuando la base de datos está confirmada
-            app.listen(port, () => {
-                console.log(`User Service listening at http://localhost:${port}`);
-            });
-        })
-        .catch(err => {
-            console.error('Could not connect to MongoDB', err);
-            process.exit(1);
-        });
+  app.listen(port, () => {
+    console.log(`User Service listening at http://localhost:${port}`)
+  })
 }
 
 module.exports = app
