@@ -98,19 +98,22 @@ y reinicia el temporizador para el siguiente turno.
 |SC-03
 |*Aviso visual de tiempo agotándose*
 |Quedan 5 segundos o menos en el temporizador de turno del jugador.
-|La barra de progreso cambia de azul a rojo y el contador de segundos
-parpadea para alertar al jugador de que debe actuar con urgencia.
+|La barra de progreso aplica la clase `turn-timer-urgent` cambiando de color,
+y el contador de segundos resalta visualmente para alertar al jugador de que
+debe actuar con urgencia.
 
 |SC-04
 |*Registro de nuevo usuario*
-|Un usuario rellena el formulario de registro con nombre y contraseña válidos.
-|El servicio Users crea el usuario en MongoDB y redirige automáticamente
-a la pantalla de juego en menos de 1 segundo.
+|Un usuario rellena el formulario de registro con nombre, nickname, contraseña,
+idioma y fecha de nacimiento válidos.
+|El servicio Users crea el usuario en MongoDB con contraseña hasheada y asigna
+un friendCode único de 6 caracteres. La webapp redirige automáticamente a la
+pantalla de juego en menos de 1 segundo.
 
 |SC-05
 |*Consulta del historial de partidas*
 |El jugador pulsa el botón "Historial" durante una partida.
-|La webapp solicita al backend el historial y muestra una tabla con fecha,
+|La webapp solicita al backend el historial paginado y muestra una tabla con fecha,
 rival, tamaño de tablero, dificultad y resultado de cada partida previa
 en menos de 2 segundos.
 
@@ -122,9 +125,10 @@ de MongoDB y muestra el modal de resultado indicando "Has perdido".
 
 |SC-07
 |*Cambio de dificultad durante la partida*
-|El jugador cambia la dificultad de Easy a Hard desde el menú de la partida.
-|El sistema reinicia el tablero con la nueva dificultad, arranca el temporizador
-con el nuevo límite (15 segundos) y muestra el mensaje "Dificultad cambiada a Hard".
+|El jugador cambia la dificultad desde el menú desplegable de la partida.
+|El sistema para el temporizador activo, reinicia el tablero con la nueva
+dificultad y arranca el temporizador con el nuevo límite correspondiente
+(Easy=60s, Medium=30s, Hard=15s).
 
 |SC-08
 |*Cambio de tamaño de tablero*
@@ -143,8 +147,21 @@ correctamente a todas las peticiones.
 |*Condición de victoria*
 |Un jugador conecta los tres lados del tablero triangular con sus fichas.
 |El motor Gamey detecta la victoria, detiene el juego, el temporizador
-se para y la webapp muestra el modal "Has ganado" o "Ha ganado el bot"
-según corresponda.
+se para y la webapp muestra el modal de resultado según corresponda.
+
+|SC-11
+|*Solicitud y aceptación de amistad*
+|El jugador busca a otro usuario por su friendCode en el panel de amigos
+y le envía una solicitud.
+|El sistema crea una relación pendiente en MongoDB. El destinatario la ve
+en su panel de amigos y puede aceptarla o rechazarla. Al aceptar, ambos
+usuarios aparecen en la lista de amigos del otro.
+
+|SC-12
+|*Actualización de perfil*
+|El jugador cambia su avatar e idioma desde la pantalla de perfil.
+|El servicio Users actualiza los campos en MongoDB y la webapp refleja
+el nuevo avatar inmediatamente sin necesidad de recargar la página.
 |===
 
 ==== Escenarios de cambio
@@ -155,35 +172,36 @@ según corresponda.
 
 |SC-C01
 |*Añadir un nuevo nivel de dificultad*
-|Se implementa un nuevo bot con dificultad "Expert" en el módulo `bot/` de Gamey.
+|Se implementa un nuevo bot en el módulo `bot/` de Gamey.
 |El nuevo bot se registra en `ybot_registry.rs` y aparece automáticamente
-en el endpoint `/difficulties`. La webapp lo muestra en el modal de selección
-sin necesidad de modificar el frontend.
+en el endpoint `/difficulties`. La webapp lo muestra en el menú desplegable
+añadiéndolo al mapa `UI_TO_ENGLISH_DIFFICULTY` en `constants/config.ts`.
 
 |SC-C02
 |*Cambio en el tiempo límite por dificultad*
-|Se decide reducir el tiempo de Hard de 15 a 10 segundos.
-|Solo es necesario modificar la constante `TURN_TIME_LIMIT` en `App.tsx`.
-El resto del sistema (temporizador, barra de progreso, movimiento automático)
-se adapta automáticamente al nuevo valor.
+|Se decide modificar el tiempo límite de alguna dificultad.
+|Solo es necesario modificar la constante `TURN_TIME_LIMIT` en `constants/config.ts`.
+El temporizador, la barra de progreso y el movimiento automático se adaptan
+automáticamente al nuevo valor.
 
 |SC-C03
 |*Caída del servicio Gamey*
 |El contenedor Gamey deja de responder durante una partida en curso.
 |El servicio Users recibe un error de red al intentar contactar con Gamey.
-La webapp muestra "Error realizando el movimiento" y el temporizador
-se reinicia para permitir al jugador intentarlo de nuevo.
+La webapp muestra el error de conexión y el temporizador se reinicia
+para permitir al jugador intentarlo de nuevo.
 
 |SC-C04
 |*Escalado del tamaño de tablero*
-|Se añade soporte para un nuevo tamaño de tablero (por ejemplo 15x15x15).
-|Basta con añadir la opción en el modal de selección en `App.tsx` y en la
-función `getBoardDimensionFromSizeChoice`. El motor Gamey ya soporta
-cualquier tamaño gracias a su topología triangular paramétrica.
+|Se añade soporte para un nuevo tamaño de tablero.
+|Basta con añadir la opción en `SIZE_OPTIONS` y en la función
+`getBoardDimensionFromSizeChoice` en `boardUtils.ts`. El motor Gamey
+ya soporta cualquier tamaño gracias a su topología triangular paramétrica.
 
 |SC-C05
 |*Migración de base de datos*
 |Se decide cambiar de MongoDB local a MongoDB Atlas en producción.
 |Solo es necesario actualizar la variable de entorno `MONGODB_URI`
-en el `docker-co
+en el `docker-compose.yml` o en el archivo `.env`. No se requiere
+ningún cambio en el código de la aplicación.
 |===
