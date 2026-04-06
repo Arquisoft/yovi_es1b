@@ -3,11 +3,7 @@ import assert from 'assert'
 
 Given('the register page is open', async function () {
   const page = this.page
-  if (!page) throw new Error('Page not initialized')
-  
-
-  await page.goto('http://localhost:5173') 
-  
+  await page.goto('http://localhost:5173/login.html') 
   await page.waitForSelector('#username', { state: 'visible', timeout: 10000 })
 })
 

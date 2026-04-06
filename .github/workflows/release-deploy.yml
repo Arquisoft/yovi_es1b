@@ -62,6 +62,7 @@ jobs:
       MONGODB_URI_GAMEY: ${{ secrets.MONGODB_URI_GAMEY }}
       MONGODB_OPTIONS: ${{ secrets.MONGODB_OPTIONS }}
       PORT: 3000
+      VITE_API_URL: http://localhost:3000
     steps:
       - name: Checkout
         uses: actions/checkout@v4
