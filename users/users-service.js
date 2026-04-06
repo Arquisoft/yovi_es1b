@@ -63,9 +63,6 @@ app.use(express.json());
 
 
 
-app.get('/', (req, res) => {
-    res.status(200).json({ status: 'ready' });
-});
 
 // --- ENDPOINTS (Controllers) ---
 
@@ -655,16 +652,31 @@ app.get('/history', async (req, res) => {
   }
 });
 
+// Añade esto en users-service.js para que el test sepa que estás listo
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'User Service Ready' });
+});
 
 if (require.main === module) {
+    // 2. Construcción limpia de la URI
+    const baseUri = process.env.MONGODB_URI_USERS;
+    const extraOptions = process.env.MONGODB_OPTIONS || "";
+    
+    // Si la base ya tiene '?', unimos con '&', si no, con '?'
+    const finalUri = baseUri.includes('?') 
+        ? `${baseUri}${extraOptions.replace('?', '&')}` 
+        : `${baseUri}${extraOptions}`;
 
-  mongoose.connect(process.env.MONGODB_URI_USERS + (process.env.MONGODB_OPTIONS || ""))
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('Could not connect to MongoDB', err));
+    mongoose.connect(finalUri)
+        .then(() => console.log('Connected to MongoDB'))
+        .catch(err => {
+            console.error('Could not connect to MongoDB', err);
+            process.exit(1); // Crítico: si no hay DB, el servicio debe morir para que GitHub se entere
+        });
 
-  app.listen(port, () => {
-    console.log(`User Service listening at http://localhost:${port}`)
-  })
+    app.listen(port, () => {
+        console.log(`User Service listening at http://localhost:${port}`);
+    });
 }
 
 module.exports = app
