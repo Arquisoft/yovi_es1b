@@ -1,158 +1,384 @@
-ifndef::imagesdir[:imagesdir: ../images]
+﻿ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-design-decisions]]
 == Decisiones de Arquitectura
 
-=== Lenguaje de programación
+Esta sección documenta las decisiones arquitectónicas de mayor impacto, coste, riesgo o alcance.
+Para evitar redundancia con la visión general, se complementa la sección 4 (solución) y se profundiza aquí en el porqué de cada elección.
+
+=== Criterios y formato usados
+
+Las decisiones se han registrado con un formato ADR ligero:
+
+* Contexto
+* Alternativas consideradas
+* Decisión
+* Rationale (por qué se elige)
+* Consecuencias (beneficios y desventajas)
+
+Criterios de evaluación aplicados en cada decisión:
+
+* Riesgo técnico y operativo
+* Coste de implementación y mantenimiento
+* Escalabilidad y rendimiento
+* Seguridad
+* Velocidad de entrega
+
+=== Resumen de decisiones (priorizadas)
+
+[cols="1,2,1,3" options="header"]
+|===
+|ID|Decisión|Prioridad|Motivo principal
+|AD-01|Arquitectura de microservicios (`webapp`, `users`, `gamey`)|Alta|Separación de responsabilidades y despliegue independiente
+|AD-02|Stack poliglota: Rust + Node/TS + React/TS|Alta|Rendimiento en motor y velocidad en capa web
+|AD-03|MongoDB como persistencia principal|Alta|Modelo flexible para usuarios/partidas
+|AD-04|`users` como BFF/Gateway|Alta|Simplificar frontend y centralizar integración
+|AD-05|Autenticación con `bcryptjs` + JWT|Alta|Seguridad básica de credenciales y sesiones sin estado
+|AD-06|Sesiones de juego en memoria (`DashMap`)|Media|Baja latencia para estado vivo
+|AD-07|Persistencia de partidas en MongoDB desde `gamey`|Media|Histórico y estadísticas
+|AD-08|Observabilidad con Prometheus/Grafana|Media|Operación y diagnóstico
+|AD-09|OpenAPI/Swagger en `users` y `gamey`|Media|Contrato visible y menos fricción de integración
+|AD-10|Docker Compose para desarrollo|Media|Entorno reproducible
+|AD-11|Política CORS permisiva en desarrollo|Baja|Agilidad durante integración
+|AD-12|Sin LLMs en la versión actual|Baja|Reducir complejidad y dependencias
+|===
+
+=== AD-01. Arquitectura de microservicios
 ==== Contexto
-Necesitamos un motor de juego con buen rendimiento y seguridad de memoria, y al mismo tiempo una capa web para interacción rápida y desarrollo de interfaz.
+Queremos separar responsabilidades (UI, gestión de usuarios y motor del juego) y facilitar despliegues independientes.
+
+==== Alternativas consideradas
+* Monolito único.
+* Microservicios ligeros.
 
 ==== Decisión
-Usar Rust para el motor del juego (`gamey`) y JavaScript/TypeScript (Node.js) para el servicio `users` y TypeScript + React para el frontend (Vite).
+Adoptar microservicios ligeros: `webapp`, `users` y `gamey` (Rust), con comunicación HTTP/REST y orquestación con `docker-compose` en desarrollo.
 
-==== Consecuencias
-.Beneficios:
-. Alto rendimiento y seguridad en el motor (Rust): evita problemas de memoria y mejora la latencia.
-. Desarrollo rápido y ecosistema web (Node/React/TypeScript): facilita iteración en frontend y servicios HTTP.
-. Interoperabilidad clara: API REST expuestos por cada servicio.
-
-.Desventajas:
-. Curva de aprendizaje y complejidad operativa por el stack poliglota (Rust + Node + TS).
-. Mayor complejidad en CI/build (compilar Rust y bundles JS) y en la orquestación.
-. Desconocimiento por parte del equipo del lenguaje Rust.
-
-=== Base de datos
-==== Contexto
-Se requiere persistencia para usuarios y registros de partidas; se valora flexibilidad de esquema y facilidad de integración con Node.js.
-
-==== Decisión
-Usar MongoDB como base de datos principal; `users` usa Mongoose y el servicio Rust puede escribir registros de partidas en Mongo cuando corresponda.
-
-==== Consecuencias
-.Beneficios:
-. Esquema flexible para usuarios y partidas, lo que facilita evolucionar el modelo de datos.
-. Integración sencilla con Node.js (Mongoose) y despliegue con Docker.
-
-.Desventajas:
-. No es relacional por diseño: operaciones transaccionales complejas requieren atención o soluciones adicionales.
-. Riesgos de diseño incorrecto de índices y consultas (posibles problemas de rendimiento si no se indexa adecuadamente).
-. Desconocimiento por parte del equipo de MongoDB.
-
-=== Frontend (React)
-==== Contexto
-Necesitamos una SPA con navegación por pantallas y una experiencia interactiva fluida para el juego.
-
-==== Decisión
-Usar React + TypeScript con Vite como bundler y desarrollo local.
-
-==== Consecuencias
-.Beneficios:
-. Desarrollo rápido de UIs reusables y tipadas.
-. Ecosistema amplio (testing, linters, herramientas) y buen soporte para Vite.
-
-.Desventajas:
-. Dependencia de tooling (Vite, ESLint, etc.) y necesidad de mantener configuración.
-
-=== Microservicios
-==== Contexto
-Queremos separar responsabilidades (UI, gestión de usuarios, motor del juego) y facilitar despliegues independientes.
-
-==== Decisión
-Arquitectura de microservicios ligeros: `webapp`, `users`, `gamey` (Rust). Comunicación mediante HTTP/REST; orquestación con `docker-compose` en desarrollo.
+==== Rationale
+El desacoplamiento permite evolucionar y desplegar cada componente sin bloquear al resto, y encaja con el reparto de trabajo del equipo.
 
 ==== Consecuencias
 .Beneficios:
 . Despliegue y escalado independientes por componente.
-. Claridad en responsabilidades y menor acoplamiento lógico.
+. Claridad de responsabilidades y menor acoplamiento lógico.
 
 .Desventajas:
 . Mayor complejidad en integración, testing e implementación CI/CD.
-. Latencia de red entre servicios y necesidad de gestionar variables de entorno y descubrimiento.
+. Latencia de red entre servicios y necesidad de gestionar configuración distribuida.
 
-=== Docker
+=== AD-02. Stack tecnológico (Rust + Node/TS + React/TS)
 ==== Contexto
-Necesitamos reproducibilidad en entornos de desarrollo y despliegue local sencillo.
+Necesitamos alto rendimiento para el motor de juego y desarrollo rápido para APIs y frontend.
+
+==== Alternativas consideradas
+* Todo el sistema en JavaScript/TypeScript.
+* Todo el sistema en Rust.
+* Stack poliglota por responsabilidad.
 
 ==== Decisión
-Usar Docker y `docker-compose` para orquestar los servicios en desarrollo.
+Usar Rust en `gamey`, Node.js/TypeScript en `users` y React + TypeScript (Vite) en frontend.
+
+==== Rationale
+Se optimiza rendimiento donde más importa (lógica de juego) y se mantiene velocidad de iteración en UI y APIs.
 
 ==== Consecuencias
 .Beneficios:
-. Entornos reproducibles y aislamientos por servicio.
-. Facilita pruebas locales.
+. Alto rendimiento y seguridad de memoria en el motor.
+. Desarrollo rápido y ecosistema maduro para web.
 
 .Desventajas:
-. Consumo de recursos en máquinas locales.
+. Curva de aprendizaje y complejidad operativa por stack poliglota.
+. Mayor complejidad de build/CI.
 
-=== LLMs empleados
+=== AD-03. Base de datos MongoDB
 ==== Contexto
-Valoramos la posibilidad de usar modelos de lenguaje para IA, pero no es un requisito actual.
+Se requiere persistencia de usuarios y partidas con evolución de esquema ágil.
+
+==== Alternativas consideradas
+* PostgreSQL.
+* MongoDB.
 
 ==== Decisión
-No integrar LLMs; las IAs del juego son bots heurísticos implementados en `gamey`.
+Usar MongoDB como base de datos principal. `users` accede con Mongoose y `gamey` persiste partidas.
+
+==== Rationale
+El esquema flexible reduce fricción durante iteraciones de producto y simplifica integración con Node.js.
 
 ==== Consecuencias
 .Beneficios:
-. Arquitectura más simple y sin dependencias a servicios de LLM.
+. Flexibilidad para evolucionar el modelo de datos.
+. Integración sencilla con Node.js y despliegue con Docker.
 
 .Desventajas:
-. Menor capacidad para comportamientos avanzados sin diseñar heurísticas más complejas.
+. Menor soporte natural para relaciones/consultas transaccionales complejas.
+. Riesgo de rendimiento si faltan índices adecuados.
 
-=== Plantilla Arc42
+=== AD-04. Frontend con React + TypeScript + Vite
 ==== Contexto
-Necesitamos una estructura clara para la documentación arquitectónica que sea comprensible por el equipo y terceros.
+Necesitamos una SPA con navegación por pantallas y UI interactiva.
+
+==== Alternativas consideradas
+* React.
+* Vue.
+* Frontend tradicional sin SPA.
 
 ==== Decisión
-Adoptar la plantilla arc42 para organizar la documentación (carpeta `docs/`).
+Usar React + TypeScript con Vite.
+
+==== Rationale
+Alinea velocidad de desarrollo, tipado estático y tooling maduro.
 
 ==== Consecuencias
 .Beneficios:
-. Estructura estándar y reconocible para documentar decisiones, vistas y riesgos.
+. Componentes reutilizables y tipados.
+. Buen rendimiento en desarrollo/build con Vite.
 
 .Desventajas:
-. Trabajo adicional para mantener documentación al día.
+. Dependencia de tooling y configuración asociada.
 
-=== Observabilidad / Monitoring
+=== AD-05. `users` como BFF/Gateway
 ==== Contexto
-Se requiere visibilidad mínima del comportamiento del servicio (métricas de disponibilidad y latencia).
+El frontend necesita un único punto de entrada para autenticación, gestión de usuario y operaciones de juego.
+
+==== Alternativas consideradas
+* Frontend llamando directamente a múltiples servicios.
+* BFF que centraliza llamadas.
 
 ==== Decisión
-Exponer métricas desde `users` con `express-prom-bundle` (Prometheus) y provisionar dashboards de Grafana (configuración en `users/monitoring`).
+Centralizar acceso en `users` como BFF. Reenvía operaciones de juego a `gamey` mediante `GAMEY_SERVICE_URL`.
+
+==== Rationale
+Reduce complejidad del cliente y centraliza reglas de integración.
 
 ==== Consecuencias
 .Beneficios:
-. Métricas simples disponibles para alertas y diagnóstico.
+. Una sola base URL para frontend.
+. Control centralizado de CORS y autenticación.
 
 .Desventajas:
-. Infra adicional a desplegar y mantener (Prometheus/Grafana).
+. `users` se vuelve punto crítico y potencial cuello de botella.
 
-=== Seguridad / Autenticación
+=== AD-06. Seguridad y autenticación
 ==== Contexto
-Las contraseñas de usuario deben almacenarse de forma segura.
+Las credenciales deben almacenarse de forma segura y las rutas sensibles deben autenticarse.
+
+==== Alternativas consideradas
+* Credenciales en claro y sin token.
+* Hash de contraseña + token JWT.
 
 ==== Decisión
-Hashear contraseñas con `bcryptjs` en `users`. Actualmente no hay sessions implementados; añadir autenticación basada en tokens queda como mejora pendiente.
+Hashear contraseñas con `bcryptjs` y emitir JWT en login. Token en `sessionStorage` y envío por `Authorization: Bearer <token>`.
+
+==== Rationale
+Es un nivel de seguridad base adecuado para el alcance actual con bajo coste de implementación.
 
 ==== Consecuencias
 .Beneficios:
-. Contraseñas no se almacenan en texto plano; protección básica frente a fugas.
+. Contraseñas no se almacenan en texto plano.
+. JWT sin estado facilita escalado horizontal del servicio de autenticación.
 
 .Desventajas:
-. Falta de mecanismo de autorización (tokens/sesiones) que limite recursos protegidos; requiere trabajo futuro.
+. Requiere aplicar `authMiddleware` de forma consistente en todas las rutas protegidas.
+. El token en `sessionStorage` se pierde al cerrar navegador (trade-off aceptado).
 
-=== CI / Calidad
+=== AD-07. Sesiones de juego en memoria (`gamey`)
 ==== Contexto
-Mantener calidad del código y detectar regresiones tempranamente.
+Cada jugador debe mantener estado independiente con baja latencia.
+
+==== Alternativas consideradas
+* Guardar estado vivo en base de datos.
+* Guardar estado vivo en memoria del servicio.
 
 ==== Decisión
-Usar linting, tests locales (Vitest en servicios JS/TS) y configuración de Sonar (archivo `sonar-project.properties`) para facilitar análisis de calidad.
+Usar `DashMap<username, UserSession>` con `tokio::Mutex` para sesión por usuario.
+
+==== Rationale
+Minimiza latencia en el bucle principal del juego y simplifica lógica inicial.
 
 ==== Consecuencias
 .Beneficios:
-. Detectar errores y antipatróns temprano; control de calidad.
+. Aislamiento por usuario y concurrencia segura.
+. Alto rendimiento en acceso al estado de partida.
 
 .Desventajas:
-. Requiere mantenimiento de reglas y tiempo de ejecución adicional en pipelines.
+. Estado volátil (se pierde ante reinicio).
+. Escalado horizontal más complejo.
+
+=== AD-08. Persistencia de partidas y estadísticas
+==== Contexto
+Necesitamos histórico de partidas para perfiles, métricas y futuras funcionalidades.
+
+==== Alternativas consideradas
+* No persistir historial.
+* Persistir solo eventos agregados.
+* Persistir partidas completas.
+
+==== Decisión
+Persistir partidas en MongoDB desde `gamey` (`gamey_db.partidas`) con campos `player`, `date`, `opponent`, `board_size`, `difficulty`, `result`.
+
+==== Rationale
+Permite historial útil desde primeras versiones y soporte a estadísticas sin rediseño completo.
+
+==== Consecuencias
+.Beneficios:
+. Trazabilidad de resultados.
+. Base para rankings y analítica.
+
+.Desventajas:
+. Mayor carga de escritura.
+. Necesidad de índices y control de consistencia en fallos parciales.
+
+=== AD-09. Observabilidad
+==== Contexto
+Se requiere visibilidad mínima de disponibilidad y latencia.
+
+==== Alternativas consideradas
+* Solo logs.
+* Métricas + dashboards.
+
+==== Decisión
+Exponer métricas en `users` con `express-prom-bundle` y usar Prometheus/Grafana (`users/monitoring`).
+
+==== Rationale
+Aporta capacidad de diagnóstico operativo con coste asumible.
+
+==== Consecuencias
+.Beneficios:
+. Métricas accionables para alertas y troubleshooting.
+
+.Desventajas:
+. Infraestructura adicional a desplegar y mantener.
+
+=== AD-10. Documentación de APIs (OpenAPI/Swagger)
+==== Contexto
+El equipo necesita un contrato de API claro y navegable.
+
+==== Alternativas consideradas
+* Documentación manual en README.
+* OpenAPI publicada por cada servicio.
+
+==== Decisión
+Publicar OpenAPI/Swagger en ambos servicios:
+
+* `users`: `openapi.yaml` en `/api-docs`.
+* `gamey`: generación con `utoipa` y UI en `/swagger-ui`.
+
+==== Rationale
+Mejora integración, pruebas manuales y mantenibilidad del contrato.
+
+==== Consecuencias
+.Beneficios:
+. Contrato visible para frontend y backend.
+. Reduce ambigüedad y retrabajo.
+
+.Desventajas:
+. Requiere disciplina para mantener contrato y código sincronizados.
+
+=== AD-11. Docker / Docker Compose
+==== Contexto
+Necesitamos reproducibilidad entre entornos de desarrollo.
+
+==== Alternativas consideradas
+* Ejecución local nativa sin contenedores.
+* Contenerización con Docker Compose.
+
+==== Decisión
+Usar Docker y `docker-compose` para servicios en desarrollo.
+
+==== Rationale
+Reduce diferencias entre equipos y simplifica onboarding.
+
+==== Consecuencias
+.Beneficios:
+. Entornos consistentes y repetibles.
+. Arranque local más simple del sistema completo.
+
+.Desventajas:
+. Mayor consumo de recursos locales.
+
+=== AD-12. Política CORS
+==== Contexto
+Frontend y backend se sirven en host/puertos distintos durante desarrollo.
+
+==== Alternativas consideradas
+* CORS estricto por origen conocido.
+* CORS abierto en desarrollo.
+
+==== Decisión
+Permitir CORS amplio en `users` (incluyendo `Authorization` y métodos `GET, POST, PATCH, OPTIONS`) en entorno de desarrollo.
+
+==== Rationale
+Prioriza velocidad de integración en fase temprana.
+
+==== Consecuencias
+.Beneficios:
+. Menor fricción durante desarrollo.
+
+.Desventajas:
+. Configuración demasiado permisiva para producción (debe endurecerse).
+
+=== AD-13. Sin integración de LLMs (estado actual)
+==== Contexto
+Se evaluó la IA generativa, pero no es requisito actual del producto.
+
+==== Alternativas consideradas
+* Integrar LLM para bots/comportamientos.
+* Mantener bots heurísticos propios.
+
+==== Decisión
+No integrar LLMs por ahora; mantener bots heurísticos en `gamey`.
+
+==== Rationale
+Reduce coste, complejidad operativa y dependencias externas para la versión actual.
+
+==== Consecuencias
+.Beneficios:
+. Arquitectura más simple y predecible.
+
+.Desventajas:
+. Menor sofisticación potencial de comportamiento frente a soluciones basadas en modelos.
+
+=== AD-14. Plantilla de documentación (arc42)
+==== Contexto
+Necesitamos una estructura común para documentar arquitectura de forma trazable.
+
+==== Alternativas consideradas
+* Documentación ad-hoc por archivos sueltos.
+* Plantilla estructurada estandarizada.
+
+==== Decisión
+Adoptar arc42 como estructura principal de documentación (`docs/`).
+
+==== Rationale
+Facilita lectura por nuevos miembros y evaluación externa.
+
+==== Consecuencias
+.Beneficios:
+. Estructura reconocible y completa.
+
+.Desventajas:
+. Sobrecoste de mantenimiento documental continuo.
+
+=== AD-15. CI / Calidad
+==== Contexto
+Necesitamos detectar regresiones y mantener calidad de código de forma continua.
+
+==== Alternativas consideradas
+* Validación manual local.
+* Pipeline automatizado con pruebas y análisis estático.
+
+==== Decisión
+Usar linting, tests automatizados (Vitest en JS/TS) y análisis Sonar (`sonar-project.properties`).
+
+==== Rationale
+Reduce defectos tempranos y mejora mantenibilidad.
+
+==== Consecuencias
+.Beneficios:
+. Detección temprana de errores y deuda técnica.
+
+.Desventajas:
+. Tiempo extra en pipelines y mantenimiento de reglas.
 
 ifdef::arc42help[]
 [role="arc42help"]
@@ -165,7 +391,7 @@ Please use your judgement to decide whether an architectural decision should be 
 here in this central section or whether you better document it locally
 (e.g. within the white box template of one building block).
 
-Avoid redundancy. 
+Avoid redundancy.
 Refer to section 4, where you already captured the most important decisions of your architecture.
 
 .Motivation

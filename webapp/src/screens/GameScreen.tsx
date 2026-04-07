@@ -138,9 +138,6 @@ function GameScreen({
           <img className="nav-btn-profile-img" src={safePlayerIcon} alt="Ver mi perfil" />
         </button>
 
-        <div className="nav-user-info">
-          <h2>Jugador: <span>{username}</span></h2>
-        </div>
         <div className="nav-center-title">Partida personalizada contra un bot</div>
 
         <div className="nav-game-settings">
@@ -278,7 +275,7 @@ function GameScreen({
                 rows.map((row, rowIndex) => (
                   <div key={rowIndex} className="board-row">
                   {row.split('').map((cell, cellIndex) => {
-                      // Ãndice lineal triangular que espera el backend para /move.
+                      // Índice lineal triangular que espera el backend para /move.
                       const currentIndex = rowStartIndex(rowIndex) + cellIndex;
                       const isRealCell = hasRealCellAtIndex(currentIndex);
                       return (

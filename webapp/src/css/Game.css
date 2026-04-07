@@ -367,7 +367,7 @@ body {
   }
 }
 
-/* Barra de navegaciÃ³n */
+/* Barra de navegación */
 
 .game-navbar {
   width: 100%;
@@ -440,7 +440,7 @@ body {
   border-radius: 999px;
 }
 
-/* Botones pequeños para el menÃº */
+/* Botones pequeños para el menú */
 .nav-btn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -887,13 +887,12 @@ body {
   gap: 0.75rem;
 }
 
-.profile-card {
+.profile-password-section {
   display: grid;
   gap: 0.6rem;
-  padding: 0.65rem;
-  border: 1px solid #dce3ec;
-  border-radius: 0.6rem;
-  background: #f7f9fc;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .profile-password-row {
@@ -917,10 +916,9 @@ body {
 .profile-password-editor {
   display: grid;
   gap: 0.5rem;
-  padding: 0.5rem;
-  border: 1px solid #dce3ec;
-  border-radius: 0.5rem;
-  background: #f7f9fc;
+  padding: 0.35rem 0 0;
+  border: 0;
+  background: transparent;
 }
 
 .profile-icon-grid {
@@ -947,7 +945,7 @@ body {
 }
 
 .nav-btn:hover {
-  background: #bc84ee; /* Morado suave al pasar el ratÃ³n */
+  background: #bc84ee; /* Morado suave al pasar el ratón */
   transform: translateY(-2px);
   border-color: white;
 }

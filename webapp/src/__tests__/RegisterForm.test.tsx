@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import RegisterScreen from '../screens/RegisterScreen'
+import RegisterScreen, { getLanguageIcon, shouldShowNoIconsMessage } from '../screens/RegisterScreen'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
@@ -27,6 +27,16 @@ describe('RegisterForm', () => {
     vi.clearAllMocks()
   })
 
+  test('getLanguageIcon cubre encontrado y no encontrado', () => {
+    expect(getLanguageIcon('espana')).toBeTruthy()
+    expect(getLanguageIcon('token-que-no-existe')).toBeNull()
+  })
+
+  test('shouldShowNoIconsMessage cubre lista vacia y con iconos', () => {
+    expect(shouldShowNoIconsMessage([])).toBe(true)
+    expect(shouldShowNoIconsMessage([{ id: 'icon-1' }])).toBe(false)
+  })
+
   test('con datos incompletos no deja avanzar', async () => {
     const user = userEvent.setup()
     const onCreate = vi.fn()
@@ -36,6 +46,20 @@ describe('RegisterForm', () => {
     await user.type(screen.getByLabelText(/nombre/i), 'Alice')
     await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
 
+    expect(onCreate).not.toHaveBeenCalled()
+    expect(global.fetch).not.toHaveBeenCalled()
+  })
+
+  test('si faltan campos obligatorios muestra error de campos en blanco', async () => {
+    const onCreate = vi.fn()
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
+
+    const submitButton = screen.getByRole('button', { name: /crear cuenta/i })
+    const form = submitButton.closest('form')
+    expect(form).not.toBeNull()
+    fireEvent.submit(form as HTMLFormElement)
+
+    expect(await screen.findByText(/no pueden estar en blanco/i)).toBeInTheDocument()
     expect(onCreate).not.toHaveBeenCalled()
     expect(global.fetch).not.toHaveBeenCalled()
   })
@@ -67,6 +91,27 @@ describe('RegisterForm', () => {
     expect(onCreate).not.toHaveBeenCalled()
   })
 
+  test('si no hay idioma seleccionado muestra error de idioma requerido', async () => {
+    const user = userEvent.setup()
+    const onCreate = vi.fn()
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
+
+    await user.type(screen.getByLabelText(/nombre/i), 'Alice')
+    await user.type(screen.getByLabelText(/apodo/i), 'Ali')
+    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+    await user.type(screen.getByLabelText(/^contrase/i), 'securePass123')
+    await user.type(screen.getByLabelText(/confirmar/i), 'securePass123')
+
+    const submitButton = screen.getByRole('button', { name: /crear cuenta/i })
+    const form = submitButton.closest('form')
+    expect(form).not.toBeNull()
+    fireEvent.submit(form as HTMLFormElement)
+
+    expect(await screen.findByText(/debes seleccionar un idioma/i)).toBeInTheDocument()
+    expect(global.fetch).not.toHaveBeenCalled()
+    expect(onCreate).not.toHaveBeenCalled()
+  })
+
   test('si el backend rechaza muestra el mensaje de error', async () => {
     const user = userEvent.setup()
     global.fetch = vi.fn().mockResolvedValueOnce({
@@ -81,6 +126,20 @@ describe('RegisterForm', () => {
     await waitFor(() => {
       expect(screen.getByText(/usuario ya existe/i)).toBeInTheDocument()
     })
+  })
+
+  test('si backend rechaza sin error explicito, muestra mensaje generico', async () => {
+    const user = userEvent.setup()
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({}),
+    } as Response)
+
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
+    await fillValidForm(user)
+    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+
+    expect(await screen.findByText(/error al crear la cuenta/i)).toBeInTheDocument()
   })
 
   test('si hay error de red muestra mensaje de red', async () => {
@@ -132,6 +191,8 @@ describe('RegisterForm', () => {
     
     await user.click(ukCheckbox)
     expect(ukCheckbox.checked).toBe(true)
+    await user.click(ukCheckbox)
+    expect(ukCheckbox.checked).toBe(false)
 
     const iconButtons = screen.getAllByRole('button', { name: /elegir/i })
     const nextIconButton = iconButtons.find((btn) => btn.getAttribute('aria-pressed') === 'false')
@@ -140,6 +201,19 @@ describe('RegisterForm', () => {
       await user.click(nextIconButton)
       expect(nextIconButton.getAttribute('aria-pressed')).toBe('true')
     }
+  })
+
+  test('permite seleccionar explicitamente Sin Avatar y un icono de mujer', async () => {
+    const user = userEvent.setup()
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
+
+    const noAvatarButton = screen.getByRole('button', { name: /elegir sin avatar/i })
+    await user.click(noAvatarButton)
+    expect(noAvatarButton).toHaveAttribute('aria-pressed', 'true')
+
+    const femaleIconButton = screen.getByRole('button', { name: /elegir mujer1\.png/i })
+    await user.click(femaleIconButton)
+    expect(femaleIconButton.className).toContain('icon-option-selected')
   })
 
   test('el boton volver ejecuta onBack', async () => {
