@@ -63,4 +63,18 @@ describe('Friends & Social Zone', () => {
       expect.objectContaining({ method: 'POST' })
     )
   })
+
+  test('si falla la busqueda captura el error y lo reporta en consola', async () => {
+    const user = userEvent.setup()
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    ;(global.fetch as any).mockRejectedValueOnce(new Error('network down'))
+
+    render(<FriendsScreen currentUser="Drus" onBack={vi.fn()} />)
+
+    await user.type(screen.getByPlaceholderText(/nombre del usuario/i), 'Cyber')
+    await user.click(screen.getByRole('button', { name: /buscar/i }))
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith('Error buscando usuarios:', expect.any(Error))
+    expect(screen.getByText(/no se han encontrado usuarios/i)).toBeInTheDocument()
+  })
 })

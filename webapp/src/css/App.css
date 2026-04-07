@@ -107,6 +107,34 @@
   font-size: 1.1rem;
 }
 
+.floating-settings-btn {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 2100;
+  backdrop-filter: blur(6px);
+}
+
+.floating-settings-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.floating-settings-icon {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+  display: block;
+}
+
 .modal-actions {
   display: flex;
   flex-direction: column;

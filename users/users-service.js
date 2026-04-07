@@ -494,7 +494,7 @@ app.post('/move', async (req, res) => {
   const { cellIndex, username} = req.body; // NEW: Recibir difficulty
 
   try {
-    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust
+    // 1. Integración: Llamada al servicio de Rust
     const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -524,12 +524,12 @@ app.post('/move', async (req, res) => {
   }
 });
 
-// NEW: Endpoint para registrar una rendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n (derrota)
+// NEW: Endpoint para registrar una rendición (derrota)
 app.post('/surrender', async (req, res) => {
   const { username, difficulty, boardSize } = req.body;
 
   try {
-    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust (GameY)
+    // 1. Integración: Llamada al servicio de Rust (GameY)
     const rustResponse = await fetch(`${GAMEY_URL}/surrender`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -551,12 +551,12 @@ app.post('/surrender', async (req, res) => {
 
     // 3. Respuesta al Frontend
     res.json({ 
-      message: "RendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n registrada correctamente",
+      message: "Rendición registrada correctamente",
       details: data 
     });
 
   } catch (e) {
-    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust en surrender:", e);
+    console.error("Error de conexión con Rust en surrender:", e);
     res.status(500).json({ error: 'Error communicating with Rust server' });
   }
 });
@@ -614,7 +614,7 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  // 1. Extraemos TODOS los parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡metros de la URL, incluido 'result'
+  // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
   const { username, page = 1, limit = 10, result } = req.query;
   
   if (!username) {
@@ -630,7 +630,7 @@ app.get('/history', async (req, res) => {
         rustUrl += `&result=${encodeURIComponent(result)}`;
     }
 
-    // 4. AHORA SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â, ejecutamos el fetch pasÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ndole el string de la URL
+    // 4. AHORA Sí, ejecutamos el fetch pasándole el string de la URL
     const rustResponse = await fetch(rustUrl);
 
     if (!rustResponse.ok) {
@@ -647,7 +647,7 @@ app.get('/history', async (req, res) => {
     res.json(paginatedData); 
     
   } catch (e) {
-    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust:", e);
+    console.error("Error de conexión con Rust:", e);
     res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
   }
 });

@@ -42,7 +42,7 @@ const baseProps = (overrides?: {
   } as GameYData),
   winner: overrides?.winner ?? null,
   connectionStatus: 'Conectado', // Prop requerida en el nuevo GameScreen
-  sizeLabel: 'Tamaño 6x6x6',
+  sizeLabel: 'Pequeño',
   timerVisible: overrides?.timerVisible ?? false,
   turnTimeLeft: overrides?.turnTimeLeft ?? null,
   turnTimeLimit: overrides?.turnTimeLimit ?? null,
@@ -85,13 +85,13 @@ describe('Game UI (MPA Ready)', () => {
     expect(props.onChangeDifficulty).toHaveBeenCalledWith('Fácil')
 
     // 3. Cambiar Tamaño
-    const triggerTamaño = screen.getByText(/Cambiar Tamaño ▾/i)
-    await user.click(triggerTamaño)
+    const triggerTamano = screen.getByText(/Cambiar Tamaño ▾/i)
+    await user.click(triggerTamano)
     
     // Buscamos la opción 9x9x9 que está en tus SIZE_OPTIONS
-    const opcionTamaño = await screen.findByText(/Tamaño 9x9x9/i)
-    await user.click(opcionTamaño)
-    expect(props.onChangeSize).toHaveBeenCalledWith('Tamaño 9x9x9')
+    const opcionTamano = await screen.findByText(/Mediano/i)
+    await user.click(opcionTamano)
+    expect(props.onChangeSize).toHaveBeenCalledWith('Mediano')
 
     // 4. Terminar Partida (por title)
     await user.click(screen.getByTitle(/terminar partida/i))
@@ -168,7 +168,7 @@ describe('Game UI (MPA Ready)', () => {
     render(<GameScreen {...props} />)
 
     expect(screen.getByText(/partida personalizada contra un bot/i)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /jugador:/i })).toBeInTheDocument()
+    expect(screen.getByText(/jugador:/i)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
   })
@@ -234,7 +234,7 @@ describe('Temporizador — renderizado en GameScreen', () => {
     expect(screen.getByText(/0s/i)).toBeInTheDocument()
   })
 
-  // ── Estado de "urgencia" (≤ 5 segundos) ────────
+  // ── Estado de "urgencia" (≤ 5 segundos) ──────
 
   test('aplica la clase de urgencia cuando quedan 5 segundos o menos', () => {
     render(
@@ -331,3 +331,6 @@ describe('Temporizador — renderizado en GameScreen', () => {
       }
   )
 })
+
+
+

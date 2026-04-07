@@ -83,9 +83,9 @@ const GameApp = () => {
   // --- ESTADOS DE UI ---
   const [connectionStatus, setConnectionStatus] = useState('Conectado');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
-  const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
+  const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
-  const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
+  const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
@@ -286,11 +286,11 @@ const GameApp = () => {
         onFetchHistory={() => fetchHistory()}
         onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
         onChangeDifficulty={(uiDiff: string) => {
-          // 1. Mapa de traducción para el Backend
+          // 1. Mapa de traducción para el backend
           const backendMap: Record<string, string> = {
-            'Fácil': 'facil' as any,
-            'Medio': 'medio' as any,
-            'Difícil': 'dificil' as any
+            'Fácil': 'facil',
+            'Medio': 'medio',
+            'Difícil': 'dificil'
           };
 
           const valueForBackend = backendMap[uiDiff] || 'facil';
@@ -338,7 +338,7 @@ const GameApp = () => {
           startNewGame(getBoardDimensionFromSizeChoice(s)!, difficultyChoice || 'Easy');
         }}
         onDifficultyCancel={() => setDifficultyChoice(previousDifficultyChoice || 'Easy')}
-        onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Tamaño 6x6x6')}
+        onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Pequeño')}
       />
 
       {/* Modales de Resultados e Historial */}
@@ -428,3 +428,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameApp />
   </React.StrictMode>
 );
+
+
+
