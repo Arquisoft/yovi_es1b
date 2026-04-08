@@ -1,4 +1,5 @@
 import logoGameY from '../assets/Logo_GameY.png';
+import { useTranslation } from 'react-i18next'
 
 interface HomeScreenProps {
   username: string;
@@ -15,16 +16,17 @@ interface HomeActionsProps {
 
 // Subcomponente para aislar las acciones de navegacion (registro/login)
 function HomeActions({ onGoToRegister, onGoToLogin }: HomeActionsProps) {
-  return (
+    const { t } = useTranslation()
+    return (
     <div className="choose-option menu-content">
-      <h3>Seleccione una forma de registro</h3>
+        <h3>{t('home.select_register')}</h3>
 
       <button type="button" className="submit-button" onClick={onGoToRegister}>
-        Registrarse
+          {t('home.register')}
       </button>
 
       <button type="button" className="submit-button" onClick={onGoToLogin}>
-        Iniciar sesion
+          {t('home.login')}
       </button>
     </div>
   );
@@ -35,9 +37,10 @@ function HomeScreen({
   onGoToRegister,
   onGoToLogin,
 }: HomeScreenProps) {
+    const { t } = useTranslation()
   return (
     <div className="home-screen">
-        <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
+        <h2 className="welcome-title">{t('home.title')}'</h2>
         <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
         {/* Bloque con botones para ir a registro/login */}
         <HomeActions
