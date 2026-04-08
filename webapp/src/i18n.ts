@@ -5,6 +5,10 @@ import en from './locales/en/translation.json'
 import de from './locales/de/translation.json'
 import pt from './locales/pt/translation.json'
 
+const langMap: Record<string, string> = {
+    'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
+}
+const storedLang = localStorage.getItem('yovi_user_language') || 'es'
 i18n.use(initReactI18next).init({
     resources: {
         es: { translation: es },
@@ -12,7 +16,7 @@ i18n.use(initReactI18next).init({
         de: { translation: de },
         pt: { translation: pt },
     },
-    lng: 'es',
+    lng: langMap[storedLang] ?? storedLang,
     fallbackLng: 'es',
     interpolation: { escapeValue: false },
 })

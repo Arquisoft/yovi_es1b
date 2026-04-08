@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { gameService } from '../services/gameService';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
+import i18n from '../i18n'
 
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -331,11 +332,18 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         nickname,
         iconName,
       });
+      const languageToI18n: Record<string, string> = {
+        'Spain': 'es',
+        'English': 'en',
+        'German': 'de',
+        'Portuguese': 'pt',
+      }
       if (data?.error) {
         setErrorMessage(data.error);
       } else {
         setInfoMessage('Perfil actualizado correctamente.');
         if (language) {
+          i18n.changeLanguage(languageToI18n[language] ?? 'es')
           localStorage.setItem('yovi_user_language', language);
         } else {
           localStorage.removeItem('yovi_user_language');
