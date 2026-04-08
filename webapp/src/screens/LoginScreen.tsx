@@ -21,7 +21,7 @@ interface LoginScreenProps {
   ) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
-const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible.';
+const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible. Error de conexión al iniciar sesión.';
 
 const isServerOrDatabaseError = (error: string | undefined, status: number) => {
   if (status >= 500) return true;

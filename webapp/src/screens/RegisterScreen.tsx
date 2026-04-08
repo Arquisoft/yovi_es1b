@@ -64,7 +64,7 @@ interface RegisterScreenProps {
   ) => Promise<void> | void;
 }
 
-const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible.';
+const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible. Error de red.';
 
 const isServerOrDatabaseError = (error: string | undefined, status: number) => {
   if (status >= 500) return true;

@@ -165,7 +165,7 @@ function GameScreen({
           <img className="nav-btn-profile-img" src={safePlayerIcon} alt="Ver mi perfil" />
         </button>
 
-        <div className="nav-center-title">Partida vs IA</div>
+        <div className="nav-center-title">Partida personalizada contra un bot</div>
 
         <div className="nav-game-settings">
           {/* MENÚ TAMAÑO */}
