@@ -28,6 +28,9 @@ import '../../index.css';
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
 
+//Internacionalización
+import i18n from "../../i18n";
+
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -41,7 +44,10 @@ const botIconPool = Object.entries(iconModules)
 const pickRandomBotIcon = (): string | null => {
   const pool = botIconPool.length ? botIconPool : Object.values(iconModules);
   if (!pool.length) return null;
-  const index = Math.floor(Math.random() * pool.length);
+  //const index = Math.floor(Math.random() * pool.length);
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  const index = array[0] % pool.length;
   return pool[index] ?? null;
 };
 
@@ -200,6 +206,13 @@ const GameApp = () => {
         if (resolvedIcon) {
           setPlayerIcon(resolvedIcon);
           localStorage.setItem('yovi_user_icon', resolvedIcon);
+        }
+        //para internacionalización
+        const languageToI18n: Record<string, string> = {
+          'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
+        }
+        if (profile?.language) {
+          i18n.changeLanguage(languageToI18n[profile.language] ?? 'es')
         }
       } catch (error) {
         // En caso de error de red, mantenemos el icono local actual.

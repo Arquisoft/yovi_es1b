@@ -25,6 +25,8 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     coverage: {
       reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
+      exclude: ['**/__tests__/**', '**/*.test.tsx'],
     },
   },
 })
