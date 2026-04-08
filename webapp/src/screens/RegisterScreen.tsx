@@ -1,5 +1,6 @@
-import { type FormEvent, useState } from 'react';
+﻿import { type FormEvent, useState } from 'react';
 import logoGameY from '../assets/Logo_GameY.png';
+import settingsImg from '../assets/buttons/configuracion.png';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -7,7 +8,7 @@ const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,web
   import: 'default',
 }) as Record<string, string>;
 
-const getLanguageIcon = (token: string): string | null => {
+export const getLanguageIcon = (token: string): string | null => {
   const entry = Object.entries(languageModules).find(([path]) => path.toLowerCase().includes(token.toLowerCase()));
   return entry ? entry[1] : null;
 };
@@ -26,15 +27,20 @@ const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}',
 
 const availableIcons = Object.entries(iconModules)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, src], index) => ({
-    id: `${index}-${path.split('/').pop() ?? 'icon'}`,
-    src,
-    name: path.split('/').pop() ?? `Icono ${index + 1}`,
-  }));
+  .map(([path, src], index) => {
+    const fileName = path.substring(path.lastIndexOf('/') + 1);
+    return {
+      id: `${index}-${fileName}`,
+      src,
+      name: fileName,
+    };
+  });
 
 const noAvatarIcon = availableIcons.find((icon) => icon.name.toLowerCase().includes('sinavatar'));
 const maleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('hombre')).slice(0, 4);
 const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('mujer')).slice(0, 4);
+
+export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
 interface RegisterData {
   name: string;
@@ -47,6 +53,7 @@ interface RegisterData {
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
+  readonly onOpenSettings?: () => void;
   readonly onCreateAccount: (
     name: string,
     friendCode: string,
@@ -56,7 +63,7 @@ interface RegisterScreenProps {
   ) => Promise<void> | void;
 }
 
-function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
+function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -68,7 +75,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
   const [formError, setFormError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [selectedIconName, setSelectedIconName] = useState<string>(noAvatarIcon?.name ?? availableIcons[0]?.name ?? 'SinAvatar.png');
+  const [selectedIconName, setSelectedIconName] = useState<string>('SinAvatar.png');
 
   const handleChange = (field: keyof RegisterData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -127,9 +134,20 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
   return (
     <div className="register-screen">
-      <div className="auth-header">
+      <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">ZONA DE REGISTRO</h2>
+        {onOpenSettings && (
+          <button
+            type="button"
+            className="header-settings-btn"
+            onClick={onOpenSettings}
+            title="Configuración"
+            aria-label="Configuración de elementos de fondo"
+          >
+            <img src={settingsImg} alt="" className="floating-settings-icon" />
+          </button>
+        )}
       </div>
 
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
@@ -230,7 +248,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             <div className="form-group">
               <label>Elige tu icono</label>
               <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
-                {availableIcons.length === 0 ? (
+                {shouldShowNoIconsMessage(availableIcons) ? (
                   <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
                 ) : (
                   <>
@@ -313,3 +331,5 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 }
 
 export default RegisterScreen;
+
+

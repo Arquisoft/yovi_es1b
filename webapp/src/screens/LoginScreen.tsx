@@ -1,6 +1,7 @@
-import { type FormEvent, useState } from 'react';
+﻿import { type FormEvent, useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
 import logoGameY from '../assets/Logo_GameY.png';
+import settingsImg from '../assets/buttons/configuracion.png';
 
 interface LoginData {
   username: string;
@@ -9,6 +10,7 @@ interface LoginData {
 
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
+  readonly onOpenSettings?: () => void;
   readonly onLogin: (
     username: string,
     friendCode: string,
@@ -18,7 +20,7 @@ interface LoginScreenProps {
   ) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
-function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
+function LoginScreen({ onBack, onOpenSettings, onLogin }: Readonly<LoginScreenProps>) {
   const [formData, setFormData] = useState<LoginData>({
     username: '',
     password: '',
@@ -49,30 +51,25 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
       const data = await response.json();
 
       if (response.ok) {
-        // --- NUEVO: GUARDAR SESIÓN ---
         // Guardamos el token para las cabeceras Authorization: Bearer <token>
         if (data.token) {
           sessionStorage.setItem('token', data.token);
         }
         // Guardamos el username para que getCurrentUser() funcione en gameService
-        // Usamos data.username porque es el valor normalizado que viene del servidor
         sessionStorage.setItem('username', data.username || formData.username.trim());
-        // -----------------------------
 
-        // El estado de partida se crea en el componente padre (App) usando este username.
         await onLogin(
-            data.username || formData.username.trim(), // Usamos el del server si existe
-            data.friendCode,
-            typeof data.iconName === 'string' ? data.iconName : (typeof data.icon === 'string' ? data.icon : null),
-            typeof data.nickname === 'string' ? data.nickname : null,
-            typeof data.language === 'string' ? data.language : null
+          data.username || formData.username.trim(),
+          data.friendCode,
+          typeof data.iconName === 'string' ? data.iconName : (typeof data.icon === 'string' ? data.icon : null),
+          typeof data.nickname === 'string' ? data.nickname : null,
+          typeof data.language === 'string' ? data.language : null
         );
       } else {
-        setFormError(data.error || 'Error al iniciar sesion.');
+        setFormError(data.error || 'Error al iniciar sesión.');
       }
-      
-    } catch  {
-      setFormError('Error de conexion al iniciar sesion.');
+    } catch {
+      setFormError('Error de conexión al iniciar sesión.');
     } finally {
       setIsLoading(false);
     }
@@ -80,13 +77,24 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
 
   return (
     <div className="register-screen">
-      <div className="auth-header">
+      <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">
           Bienvenido de vuelta a GameY
           <br />
           ¿Cómo era tu nombre?
         </h2>
+        {onOpenSettings && (
+          <button
+            type="button"
+            className="header-settings-btn"
+            onClick={onOpenSettings}
+            title="Configuración"
+            aria-label="Configuración de elementos de fondo"
+          >
+            <img src={settingsImg} alt="" className="floating-settings-icon" />
+          </button>
+        )}
       </div>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
@@ -116,9 +124,9 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
         </div>
 
         <button type="submit" className="submit-button" disabled={isLoading}>
-          {isLoading ? 'Iniciando sesion...' : 'Iniciar sesion'}
+          {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
         </button>
-        <button type="button" className="submit-button" onClick={onBack}> {/* No envia formulario */}
+        <button type="button" className="submit-button" onClick={onBack}>
           Volver
         </button>
       </form>

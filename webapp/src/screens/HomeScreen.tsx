@@ -1,4 +1,5 @@
 import logoGameY from '../assets/Logo_GameY.png';
+import settingsImg from '../assets/buttons/configuracion.png';
 
 interface HomeScreenProps {
   username: string;
@@ -6,6 +7,7 @@ interface HomeScreenProps {
   onStart: () => void; // Inicia una partida directa
   onGoToRegister: () => void; // Navega a pantalla de registro
   onGoToLogin: () => void; // Navega a pantalla de login
+  onOpenSettings?: () => void;
 }
 
 interface HomeActionsProps {
@@ -34,6 +36,7 @@ function HomeActions({ onGoToRegister, onGoToLogin }: HomeActionsProps) {
 function HomeScreen({
   onGoToRegister,
   onGoToLogin,
+  onOpenSettings,
 }: HomeScreenProps) {
   return (
     <div className="home-screen">
@@ -44,8 +47,20 @@ function HomeScreen({
           onGoToRegister={onGoToRegister}
           onGoToLogin={onGoToLogin}
         />
+        {onOpenSettings && (
+          <button
+            type="button"
+            className="home-settings-below"
+            onClick={onOpenSettings}
+            title="Configuración"
+            aria-label="Configuración de elementos de fondo"
+          >
+            <img src={settingsImg} alt="" className="floating-settings-icon" />
+          </button>
+        )}
     </div>
   );
 }
 
 export default HomeScreen;
+
