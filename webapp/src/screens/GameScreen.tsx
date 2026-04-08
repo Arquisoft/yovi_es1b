@@ -45,6 +45,7 @@ interface GameScreenProps {
   onAddFriend?: () => void; // Abre el panel de amigos
   onViewProfile?: () => void; // Abre el perfil del usuario
   onOpenSettings?: () => void; // Abre el panel de configuracion
+  onOpenTutorial?: () => void; // Abre la pantalla de tutorial
 }
 
 function GameScreen({
@@ -69,7 +70,8 @@ function GameScreen({
   onFetchHistory,
   onAddFriend,
   onViewProfile,
-  onOpenSettings
+  onOpenSettings,
+  onOpenTutorial
 }: GameScreenProps) {
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const logoutLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -226,6 +228,11 @@ function GameScreen({
               <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
             </span>
           </button>
+          {onOpenTutorial && (
+            <button className="nav-btn nav-btn-tutorial" onClick={onOpenTutorial} title="Abrir tutorial">
+              Tutorial
+            </button>
+          )}
           <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
             <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
           </button>
@@ -344,9 +351,4 @@ function GameScreen({
 }
 
 export default GameScreen;
-
-
-
-
-
 

@@ -8,6 +8,7 @@ import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
 import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
+import { TutorialScreen } from '../../screens/TutorialScreen';
 
 // Hooks, Servicios y Utils
 import { useGameLogic } from '../../hooks/useGameLogic';
@@ -90,6 +91,7 @@ const GameApp = () => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
+  const [showTutorialScreen, setShowTutorialScreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.4);
@@ -319,6 +321,7 @@ const GameApp = () => {
         onAddFriend={() => openFriendsMenu()}
         onViewProfile={() => setShowProfileScreen(true)}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenTutorial={() => setShowTutorialScreen(true)}
       />
 
       {/* Modales de Configuración */}
@@ -387,6 +390,10 @@ const GameApp = () => {
           onClose={() => setShowProfileScreen(false)}
       />
 
+      <TutorialScreen
+        isOpen={showTutorialScreen}
+        onClose={() => setShowTutorialScreen(false)}
+      />
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
           <div className="modal-box">
@@ -428,6 +435,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameApp />
   </React.StrictMode>
 );
-
-
 
