@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import RegisterScreen from '../../screens/RegisterScreen'
+import { TutorialScreen } from '../../screens/TutorialScreen'
 import '../../css/App.css'
 import '../../css/Log.css'
 import '../../index.css'
@@ -9,6 +10,7 @@ import backgroundMusic from '../../assets/background_music.mp3'
 
 const RegisterPage = () => {
   const [showSettings, setShowSettings] = useState(false)
+  const [showTutorialScreen, setShowTutorialScreen] = useState(false)
   const [musicVolume, setMusicVolume] = useState(0.4)
   const [isVideoPaused, setIsVideoPaused] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -105,6 +107,7 @@ const RegisterPage = () => {
       <RegisterScreen
         onBack={handleBack}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenTutorial={() => setShowTutorialScreen(true)}
         onCreateAccount={handleRegisterSuccess}
       />
 
@@ -139,6 +142,11 @@ const RegisterPage = () => {
           </div>
         </div>
       )}
+
+      <TutorialScreen
+        isOpen={showTutorialScreen}
+        onClose={() => setShowTutorialScreen(false)}
+      />
     </div>
   )
 }

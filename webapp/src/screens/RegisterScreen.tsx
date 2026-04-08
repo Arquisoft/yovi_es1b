@@ -54,6 +54,7 @@ interface RegisterData {
 interface RegisterScreenProps {
   readonly onBack: () => void;
   readonly onOpenSettings?: () => void;
+  readonly onOpenTutorial?: () => void;
   readonly onCreateAccount: (
     name: string,
     friendCode: string,
@@ -63,7 +64,23 @@ interface RegisterScreenProps {
   ) => Promise<void> | void;
 }
 
-function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<RegisterScreenProps>) {
+const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible.';
+
+const isServerOrDatabaseError = (error: string | undefined, status: number) => {
+  if (status >= 500) return true;
+
+  const normalized = (error || '').toLowerCase();
+  return (
+    normalized.includes('database') ||
+    normalized.includes('base de datos') ||
+    normalized.includes('server') ||
+    normalized.includes('servidor') ||
+    normalized.includes('connection') ||
+    normalized.includes('conex')
+  );
+};
+
+function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -125,10 +142,14 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
           formData.nickname.trim()
         );
       } else {
-        setFormError(data.error || 'Error al crear la cuenta.');
+        setFormError(
+          isServerOrDatabaseError(data.error, response.status)
+            ? SERVER_ERROR_MESSAGE
+            : data.error || 'Error al crear la cuenta.'
+        );
       }
     } catch (error) {
-      setFormError('Error de red al crear la cuenta.');
+      setFormError(SERVER_ERROR_MESSAGE);
     }
   };
 
@@ -137,16 +158,31 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">ZONA DE REGISTRO</h2>
-        {onOpenSettings && (
-          <button
-            type="button"
-            className="header-settings-btn"
-            onClick={onOpenSettings}
-            title="Configuración"
-            aria-label="Configuración de elementos de fondo"
-          >
-            <img src={settingsImg} alt="" className="floating-settings-icon" />
-          </button>
+        {(onOpenSettings || onOpenTutorial) && (
+          <div className="header-action-group">
+            {onOpenSettings && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenSettings}
+                title="Configuración"
+                aria-label="Configuración de elementos de fondo"
+              >
+                <img src={settingsImg} alt="" className="floating-action-icon" />
+              </button>
+            )}
+            {onOpenTutorial && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenTutorial}
+                title="Ayuda"
+                aria-label="Abrir ayuda"
+              >
+                <span className="help-icon-glyph" aria-hidden="true">?</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 

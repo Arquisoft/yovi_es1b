@@ -1,4 +1,4 @@
-import logoGameY from '../assets/Logo_GameY.png';
+﻿import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
 
 interface HomeScreenProps {
@@ -8,6 +8,7 @@ interface HomeScreenProps {
   onGoToRegister: () => void; // Navega a pantalla de registro
   onGoToLogin: () => void; // Navega a pantalla de login
   onOpenSettings?: () => void;
+  onOpenTutorial?: () => void;
 }
 
 interface HomeActionsProps {
@@ -37,30 +38,50 @@ function HomeScreen({
   onGoToRegister,
   onGoToLogin,
   onOpenSettings,
+  onOpenTutorial,
 }: HomeScreenProps) {
   return (
     <div className="home-screen">
-        <h2 className="welcome-title">BIENVENIDO A 'Y'</h2>
-        <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
-        {/* Bloque con botones para ir a registro/login */}
-        <HomeActions
-          onGoToRegister={onGoToRegister}
-          onGoToLogin={onGoToLogin}
-        />
-        {onOpenSettings && (
-          <button
-            type="button"
-            className="home-settings-below"
-            onClick={onOpenSettings}
-            title="Configuración"
-            aria-label="Configuración de elementos de fondo"
-          >
-            <img src={settingsImg} alt="" className="floating-settings-icon" />
-          </button>
-        )}
+      <h2 className="welcome-title">
+        <span className="welcome-main">
+          Bienvenido a <span className="welcome-brand">GameY</span>
+        </span>
+        <span className="welcome-kicker">La estrategia no tiene suerte</span>
+      </h2>
+      <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
+      {/* Bloque con botones para ir a registro/login */}
+      <HomeActions
+        onGoToRegister={onGoToRegister}
+        onGoToLogin={onGoToLogin}
+      />
+      {(onOpenSettings || onOpenTutorial) && (
+        <div className="home-action-group">
+          {onOpenSettings && (
+            <button
+              type="button"
+              className="home-settings-below home-action-btn"
+              onClick={onOpenSettings}
+              title="Configuracion"
+              aria-label="Configuracion de elementos de fondo"
+            >
+              <img src={settingsImg} alt="" className="floating-action-icon" />
+            </button>
+          )}
+          {onOpenTutorial && (
+            <button
+              type="button"
+              className="home-settings-below home-action-btn"
+              onClick={onOpenTutorial}
+              title="Ayuda"
+              aria-label="Abrir ayuda"
+            >
+              <span className="help-icon-glyph" aria-hidden="true">?</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 export default HomeScreen;
-

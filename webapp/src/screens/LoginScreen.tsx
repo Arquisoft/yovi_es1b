@@ -11,6 +11,7 @@ interface LoginData {
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
   readonly onOpenSettings?: () => void;
+  readonly onOpenTutorial?: () => void;
   readonly onLogin: (
     username: string,
     friendCode: string,
@@ -20,7 +21,23 @@ interface LoginScreenProps {
   ) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
-function LoginScreen({ onBack, onOpenSettings, onLogin }: Readonly<LoginScreenProps>) {
+const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible.';
+
+const isServerOrDatabaseError = (error: string | undefined, status: number) => {
+  if (status >= 500) return true;
+
+  const normalized = (error || '').toLowerCase();
+  return (
+    normalized.includes('database') ||
+    normalized.includes('base de datos') ||
+    normalized.includes('server') ||
+    normalized.includes('servidor') ||
+    normalized.includes('connection') ||
+    normalized.includes('conex')
+  );
+};
+
+function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
   const [formData, setFormData] = useState<LoginData>({
     username: '',
     password: '',
@@ -66,10 +83,14 @@ function LoginScreen({ onBack, onOpenSettings, onLogin }: Readonly<LoginScreenPr
           typeof data.language === 'string' ? data.language : null
         );
       } else {
-        setFormError(data.error || 'Error al iniciar sesión.');
+        setFormError(
+          isServerOrDatabaseError(data.error, response.status)
+            ? SERVER_ERROR_MESSAGE
+            : data.error || 'Error al iniciar sesión.'
+        );
       }
     } catch {
-      setFormError('Error de conexión al iniciar sesión.');
+      setFormError(SERVER_ERROR_MESSAGE);
     } finally {
       setIsLoading(false);
     }
@@ -79,21 +100,36 @@ function LoginScreen({ onBack, onOpenSettings, onLogin }: Readonly<LoginScreenPr
     <div className="register-screen">
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log">
+        <h2 className="title-log login-title-highlight">
           Bienvenido de vuelta a GameY
           <br />
           ¿Cómo era tu nombre?
         </h2>
-        {onOpenSettings && (
-          <button
-            type="button"
-            className="header-settings-btn"
-            onClick={onOpenSettings}
-            title="Configuración"
-            aria-label="Configuración de elementos de fondo"
-          >
-            <img src={settingsImg} alt="" className="floating-settings-icon" />
-          </button>
+        {(onOpenSettings || onOpenTutorial) && (
+          <div className="header-action-group">
+            {onOpenSettings && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenSettings}
+                title="Configuración"
+                aria-label="Configuración de elementos de fondo"
+              >
+                <img src={settingsImg} alt="" className="floating-action-icon" />
+              </button>
+            )}
+            {onOpenTutorial && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenTutorial}
+                title="Ayuda"
+                aria-label="Abrir ayuda"
+              >
+                <span className="help-icon-glyph" aria-hidden="true">?</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>

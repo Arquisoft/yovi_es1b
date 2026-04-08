@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import failedJson from '../assets/buttons/Failed.json';
 import logoutJson from '../assets/buttons/Logout.json';
 import historyJson from '../assets/buttons/History.json';
@@ -93,6 +93,31 @@ function GameScreen({
     settingsLottieRef.current?.setSpeed(0.5);
   }, []);
 
+  useEffect(() => {
+    const closeDropdowns = () => {
+      setShowSizeMenu(false);
+      setShowDiffMenu(false);
+    };
+
+    const handlePointerOutsideDropdown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target) return;
+      const insideDropdown = target.closest('.custom-dropdown-container');
+      if (!insideDropdown) closeDropdowns();
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeDropdowns();
+    };
+
+    document.addEventListener('pointerdown', handlePointerOutsideDropdown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerOutsideDropdown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
   // Etiqueta para la UI: Directa, sin diccionarios extra aquí para no liarnos
   const difficultyLabel = difficultyChoice || 'Sin seleccionar';
 
@@ -140,7 +165,7 @@ function GameScreen({
           <img className="nav-btn-profile-img" src={safePlayerIcon} alt="Ver mi perfil" />
         </button>
 
-        <div className="nav-center-title">Partida personalizada contra un bot</div>
+        <div className="nav-center-title">Partida vs IA</div>
 
         <div className="nav-game-settings">
           {/* MENÚ TAMAÑO */}
@@ -198,52 +223,79 @@ function GameScreen({
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />
-          <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title="Terminar partida">
-            <img className="nav-btn-png" src={botonRojo} alt="Terminar partida" />
-            <span className="nav-btn-lottie-hover" aria-hidden="true">
-              <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
-            </span>
-          </button>
-          <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title="Reiniciar partida">
-            <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt="Reiniciar partida" />
-            <span className="nav-btn-restart-hover" aria-hidden="true">
-              <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
-            </span>
-          </button>
-          <button
-            className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
-            onClick={onOpenSettings}
-            title="Configuración"
-            aria-label="Configuración"
-          >
-            <img className="nav-btn-settings-img" src={settingsImg} alt="Configuración" />
-            <span className="nav-btn-settings-hover" aria-hidden="true">
-              <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
-            </span>
-          </button>
-          <div className="nav-btn-spacer" aria-hidden="true" />
-          <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title="Ver historial">
-            <img className="nav-btn-history-img" src={historialImg} alt="Historial" />
-            <span className="nav-btn-history-hover" aria-hidden="true">
-              <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
-            </span>
-          </button>
-          {onOpenTutorial && (
-            <button className="nav-btn nav-btn-tutorial" onClick={onOpenTutorial} title="Abrir tutorial">
-              Tutorial
+          <div className="nav-icon-action">
+            <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title="Terminar partida">
+              <img className="nav-btn-png" src={botonRojo} alt="Terminar partida" />
+              <span className="nav-btn-lottie-hover" aria-hidden="true">
+                <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
+              </span>
             </button>
-          )}
-          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
-            <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
-          </button>
-          
+            <span className="nav-icon-caption">Rendirse</span>
+          </div>
+          <div className="nav-icon-action">
+            <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title="Reiniciar partida">
+              <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt="Reiniciar partida" />
+              <span className="nav-btn-restart-hover" aria-hidden="true">
+                <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Reiniciar</span>
+          </div>
+          <div className="nav-icon-action">
+            <button
+              className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
+              onClick={onOpenSettings}
+              title="Configuración"
+              aria-label="Configuración"
+            >
+              <img className="nav-btn-settings-img" src={settingsImg} alt="Configuración" />
+              <span className="nav-btn-settings-hover" aria-hidden="true">
+                <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Ajustes</span>
+          </div>
           <div className="nav-btn-spacer" aria-hidden="true" />
-          <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title="Volver al menú">
-            <img className="nav-btn-exit-img" src={salirMenuImg} alt="Salir" />
-            <span className="nav-btn-logout-hover" aria-hidden="true">
-              <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
-            </span>
-          </button>
+          <div className="nav-icon-action">
+            <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title="Ver historial">
+              <img className="nav-btn-history-img" src={historialImg} alt="Historial" />
+              <span className="nav-btn-history-hover" aria-hidden="true">
+                <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Historial</span>
+          </div>
+          {onOpenTutorial && (
+            <div className="nav-icon-action">
+              <button
+                className="nav-btn nav-btn-icon-frame nav-btn-with-help"
+                onClick={onOpenTutorial}
+                title="Abrir ayuda"
+                aria-label="Ayuda"
+              >
+                <span className="nav-btn-help-glyph" aria-hidden="true">?</span>
+                <span className="nav-btn-help-hover" aria-hidden="true">?</span>
+              </button>
+              <span className="nav-icon-caption">Ayuda</span>
+            </div>
+          )}
+          <div className="nav-icon-action">
+            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
+              <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
+            </button>
+            <span className="nav-icon-caption">Amigos</span>
+          </div>
+
+          <div className="nav-btn-spacer" aria-hidden="true" />
+          <div className="nav-icon-action">
+            <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title="Volver al menú">
+              <img className="nav-btn-exit-img" src={salirMenuImg} alt="Salir" />
+              <span className="nav-btn-logout-hover" aria-hidden="true">
+                <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Salir</span>
+          </div>
         </div>
 
       </nav>
@@ -351,4 +403,5 @@ function GameScreen({
 }
 
 export default GameScreen;
+
 
