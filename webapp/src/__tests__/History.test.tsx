@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import GameScreen from '../screens/GameScreen'; 
@@ -26,7 +26,6 @@ const GamePageMock = () => {
         username="Drus"
         boardData={null}
         winner={null}
-        connectionStatus="Connected"
         difficultyChoice="facil"
         selectedBoardDimension={6}
         sizeLabel="6x6"
@@ -77,7 +76,9 @@ describe('Tests de Historial en MPA', () => {
     render(<GamePageMock />);
 
     const historyBtn = screen.getByRole('button', { name: /historial/i });
-    await user.click(historyBtn);
+    await act(async () => {
+      await user.click(historyBtn);
+    });
 
     expect(await screen.findByText('pro_bot')).toBeInTheDocument();
     expect(screen.getByText('edge_bot')).toBeInTheDocument();

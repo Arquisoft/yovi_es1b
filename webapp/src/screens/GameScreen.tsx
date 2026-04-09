@@ -21,7 +21,19 @@ interface GameYData {
   layout: string;
 }
 
-interface GameScreenProps {
+const getCellClassName = (cell: string): string => {
+  if (cell === 'B') return 'blue';
+  if (cell === 'R') return 'red';
+  return 'empty';
+};
+
+const getCellStatusLabel = (cell: string): string => {
+  if (cell === 'B') return 'ocupada por azul';
+  if (cell === 'R') return 'ocupada por rojo';
+  return 'vacia';
+};
+
+type GameScreenProps = Readonly<{
   username: string;
   displayName?: string;
   playerIcon?: string | null;
@@ -30,7 +42,6 @@ interface GameScreenProps {
   selectedBoardDimension: number | null;
   boardData: GameYData | null;
   winner: number | null;
-  connectionStatus: string;
   turnTimeLeft: number | null;
   turnTimeLimit: number | null;
   timerVisible: boolean;
@@ -46,7 +57,7 @@ interface GameScreenProps {
   onViewProfile?: () => void; // Abre el perfil del usuario
   onOpenSettings?: () => void; // Abre el panel de configuracion
   onOpenTutorial?: () => void; // Abre la pantalla de tutorial
-}
+}>;
 
 function GameScreen({
   username,
@@ -120,17 +131,17 @@ function GameScreen({
 
   // Etiqueta para la UI: Directa, sin diccionarios extra aquí para no liarnos
   const difficultyLabel = difficultyChoice || 'Sin seleccionar';
+  const difficultyOptions: DifficultyChoice[] = ['Fácil', 'Medio', 'Difícil'];
 
   // Nombre del Bot: Dinámico según lo que recibimos
-  const botName = difficultyLabel !== 'Sin seleccionar' 
-    ? `Bot Player (${difficultyLabel})` 
-    : 'Bot Player';
+  const botName = difficultyLabel === 'Sin seleccionar'
+    ? 'Bot Player'
+    : `Bot Player (${difficultyLabel})`;
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
-  //const currentSizeValue: SizeChoice = `Tamaño ${boardDimension}x${boardDimension}x${boardDimension}` as SizeChoice;
-  const safePlayerIcon = playerIcon && playerIcon.trim() ? playerIcon : defaultAvatar;
-  const safeBotIcon = botIcon && botIcon.trim() ? botIcon : defaultAvatar;
-  const playerLabel = displayName && displayName.trim() ? displayName : username;
+  const safePlayerIcon = playerIcon?.trim() ? playerIcon : defaultAvatar;
+  const safeBotIcon = botIcon?.trim() ? botIcon : defaultAvatar;
+  const playerLabel = displayName?.trim() ? displayName : username;
 
   const rawLayout = boardData?.layout ?? '';
   const expectedTotalCells = (boardDimension * (boardDimension + 1)) / 2;
@@ -180,8 +191,9 @@ function GameScreen({
             {showSizeMenu && (
               <div className="dropdown-floating-list">
                 {SIZE_OPTIONS.map((option) => (
-                  <div 
+                  <button
                     key={option} 
+                    type="button"
                     className="dropdown-item"
                     onClick={() => {
                       onChangeSize(option);
@@ -189,7 +201,7 @@ function GameScreen({
                     }}
                   >
                     {option}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -206,17 +218,18 @@ function GameScreen({
             
             {showDiffMenu && (
               <div className="dropdown-floating-list">
-                {['Fácil', 'Medio', 'Difícil'].map((diff) => (
-                  <div 
+                {difficultyOptions.map((diff) => (
+                  <button
                     key={diff} 
+                    type="button"
                     className="dropdown-item"
                     onClick={() => {
-                      onChangeDifficulty(diff as DifficultyChoice);
+                      onChangeDifficulty(diff);
                       setShowDiffMenu(false);
                     }}
                   >
                     {diff.charAt(0).toUpperCase() + diff.slice(1)}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -332,23 +345,26 @@ function GameScreen({
             <div className={`board-container board-size-${boardDimension}`}>
               {boardData ? (
                 rows.map((row, rowIndex) => (
-                  <div key={rowIndex} className="board-row">
+                  <div key={row} className="board-row">
                   {row.split('').map((cell, cellIndex) => {
                       // Índice lineal triangular que espera el backend para /move.
                       const currentIndex = rowStartIndex(rowIndex) + cellIndex;
                       const isRealCell = hasRealCellAtIndex(currentIndex);
+                      const cellClassName = getCellClassName(cell);
+                      const cellStatusLabel = getCellStatusLabel(cell);
+                      const cellContent = cell === '.' ? '' : cell;
                       return (
                         <button
-                          key={cellIndex}
+                          key={`${currentIndex}-${cell}`}
                           type="button"
-                          className={`cell ${cell === 'B' ? 'blue' : cell === 'R' ? 'red' : 'empty'}`}
+                          className={`cell ${cellClassName}`}
                           onClick={() =>
                             isRealCell && cell === '.' && winner === null && onCellClick(currentIndex)
                           } // Solo permite celdas vacias
                           disabled={!isRealCell || cell !== '.' || winner !== null} // Bloquea celdas virtuales, ocupadas o partida terminada
-                          aria-label={`Celda ${currentIndex}, ${cell === 'B' ? 'ocupada por azul' : cell === 'R' ? 'ocupada por rojo' : 'vacia'}`}
+                          aria-label={`Celda ${currentIndex}, ${cellStatusLabel}`}
                         >
-                          {cell !== '.' ? cell : ''}
+                          {cellContent}
                         </button>
                       );
                     })}

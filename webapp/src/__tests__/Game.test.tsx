@@ -41,7 +41,6 @@ const baseProps = (overrides?: {
     layout: makeTriangularLayout(6),
   } as GameYData),
   winner: overrides?.winner ?? null,
-  connectionStatus: 'Conectado', // Prop requerida en el nuevo GameScreen
   sizeLabel: 'Pequeño',
   timerVisible: overrides?.timerVisible ?? false,
   turnTimeLeft: overrides?.turnTimeLeft ?? null,

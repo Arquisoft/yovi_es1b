@@ -102,7 +102,6 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   }, []);
 
   // --- ESTADOS DE UI ---
-  const [connectionStatus, setConnectionStatus] = useState('Conectado');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
@@ -238,14 +237,10 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
 
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = useCallback(async () => {
-    setConnectionStatus('⏱️ Movimiento automático...');
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data?.winner !== null) setShowResultModal(true);
-      setConnectionStatus('Conectado');
-    } catch {
-      setConnectionStatus('Error en movimiento automático');
-    }
+    } catch {}
   }, [difficultyChoice, executeAutoMove, startTimer]);
 
   useEffect(() => {
@@ -253,17 +248,13 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   }, [handleAutoMove]);
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
-    setConnectionStatus('Moviendo...');
     try {
       const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
         setTimerVisible(false);
         setShowResultModal(true);
       }
-      setConnectionStatus('Conectado');
-    } catch {
-      setConnectionStatus('Error en el movimiento');
-    }
+    } catch {}
   };
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
@@ -306,7 +297,6 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         botIcon={botIcon}
         boardData={boardData}
         winner={winner}
-        connectionStatus={connectionStatus}
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}

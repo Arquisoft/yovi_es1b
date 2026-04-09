@@ -41,10 +41,15 @@ const getTrimmedCredentials = (username: string, password: string) => ({
   password: password.trim(),
 });
 
-const getProfileIcon = (data: LoginResponse) =>
-  typeof data.iconName === 'string'
-    ? data.iconName
-    : (typeof data.icon === 'string' ? data.icon : null);
+const getProfileIcon = (data: LoginResponse) => {
+  if (typeof data.iconName === 'string') {
+    return data.iconName;
+  }
+  if (typeof data.icon === 'string') {
+    return data.icon;
+  }
+  return null;
+};
 
 const persistLoginSession = (username: string, token?: string) => {
   if (token) {

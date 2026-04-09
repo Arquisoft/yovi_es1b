@@ -137,7 +137,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
             : data.error || 'Error al crear la cuenta.'
         );
       }
-    } catch (error) {
+    } catch {
       setFormError(REGISTER_SERVER_ERROR_MESSAGE);
     }
   };
@@ -244,8 +244,8 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
 
           <div className="register-right-zone">
             <div className="form-group">
-              <label>Idioma</label>
-              <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
+              <fieldset className="country-checkbox-box">
+                <legend>Idioma</legend>
                 {countryOptions.map((option) => {
                   const checked = formData.language === option.value;
                   return (
@@ -267,12 +267,12 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                     </label>
                   );
                 })}
-              </div>
+              </fieldset>
             </div>
 
             <div className="form-group">
-              <label>Elige tu icono</label>
-              <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
+              <fieldset className="icon-picker-box">
+                <legend>Elige tu icono</legend>
                 {shouldShowNoIconsMessage(availableIcons) ? (
                   <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
                 ) : (
@@ -336,7 +336,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                     </div>
                   </>
                 )}
-              </div>
+              </fieldset>
             </div>
           </div>
         </div>
