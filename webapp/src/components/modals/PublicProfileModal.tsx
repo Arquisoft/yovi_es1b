@@ -107,7 +107,15 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
 
     return ReactDOM.createPortal(
         // Añadido onClick={onClose} al fondo para poder cerrar al hacer clic fuera
-        <div className="modal-backdrop profile-overlay" onClick={onClose}>
+        <div
+            className="modal-backdrop profile-overlay"
+            onClick={onClose}
+            onKeyDown={(e) => {
+                if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                    onClose();
+                }
+            }}
+        >
             <div className="profile-card" onClick={e => e.stopPropagation()}>
                 <button className="profile-close-button" onClick={onClose}>&times;</button>
 

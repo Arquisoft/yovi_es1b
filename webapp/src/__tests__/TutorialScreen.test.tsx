@@ -3,6 +3,8 @@ import '@testing-library/jest-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   TutorialScreen,
+} from '../screens/TutorialScreen'
+import {
   allHelpImages,
   getHelpCaption,
   homeImages,
@@ -16,7 +18,7 @@ import {
   registerErrorPswdImages,
   registerGoodImages,
   settingsImages,
-} from '../screens/TutorialScreen'
+} from '../screens/tutorialHelpers'
 
 const expectedFilenames = [
   'home.png',

@@ -81,10 +81,10 @@ const HomeApp = () => {
         onUsernameChange={setUsername}
         onStart={() => {
           enableGuestSession()
-          window.location.href = '/game.html'
+          globalThis.location.href = '/game.html'
         }}
-        onGoToRegister={() => (window.location.href = '/register.html')}
-        onGoToLogin={() => (window.location.href = '/login.html')}
+        onGoToRegister={() => (globalThis.location.href = '/register.html')}
+        onGoToLogin={() => (globalThis.location.href = '/login.html')}
         onOpenSettings={() => setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
       />

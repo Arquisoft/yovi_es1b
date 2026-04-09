@@ -10,6 +10,17 @@ interface LoginData {
   password: string;
 }
 
+interface LoginResponse {
+  token?: string;
+  username?: string;
+  friendCode: string;
+  iconName?: string;
+  icon?: string;
+  nickname?: string;
+  language?: string;
+  error?: string;
+}
+
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
   readonly onOpenSettings?: () => void;
@@ -25,6 +36,24 @@ interface LoginScreenProps {
 
 const LOGIN_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de conexión al iniciar sesión.`;
 
+const getTrimmedCredentials = (username: string, password: string) => ({
+  username: username.trim(),
+  password: password.trim(),
+});
+
+const getProfileIcon = (data: LoginResponse) =>
+  typeof data.iconName === 'string'
+    ? data.iconName
+    : (typeof data.icon === 'string' ? data.icon : null);
+
+const persistLoginSession = (username: string, token?: string) => {
+  if (token) {
+    sessionStorage.setItem('token', token);
+  }
+  clearGuestSession();
+  sessionStorage.setItem('username', username);
+};
+
 function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
   const [formData, setFormData] = useState<LoginData>({
     username: '',
@@ -33,9 +62,16 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
   const [formError, setFormError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false); // Para bloquear el formulario mientras se procesa el login
 
+  const resolveLoginErrorMessage = (data: LoginResponse | null, status: number) =>
+    isServerOrDatabaseError(data?.error, status)
+      ? LOGIN_SERVER_ERROR_MESSAGE
+      : data?.error || 'Error al iniciar sesión.';
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Evita recargar la pagina
-    if (!formData.username.trim() || !formData.password.trim()) {
+    const { username, password } = getTrimmedCredentials(formData.username, formData.password);
+
+    if (!username || !password) {
       setFormError('Usuario y contraseña no pueden estar en blanco.'); // Valida campos obligatorios
       return;
     }
@@ -48,35 +84,26 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: formData.username.trim(),
-          password: formData.password.trim(),
+          username,
+          password,
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as LoginResponse;
 
       if (response.ok) {
-        // Guardamos el token para las cabeceras Authorization: Bearer <token>
-        if (data.token) {
-          sessionStorage.setItem('token', data.token);
-        }
-        clearGuestSession();
-        // Guardamos el username para que getCurrentUser() funcione en gameService
-        sessionStorage.setItem('username', data.username || formData.username.trim());
+        const resolvedUsername = data.username || username;
+        persistLoginSession(resolvedUsername, data.token);
 
         await onLogin(
-          data.username || formData.username.trim(),
+          resolvedUsername,
           data.friendCode,
-          typeof data.iconName === 'string' ? data.iconName : (typeof data.icon === 'string' ? data.icon : null),
+          getProfileIcon(data),
           typeof data.nickname === 'string' ? data.nickname : null,
           typeof data.language === 'string' ? data.language : null
         );
       } else {
-        setFormError(
-          isServerOrDatabaseError(data.error, response.status)
-            ? LOGIN_SERVER_ERROR_MESSAGE
-            : data.error || 'Error al iniciar sesión.'
-        );
+        setFormError(resolveLoginErrorMessage(data, response.status));
       }
     } catch {
       setFormError(LOGIN_SERVER_ERROR_MESSAGE);

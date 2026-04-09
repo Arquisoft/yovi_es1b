@@ -74,7 +74,7 @@
 
 .tutorial-header-title {
   margin: 0;
-  color: #334155;
+  color: #111827;
   font-size: 1rem;
   font-weight: 800;
 }
@@ -117,7 +117,7 @@
 
 .tutorial-sidebar-title {
   margin: 0 0 0.15rem 0;
-  color: #0f172a;
+  color: #111827;
   font-size: 1rem;
 }
 
@@ -126,7 +126,7 @@
   text-align: left;
   border: 1px solid #b9c8db;
   background: #eef4fb;
-  color: #1c3047;
+  color: #0f172a;
   border-radius: 0.55rem;
   padding: 0.5rem 0.65rem;
   font-size: 0.9rem;
@@ -146,7 +146,7 @@
   text-align: left;
   border: 1px solid #d7e2ef;
   background: #f7fbff;
-  color: #35516f;
+  color: #132238;
   border-radius: 0.5rem;
   padding: 0.42rem 0.65rem 0.42rem 1.15rem;
   font-size: 0.82rem;
@@ -157,7 +157,7 @@
 
 .tutorial-sidebar-subbtn:hover {
   background: #dcedff;
-  color: #164069;
+  color: #0f172a;
   transform: translateY(-1px);
 }
 
@@ -201,24 +201,24 @@
 
 .tutorial-section h4 {
   margin: 0;
-  color: #0f172a;
+  color: #111827;
 }
 
 .tutorial-subtitle {
   margin: 0.15rem 0 0 0;
   font-size: 0.95rem;
-  color: #1e3a5f;
+  color: #0f172a;
 }
 
 .tutorial-section p {
   margin: 0;
-  color: #243447;
+  color: #111827;
 }
 
 .tutorial-list {
   margin: 0;
   padding-left: 1.1rem;
-  color: #243447;
+  color: #111827;
 }
 
 .tutorial-image-grid {
@@ -254,7 +254,7 @@
 
 .tutorial-image-caption {
   font-size: 0.8rem;
-  color: #31455f;
+  color: #111827;
   word-break: break-word;
 }
 
@@ -270,7 +270,7 @@
   border-radius: 0.6rem;
   border: 1px dashed #9aabc2;
   background: #eef4fb;
-  color: #243447;
+  color: #111827;
   font-size: 0.9rem;
 }
 

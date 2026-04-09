@@ -1,9 +1,11 @@
+import { useEffect, useRef } from 'react';
+
 type GuestAccessReason = 'perfil' | 'historial' | 'amigos';
 
 const guestAccessLabels: Record<GuestAccessReason, string> = {
   perfil: 'ver tu perfil',
   historial: 'consultar el historial',
-  amigos: 'añadir amigos',
+  amigos: 'aÃ±adir amigos',
 };
 
 interface GuestAccessModalProps {
@@ -14,16 +16,42 @@ interface GuestAccessModalProps {
 }
 
 export function GuestAccessModal({ reason, onClose, onGoLogin, onGoRegister }: Readonly<GuestAccessModalProps>) {
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (reason && !dialog.open) {
+      dialog.showModal();
+    }
+
+    return () => {
+      if (dialog.open) {
+        dialog.close();
+      }
+    };
+  }, [reason]);
+
   if (!reason) return null;
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Acceso restringido para invitados">
+    <dialog
+      ref={dialogRef}
+      className="modal-backdrop"
+      aria-label="Acceso restringido para invitados"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
       <div className="modal-box">
         <h3>Acceso restringido</h3>
-        <p>Para {guestAccessLabels[reason]} necesitas iniciar sesión o registrarte.</p>
+        <p>Para {guestAccessLabels[reason]} necesitas iniciar sesiÃ³n o registrarte.</p>
         <div className="guest-access-actions">
           <button type="button" className="submit-button guest-access-auth-button" onClick={onGoLogin}>
-            Iniciar sesión
+            Iniciar sesiÃ³n
           </button>
           <button type="button" className="submit-button guest-access-auth-button" onClick={onGoRegister}>
             Registrarse
@@ -33,7 +61,7 @@ export function GuestAccessModal({ reason, onClose, onGoLogin, onGoRegister }: R
           </button>
         </div>
       </div>
-    </div>
+    </dialog>
   );
 }
 

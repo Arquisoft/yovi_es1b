@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -70,20 +70,36 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
 };
 
 const GameApp = () => {
-  // --- SEGURIDAD Y SESIÓN ---
   const isGuestMode = isGuestSession();
   const storedUsername = localStorage.getItem('yovi_user') || '';
+
+  useEffect(() => {
+    if (!storedUsername && !isGuestMode) {
+      globalThis.location.href = '/index.html';
+    }
+  }, [isGuestMode, storedUsername]);
+
+  if (!storedUsername && !isGuestMode) return null;
+
+  return <GameAppContent isGuestMode={isGuestMode} storedUsername={storedUsername} />;
+};
+
+type GameAppContentProps = {
+  isGuestMode: boolean;
+  storedUsername: string;
+};
+
+const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) => {
+  // --- SEGURIDAD Y SESIÓN ---
   const username = isGuestMode ? 'Invitado' : storedUsername;
   const friendCode = isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || '');
   const displayName = isGuestMode ? 'Invitado' : (localStorage.getItem('yovi_user_nickname') || username);
   const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(isGuestMode ? null : localStorage.getItem('yovi_user_icon')));
-  const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
-
-  // Si no hay usuario, redirigimos inmediatamente a la home
-  if (!storedUsername && !isGuestMode) {
-    window.location.href = '/index.html';
-    return null;
-  }
+  const [botIcon] = useState<string | null>(() => pickRandomBotIcon());
+  const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
+  const handleTimeUp = useCallback(() => {
+    void handleAutoMoveRef.current();
+  }, []);
 
   // --- ESTADOS DE UI ---
   const [connectionStatus, setConnectionStatus] = useState('Conectado');
@@ -127,14 +143,13 @@ const GameApp = () => {
     startTimer,
     stopTimer,
     setIsVisible: setTimerVisible,
-  } = useGameTimer(() => handleAutoMove());
+  } = useGameTimer(handleTimeUp);
 
-  const startNewGame = (size: number, difficulty: DifficultyChoice) => {
+  const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
     setTimerVisible(false);
-    setBotIcon(pickRandomBotIcon());
-    resetGame(size, difficulty);
-  };
+    void resetGame(size, difficulty);
+  }, [resetGame, stopTimer, setTimerVisible]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -190,8 +205,10 @@ const GameApp = () => {
       .catch((err) => console.error('Error API:', err));
 
     // 2. Iniciar la partida por defecto
-    startNewGame(6, 'Easy');
-  }, []);
+    queueMicrotask(() => {
+      void startNewGame(6, 'Easy');
+    });
+  }, [startNewGame]);
 
   useEffect(() => {
     let active = true;
@@ -208,7 +225,7 @@ const GameApp = () => {
           setPlayerIcon(resolvedIcon);
           localStorage.setItem('yovi_user_icon', resolvedIcon);
         }
-      } catch (error) {
+      } catch {
         // En caso de error de red, mantenemos el icono local actual.
       }
     };
@@ -220,17 +237,20 @@ const GameApp = () => {
   }, [username]);
 
   // --- MANEJADORES DE ACCIONES ---
-  const handleAutoMove = async () => {
+  const handleAutoMove = useCallback(async () => {
     setConnectionStatus('⏱️ Movimiento automático...');
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data?.winner !== null) setShowResultModal(true);
       setConnectionStatus('Conectado');
-    } catch (error) {
+    } catch {
       setConnectionStatus('Error en movimiento automático');
     }
-  };
+  }, [difficultyChoice, executeAutoMove, startTimer]);
 
+  useEffect(() => {
+    handleAutoMoveRef.current = handleAutoMove;
+  }, [handleAutoMove]);
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
     setConnectionStatus('Moviendo...');
@@ -241,7 +261,7 @@ const GameApp = () => {
         setShowResultModal(true);
       }
       setConnectionStatus('Conectado');
-    } catch (error) {
+    } catch {
       setConnectionStatus('Error en el movimiento');
     }
   };
@@ -300,7 +320,7 @@ const GameApp = () => {
           if (isGuestMode) {
             clearGuestSession();
           }
-          window.location.href = '/index.html';
+          globalThis.location.href = '/index.html';
         }}
         onChangeDifficulty={(uiDiff: string) => {
           // 1. Mapa de traducción para el backend
@@ -313,12 +333,12 @@ const GameApp = () => {
           const valueForBackend = backendMap[uiDiff] || 'facil';
 
           // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
-          setDifficultyChoice(uiDiff as any);
-          setPreviousDifficultyChoice(uiDiff as any);
+          setDifficultyChoice(uiDiff);
+          setPreviousDifficultyChoice(uiDiff);
           
           // 3. Llamamos al servicio con el valor que entiende el Backend
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
-          startNewGame(dimension, valueForBackend as any);
+          startNewGame(dimension, valueForBackend);
         }}
         onChangeSize={(newSize: SizeChoice) => {
           setPreviousSizeChoice(newSize);
@@ -414,11 +434,11 @@ const GameApp = () => {
         onClose={() => setGuestAccessReason(null)}
         onGoLogin={() => {
           setGuestAccessReason(null)
-          window.location.href = '/login.html'
+          globalThis.location.href = '/login.html'
         }}
         onGoRegister={() => {
           setGuestAccessReason(null)
-          window.location.href = '/register.html'
+          globalThis.location.href = '/register.html'
         }}
       />
       {showSettings && (
@@ -462,4 +482,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameApp />
   </React.StrictMode>
 );
+
+export { GameApp, GameAppContent };
+
 

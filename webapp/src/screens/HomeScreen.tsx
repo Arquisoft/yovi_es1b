@@ -2,19 +2,19 @@
 import settingsImg from '../assets/buttons/configuracion.png';
 
 interface HomeScreenProps {
-  username: string;
-  onUsernameChange: (value: string) => void; // Actualiza el nick de Quick Access
-  onStart: () => void; // Inicia una partida directa
-  onGoToRegister: () => void; // Navega a pantalla de registro
-  onGoToLogin: () => void; // Navega a pantalla de login
-  onOpenSettings?: () => void;
-  onOpenTutorial?: () => void;
+  readonly username: string;
+  readonly onUsernameChange: (value: string) => void; // Actualiza el nick de Quick Access
+  readonly onStart: () => void; // Inicia una partida directa
+  readonly onGoToRegister: () => void; // Navega a pantalla de registro
+  readonly onGoToLogin: () => void; // Navega a pantalla de login
+  readonly onOpenSettings?: () => void;
+  readonly onOpenTutorial?: () => void;
 }
 
 interface HomeActionsProps {
-  onStart: () => void;
-  onGoToRegister: () => void;
-  onGoToLogin: () => void;
+  readonly onStart: () => void;
+  readonly onGoToRegister: () => void;
+  readonly onGoToLogin: () => void;
 }
 
 // Subcomponente para aislar las acciones de acceso (invitado / registro / login)
