@@ -218,4 +218,31 @@ describe('LoginForm', () => {
 
     expect(onBack).toHaveBeenCalled()
   })
+
+  test('el boton volver usa el estilo de cancelacion rojo', () => {
+    render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: /volver/i })).toHaveClass('cancel-button')
+  })
+
+  test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {
+    const user = userEvent.setup()
+    const onSettings = vi.fn()
+    const onTutorial = vi.fn()
+
+    render(
+      <LoginScreen
+        onBack={vi.fn()}
+        onLogin={vi.fn()}
+        onOpenSettings={onSettings}
+        onOpenTutorial={onTutorial}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /configuración de elementos de fondo/i }))
+    await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
+
+    expect(onSettings).toHaveBeenCalled()
+    expect(onTutorial).toHaveBeenCalled()
+  })
 })

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { clearSession, getAuthHeaders, getCurrentUser } from '../utils/sessionUtils'
+import { clearGuestSession, clearSession, enableGuestSession, getAuthHeaders, getCurrentUser, isGuestSession } from '../utils/sessionUtils'
 
 describe('sessionUtils', () => {
   beforeEach(() => {
@@ -34,10 +34,22 @@ describe('sessionUtils', () => {
   test('clearSession elimina token y username', () => {
     sessionStorage.setItem('token', 'tok')
     sessionStorage.setItem('username', 'ana')
+    sessionStorage.setItem('yovi_guest', '1')
 
     clearSession()
 
     expect(sessionStorage.getItem('token')).toBeNull()
     expect(sessionStorage.getItem('username')).toBeNull()
+    expect(sessionStorage.getItem('yovi_guest')).toBeNull()
+  })
+
+  test('guest session helpers gestionan la marca de invitado', () => {
+    expect(isGuestSession()).toBe(false)
+
+    enableGuestSession()
+    expect(isGuestSession()).toBe(true)
+
+    clearGuestSession()
+    expect(isGuestSession()).toBe(false)
   })
 })

@@ -1,6 +1,8 @@
 ﻿import { type FormEvent, useState } from 'react';
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
+import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
+import { clearGuestSession } from '../utils/sessionUtils';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -64,21 +66,7 @@ interface RegisterScreenProps {
   ) => Promise<void> | void;
 }
 
-const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible. Error de red.';
-
-const isServerOrDatabaseError = (error: string | undefined, status: number) => {
-  if (status >= 500) return true;
-
-  const normalized = (error || '').toLowerCase();
-  return (
-    normalized.includes('database') ||
-    normalized.includes('base de datos') ||
-    normalized.includes('server') ||
-    normalized.includes('servidor') ||
-    normalized.includes('connection') ||
-    normalized.includes('conex')
-  );
-};
+const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
 
 function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
@@ -134,6 +122,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
       const data = await response.json();
 
       if (response.ok) {
+        clearGuestSession();
         await onCreateAccount(
           formData.name.trim(),
           data.friendCode,
@@ -144,12 +133,12 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
       } else {
         setFormError(
           isServerOrDatabaseError(data.error, response.status)
-            ? SERVER_ERROR_MESSAGE
+            ? REGISTER_SERVER_ERROR_MESSAGE
             : data.error || 'Error al crear la cuenta.'
         );
       }
     } catch (error) {
-      setFormError(SERVER_ERROR_MESSAGE);
+      setFormError(REGISTER_SERVER_ERROR_MESSAGE);
     }
   };
 
@@ -357,7 +346,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
           Crear cuenta
         </button>
 
-          <button type="button" className="submit-button" onClick={onBack}>
+          <button type="button" className="submit-button cancel-button" onClick={onBack}>
             Volver
           </button>
         </div>

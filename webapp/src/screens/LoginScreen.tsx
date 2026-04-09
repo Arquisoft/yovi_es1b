@@ -2,6 +2,8 @@
 import { API_BASE_URL } from '../constants/config';
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
+import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
+import { clearGuestSession } from '../utils/sessionUtils';
 
 interface LoginData {
   username: string;
@@ -21,21 +23,7 @@ interface LoginScreenProps {
   ) => Promise<void> | void; // Intenta iniciar partida con ese usuario
 }
 
-const SERVER_ERROR_MESSAGE = 'Error de los servidores, intentaremos solucionarlo lo antes posible. Error de conexión al iniciar sesión.';
-
-const isServerOrDatabaseError = (error: string | undefined, status: number) => {
-  if (status >= 500) return true;
-
-  const normalized = (error || '').toLowerCase();
-  return (
-    normalized.includes('database') ||
-    normalized.includes('base de datos') ||
-    normalized.includes('server') ||
-    normalized.includes('servidor') ||
-    normalized.includes('connection') ||
-    normalized.includes('conex')
-  );
-};
+const LOGIN_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de conexión al iniciar sesión.`;
 
 function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
   const [formData, setFormData] = useState<LoginData>({
@@ -72,6 +60,7 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
         if (data.token) {
           sessionStorage.setItem('token', data.token);
         }
+        clearGuestSession();
         // Guardamos el username para que getCurrentUser() funcione en gameService
         sessionStorage.setItem('username', data.username || formData.username.trim());
 
@@ -85,12 +74,12 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
       } else {
         setFormError(
           isServerOrDatabaseError(data.error, response.status)
-            ? SERVER_ERROR_MESSAGE
+            ? LOGIN_SERVER_ERROR_MESSAGE
             : data.error || 'Error al iniciar sesión.'
         );
       }
     } catch {
-      setFormError(SERVER_ERROR_MESSAGE);
+      setFormError(LOGIN_SERVER_ERROR_MESSAGE);
     } finally {
       setIsLoading(false);
     }
@@ -162,7 +151,7 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
         <button type="submit" className="submit-button" disabled={isLoading}>
           {isLoading ? 'Iniciando sesión...' : 'Iniciar sesión'}
         </button>
-        <button type="button" className="submit-button" onClick={onBack}>
+        <button type="button" className="submit-button cancel-button" onClick={onBack}>
           Volver
         </button>
       </form>

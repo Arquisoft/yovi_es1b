@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import HomeScreen from '../../screens/HomeScreen'
 import { TutorialScreen } from '../../screens/TutorialScreen'
+import { enableGuestSession } from '../../utils/sessionUtils'
 import '../../css/App.css'
 import '../../css/Log.css'
 import '../../index.css'
@@ -78,7 +79,10 @@ const HomeApp = () => {
       <HomeScreen
         username={username}
         onUsernameChange={setUsername}
-        onStart={() => (window.location.href = '/game.html')}
+        onStart={() => {
+          enableGuestSession()
+          window.location.href = '/game.html'
+        }}
         onGoToRegister={() => (window.location.href = '/register.html')}
         onGoToLogin={() => (window.location.href = '/login.html')}
         onOpenSettings={() => setShowSettings(true)}
@@ -110,7 +114,7 @@ const HomeApp = () => {
                 onChange={(e) => setIsVideoPaused(!e.target.checked)}
               />
             </div>
-            <button type="button" className="submit-button" onClick={() => setShowSettings(false)}>
+            <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
               Cerrar
             </button>
           </div>

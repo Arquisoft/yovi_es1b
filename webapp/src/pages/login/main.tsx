@@ -137,7 +137,7 @@ const LoginPage = () => {
                 onChange={(e) => setIsVideoPaused(!e.target.checked)}
               />
             </div>
-            <button type="button" className="submit-button" onClick={() => setShowSettings(false)}>
+            <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
               Cerrar
             </button>
           </div>

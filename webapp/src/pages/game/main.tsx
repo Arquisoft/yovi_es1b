@@ -7,6 +7,7 @@ import { HistoryModal } from '../../components/modals/HistoryModal';
 import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
 import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
+import { GuestAccessModal, type GuestAccessReason } from '../../components/modals/GuestAccessModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
 
@@ -16,6 +17,7 @@ import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
+import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -69,14 +71,16 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
 
 const GameApp = () => {
   // --- SEGURIDAD Y SESIÓN ---
-  const username = localStorage.getItem('yovi_user') || '';
-  const friendCode = localStorage.getItem('yovi_friend_code') || '';
-  const displayName = localStorage.getItem('yovi_user_nickname') || username;
-  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(localStorage.getItem('yovi_user_icon')));
+  const isGuestMode = isGuestSession();
+  const storedUsername = localStorage.getItem('yovi_user') || '';
+  const username = isGuestMode ? 'Invitado' : storedUsername;
+  const friendCode = isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || '');
+  const displayName = isGuestMode ? 'Invitado' : (localStorage.getItem('yovi_user_nickname') || username);
+  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(isGuestMode ? null : localStorage.getItem('yovi_user_icon')));
   const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
 
   // Si no hay usuario, redirigimos inmediatamente a la home
-  if (!username) {
+  if (!storedUsername && !isGuestMode) {
     window.location.href = '/index.html';
     return null;
   }
@@ -105,6 +109,7 @@ const GameApp = () => {
   const [historyFilter, setHistoryFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [guestAccessReason, setGuestAccessReason] = useState<GuestAccessReason | null>(null);
 
   // --- HOOKS DE LÓGICA ---
   const {
@@ -257,6 +262,10 @@ const GameApp = () => {
     setShowFriendsMenu(true);
   };
 
+  const openGuestAccessPrompt = (reason: GuestAccessReason) => {
+    setGuestAccessReason(reason);
+  };
+
   // Mapeo para la interfaz
   //const displayDifficulty = difficultyChoice;
 
@@ -285,8 +294,14 @@ const GameApp = () => {
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
-        onFetchHistory={() => fetchHistory()}
-        onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
+        onFetchHistory={() => (isGuestMode ? openGuestAccessPrompt('historial') : fetchHistory())}
+        onExit={() => {
+          stopTimer();
+          if (isGuestMode) {
+            clearGuestSession();
+          }
+          window.location.href = '/index.html';
+        }}
         onChangeDifficulty={(uiDiff: string) => {
           // 1. Mapa de traducción para el backend
           const backendMap: Record<string, string> = {
@@ -318,8 +333,8 @@ const GameApp = () => {
           await surrender(difficultyChoice!);
           setShowResultModal(true);
         }}
-        onAddFriend={() => openFriendsMenu()}
-        onViewProfile={() => setShowProfileScreen(true)}
+        onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
+        onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
         onOpenSettings={() => setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
       />
@@ -394,6 +409,18 @@ const GameApp = () => {
         isOpen={showTutorialScreen}
         onClose={() => setShowTutorialScreen(false)}
       />
+      <GuestAccessModal
+        reason={guestAccessReason}
+        onClose={() => setGuestAccessReason(null)}
+        onGoLogin={() => {
+          setGuestAccessReason(null)
+          window.location.href = '/login.html'
+        }}
+        onGoRegister={() => {
+          setGuestAccessReason(null)
+          window.location.href = '/register.html'
+        }}
+      />
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
           <div className="modal-box">
@@ -419,7 +446,7 @@ const GameApp = () => {
                 onChange={(e) => setIsVideoPaused(!e.target.checked)}
               />
             </div>
-            <button type="button" className="submit-button" onClick={() => setShowSettings(false)}>
+            <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
               Cerrar
             </button>
           </div>

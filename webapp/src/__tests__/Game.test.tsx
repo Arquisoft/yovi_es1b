@@ -167,7 +167,7 @@ describe('Game UI (MPA Ready)', () => {
     const props = baseProps()
     render(<GameScreen {...props} />)
 
-    expect(screen.getByText(/partida personalizada contra un bot/i)).toBeInTheDocument()
+    expect(screen.getByText(/partida vs ia/i)).toBeInTheDocument()
     expect(screen.getByText(/jugador:/i)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()

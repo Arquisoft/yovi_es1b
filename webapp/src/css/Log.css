@@ -144,6 +144,22 @@
   width: 100%;
 }
 
+.home-auth-button {
+  background: linear-gradient(135deg, #050505, #6b6b6b);
+}
+
+.home-auth-button:hover {
+  background: linear-gradient(135deg, #121212, #8a8a8a);
+}
+
+.home-guest-button {
+  background: linear-gradient(135deg, #0d2f61, #2e6fd0);
+}
+
+.home-guest-button:hover {
+  background: linear-gradient(135deg, #113976, #4b85e1);
+}
+
 .home-settings-below {
   width: 3.25rem;
   height: 3.25rem;
@@ -333,6 +349,36 @@
   width: 100%;
 }
 
+.guest-access-actions .submit-button {
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+}
+
+.guest-access-auth-button {
+  background: linear-gradient(135deg, #050505, #6b6b6b);
+}
+
+.guest-access-auth-button:hover {
+  background: linear-gradient(135deg, #131313, #8a8a8a);
+  filter: brightness(1.03);
+}
+
+.guest-access-auth-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18), 0 0 0 6px rgba(18, 18, 18, 0.55);
+}
+
+.guest-access-guest-button {
+  background: linear-gradient(135deg, #0d2f61, #2e6fd0);
+}
+
+.guest-access-guest-button:hover {
+  background: linear-gradient(135deg, #113976, #4b85e1);
+  filter: brightness(1.03);
+}
+
+.guest-access-guest-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(47, 111, 255, 0.18), 0 0 0 6px rgba(13, 47, 97, 0.55);
+}
+
 .register-screen > div:last-child {
   background: rgba(255, 255, 255, 0.9);
   border-radius: 0.625rem;
@@ -429,6 +475,31 @@
 
 .submit-button:hover {
   background-color: #0056b3;
+}
+
+.settings-close-button {
+  background: linear-gradient(135deg, #050505, #6b6b6b);
+  transition: background 0.2s ease-in-out, transform 0.2s ease-in-out, filter 0.2s ease-in-out;
+}
+
+.settings-close-button:hover {
+  background: linear-gradient(135deg, #121212, #8a8a8a);
+  filter: brightness(1.03);
+}
+
+.cancel-button {
+  background: linear-gradient(135deg, #2a0505, #8c1c1c);
+}
+
+.cancel-button:hover {
+  background: linear-gradient(135deg, #3a0707, #b42929);
+}
+
+.guest-access-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 .icon-picker-box {

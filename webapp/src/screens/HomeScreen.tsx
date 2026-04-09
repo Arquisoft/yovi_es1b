@@ -12,22 +12,27 @@ interface HomeScreenProps {
 }
 
 interface HomeActionsProps {
+  onStart: () => void;
   onGoToRegister: () => void;
   onGoToLogin: () => void;
 }
 
-// Subcomponente para aislar las acciones de navegacion (registro/login)
-function HomeActions({ onGoToRegister, onGoToLogin }: HomeActionsProps) {
+// Subcomponente para aislar las acciones de acceso (invitado / registro / login)
+function HomeActions({ onStart, onGoToRegister, onGoToLogin }: HomeActionsProps) {
   return (
     <div className="choose-option menu-content">
-      <h3>Seleccione una forma de registro</h3>
+      <h3>Seleccione una forma de acceso</h3>
 
-      <button type="button" className="submit-button" onClick={onGoToRegister}>
+      <button type="button" className="submit-button home-auth-button" onClick={onGoToLogin}>
+        Iniciar sesion
+      </button>
+
+      <button type="button" className="submit-button home-auth-button" onClick={onGoToRegister}>
         Registrarse
       </button>
 
-      <button type="button" className="submit-button" onClick={onGoToLogin}>
-        Iniciar sesion
+      <button type="button" className="submit-button home-guest-button" onClick={onStart}>
+        Entrar como invitado
       </button>
     </div>
   );
@@ -35,6 +40,7 @@ function HomeActions({ onGoToRegister, onGoToLogin }: HomeActionsProps) {
 
 // Pantalla principal (home) con acceso a auth y quick access al juego
 function HomeScreen({
+  onStart,
   onGoToRegister,
   onGoToLogin,
   onOpenSettings,
@@ -51,6 +57,7 @@ function HomeScreen({
       <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
       {/* Bloque con botones para ir a registro/login */}
       <HomeActions
+        onStart={onStart}
         onGoToRegister={onGoToRegister}
         onGoToLogin={onGoToLogin}
       />

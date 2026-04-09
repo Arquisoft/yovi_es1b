@@ -6,16 +6,16 @@ const helpImageModules = import.meta.glob('../assets/help/*.{png,jpg,jpeg,webp,s
   import: 'default',
 }) as Record<string, string>;
 
-const allHelpImages = Object.entries(helpImageModules).map(([path, src]) => ({
+export const allHelpImages = Object.entries(helpImageModules).map(([path, src]) => ({
   id: path,
   src,
   name: path.substring(path.lastIndexOf('/') + 1),
 }));
 
-const pickImageByName = (fileName: string) =>
+export const pickImageByName = (fileName: string) =>
   allHelpImages.filter((image) => image.name.toLowerCase() === fileName.toLowerCase());
 
-const getHelpCaption = (imageName: string) => {
+export const getHelpCaption = (imageName: string) => {
   const normalized = imageName.toLowerCase();
 
   if (normalized.includes('registeremptyspace')) return 'Campos vacíos';
@@ -28,16 +28,16 @@ const getHelpCaption = (imageName: string) => {
   return imageName;
 };
 
-const homeImages = pickImageByName('home.png');
-const registerEmptyImages = pickImageByName('registerEmpty.png');
-const registerEmptySpaceImages = pickImageByName('registerEmptySpace.png');
-const registerErrorPswdImages = pickImageByName('registerErrorPswd.png');
-const registerGoodImages = pickImageByName('registerGood.png');
-const settingsImages = pickImageByName('settings.png');
-const loginEmptyImages = pickImageByName('loginEmpty.png');
-const loginErrorDataImages = pickImageByName('loginErrorData.png');
-const loginErrorServerImages = pickImageByName('loginErrorServer.png');
-const loginGoodImages = pickImageByName('loginGood.png');
+export const homeImages = pickImageByName('home.png');
+export const registerEmptyImages = pickImageByName('registerEmpty.png');
+export const registerEmptySpaceImages = pickImageByName('registerEmptySpace.png');
+export const registerErrorPswdImages = pickImageByName('registerErrorPswd.png');
+export const registerGoodImages = pickImageByName('registerGood.png');
+export const settingsImages = pickImageByName('settings.png');
+export const loginEmptyImages = pickImageByName('loginEmpty.png');
+export const loginErrorDataImages = pickImageByName('loginErrorData.png');
+export const loginErrorServerImages = pickImageByName('loginErrorServer.png');
+export const loginGoodImages = pickImageByName('loginGood.png');
 
 interface TutorialScreenProps {
   isOpen: boolean;

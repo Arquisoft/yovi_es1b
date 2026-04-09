@@ -1,4 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import HomeScreen from '../screens/HomeScreen'
 import '@testing-library/jest-dom'
@@ -34,28 +35,66 @@ describe('Home', () => {
 
     // Ajustado para que coincida con el texto real
     expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /registrarse/i })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /iniciar sesion/i })).toBeInTheDocument()
+    const loginBtn = screen.getByRole('button', { name: /iniciar sesion/i })
+    const registerBtn = screen.getByRole('button', { name: /registrarse/i })
+    const guestBtn = screen.getByRole('button', { name: /entrar como invitado/i })
+
+    expect(loginBtn).toBeInTheDocument()
+    expect(registerBtn).toBeInTheDocument()
+    expect(guestBtn).toBeInTheDocument()
+    expect(loginBtn.compareDocumentPosition(registerBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(registerBtn.compareDocumentPosition(guestBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(loginBtn).toHaveClass('home-auth-button')
+    expect(registerBtn).toHaveClass('home-auth-button')
+    expect(guestBtn).toHaveClass('home-guest-button')
   })
 
-  test('los botones de registro y login llaman a sus funciones', async () => {
+  test('los botones de invitado, registro y login llaman a sus funciones', async () => {
     const onLogin = vi.fn()
     const onRegister = vi.fn()
+    const onGuest = vi.fn()
 
     render(
       <HomeScreen 
         username="" 
         onUsernameChange={vi.fn()} 
-        onStart={vi.fn()} 
+        onStart={onGuest} 
         onGoToRegister={onRegister} 
         onGoToLogin={onLogin} 
       />
     )
+
+    fireEvent.click(screen.getByRole('button', { name: /entrar como invitado/i }))
+    expect(onGuest).toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: /registrarse/i }))
     expect(onRegister).toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: /iniciar sesion/i }))
     expect(onLogin).toHaveBeenCalled()
+  })
+
+  test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {
+    const user = userEvent.setup()
+    const onSettings = vi.fn()
+    const onTutorial = vi.fn()
+
+    render(
+      <HomeScreen
+        username=""
+        onUsernameChange={vi.fn()}
+        onStart={vi.fn()}
+        onGoToRegister={vi.fn()}
+        onGoToLogin={vi.fn()}
+        onOpenSettings={onSettings}
+        onOpenTutorial={onTutorial}
+      />
+    )
+
+    await user.click(screen.getByRole('button', { name: /configuracion de elementos de fondo/i }))
+    await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
+
+    expect(onSettings).toHaveBeenCalled()
+    expect(onTutorial).toHaveBeenCalled()
   })
 })
