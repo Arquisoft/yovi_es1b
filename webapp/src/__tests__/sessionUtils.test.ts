@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, test } from 'vitest'
-import { clearGuestSession, clearSession, enableGuestSession, getAuthHeaders, getCurrentUser, isGuestSession } from '../utils/sessionUtils'
+import {
+  clearGuestSession,
+  clearSession,
+  enableGuestSession,
+  getAuthHeaders,
+  getCurrentUser,
+  isGuestSession,
+} from '../utils/sessionUtils'
 
 describe('sessionUtils', () => {
   beforeEach(() => {
@@ -43,12 +50,22 @@ describe('sessionUtils', () => {
     expect(sessionStorage.getItem('yovi_guest')).toBeNull()
   })
 
+  test('clearSession no falla aunque no haya datos guardados', () => {
+    expect(() => clearSession()).not.toThrow()
+    expect(sessionStorage.length).toBe(0)
+  })
+
   test('guest session helpers gestionan la marca de invitado', () => {
     expect(isGuestSession()).toBe(false)
 
     enableGuestSession()
     expect(isGuestSession()).toBe(true)
 
+    clearGuestSession()
+    expect(isGuestSession()).toBe(false)
+  })
+
+  test('clearGuestSession deja la sesión sin marca aunque ya estuviera vacía', () => {
     clearGuestSession()
     expect(isGuestSession()).toBe(false)
   })

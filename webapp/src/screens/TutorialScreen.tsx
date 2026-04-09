@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+﻿import { useRef, useState } from 'react';
 import '../css/Tutorial.css';
 import {
   getHelpCaption,
@@ -89,7 +89,6 @@ const HelpSubsection = ({
 };
 
 export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
-  const dialogRef = useRef<HTMLDialogElement | null>(null);
   const homeSectionRef = useRef<HTMLElement | null>(null);
   const registerSectionRef = useRef<HTMLElement | null>(null);
   const loginSectionRef = useRef<HTMLElement | null>(null);
@@ -113,26 +112,11 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
     sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    if (isOpen && !dialog.open) {
-      dialog.showModal();
-    }
-
-    return () => {
-      if (dialog.open) {
-        dialog.close();
-      }
-    };
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   return (
     <dialog
-      ref={dialogRef}
+      open
       className="modal-backdrop tutorial-overlay"
       aria-label="Ayuda de GameY"
       onClick={(event) => {
