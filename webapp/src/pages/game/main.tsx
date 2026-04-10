@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -8,6 +8,7 @@ import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
 import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
+import { TutorialScreen } from '../../screens/TutorialScreen';
 
 // Hooks, Servicios y Utils
 import { useGameLogic } from '../../hooks/useGameLogic';
@@ -90,7 +91,10 @@ const GameApp = () => {
   const displayName = localStorage.getItem('yovi_user_nickname') || username;
   const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(localStorage.getItem('yovi_user_icon')));
   const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
-
+    const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
+    const handleTimeUp = useCallback(() => {
+        void handleAutoMoveRef.current();
+    }, []);
   // Si no hay usuario, redirigimos inmediatamente a la home
   if (!username) {
     window.location.href = '/index.html';
@@ -98,7 +102,6 @@ const GameApp = () => {
   }
 
   // --- ESTADOS DE UI ---
-  const [connectionStatus, setConnectionStatus] = useState('Conectado');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
@@ -107,6 +110,7 @@ const GameApp = () => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
+  const [showTutorialScreen, setShowTutorialScreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.4);
@@ -137,14 +141,13 @@ const GameApp = () => {
     startTimer,
     stopTimer,
     setIsVisible: setTimerVisible,
-  } = useGameTimer(() => handleAutoMove());
+  } = useGameTimer(handleTimeUp);
 
-  const startNewGame = (size: number, difficulty: DifficultyChoice) => {
+  const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
     setTimerVisible(false);
-    setBotIcon(pickRandomBotIcon());
-    resetGame(size, difficulty);
-  };
+    void resetGame(size, difficulty);
+  }, [resetGame, stopTimer, setTimerVisible]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -200,8 +203,10 @@ const GameApp = () => {
       .catch((err) => console.error('Error API:', err));
 
     // 2. Iniciar la partida por defecto
-    startNewGame(6, 'Easy');
-  }, []);
+    queueMicrotask(() => {
+      void startNewGame(6, 'Easy');
+    });
+  }, [startNewGame]);
 
   useEffect(() => {
     let active = true;
@@ -218,7 +223,7 @@ const GameApp = () => {
           setPlayerIcon(resolvedIcon);
           localStorage.setItem('yovi_user_icon', resolvedIcon);
         }
-      } catch (error) {
+      } catch {
         // En caso de error de red, mantenemos el icono local actual.
       }
     };
@@ -230,30 +235,25 @@ const GameApp = () => {
   }, [username]);
 
   // --- MANEJADORES DE ACCIONES ---
-  const handleAutoMove = async () => {
-    setConnectionStatus('⏱️ Movimiento automático...');
+  const handleAutoMove = useCallback(async () => {
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data?.winner !== null) setShowResultModal(true);
-      setConnectionStatus('Conectado');
-    } catch (error) {
-      setConnectionStatus('Error en movimiento automático');
-    }
-  };
+    } catch {}
+  }, [difficultyChoice, executeAutoMove, startTimer]);
 
+  useEffect(() => {
+    handleAutoMoveRef.current = handleAutoMove;
+  }, [handleAutoMove]);
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
-    setConnectionStatus('Moviendo...');
     try {
       const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
         setTimerVisible(false);
         setShowResultModal(true);
       }
-      setConnectionStatus('Conectado');
-    } catch (error) {
-      setConnectionStatus('Error en el movimiento');
-    }
+    } catch {}
   };
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
@@ -329,12 +329,12 @@ const GameApp = () => {
           const valueForBackend = backendMap[uiDiff] || 'facil';
 
           // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
-          setDifficultyChoice(uiDiff as any);
-          setPreviousDifficultyChoice(uiDiff as any);
+          setDifficultyChoice(uiDiff);
+          setPreviousDifficultyChoice(uiDiff);
           
           // 3. Llamamos al servicio con el valor que entiende el Backend
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
-          startNewGame(dimension, valueForBackend as any);
+          startNewGame(dimension, valueForBackend);
         }}
         onChangeSize={(newSize: SizeChoice) => {
           setPreviousSizeChoice(newSize);
@@ -352,6 +352,7 @@ const GameApp = () => {
         onAddFriend={() => openFriendsMenu()}
         onViewProfile={() => setShowProfileScreen(true)}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenTutorial={() => setShowTutorialScreen(true)}
       />
 
       {/* Modales de Configuración */}
@@ -420,6 +421,11 @@ const GameApp = () => {
           onClose={() => setShowProfileScreen(false)}
       />
 
+      <TutorialScreen
+        isOpen={showTutorialScreen}
+        onClose={() => setShowTutorialScreen(false)}
+      />
+
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
           <div className="modal-box">
@@ -445,7 +451,7 @@ const GameApp = () => {
                 onChange={(e) => setIsVideoPaused(!e.target.checked)}
               />
             </div>
-            <button type="button" className="submit-button" onClick={() => setShowSettings(false)}>
+            <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
               Cerrar
             </button>
           </div>
@@ -461,3 +467,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameApp />
   </React.StrictMode>
 );
+
+export { GameApp, GameAppContent };
+
+

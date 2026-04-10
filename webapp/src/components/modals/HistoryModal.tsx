@@ -19,7 +19,15 @@ export const HistoryModal = ({
   if (!isOpen) return null; // Si no está abierto, no renderiza nada
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div
+      className="modal-backdrop"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+          onClose();
+        }
+      }}
+    >
       <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
         <h3>Historial de Partidas</h3>
 

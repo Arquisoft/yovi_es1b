@@ -1,6 +1,8 @@
 ﻿import { type FormEvent, useState } from 'react';
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
+import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
+
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -54,6 +56,7 @@ interface RegisterData {
 interface RegisterScreenProps {
   readonly onBack: () => void;
   readonly onOpenSettings?: () => void;
+  readonly onOpenTutorial?: () => void;
   readonly onCreateAccount: (
     name: string,
     friendCode: string,
@@ -63,7 +66,9 @@ interface RegisterScreenProps {
   ) => Promise<void> | void;
 }
 
-function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<RegisterScreenProps>) {
+const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
+
+function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -127,10 +132,14 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
           formData.nickname.trim()
         );
       } else {
-        setFormError(data.error || 'Error al crear la cuenta.');
+        setFormError(
+          isServerOrDatabaseError(data.error, response.status)
+            ? REGISTER_SERVER_ERROR_MESSAGE
+            : data.error || 'Error al crear la cuenta.'
+        );
       }
-    } catch (error) {
-      setFormError('Error de red al crear la cuenta.');
+    } catch {
+      setFormError(REGISTER_SERVER_ERROR_MESSAGE);
     }
   };
 
@@ -139,16 +148,31 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">ZONA DE REGISTRO</h2>
-        {onOpenSettings && (
-          <button
-            type="button"
-            className="header-settings-btn"
-            onClick={onOpenSettings}
-            title="Configuración"
-            aria-label="Configuración de elementos de fondo"
-          >
-            <img src={settingsImg} alt="" className="floating-settings-icon" />
-          </button>
+        {(onOpenSettings || onOpenTutorial) && (
+          <div className="header-action-group">
+            {onOpenSettings && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenSettings}
+                title="Configuración"
+                aria-label="Configuración de elementos de fondo"
+              >
+                <img src={settingsImg} alt="" className="floating-action-icon" />
+              </button>
+            )}
+            {onOpenTutorial && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenTutorial}
+                title="Ayuda"
+                aria-label="Abrir ayuda"
+              >
+                <span className="help-icon-glyph" aria-hidden="true">?</span>
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -221,8 +245,8 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
 
           <div className="register-right-zone">
             <div className="form-group">
-              <label>Idioma</label>
-              <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
+              <fieldset className="country-checkbox-box">
+                <legend>Idioma</legend>
                 {countryOptions.map((option) => {
                   const checked = formData.language === option.value;
                   return (
@@ -244,12 +268,12 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
                     </label>
                   );
                 })}
-              </div>
+              </fieldset>
             </div>
 
             <div className="form-group">
-              <label>Elige tu icono</label>
-              <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
+              <fieldset className="icon-picker-box">
+                <legend>Elige tu icono</legend>
                 {shouldShowNoIconsMessage(availableIcons) ? (
                   <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
                 ) : (
@@ -313,7 +337,7 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
                     </div>
                   </>
                 )}
-              </div>
+              </fieldset>
             </div>
           </div>
         </div>
@@ -323,7 +347,7 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
           Crear cuenta
         </button>
 
-          <button type="button" className="submit-button" onClick={onBack}>
+          <button type="button" className="submit-button cancel-button" onClick={onBack}>
             Volver
           </button>
         </div>
@@ -333,3 +357,5 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
 }
 
 export default RegisterScreen;
+
+
