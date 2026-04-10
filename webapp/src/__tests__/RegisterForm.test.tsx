@@ -1,17 +1,19 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import RegisterScreen, { getLanguageIcon, shouldShowNoIconsMessage } from '../screens/RegisterScreen'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
 const fillValidForm = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.type(screen.getByLabelText(/nombre/i), 'Alice')
-  // CAMBIADO: /nickname/i -> /apodo/i
-  await user.type(screen.getByLabelText(/apodo/i), 'Ali') 
-  await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
-  await user.click(screen.getByLabelText(/seleccionar spain/i))
-  await user.type(screen.getByLabelText(/^Contraseña$/i), 'securePass123')
-  await user.type(screen.getByLabelText(/confirmar Contraseña/i), 'securePass123')
+  await act(async () => {
+    await user.type(screen.getByLabelText(/nombre/i), 'Alice')
+    // CAMBIADO: /nickname/i -> /apodo/i
+    await user.type(screen.getByLabelText(/apodo/i), 'Ali')
+    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+    await user.click(screen.getByLabelText(/seleccionar spain/i))
+    await user.type(screen.getByLabelText(/^Contraseña$/i), 'securePass123')
+    await user.type(screen.getByLabelText(/confirmar Contraseña/i), 'securePass123')
+  })
 }
 
 describe('RegisterForm', () => {
@@ -43,8 +45,10 @@ describe('RegisterForm', () => {
 
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
 
-    await user.type(screen.getByLabelText(/nombre/i), 'Alice')
-    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre/i), 'Alice')
+      await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    })
 
     expect(onCreate).not.toHaveBeenCalled()
     expect(global.fetch).not.toHaveBeenCalled()
@@ -57,7 +61,9 @@ describe('RegisterForm', () => {
     const submitButton = screen.getByRole('button', { name: /crear cuenta/i })
     const form = submitButton.closest('form')
     expect(form).not.toBeNull()
-    fireEvent.submit(form as HTMLFormElement)
+    await act(async () => {
+      fireEvent.submit(form as HTMLFormElement)
+    })
 
     expect(await screen.findByText(/no pueden estar en blanco/i)).toBeInTheDocument()
     expect(onCreate).not.toHaveBeenCalled()
@@ -69,24 +75,17 @@ describe('RegisterForm', () => {
     const onCreate = vi.fn()
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
 
-    // 1. Rellenamos TODOS los campos obligatorios
-    await user.type(screen.getByLabelText(/nombre/i), 'Alice')
-    await user.type(screen.getByLabelText(/apodo/i), 'Ali') // <--- FALTABA ESTO
-    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
-    await user.click(screen.getByLabelText(/seleccionar spain/i))
-    
-    // 2. Ponemos contraseñas que NO coinciden
-    await user.type(screen.getByLabelText(/^Contraseña$/i), 'securePass123')
-    await user.type(screen.getByLabelText(/confirmar Contraseña/i), 'otroPass123')
-    
-    // 3. Intentamos enviar
-    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre/i), 'Alice')
+      await user.type(screen.getByLabelText(/apodo/i), 'Ali')
+      await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+      await user.click(screen.getByLabelText(/seleccionar spain/i))
+      await user.type(screen.getByLabelText(/^Contraseña$/i), 'securePass123')
+      await user.type(screen.getByLabelText(/confirmar Contraseña/i), 'otroPass123')
+      await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    })
 
-    // 4. Ahora sí debería aparecer el mensaje
-    // Usamos findBy para dar tiempo a que React renderice el error
     expect(await screen.findByText(/no coincide/i)).toBeInTheDocument()
-    
-    // 5. Verificamos que NO se llamó al backend ni a la función de éxito
     expect(global.fetch).not.toHaveBeenCalled()
     expect(onCreate).not.toHaveBeenCalled()
   })
@@ -96,16 +95,20 @@ describe('RegisterForm', () => {
     const onCreate = vi.fn()
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
 
-    await user.type(screen.getByLabelText(/nombre/i), 'Alice')
-    await user.type(screen.getByLabelText(/apodo/i), 'Ali')
-    await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
-    await user.type(screen.getByLabelText(/^contrase/i), 'securePass123')
-    await user.type(screen.getByLabelText(/confirmar/i), 'securePass123')
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre/i), 'Alice')
+      await user.type(screen.getByLabelText(/apodo/i), 'Ali')
+      await user.type(screen.getByLabelText(/fecha de nacimiento/i), '2000-01-01')
+      await user.type(screen.getByLabelText(/^contrase/i), 'securePass123')
+      await user.type(screen.getByLabelText(/confirmar/i), 'securePass123')
+    })
 
     const submitButton = screen.getByRole('button', { name: /crear cuenta/i })
     const form = submitButton.closest('form')
     expect(form).not.toBeNull()
-    fireEvent.submit(form as HTMLFormElement)
+    await act(async () => {
+      fireEvent.submit(form as HTMLFormElement)
+    })
 
     expect(await screen.findByText(/debes seleccionar un idioma/i)).toBeInTheDocument()
     expect(global.fetch).not.toHaveBeenCalled()
@@ -121,7 +124,9 @@ describe('RegisterForm', () => {
 
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
     await fillValidForm(user)
-    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    })
 
     await waitFor(() => {
       expect(screen.getByText(/usuario ya existe/i)).toBeInTheDocument()
@@ -137,7 +142,9 @@ describe('RegisterForm', () => {
 
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
     await fillValidForm(user)
-    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    })
 
     expect(await screen.findByText(/error al crear la cuenta/i)).toBeInTheDocument()
   })
@@ -148,9 +155,10 @@ describe('RegisterForm', () => {
 
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
     await fillValidForm(user)
-    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    })
 
-    // Asegúrate de que este texto coincida con el mensaje que muestra tu componente
     expect(await screen.findByText(/error de red/i)).toBeInTheDocument()
   })
 
@@ -168,7 +176,9 @@ describe('RegisterForm', () => {
 
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={onCreate} />)
     await fillValidForm(user)
-    await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /crear cuenta/i }))
+    })
 
     await waitFor(() => {
       expect(onCreate).toHaveBeenCalledWith('Alice', 'NEW-123', expect.any(String), 'Spain', 'Ali')
@@ -188,17 +198,23 @@ describe('RegisterForm', () => {
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
 
     const ukCheckbox = screen.getByLabelText(/seleccionar english/i) as HTMLInputElement
-    
-    await user.click(ukCheckbox)
+
+    await act(async () => {
+      await user.click(ukCheckbox)
+    })
     expect(ukCheckbox.checked).toBe(true)
-    await user.click(ukCheckbox)
+    await act(async () => {
+      await user.click(ukCheckbox)
+    })
     expect(ukCheckbox.checked).toBe(false)
 
     const iconButtons = screen.getAllByRole('button', { name: /elegir/i })
     const nextIconButton = iconButtons.find((btn) => btn.getAttribute('aria-pressed') === 'false')
-    
+
     if (nextIconButton) {
-      await user.click(nextIconButton)
+      await act(async () => {
+        await user.click(nextIconButton)
+      })
       expect(nextIconButton.getAttribute('aria-pressed')).toBe('true')
     }
   })
@@ -208,11 +224,15 @@ describe('RegisterForm', () => {
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
 
     const noAvatarButton = screen.getByRole('button', { name: /elegir sin avatar/i })
-    await user.click(noAvatarButton)
+    await act(async () => {
+      await user.click(noAvatarButton)
+    })
     expect(noAvatarButton).toHaveAttribute('aria-pressed', 'true')
 
     const femaleIconButton = screen.getByRole('button', { name: /elegir mujer1\.png/i })
-    await user.click(femaleIconButton)
+    await act(async () => {
+      await user.click(femaleIconButton)
+    })
     expect(femaleIconButton.className).toContain('icon-option-selected')
   })
 
@@ -221,7 +241,38 @@ describe('RegisterForm', () => {
     const onBack = vi.fn()
 
     render(<RegisterScreen onBack={onBack} onCreateAccount={vi.fn()} />)
-    await user.click(screen.getByRole('button', { name: /volver/i }))
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /volver/i }))
+    })
     expect(onBack).toHaveBeenCalled()
+  })
+
+  test('el boton volver usa el estilo de cancelacion rojo', () => {
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: /volver/i })).toHaveClass('cancel-button')
+  })
+
+  test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {
+    const user = userEvent.setup()
+    const onSettings = vi.fn()
+    const onTutorial = vi.fn()
+
+    render(
+      <RegisterScreen
+        onBack={vi.fn()}
+        onCreateAccount={vi.fn()}
+        onOpenSettings={onSettings}
+        onOpenTutorial={onTutorial}
+      />
+    )
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /configuración de elementos de fondo/i }))
+      await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
+    })
+
+    expect(onSettings).toHaveBeenCalled()
+    expect(onTutorial).toHaveBeenCalled()
   })
 })
