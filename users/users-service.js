@@ -451,7 +451,8 @@ app.get('/users/public-profile/:username', async (req, res) => {
         gameStats = {
           wins: rustStats.wins,
           losses: rustStats.losses,
-          totalGames: rustStats.total // Transformamos "total" en "totalGames"
+          totalGames: rustStats.total, // Transformamos "total" en "totalGames"
+          totalScore: rustStats.total_score // Nuevo campo para puntos totales
         };
       }
     }catch (e) {
