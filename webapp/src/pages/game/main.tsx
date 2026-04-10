@@ -10,6 +10,7 @@ import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { GuestAccessModal, type GuestAccessReason } from '../../components/modals/GuestAccessModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
+import { PayPalStore } from '../../components/modals/PayPalStore';
 
 // Hooks, Servicios y Utils
 import { useGameLogic } from '../../hooks/useGameLogic';
@@ -102,6 +103,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   }, []);
   const [finalScore, setFinalScore] = useState<number>(0); // Nuevo estado para el puntaje final de la partida
   const [totalScore, setTotalScore] = useState<number>(0); // Nuevo estado para el puntaje total acumulado del usuario
+  const [showStore, setShowStore] = useState(false);
 
   // --- ESTADOS DE UI ---
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
@@ -225,7 +227,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
               // --- NUEVO: Sincronizar puntos totales ---
               const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
               setTotalScore(scoreReal);
-              
+
           } catch {}
       };
       syncProfileData();
@@ -363,7 +365,24 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         onOpenSettings={() => setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
         onScoreButtonClick={() => {
-          console.log('Puntaje total acumulado del usuario:', totalScore);
+          setShowStore(true);
+        }}
+      />
+
+      <PayPalStore 
+        isOpen={showStore} 
+        onClose={() => setShowStore(false)}
+        onSuccess={async (puntos) => {
+          // 1. Suma visual inmediata
+          setTotalScore(prev => prev + puntos);
+          
+          // 2. Guardado real en base de datos
+          try {
+            await gameService.addXP(puntos);
+            console.log("Compra guardada en el servidor");
+          } catch (err) {
+            console.error("No se pudo guardar la compra:", err);
+          }
         }}
       />
 

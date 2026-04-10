@@ -186,11 +186,23 @@ export const gameService = {
    * @returns 
    */
   async cancelFriendRequest(follower: string, following: string) {
-  const response = await fetch(`${API_BASE_URL}/friends/cancel`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ follower, following })
-  });
-  return await response.json();
-}
+    const response = await fetch(`${API_BASE_URL}/friends/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ follower, following })
+    });
+    return await response.json();
+  },
+
+  async addXP(amount: number) {
+    const res = await fetch(`${API_BASE_URL}/users/purchase-xp`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ 
+        username: getCurrentUser(), 
+        amount 
+      }),
+    });
+    return res.json();
+  }
 };

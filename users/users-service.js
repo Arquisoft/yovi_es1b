@@ -667,6 +667,23 @@ app.get('/history', async (req, res) => {
   }
 });
 
+/**
+ * Endpoint para comprar puntos de experiencia (XP) y acreditarlos al usuario
+ */
+app.post('/users/purchase-xp', async (req, res) => {
+  const { username, amount } = req.body;
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { username },
+      { $inc: { totalScore: amount } }, // Sumamos los puntos comprados
+      { new: true }
+    );
+    res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
+  } catch (e) {
+    res.status(500).json({ error: "No se pudo procesar la compra" });
+  }
+});
+
 
 if (require.main === module) {
 
