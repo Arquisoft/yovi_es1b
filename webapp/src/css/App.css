@@ -76,6 +76,11 @@
   z-index: 2;
 }
 
+.error-message {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
 /* Fondo oscuro que cubre toda la pantalla */
 .modal-backdrop {
   position: fixed;
