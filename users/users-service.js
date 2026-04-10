@@ -24,6 +24,9 @@ const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 const { authMiddleware, JWT_SECRET } = require('./authMiddleware');
 const jwt = require('jsonwebtoken');
 
+const cookieParser = require('cookie-parser');
+app.use(cookieParser());
+
 // Para guardar un friendCode
 const { customAlphabet } = require('nanoid');
 // Alfabeto sin letras confusas (evitamos O, 0, I, l)
@@ -50,10 +53,14 @@ try {
 
 // CORS --> The server accepts requests from any origin (*)
 app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  if (origin) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+  }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
   // MODIFICA ESTA LÍNEA PARA INCLUIR Authorization
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
 
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
@@ -113,11 +120,19 @@ app.post('/createuser', async (req, res) => {
 
     // Save the new user to the database
     await newUser.save();
+    
+    const token = jwt.sign(
+        { username: newUser.username, nickname: newUser.nickname },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+    );
+    res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'Strict', maxAge: 86400000 });
 
     res.json({ 
       message: `Hello ${username}! Your account has been created!`,
       friendCode: `#${friendCode}`,
-      nickname
+      nickname,
+      username: newUser.username
     })
 
   } catch (err) {
@@ -150,9 +165,11 @@ app.post('/login', async (req, res) => {
           JWT_SECRET,
           { expiresIn: '24h' }
       );
+      
+      res.cookie('token', token, { httpOnly: true, secure: true, sameSite: 'Strict', maxAge: 86400000 });
+      
       res.json({
         message: `Welcome back, ${username}!`,
-        token,//enviar el token a frontend
         username: user.username,
         nickname: user.nickname,
         language: user.language,
@@ -169,7 +186,12 @@ app.post('/login', async (req, res) => {
   }
 })
 
-app.get('/users/search', async (req, res) => {
+app.post('/logout', (req, res) => {
+    res.cookie('token', '', { httpOnly: true, secure: true, sameSite: 'Strict', expires: new Date(0) });
+    res.json({ message: 'Logout exitoso' });
+});
+
+app.get('/users/search', authMiddleware, async (req, res) => {
   const query = String(req.query.query || '').trim();
   
   try {
@@ -196,7 +218,7 @@ app.get('/users/search', async (req, res) => {
   }
 });
 
-app.post('/users/follow', async (req, res) => {
+app.post('/users/follow', authMiddleware, async (req, res) => {
   const { follower, following } = req.body;
   try {
     // Buscamos si ya existe una relación (da igual el orden)
@@ -222,7 +244,7 @@ app.post('/users/follow', async (req, res) => {
 });
 
 // En users-service.js (alrededor de la línea 170)
-app.get('/users/profile/:username', async (req, res) => {
+app.get('/users/profile/:username', authMiddleware, async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
@@ -250,7 +272,7 @@ app.get('/users/profile/:username', async (req, res) => {
 }); 
 
 
-app.patch('/users/profile/:username', async (req, res) => {
+app.patch('/users/profile/:username', authMiddleware, async (req, res) => {
   const username = String(req.params.username || '').trim();
   const language = req.body.language !== undefined ? String(req.body.language || '').trim() : undefined;
   const iconName = req.body.iconName !== undefined ? normalizeIconName(req.body.iconName) : undefined;
@@ -312,7 +334,7 @@ app.patch('/users/profile/:username', async (req, res) => {
   }
 });
 
-app.post('/users/profile/:username/change-password', async (req, res) => {
+app.post('/users/profile/:username/change-password', authMiddleware, async (req, res) => {
   const username = String(req.params.username || '').trim();
   const currentPassword = String(req.body.currentPassword || '');
   const newPassword = String(req.body.newPassword || '');
@@ -350,7 +372,7 @@ app.post('/users/profile/:username/change-password', async (req, res) => {
   }
 });
 
-app.get('/friends', async (req, res) => {
+app.get('/friends', authMiddleware, async (req, res) => {
   const username = String(req.query.username || '').trim();
   if (!username) return res.status(400).json({ error: 'Username required' });
 
@@ -372,7 +394,7 @@ app.get('/friends', async (req, res) => {
 });
 
 // Obtener solicitudes que me han enviado a mí (pendientes)
-app.get('/friends/requests', async (req, res) => {
+app.get('/friends/requests', authMiddleware, async (req, res) => {
   const username = String(req.query.username || '').trim();
   try {
     const pendingRequests = await Friendship.find({
@@ -393,7 +415,7 @@ app.get('/friends/requests', async (req, res) => {
 });
 
 // Aceptar o Rechazar solicitud
-app.post('/friends/respond', async (req, res) => {
+app.post('/friends/respond', authMiddleware, async (req, res) => {
   const { requestId, action } = req.body; // action: 'accepted' o 'rejected'
 
   try {
@@ -415,7 +437,7 @@ app.post('/friends/respond', async (req, res) => {
 /**
  * Endpoint para obtener el perfil público de un usuario, incluyendo estadísticas de juego.
  */
-app.get('/users/public-profile/:username', async (req, res) => {
+app.get('/users/public-profile/:username', authMiddleware, async (req, res) => {
   const targetUsername = String(req.params.username || '').trim();
   const requester = String(req.query.requester || '').trim(); // Usuario que hace la petición
   try {
@@ -475,7 +497,7 @@ app.get('/users/public-profile/:username', async (req, res) => {
 /**
  * Endpoint para cancelar una solicitud de amistad pendiente
  */
-app.post('/friends/cancel', async (req, res) => {
+app.post('/friends/cancel', authMiddleware, async (req, res) => {
   const { follower, following } = req.body;
   try {
     // Buscamos la relación pendiente donde nosotros somos uno de los involucrados
@@ -490,7 +512,7 @@ app.post('/friends/cancel', async (req, res) => {
 });
 
 // Executes a move in the game
-app.post('/move', async (req, res) => {
+app.post('/move', authMiddleware, async (req, res) => {
   const { cellIndex, username} = req.body; // NEW: Recibir difficulty
 
   try {
@@ -525,7 +547,7 @@ app.post('/move', async (req, res) => {
 });
 
 // NEW: Endpoint para registrar una rendición (derrota)
-app.post('/surrender', async (req, res) => {
+app.post('/surrender', authMiddleware, async (req, res) => {
   const { username, difficulty, boardSize } = req.body;
 
   try {
@@ -563,7 +585,7 @@ app.post('/surrender', async (req, res) => {
 
 
 // Resets the game board WITHOUT affecting stats
-app.post('/reset', async (req, res) => {
+app.post('/reset', authMiddleware, async (req, res) => {
   // CORRECCIÓN: Añadimos username a la extracción del body
   const { size, difficulty, username } = req.body;
 
@@ -597,7 +619,7 @@ app.post('/reset', async (req, res) => {
 
 // New
 // Get available difficulties
-app.get('/difficulties', async (req, res) => {
+app.get('/difficulties', authMiddleware, async (req, res) => {
   try {
     const rustResponse = await fetch(`${GAMEY_URL}/difficulties`);
     if (!rustResponse.ok) {
@@ -613,7 +635,7 @@ app.get('/difficulties', async (req, res) => {
 
 
 // Para el historial
-app.get('/history', async (req, res) => {
+app.get('/history', authMiddleware, async (req, res) => {
   // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
   const { username, page = 1, limit = 10, result } = req.query;
   

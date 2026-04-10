@@ -10,6 +10,7 @@ services:
     environment:
       - MONGODB_URI=${MONGODB_URI_USERS}
       - GAMEY_SERVICE_URL=http://gamey:3000
+      - JWT_SECRET=${JWT_SECRET:-clave_secreta_segura_docker}
     networks:
       - monitor-net
 

@@ -1,10 +1,12 @@
 import { API_BASE_URL } from '../constants/config';
 import type { GameYData } from '../types/game';
-import { getAuthHeaders, getCurrentUser } from '../utils/sessionUtils';
+import { getCurrentUser } from '../utils/sessionUtils';
 export const gameService = {
   // Obtener dificultades
   async getDifficulties(): Promise<string[]> {
-    const res = await fetch(`${API_BASE_URL}/difficulties`);
+    const res = await fetch(`${API_BASE_URL}/difficulties`, {
+      credentials: 'include'
+    });
     return res.json();
   },
 
@@ -12,7 +14,8 @@ export const gameService = {
   async makeMove(cellIndex: number,  difficulty: string, boardSize?: number) {
     const res = await fetch(`${API_BASE_URL}/move`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ cellIndex, username: getCurrentUser(), difficulty, boardSize }),
     });
     return res.json();
@@ -22,7 +25,8 @@ export const gameService = {
   async resetBoard(size: number | null, difficulty: string): Promise<GameYData> {
     const res = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ size, difficulty, username: getCurrentUser() }),
     });
     const data = await res.json();
@@ -33,7 +37,8 @@ export const gameService = {
   async surrender( difficulty: string, boardSize?: number) {
     return fetch(`${API_BASE_URL}/surrender`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ username: getCurrentUser(), difficulty, boardSize }),
     });
   },
@@ -42,7 +47,9 @@ export const gameService = {
   async getHistory( page: number, filter?: string | null) {
     let url = `${API_BASE_URL}/history?username=${getCurrentUser()}&page=${page}&limit=5`;
     if (filter) url += `&result=${encodeURIComponent(filter)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      credentials: 'include'
+    });
     return res.json();
   },
 
@@ -53,7 +60,7 @@ export const gameService = {
       
       const res = await fetch(url, {
         method: 'GET',
-        headers: getAuthHeaders()
+        credentials: 'include'
       });
 
       if (!res.ok) {
@@ -72,7 +79,8 @@ export const gameService = {
   async addFriend( friendName: string) {
     const res = await fetch(`${API_BASE_URL}/friends/add`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ username: getCurrentUser(), friendName }),
     });
     return res.json();
@@ -85,7 +93,7 @@ export const gameService = {
 
     const res = await fetch(`${API_BASE_URL}/users/profile/${targetUser}`, {
       method: 'GET',
-      headers: getAuthHeaders(),
+      credentials: 'include',
     });
     return res.json();
   },
@@ -96,7 +104,8 @@ export const gameService = {
   ) {
     const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}`, {
       method: 'PATCH',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify(payload),
     });
     return res.json();
@@ -105,7 +114,8 @@ export const gameService = {
   async changePassword( currentPassword: string, newPassword: string) {
     const res = await fetch(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}/change-password`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ currentPassword, newPassword }),
     });
     return res.json();
@@ -115,7 +125,9 @@ export const gameService = {
   async searchUserByCode(code: string) {
     // Le añadimos el # nosotros para que el buscador del back sepa que es un ID
     const url = `${API_BASE_URL}/users/search?query=${encodeURIComponent('#' + code)}`;
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      credentials: 'include'
+    });
     
     if (!res.ok) throw new Error('Error en la búsqueda');
     
@@ -128,7 +140,8 @@ export const gameService = {
   async followUser( targetUsername: string) {
     const res = await fetch(`${API_BASE_URL}/users/follow`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ 
         follower: getCurrentUser(),
         following: targetUsername 
@@ -146,7 +159,8 @@ export const gameService = {
   async respondToFriendRequest(requestId: string, action: 'accepted' | 'rejected') {
     const res = await fetch(`${API_BASE_URL}/friends/respond`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ requestId, action }),
     });
 
@@ -159,7 +173,9 @@ export const gameService = {
   },
 
   async getPendingRequests() {
-    const res = await fetch(`${API_BASE_URL}/friends/requests?username=${encodeURIComponent(getCurrentUser())}`);
+    const res = await fetch(`${API_BASE_URL}/friends/requests?username=${encodeURIComponent(getCurrentUser())}`, {
+      credentials: 'include'
+    });
     if (!res.ok) throw new Error('No se pudieron obtener las solicitudes');
     return res.json();
   },
@@ -170,7 +186,9 @@ export const gameService = {
    * @returns el perfil público del usuario con estadísticas de juego
    */
   async getPublicProfile(targetUsername: string, myUsername: string) {
-    const response = await fetch(`${API_BASE_URL}/users/public-profile/${targetUsername}?requester=${myUsername}`);
+    const response = await fetch(`${API_BASE_URL}/users/public-profile/${targetUsername}?requester=${myUsername}`, {
+      credentials: 'include'
+    });
     if (!response.ok) throw new Error('No se pudo obtener el perfil público');
     return await response.json();
   },
@@ -185,8 +203,17 @@ export const gameService = {
   const response = await fetch(`${API_BASE_URL}/friends/cancel`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
     body: JSON.stringify({ follower, following })
   });
   return await response.json();
-}
+},
+
+  async logout() {
+    const response = await fetch(`${API_BASE_URL}/logout`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    return response.json();
+  }
 };

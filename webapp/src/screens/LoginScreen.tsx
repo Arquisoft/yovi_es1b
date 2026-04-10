@@ -46,17 +46,14 @@ function LoginScreen({ onBack, onOpenSettings, onLogin }: Readonly<LoginScreenPr
           username: formData.username.trim(),
           password: formData.password.trim(),
         }),
+        credentials: 'include' // IMPORTANTE: Para que se reciba la cookie
       });
 
       const data = await response.json();
 
       if (response.ok) {
-        // Guardamos el token para las cabeceras Authorization: Bearer <token>
-        if (data.token) {
-          sessionStorage.setItem('token', data.token);
-        }
         // Guardamos el username para que getCurrentUser() funcione en gameService
-        sessionStorage.setItem('username', data.username || formData.username.trim());
+        localStorage.setItem('username', data.username || formData.username.trim());
 
         await onLogin(
           data.username || formData.username.trim(),

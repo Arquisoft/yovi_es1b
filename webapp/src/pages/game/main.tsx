@@ -15,6 +15,7 @@ import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
+import { clearSession } from '../../utils/sessionUtils';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -64,6 +65,22 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
     path.toLowerCase().includes(iconValue.toLowerCase())
   );
   return match ? match[1] : iconValue;
+};
+
+// Configuración global para fetch para detectar 401
+const originalFetch = window.fetch;
+window.fetch = async (...args) => {
+  const response = await originalFetch(...args);
+  if (response.status === 401) {
+    // Si la sesión expira o es inválida, limpiamos y redirigimos
+    clearSession();
+    localStorage.removeItem('yovi_user');
+    localStorage.removeItem('yovi_friend_code');
+    localStorage.removeItem('yovi_user_icon');
+    localStorage.removeItem('yovi_user_nickname');
+    window.location.href = '/index.html';
+  }
+  return response;
 };
 
 const GameApp = () => {
@@ -242,6 +259,7 @@ const GameApp = () => {
   const fetchHistory = async (page = 1, filter = historyFilter) => {
     try {
       const result = await gameService.getHistory( page, filter);
+      if (result.error && result.error.includes("401")) return; // interceptor redirigirá
       setHistoryData(result.data || []);
       setTotalPages(result.total_pages || 1);
       setCurrentPage(result.page || 1);
@@ -253,6 +271,21 @@ const GameApp = () => {
 
   const openFriendsMenu = () => {
     setShowFriendsMenu(true);
+  };
+
+  const handleExit = async () => {
+      stopTimer();
+      try {
+          await gameService.logout();
+      } catch (e) {
+          console.error("Error al hacer logout", e);
+      }
+      clearSession();
+      localStorage.removeItem('yovi_user');
+      localStorage.removeItem('yovi_friend_code');
+      localStorage.removeItem('yovi_user_icon');
+      localStorage.removeItem('yovi_user_nickname');
+      window.location.href = '/index.html';
   };
 
   // Mapeo para la interfaz
@@ -284,7 +317,7 @@ const GameApp = () => {
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
         onFetchHistory={() => fetchHistory()}
-        onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
+        onExit={handleExit}
         onChangeDifficulty={(uiDiff: string) => {
           // 1. Mapa de traducción para el backend
           const backendMap: Record<string, string> = {
@@ -428,6 +461,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameApp />
   </React.StrictMode>
 );
-
-
-

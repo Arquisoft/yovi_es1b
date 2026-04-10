@@ -112,11 +112,13 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
           language: formData.language.trim(),
           iconName: selectedIconName,
         }),
+        credentials: 'include'
       });
 
       const data = await response.json();
 
       if (response.ok) {
+        localStorage.setItem('username', data.username);
         await onCreateAccount(
           formData.name.trim(),
           data.friendCode,
@@ -331,5 +333,3 @@ function RegisterScreen({ onBack, onOpenSettings, onCreateAccount }: Readonly<Re
 }
 
 export default RegisterScreen;
-
-
