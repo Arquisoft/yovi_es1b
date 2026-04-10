@@ -46,6 +46,7 @@ type GameScreenProps = Readonly<{
   turnTimeLimit: number | null;
   timerVisible: boolean;
   sizeLabel: string | null;
+  totalScore: number; // Nuevo prop para el puntaje total acumulado del usuario
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
@@ -57,6 +58,7 @@ type GameScreenProps = Readonly<{
   onViewProfile?: () => void; // Abre el perfil del usuario
   onOpenSettings?: () => void; // Abre el panel de configuracion
   onOpenTutorial?: () => void; // Abre la pantalla de tutorial
+  onScoreButtonClick?: () => void; // Nuevo callback para cuando se hace clic en el puntaje total acumulado
 }>;
 
 function GameScreen({
@@ -72,6 +74,7 @@ function GameScreen({
   turnTimeLimit,
   timerVisible,
   sizeLabel,
+  totalScore,
   onCellClick,
   onEndGame,
   onResetGame,
@@ -82,7 +85,8 @@ function GameScreen({
   onAddFriend,
   onViewProfile,
   onOpenSettings,
-  onOpenTutorial
+  onOpenTutorial,
+  onScoreButtonClick,
 }: GameScreenProps) {
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const logoutLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -175,6 +179,18 @@ function GameScreen({
         <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title="Ver mi perfil">
           <img className="nav-btn-profile-img" src={safePlayerIcon} alt="Ver mi perfil" />
         </button>
+
+        <div className="nav-user-info">
+          <h2>Jugador: <span>{username}</span></h2>
+        </div>
+
+        {/* --- BOTÓN DE PUNTOS CENTRAL --- */}
+        <div className="nav-center-score">
+            <button className="score-badge-button" onClick={onScoreButtonClick}>
+                <span className="score-star">★</span>
+                <span className="score-text">{totalScore.toLocaleString()} XP</span>
+            </button>
+        </div>
 
         <div className="nav-center-title">Partida vs IA</div>
 

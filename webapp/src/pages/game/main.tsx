@@ -100,6 +100,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const handleTimeUp = useCallback(() => {
     void handleAutoMoveRef.current();
   }, []);
+  const [finalScore, setFinalScore] = useState<number>(0); // Nuevo estado para el puntaje final de la partida
+  const [totalScore, setTotalScore] = useState<number>(0); // Nuevo estado para el puntaje total acumulado del usuario
 
   // --- ESTADOS DE UI ---
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
@@ -210,48 +212,59 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   }, [startNewGame]);
 
   useEffect(() => {
-    let active = true;
+      let active = true;
+      const syncProfileData = async () => {
+          try {
+              const profile = await gameService.getProfile();
+              if (!active || profile?.error) return;
 
-    const syncProfileIcon = async () => {
-      try {
-        const profile = await gameService.getProfile();
-        if (!active || profile?.error) return;
+              // Sincronizar icono
+              const resolvedIcon = resolveUserIcon(profile.iconName || profile.icon);
+              if (resolvedIcon) setPlayerIcon(resolvedIcon);
 
-        const resolvedIcon = resolveUserIcon(
-          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon
-        );
-        if (resolvedIcon) {
-          setPlayerIcon(resolvedIcon);
-          localStorage.setItem('yovi_user_icon', resolvedIcon);
-        }
-      } catch {
-        // En caso de error de red, mantenemos el icono local actual.
-      }
-    };
-
-    syncProfileIcon();
-    return () => {
-      active = false;
-    };
+              // --- NUEVO: Sincronizar puntos totales ---
+              const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
+              setTotalScore(scoreReal);
+              
+          } catch {}
+      };
+      syncProfileData();
+      return () => { active = false; };
   }, [username]);
 
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = useCallback(async () => {
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
-      if (data?.winner !== null) setShowResultModal(true);
+      if (data && data.winner !== null) {
+        setFinalScore(data.score || 0);
+
+        // SUMA OPTIMISTA: Si por algún motivo el bot nos da la victoria (ID 0)
+        if (data.winner === 0) {
+          setTotalScore(prev => prev + (data.score || 0));
+        }
+
+        setShowResultModal(true);
+      }
     } catch {}
   }, [difficultyChoice, executeAutoMove, startTimer]);
 
   useEffect(() => {
     handleAutoMoveRef.current = handleAutoMove;
   }, [handleAutoMove]);
+
+
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
     try {
       const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
         setTimerVisible(false);
+        setFinalScore(data.score || 0);
+        // SUMA OPTIMISTA: Si ganamos (ID 0), sumamos al total de la barra
+        if (data.winner === 0) {
+            setTotalScore(prev => prev + (data.score || 0));
+        }
         setShowResultModal(true);
       }
     } catch {}
@@ -300,6 +313,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
+        totalScore={totalScore}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
@@ -341,12 +355,16 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
           stopTimer();
           setTimerVisible(false);
           await surrender(difficultyChoice!);
+          setFinalScore(0);
           setShowResultModal(true);
         }}
         onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
         onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
         onOpenSettings={() => setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
+        onScoreButtonClick={() => {
+          console.log('Puntaje total acumulado del usuario:', totalScore);
+        }}
       />
 
       {/* Modales de Configuración */}
@@ -373,6 +391,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
       <ResultModal
         isOpen={showResultModal}
         winner={winner}
+        score={finalScore}
         onClose={() => setShowResultModal(false)}
       />
 

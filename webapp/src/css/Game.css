@@ -1182,7 +1182,6 @@ body {
 /* Contenedor relativo para que la lista se posicione respecto a él */
 .custom-dropdown-container {
   position: relative;
-  z-index: 45;
   display: inline-block;
   margin: 0 10px;
 }
@@ -1198,8 +1197,7 @@ body {
   font-size: 0.9rem;
   font-weight: 500;
   transition: all 0.3s ease;
-  min-width: 190px;
-  white-space: nowrap;
+  min-width: 150px;
 }
 
 .dropdown-trigger:hover, .dropdown-trigger.active {
@@ -1249,6 +1247,79 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+
+
+/* PUNTOS */
+
+.nav-center-score {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1; /* Esto ayuda a que se mantenga en el centro si el nav es flex */
+}
+
+/* El botón/insignia de XP */
+.score-badge-button {
+  background: rgba(20, 20, 20, 0.6); /* Fondo oscuro semitransparente */
+  backdrop-filter: blur(8px); /* Efecto cristal */
+  border: 2px solid #dcfd8b; /* Tu color verde lima característico */
+  border-radius: 12px;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 0 10px rgba(220, 253, 139, 0.2), 
+    inset 0 0 5px rgba(220, 253, 139, 0.1);
+}
+
+/* Efecto al pasar el ratón */
+.score-badge-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: rgba(220, 253, 139, 0.15);
+  box-shadow: 
+    0 0 20px rgba(220, 253, 139, 0.4), 
+    0 0 40px rgba(220, 253, 139, 0.1);
+  border-color: #fff; /* El borde brilla en blanco al pasar el ratón */
+}
+
+/* La estrella dorada */
+.score-star {
+  color: #ffd700;
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 5px rgba(255, 214, 0, 0.8));
+  animation: star-pulse 2s infinite ease-in-out;
+}
+
+/* El texto de los puntos */
+.score-text {
+  color: #dcfd8b;
+  font-weight: 800;
+  font-family: 'Orbitron', 'Courier New', monospace; /* Tipografía técnica */
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(220, 253, 139, 0.5);
+}
+
+/* Animación sutil para la estrella */
+@keyframes star-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* Estilo para cuando el puntaje sube (puedes añadir esta clase por JS si quieres) */
+.score-badge-button.updating {
+  animation: flash-update 0.5s ease-out;
+}
+
+@keyframes flash-update {
+  0% { background: #dcfd8b; color: #000; }
+  100% { background: rgba(20, 20, 20, 0.6); }
 }
 
 

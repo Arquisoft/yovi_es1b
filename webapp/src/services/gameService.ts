@@ -13,7 +13,11 @@ export const gameService = {
     const res = await fetch(`${API_BASE_URL}/move`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ cellIndex, username: getCurrentUser(), difficulty, boardSize }),
+      body: JSON.stringify({ 
+        cellIndex, 
+        username: getCurrentUser(), 
+        difficulty, 
+        boardSize }),
     });
     return res.json();
   },

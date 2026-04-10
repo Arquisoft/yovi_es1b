@@ -25,6 +25,7 @@ const baseProps = (overrides?: {
   timerVisible?: boolean
   turnTimeLeft?: number | null
   turnTimeLimit?: number | null
+  totalScore?: number
 }) => ({
   username: 'Alice',
   displayName: 'Ali',
@@ -45,6 +46,7 @@ const baseProps = (overrides?: {
   timerVisible: overrides?.timerVisible ?? false,
   turnTimeLeft: overrides?.turnTimeLeft ?? null,
   turnTimeLimit: overrides?.turnTimeLimit ?? null,
+  totalScore: overrides?.totalScore ?? 0,
   onFetchHistory: vi.fn(),
   onChangeDifficulty: vi.fn(),
   onChangeSize: vi.fn(),
@@ -55,6 +57,7 @@ const baseProps = (overrides?: {
   onAddFriend: vi.fn(),
   onViewProfile: vi.fn(),
   onOpenSettings: vi.fn(),
+  onScoreButtonClick: vi.fn(),
 })
 
 describe('Game UI (MPA Ready)', () => {

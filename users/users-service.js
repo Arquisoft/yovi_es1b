@@ -240,6 +240,7 @@ app.get('/users/profile/:username', async (req, res) => {
       birthDate: user.birthDate,
       language: user.language,
       iconName: user.iconName,
+      totalScore: user.totalScore || 0,
       // Usamos el tamaño del array directamente si no vas a popular
       followingCount: user.following?.length || 0,
       followersCount: user.followers?.length || 0
@@ -512,11 +513,24 @@ app.post('/move', async (req, res) => {
     }
 
     const newBoard = await rustResponse.json();
+
+    // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
+    if (newBoard.winner === 0 && newBoard.score > 0) {
+      const User = require('./models/user'); // Asegúrate de tener acceso al modelo
+      
+      // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
+      await User.findOneAndUpdate(
+        { username: username },
+        { $inc: { totalScore: newBoard.score || 0} } // Suma el score actual al totalScore de la DB
+      );
+      console.log(`Puntos guardados para ${username}: +${newBoard.score}`);
+    }
     
     // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
-      winner: newBoard.winner
+      winner: newBoard.winner,
+      score: newBoard.score // Nuevo campo para el puntaje de la partida
     });
   }
   catch (e) {
