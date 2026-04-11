@@ -3,7 +3,6 @@ import { API_BASE_URL } from '../constants/config';
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
 import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
-import { clearGuestSession } from '../utils/sessionUtils';
 
 interface LoginData {
   username: string;
@@ -51,14 +50,6 @@ const getProfileIcon = (data: LoginResponse) => {
   return null;
 };
 
-const persistLoginSession = (username: string, token?: string) => {
-  if (token) {
-    sessionStorage.setItem('token', token);
-  }
-  clearGuestSession();
-  sessionStorage.setItem('username', username);
-};
-
 function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
   const [formData, setFormData] = useState<LoginData>({
     username: '',
@@ -99,7 +90,6 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
 
       if (response.ok) {
         const resolvedUsername = data.username || username;
-        persistLoginSession(resolvedUsername, data.token);
         // Guardamos el username para que getCurrentUser() funcione en gameService
         localStorage.setItem('username', data.username || formData.username.trim());
 

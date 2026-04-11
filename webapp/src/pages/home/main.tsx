@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import HomeScreen from '../../screens/HomeScreen'
 import { TutorialScreen } from '../../screens/TutorialScreen'
-import { enableGuestSession } from '../../utils/sessionUtils'
 import '../../css/App.css'
 import '../../css/Log.css'
 import '../../index.css'
@@ -19,7 +18,18 @@ const HomeApp = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
-    localStorage.setItem('yovi_user', username)
+    // Si ya hay usuario logeado, redigirir al juego.
+    if (localStorage.getItem('yovi_user')) {
+        window.location.href = '/game.html';
+    }
+  }, []);
+
+  useEffect(() => {
+    if (username) {
+        localStorage.setItem('yovi_user', username)
+    } else {
+        localStorage.removeItem('yovi_user')
+    }
   }, [username])
 
   useEffect(() => {
@@ -80,7 +90,6 @@ const HomeApp = () => {
         username={username}
         onUsernameChange={setUsername}
         onStart={() => {
-          enableGuestSession()
           globalThis.location.href = '/game.html'
         }}
         onGoToRegister={() => (globalThis.location.href = '/register.html')}

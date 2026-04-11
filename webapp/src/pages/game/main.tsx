@@ -146,6 +146,7 @@ const GameApp = () => {
   const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
     setTimerVisible(false);
+    setBotIcon(pickRandomBotIcon());
     void resetGame(size, difficulty);
   }, [resetGame, stopTimer, setTimerVisible]);
 
@@ -308,7 +309,6 @@ const GameApp = () => {
         botIcon={botIcon}
         boardData={boardData}
         winner={winner}
-        connectionStatus={connectionStatus}
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
@@ -329,12 +329,12 @@ const GameApp = () => {
           const valueForBackend = backendMap[uiDiff] || 'facil';
 
           // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
-          setDifficultyChoice(uiDiff);
-          setPreviousDifficultyChoice(uiDiff);
+          setDifficultyChoice(uiDiff as any);
+          setPreviousDifficultyChoice(uiDiff as any);
           
           // 3. Llamamos al servicio con el valor que entiende el Backend
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
-          startNewGame(dimension, valueForBackend);
+          startNewGame(dimension, valueForBackend as any);
         }}
         onChangeSize={(newSize: SizeChoice) => {
           setPreviousSizeChoice(newSize);
@@ -468,6 +468,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 
-export { GameApp, GameAppContent };
-
-
+export { GameApp };
