@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
@@ -170,7 +170,8 @@ describe('Game UI (MPA Ready)', () => {
     render(<GameScreen {...props} />)
 
     expect(screen.getByText(/partida vs ia/i)).toBeInTheDocument()
-    expect(screen.getByText(/jugador:/i)).toBeInTheDocument()
+    const navbar = screen.getByRole('navigation')
+    expect(within(navbar).getByText(/jugador:/i)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
   })

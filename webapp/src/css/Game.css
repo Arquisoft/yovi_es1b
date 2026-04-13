@@ -439,6 +439,7 @@ body {
 }
 
 .nav-user-info {
+  margin-left: 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.85rem;
