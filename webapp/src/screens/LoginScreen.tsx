@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
 import logoGameY from '../assets/Logo_GameY.png';
+import { useTranslation } from 'react-i18next';
 
 interface LoginData {
   username: string;
@@ -19,6 +20,7 @@ interface LoginScreenProps {
 }
 
 function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState<LoginData>({
     username: '',
     password: '',
@@ -29,7 +31,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Evita recargar la pagina
     if (!formData.username.trim() || !formData.password.trim()) {
-      setFormError('Usuario y contraseña no pueden estar en blanco.'); // Valida campos obligatorios
+      setFormError(t('error_empty')); // Valida campos obligatorios
       return;
     }
     setFormError(null);
@@ -68,11 +70,11 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
             typeof data.language === 'string' ? data.language : null
         );
       } else {
-        setFormError(data.error || 'Error al iniciar sesion.');
+        setFormError(data.error || t('error_login'));
       }
       
     } catch  {
-      setFormError('Error de conexion al iniciar sesion.');
+      setFormError(t('error_network'));
     } finally {
       setIsLoading(false);
     }
@@ -83,16 +85,16 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
       <div className="auth-header">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">
-          Bienvenido de vuelta a GameY
+          {t('title')}
           <br />
-          ¿Cómo era tu nombre?
+          {t('subtitle')}
         </h2>
       </div>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
 
         <div className="form-group">
-          <label htmlFor="login-username">Nombre de usuario</label>
+          <label htmlFor="login-username">{t('username')}</label>
           <input
             id="login-username"
             className="form-input"
@@ -104,7 +106,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="login-password">Contraseña</label>
+          <label htmlFor="login-password">{t('password')}</label>
           <input
             id="login-password"
             className="form-input"
@@ -116,10 +118,10 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
         </div>
 
         <button type="submit" className="submit-button" disabled={isLoading}>
-          {isLoading ? 'Iniciando sesion...' : 'Iniciar sesion'}
+          {isLoading ? t('loading') : t('submit')}
         </button>
         <button type="button" className="submit-button" onClick={onBack}> {/* No envia formulario */}
-          Volver
+          {t('back')}
         </button>
       </form>
     </div>
