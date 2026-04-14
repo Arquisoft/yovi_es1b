@@ -19,6 +19,7 @@ i18n.use(initReactI18next).init({
     lng: langMap[storedLang] ?? storedLang,
     fallbackLng: 'es',
     interpolation: { escapeValue: false },
+    keySeparator: '.',
 })
 
 export default i18n

@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
 import logoGameY from '../assets/Logo_GameY.png';
+
 import { useTranslation } from 'react-i18next';
 
 interface LoginData {
@@ -31,7 +32,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); // Evita recargar la pagina
     if (!formData.username.trim() || !formData.password.trim()) {
-      setFormError(t('error_empty')); // Valida campos obligatorios
+      setFormError(t('login.error_empty')); // Valida campos obligatorios
       return;
     }
     setFormError(null);
@@ -70,11 +71,11 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
             typeof data.language === 'string' ? data.language : null
         );
       } else {
-        setFormError(data.error || t('error_login'));
+        setFormError(data.error || t('login.error_login'));
       }
       
     } catch  {
-      setFormError(t('error_network'));
+      setFormError(t('login.error_network'));
     } finally {
       setIsLoading(false);
     }
@@ -85,16 +86,16 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
       <div className="auth-header">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">
-          {t('title')}
+          {t('login.title')}
           <br />
-          {t('subtitle')}
+          {t('login.subtitle')}
         </h2>
       </div>
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
         {formError && <small className="error-message">{formError}</small>}
 
         <div className="form-group">
-          <label htmlFor="login-username">{t('username')}</label>
+          <label htmlFor="login-username">{t('login.username')}</label>
           <input
             id="login-username"
             className="form-input"
@@ -106,7 +107,7 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
         </div>
 
         <div className="form-group">
-          <label htmlFor="login-password">{t('password')}</label>
+          <label htmlFor="login-password">{t('login.password')}</label>
           <input
             id="login-password"
             className="form-input"
@@ -118,10 +119,10 @@ function LoginScreen({ onBack, onLogin }: Readonly<LoginScreenProps>) {
         </div>
 
         <button type="submit" className="submit-button" disabled={isLoading}>
-          {isLoading ? t('loading') : t('submit')}
+          {isLoading ? t('common.loading') : t('login.submit')}
         </button>
         <button type="button" className="submit-button" onClick={onBack}> {/* No envia formulario */}
-          {t('back')}
+          {t('common.back')}
         </button>
       </form>
     </div>
