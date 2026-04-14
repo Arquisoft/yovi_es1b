@@ -1,0 +1,77 @@
+import type { ReactNode, RefObject } from 'react'
+import backgroundMusic from '../../assets/background_music.mp3'
+import menuVideo from '../../assets/background_video.mp4'
+
+type MenuBackgroundChromeProps = {
+  audioRef: RefObject<HTMLAudioElement>
+  children?: ReactNode
+  isVideoPaused: boolean
+  musicVolume: number
+  setIsVideoPaused: (value: boolean) => void
+  setMusicVolume: (value: number) => void
+  setShowSettings: (value: boolean) => void
+  settingsAriaLabel: string
+  settingsTitle: string
+  showSettings: boolean
+  videoLabel: string
+  videoRef: RefObject<HTMLVideoElement>
+}
+
+export const MenuBackgroundChrome = ({
+  audioRef,
+  children,
+  isVideoPaused,
+  musicVolume,
+  setIsVideoPaused,
+  setMusicVolume,
+  setShowSettings,
+  settingsAriaLabel,
+  settingsTitle,
+  showSettings,
+  videoLabel,
+  videoRef,
+}: MenuBackgroundChromeProps) => {
+  return (
+    <div className="App">
+      <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline aria-label={videoLabel}>
+        <source src={menuVideo} type="video/mp4" />
+      </video>
+      <div className="menu-video-overlay" />
+      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop />
+
+      {children}
+
+      {showSettings && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={settingsAriaLabel}>
+          <div className="modal-box">
+            <h3>{settingsTitle}</h3>
+            <div className="form-group">
+              <label htmlFor="music-volume">Volumen de la música</label>
+              <input
+                id="music-volume"
+                className="form-input"
+                type="range"
+                min="0"
+                max="100"
+                value={Math.round(musicVolume * 100)}
+                onChange={(e) => setMusicVolume(Number(e.target.value) / 100)}
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="video-static">{videoLabel}</label>
+              <input
+                id="video-static"
+                type="checkbox"
+                checked={!isVideoPaused}
+                onChange={(e) => setIsVideoPaused(!e.target.checked)}
+              />
+            </div>
+            <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
+              Cerrar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}

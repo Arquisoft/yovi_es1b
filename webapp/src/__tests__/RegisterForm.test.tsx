@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import RegisterScreen, { getLanguageIcon, shouldShowNoIconsMessage } from '../screens/RegisterScreen'
+import RegisterScreen, { getLanguageIcon, renderCountryOptionIcon, shouldShowNoIconsMessage } from '../screens/RegisterScreen'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
@@ -37,6 +37,14 @@ describe('RegisterForm', () => {
   test('shouldShowNoIconsMessage cubre lista vacia y con iconos', () => {
     expect(shouldShowNoIconsMessage([])).toBe(true)
     expect(shouldShowNoIconsMessage([{ id: 'icon-1' }])).toBe(false)
+  })
+
+  test('renderCountryOptionIcon cubre icono y fallback', () => {
+    const { container: iconContainer } = render(renderCountryOptionIcon('/flag.png', 'Spain'))
+    expect(iconContainer.querySelector('img')).toHaveAttribute('src', '/flag.png')
+
+    const { container: fallbackContainer } = render(renderCountryOptionIcon(null, 'Spain'))
+    expect(fallbackContainer.querySelector('.country-flag-fallback')).toBeInTheDocument()
   })
 
   test('con datos incompletos no deja avanzar', async () => {
@@ -160,6 +168,12 @@ describe('RegisterForm', () => {
     })
 
     expect(await screen.findByText(/error de red/i)).toBeInTheDocument()
+  })
+
+  test('si no se pasa onOpenSettings no renderiza el boton de configuracion', () => {
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} onOpenTutorial={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: /configuración de elementos de fondo/i })).toBeNull()
   })
 
   test('un registro exitoso llama a onCreateAccount y envia payload correcto', async () => {

@@ -44,6 +44,14 @@ const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().incl
 
 export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
+export const renderCountryOptionIcon = (icon: string | null, value: string) => {
+  if (icon) {
+    return <img src={icon} alt={value} className="country-flag-icon" />;
+  }
+
+  return <span className="country-flag-fallback" aria-hidden="true" />;
+};
+
 interface RegisterData {
   name: string;
   nickname: string;
@@ -251,11 +259,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                   return (
                     <label key={option.value} className="country-checkbox-item">
                       <span className="country-checkbox-left">
-                        {option.icon ? (
-                          <img src={option.icon} alt={option.value} className="country-flag-icon" />
-                        ) : (
-                          <span className="country-flag-fallback" aria-hidden="true" />
-                        )}
+                        {renderCountryOptionIcon(option.icon, option.value)}
                         <span>{option.value}</span>
                       </span>
                       <input

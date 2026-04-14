@@ -12,6 +12,18 @@ export const getLanguageIcon = (token: string): string | null => {
   return entry ? entry[1] : null;
 };
 
+export const getLanguageIconDisplayState = (icon: string | null) => ({
+  src: icon || '',
+  iconDisplay: icon ? 'block' : 'none',
+  fallbackDisplay: icon ? 'none' : 'block',
+});
+
+type AvatarIcon = {
+  id: string;
+  src: string;
+  name: string;
+};
+
 const countryOptions = [
   { value: 'Spain', icon: getLanguageIcon('espana') },
   { value: 'English', icon: getLanguageIcon('reino-unido') },
@@ -36,6 +48,81 @@ const availableIcons = Object.entries(iconModules)
   });
 
 export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
+
+export const renderAvatarIconPicker = (
+  icons: AvatarIcon[],
+  avatarDraft: string,
+  setAvatarDraft: (value: string) => void,
+  noAvatar: AvatarIcon | undefined,
+  male: AvatarIcon[],
+  female: AvatarIcon[],
+) => {
+  if (shouldShowNoIconsMessage(icons)) {
+    return <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>;
+  }
+
+  return (
+    <>
+      {noAvatar && (
+        <>
+          <div className="icon-row-label">Sin Avatar</div>
+          <div className="icon-row-grid icon-row-grid-single">
+            <button
+              type="button"
+              className={`icon-option ${avatarDraft === noAvatar.name ? 'icon-option-selected' : ''}`}
+              onClick={() => setAvatarDraft(noAvatar.name)}
+              title="Sin Avatar"
+              aria-label="Elegir Sin Avatar"
+              aria-pressed={avatarDraft === noAvatar.name}
+            >
+              <img src={noAvatar.src} alt="Sin Avatar" className="icon-option-img" />
+            </button>
+          </div>
+        </>
+      )}
+
+      <div className="icon-row-label">Hombre</div>
+      <div className="icon-row-grid">
+        {male.map((icon) => {
+          const isSelected = avatarDraft === icon.name;
+          return (
+            <button
+              key={icon.id}
+              type="button"
+              className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
+              onClick={() => setAvatarDraft(icon.name)}
+              title={icon.name}
+              aria-label={`Elegir ${icon.name}`}
+              aria-pressed={isSelected}
+            >
+              <img src={icon.src} alt={icon.name} className="icon-option-img" />
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="icon-row-label">Mujer</div>
+      <div className="icon-row-grid">
+        {female.map((icon) => {
+          const isSelected = avatarDraft === icon.name;
+          return (
+            <button
+              key={icon.id}
+              type="button"
+              className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
+              onClick={() => setAvatarDraft(icon.name)}
+              title={icon.name}
+              aria-label={`Elegir ${icon.name}`}
+              aria-pressed={isSelected}
+            >
+              <img src={icon.src} alt={icon.name} className="icon-option-img" />
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+};
 
 const noAvatarIcon = availableIcons.find((icon) => icon.name.toLowerCase().includes('sinavatar'));
 const maleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('hombre')).slice(0, 4);
@@ -276,19 +363,20 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
                 {countryOptions.map((option) => {
                   const checked = language === option.value;
+                  const displayState = getLanguageIconDisplayState(option.icon);
                   return (
                     <label key={option.value} className="country-checkbox-item">
                       <span className="country-checkbox-left">
                         <img
-                          src={option.icon || ''}
+                          src={displayState.src}
                           alt={option.value}
                           className="country-flag-icon"
-                          style={{ display: option.icon ? 'block' : 'none' }}
+                          style={{ display: displayState.iconDisplay }}
                         />
                         <span
                           className="country-flag-fallback"
                           aria-hidden="true"
-                          style={{ display: option.icon ? 'none' : 'block' }}
+                          style={{ display: displayState.fallbackDisplay }}
                         />
                         <span>{option.value}</span>
                       </span>
@@ -366,69 +454,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
             <h3>Selecciona un avatar</h3>
             {avatarError && <small className="error-message">{avatarError}</small>}
             <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
-              {shouldShowNoIconsMessage(availableIcons) ? (
-                <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
-              ) : (
-                <>
-                  {noAvatarIcon && (
-                    <>
-                      <div className="icon-row-label">Sin Avatar</div>
-                      <div className="icon-row-grid icon-row-grid-single">
-                        <button
-                          type="button"
-                          className={`icon-option ${avatarDraft === noAvatarIcon.name ? 'icon-option-selected' : ''}`}
-                          onClick={() => setAvatarDraft(noAvatarIcon.name)}
-                          title="Sin Avatar"
-                          aria-label="Elegir Sin Avatar"
-                          aria-pressed={avatarDraft === noAvatarIcon.name}
-                        >
-                          <img src={noAvatarIcon.src} alt="Sin Avatar" className="icon-option-img" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="icon-row-label">Hombre</div>
-                  <div className="icon-row-grid">
-                    {maleIcons.map((icon) => {
-                      const isSelected = avatarDraft === icon.name;
-                      return (
-                        <button
-                          key={icon.id}
-                          type="button"
-                          className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-                          onClick={() => setAvatarDraft(icon.name)}
-                          title={icon.name}
-                          aria-label={`Elegir ${icon.name}`}
-                          aria-pressed={isSelected}
-                        >
-                          <img src={icon.src} alt={icon.name} className="icon-option-img" />
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="icon-row-label">Mujer</div>
-                  <div className="icon-row-grid">
-                    {femaleIcons.map((icon) => {
-                      const isSelected = avatarDraft === icon.name;
-                      return (
-                        <button
-                          key={icon.id}
-                          type="button"
-                          className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-                          onClick={() => setAvatarDraft(icon.name)}
-                          title={icon.name}
-                          aria-label={`Elegir ${icon.name}`}
-                          aria-pressed={isSelected}
-                        >
-                          <img src={icon.src} alt={icon.name} className="icon-option-img" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              {renderAvatarIconPicker(availableIcons, avatarDraft, setAvatarDraft, noAvatarIcon, maleIcons, femaleIcons)}
             </div>
             <div className="profile-avatar-editor-actions">
               <button type="button" className="submit-button" onClick={applyAvatarSelection}>

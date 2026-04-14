@@ -46,3 +46,30 @@ export const clearSession = () => {
     sessionStorage.removeItem('username');
     clearGuestSession();
 };
+
+type PersistUserSessionOptions = {
+  friendCode: string;
+  icon?: string | null;
+  language?: string | null;
+  nickname?: string | null;
+};
+
+const setOrClear = (key: string, value?: string | null) => {
+  if (typeof value === 'string' && value.trim()) {
+    localStorage.setItem(key, value.trim());
+  } else {
+    localStorage.removeItem(key);
+  }
+};
+
+export const persistUserSession = (username: string, options: PersistUserSessionOptions) => {
+  const name = username.trim();
+  if (!name) return false;
+
+  localStorage.setItem('yovi_user', name);
+  localStorage.setItem('yovi_friend_code', options.friendCode);
+  setOrClear('yovi_user_icon', options.icon);
+  setOrClear('yovi_user_language', options.language);
+  setOrClear('yovi_user_nickname', options.nickname);
+  return true;
+};

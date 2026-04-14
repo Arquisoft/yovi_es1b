@@ -10,18 +10,19 @@ import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { GuestAccessModal, type GuestAccessReason } from '../../components/modals/GuestAccessModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
+import { MenuBackgroundChrome } from '../../components/layout/MenuBackgroundChrome';
 
 // Hooks, Servicios y Utils
+import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
+import { getGameIdentity, mapUiDifficultyToBackend, resolveIconFromAssets } from '../../utils/gamePageUtils';
 import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
 
 // Assets y Estilos
-import menuVideo from '../../assets/background_video.mp4';
-import backgroundMusic from '../../assets/background_music.mp3';
 import '../../css/App.css';
 import '../../css/Game.css';
 import '../../css/Log.css';
@@ -41,32 +42,32 @@ const botIconPool = Object.entries(iconModules)
   .filter(([path]) => !path.toLowerCase().includes('sinavatar'))
   .map(([, src]) => src);
 
+const getRandomIndex = (length: number): number | null => {
+  if (!Number.isInteger(length) || length <= 0) return null;
+
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.getRandomValues) {
+    const limit = Math.floor(0x100000000 / length) * length;
+    const buffer = new Uint32Array(1);
+
+    let value = 0;
+    do {
+      cryptoApi.getRandomValues(buffer);
+      value = buffer[0];
+    } while (value >= limit);
+
+    return value % length;
+  }
+
+  return Math.floor(Math.random() * length);
+};
+
 const pickRandomBotIcon = (): string | null => {
   const pool = botIconPool.length ? botIconPool : Object.values(iconModules);
   if (!pool.length) return null;
-  const index = Math.floor(Math.random() * pool.length);
+  const index = getRandomIndex(pool.length);
+  if (index === null) return null;
   return pool[index] ?? null;
-};
-
-const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
-  const iconValue = String(rawIcon || '').trim();
-  if (!iconValue) return null;
-
-  // Si ya viene como URL/ruta válida, la usamos tal cual.
-  if (
-    iconValue.startsWith('http://') ||
-    iconValue.startsWith('https://') ||
-    iconValue.startsWith('/') ||
-    iconValue.startsWith('data:')
-  ) {
-    return iconValue;
-  }
-
-  // Si viene como nombre de archivo (ej: "hombre1.png"), lo resolvemos desde assets.
-  const match = Object.entries(iconModules).find(([path]) =>
-    path.toLowerCase().includes(iconValue.toLowerCase())
-  );
-  return match ? match[1] : iconValue;
 };
 
 const GameApp = () => {
@@ -91,10 +92,8 @@ type GameAppContentProps = {
 
 const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) => {
   // --- SEGURIDAD Y SESIÓN ---
-  const username = isGuestMode ? 'Invitado' : storedUsername;
-  const friendCode = isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || '');
-  const displayName = isGuestMode ? 'Invitado' : (localStorage.getItem('yovi_user_nickname') || username);
-  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(isGuestMode ? null : localStorage.getItem('yovi_user_icon')));
+  const { displayName, friendCode, username } = getGameIdentity(isGuestMode, storedUsername);
+  const [playerIcon, setPlayerIcon] = useState(resolveIconFromAssets(isGuestMode ? null : localStorage.getItem('yovi_user_icon'), iconModules));
   const [botIcon] = useState<string | null>(() => pickRandomBotIcon());
   const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
   const handleTimeUp = useCallback(() => {
@@ -111,12 +110,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
-  const [musicVolume, setMusicVolume] = useState(0.4);
-  const [isVideoPaused, setIsVideoPaused] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const background = useMenuBackgroundMedia();
 
   // --- ESTADOS DE HISTORIAL ---
   const [showHistory, setShowHistory] = useState(false);
@@ -150,52 +145,6 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     void resetGame(size, difficulty);
   }, [resetGame, stopTimer, setTimerVisible]);
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = Math.min(1, Math.max(0, musicVolume));
-    }
-  }, [musicVolume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const storedTime = Number(localStorage.getItem('yovi_bg_time') || '0');
-    if (!Number.isNaN(storedTime) && storedTime > 0) {
-      const applyTime = () => {
-        audio.currentTime = Math.min(storedTime, Math.max(0, audio.duration || storedTime));
-      };
-      if (audio.readyState >= 1) {
-        applyTime();
-      } else {
-        audio.addEventListener('loadedmetadata', applyTime, { once: true });
-      }
-    }
-
-    const saveTime = () => {
-      localStorage.setItem('yovi_bg_time', String(audio.currentTime || 0));
-    };
-    const intervalId = window.setInterval(saveTime, 1000);
-    window.addEventListener('beforeunload', saveTime);
-    document.addEventListener('visibilitychange', saveTime);
-
-    return () => {
-      saveTime();
-      window.clearInterval(intervalId);
-      window.removeEventListener('beforeunload', saveTime);
-      document.removeEventListener('visibilitychange', saveTime);
-    };
-  }, []);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isVideoPaused) {
-      video.pause();
-    } else {
-      video.play().catch(() => {});
-    }
-  }, [isVideoPaused]);
-
   // --- EFECTOS INICIALES ---
   useEffect(() => {
     // 1. Cargar dificultades para los modales
@@ -217,8 +166,9 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         const profile = await gameService.getProfile();
         if (!active || profile?.error) return;
 
-        const resolvedIcon = resolveUserIcon(
-          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon
+        const resolvedIcon = resolveIconFromAssets(
+          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon,
+          iconModules
         );
         if (resolvedIcon) {
           setPlayerIcon(resolvedIcon);
@@ -281,15 +231,19 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   //const displayDifficulty = difficultyChoice;
 
   return (
-    <div className="App">
-      {/* Fondo de video */}
-      <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline>
-        <source src={menuVideo} type="video/mp4" />
-      </video>
-      <div className="menu-video-overlay" />
-      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop />
-
-      {/* Pantalla Principal */}
+    <MenuBackgroundChrome
+      audioRef={background.audioRef}
+      isVideoPaused={background.isVideoPaused}
+      musicVolume={background.musicVolume}
+      setIsVideoPaused={background.setIsVideoPaused}
+      setMusicVolume={background.setMusicVolume}
+      setShowSettings={background.setShowSettings}
+      settingsAriaLabel="Configuración de elementos de fondo"
+      settingsTitle="Configuración de elementos de fondo"
+      showSettings={background.showSettings}
+      videoLabel="Video en movimiento"
+      videoRef={background.videoRef}
+    >
       <GameScreen
         username={username}
         displayName={displayName}
@@ -313,20 +267,9 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
           globalThis.location.href = '/index.html';
         }}
         onChangeDifficulty={(uiDiff: string) => {
-          // 1. Mapa de traducción para el backend
-          const backendMap: Record<string, string> = {
-            'Fácil': 'facil',
-            'Medio': 'medio',
-            'Difícil': 'dificil'
-          };
-
-          const valueForBackend = backendMap[uiDiff] || 'facil';
-
-          // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
+          const valueForBackend = mapUiDifficultyToBackend(uiDiff);
           setDifficultyChoice(uiDiff);
           setPreviousDifficultyChoice(uiDiff);
-          
-          // 3. Llamamos al servicio con el valor que entiende el Backend
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
           startNewGame(dimension, valueForBackend);
         }}
@@ -345,11 +288,10 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         }}
         onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
         onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
-        onOpenSettings={() => setShowSettings(true)}
+        onOpenSettings={() => background.setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
       />
 
-      {/* Modales de Configuración */}
       <SelectionModals
         currentScreen="game"
         difficultyChoice={difficultyChoice}
@@ -369,7 +311,6 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Pequeño')}
       />
 
-      {/* Modales de Resultados e Historial */}
       <ResultModal
         isOpen={showResultModal}
         winner={winner}
@@ -387,31 +328,26 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
       />
 
-      {/* 1. Panel de Amigos: el emisor del evento */}
       <FriendsPanel
           isOpen={showFriendsMenu}
           onClose={() => setShowFriendsMenu(false)}
-          username={username} // Tu sesión
+          username={username}
           displayName={displayName}
           friendCode={friendCode}
           icon={playerIcon}
-          // Captura el nombre del amigo y lo guarda en el estado local de main.tsx
           onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
 
-      {/* 2. Modal de Perfil Público: el receptor */}
-      {/* Solo se monta si hay un nombre en el estado 'publicProfileToView' */}
       {publicProfileToView && (
           <PublicProfileModal
-              username={publicProfileToView} // El usuario a consultar (distinto al de la sesión)
-              onClose={() => setPublicProfileToView(null)} // Al cerrar, limpiamos para poder abrir otro
+              username={publicProfileToView}
+              onClose={() => setPublicProfileToView(null)}
           />
       )}
 
-      {/* 3. Tu propio perfil (Session Storage) */}
       <ProfileScreen
           isOpen={showProfileScreen}
-          username={username} // Tu sesión activa
+          username={username}
           onClose={() => setShowProfileScreen(false)}
       />
 
@@ -431,38 +367,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
           globalThis.location.href = '/register.html'
         }}
       />
-      {showSettings && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
-          <div className="modal-box">
-            <h3>Configuración de elementos de fondo</h3>
-            <div className="form-group">
-              <label htmlFor="music-volume">Volumen de la música</label>
-              <input
-                id="music-volume"
-                className="form-input"
-                type="range"
-                min="0"
-                max="100"
-                value={Math.round(musicVolume * 100)}
-                onChange={(e) => setMusicVolume(Number(e.target.value) / 100)}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="video-static">Video en movimiento</label>
-              <input
-                id="video-static"
-                type="checkbox"
-                checked={!isVideoPaused}
-                onChange={(e) => setIsVideoPaused(!e.target.checked)}
-              />
-            </div>
-            <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    </MenuBackgroundChrome>
   );
 };
 

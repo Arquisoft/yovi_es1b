@@ -6,11 +6,13 @@ import {
   getAuthHeaders,
   getCurrentUser,
   isGuestSession,
+  persistUserSession,
 } from '../utils/sessionUtils'
 
 describe('sessionUtils', () => {
   beforeEach(() => {
     sessionStorage.clear()
+    localStorage.clear()
   })
 
   test('getAuthHeaders devuelve Bearer token cuando existe token', () => {
@@ -68,5 +70,32 @@ describe('sessionUtils', () => {
   test('clearGuestSession deja la sesión sin marca aunque ya estuviera vacía', () => {
     clearGuestSession()
     expect(isGuestSession()).toBe(false)
+  })
+
+  test('persistUserSession guarda y limpia los campos opcionales', () => {
+    const result = persistUserSession('  ana  ', {
+      friendCode: 'FRIEND-1',
+      icon: 'avatar.png',
+      language: 'es',
+      nickname: '',
+    })
+
+    expect(result).toBe(true)
+    expect(localStorage.getItem('yovi_user')).toBe('ana')
+    expect(localStorage.getItem('yovi_friend_code')).toBe('FRIEND-1')
+    expect(localStorage.getItem('yovi_user_icon')).toBe('avatar.png')
+    expect(localStorage.getItem('yovi_user_language')).toBe('es')
+    expect(localStorage.getItem('yovi_user_nickname')).toBeNull()
+  })
+
+  test('persistUserSession no guarda nada si el nombre está vacío', () => {
+    expect(
+      persistUserSession('   ', {
+        friendCode: 'FRIEND-1',
+        icon: 'avatar.png',
+      })
+    ).toBe(false)
+
+    expect(localStorage.length).toBe(0)
   })
 })
