@@ -46,20 +46,18 @@ const getRandomIndex = (length: number): number | null => {
   if (!Number.isInteger(length) || length <= 0) return null;
 
   const cryptoApi = globalThis.crypto;
-  if (cryptoApi?.getRandomValues) {
-    const limit = Math.floor(0x100000000 / length) * length;
-    const buffer = new Uint32Array(1);
+  if (!cryptoApi?.getRandomValues) return null;
 
-    let value = 0;
-    do {
-      cryptoApi.getRandomValues(buffer);
-      value = buffer[0];
-    } while (value >= limit);
+  const limit = Math.floor(0x100000000 / length) * length;
+  const buffer = new Uint32Array(1);
 
-    return value % length;
-  }
+  let value = 0;
+  do {
+    cryptoApi.getRandomValues(buffer);
+    value = buffer[0];
+  } while (value >= limit);
 
-  return Math.floor(Math.random() * length);
+  return value % length;
 };
 
 const pickRandomBotIcon = (): string | null => {
