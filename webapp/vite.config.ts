@@ -25,6 +25,13 @@ export default defineConfig({
     setupFiles: ['./src/__tests__/setup.ts'],
     testTimeout: 20000,
     coverage: {
+      exclude: [
+        '**/__tests__/**',
+        '**/*.test.ts',
+        '**/*.test.tsx',
+        '**/*.spec.ts',
+        '**/*.spec.tsx',
+      ],
       reporter: ['text', 'lcov'],
     },
   },
