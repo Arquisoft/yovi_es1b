@@ -1,3 +1,4 @@
+import '../i18n.ts';
 import logoGameY from '../assets/Logo_GameY.png';
 import { useTranslation } from 'react-i18next'
 
@@ -40,7 +41,7 @@ function HomeScreen({
     const { t } = useTranslation()
   return (
     <div className="home-screen">
-        <h2 className="welcome-title">{t('home.title')}'</h2>
+        <h2 className="welcome-title">{t('home.title')}</h2>
         <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
         {/* Bloque con botones para ir a registro/login */}
         <HomeActions
