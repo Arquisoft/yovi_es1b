@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { gameService } from '../services/gameService';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
-import i18n from '../i18n'
+import i18n from '../i18n';
 import { useTranslation } from 'react-i18next';
 
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -313,11 +313,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
 
   const applyAvatarSelection = () => {
     if (!avatarDraft) {
-      setAvatarError(t('error_no_avatar'));
+      setAvatarError(t('profile.error_no_avatar'));
       return;
     }
     setIconName(avatarDraft);
-    setInfoMessage(t('avatar_ready'));
+    setInfoMessage(t('profile.avatar_ready'));
     setErrorMessage('');
     setAvatarError('');
     setShowAvatarEditor(false);
@@ -343,7 +343,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
       if (data?.error) {
         setErrorMessage(data.error);
       } else {
-        setInfoMessage(t('success_save'));
+        setInfoMessage(t('profile.success_save'));
         if (language) {
           i18n.changeLanguage(languageToI18n[language] ?? 'es')
           localStorage.setItem('yovi_user_language', language);
@@ -358,7 +358,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         if (onIconUpdated) onIconUpdated(iconName);
       }
     } catch (error) {
-      setErrorMessage(t('error_save'));
+      setErrorMessage(t('profile.error_save'));
     } finally {
       setIsLoading(false);
     }
@@ -369,11 +369,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
     setInfoMessage('');
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setErrorMessage(t('error_empty_password'));
+      setErrorMessage(t('profile.error_empty_password'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setErrorMessage(t('error_password_mismatch'));
+      setErrorMessage(t('profile.error_password_mismatch'));
       return;
     }
 
@@ -383,14 +383,14 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
       if (data?.error) {
         setErrorMessage(data.error);
       } else {
-        setInfoMessage(t('success_password'));
+        setInfoMessage(t('profile.success_password'));
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setShowPasswordEditor(false);
       }
     } catch (error) {
-      setErrorMessage(t('error_password'));
+      setErrorMessage(t('profile.error_password'));
     } finally {
       setIsLoading(false);
     }
@@ -407,9 +407,9 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         <div className="profile-modal-layout">
           <div className="profile-left-pane">
             <img src={selectedIcon} alt="Avatar seleccionado" className="profile-main-avatar" />
-            <div className="profile-left-caption">{t('current_avatar')}</div>
+            <div className="profile-left-caption">{t('profile.current_avatar')}</div>
             <button type="button" className="submit-button profile-avatar-change-btn" onClick={openAvatarEditor}>
-              t('change_avatar')
+              {t('profile.change_avatar')}
             </button>
           </div>
 
@@ -472,7 +472,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
 
             <div className="profile-card">
               <div className="form-group">
-                <label htmlFor="profile-password">Contraseña</label>
+                <label htmlFor="profile-password">{t('profile.password')}</label>
                 <div className="profile-password-row">
                   <input id="profile-password" className="form-input" type="password" value="********" disabled />
                   <button
