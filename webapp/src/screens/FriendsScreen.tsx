@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
+import { useTranslation } from 'react-i18next';
 
 // Definimos la interfaz para los usuarios que busquemos
 interface UserResult {
@@ -15,6 +16,7 @@ interface FriendsScreenProps {
 
 
 export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProps) {
+  const { t } = useTranslation()
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<UserResult[]>([]);
 
@@ -50,21 +52,21 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
 
   return (
     <div className="home-screen">
-      <h2 className="welcome-title">Zona Social</h2>
+      <h2 className="welcome-title">{t('title')}</h2>
 
       <div className="choose-option">
-        <h3>Buscar nuevos amigos</h3>
+        <h3>{t('search_title')}</h3>
         
         <input
           type="text"
           className="form-input"
-          placeholder="Nombre del usuario..."
+          placeholder={t('search_placeholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         
         <button className="submit-button" onClick={handleSearch}>
-          Buscar
+          {t('search_button')}
         </button>
 
         <div className="results-container" style={{ marginTop: '1rem' }}>
@@ -83,13 +85,13 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
             </div>
           )})}
           {results.length === 0 && searchQuery && (
-            <p>No se han encontrado usuarios.</p>
+            <p>{t('no_results')}</p>
           )}
         </div>
       </div>
 
       <button className="submit-button" onClick={onBack}>
-        Volver
+        {t('back')}
       </button>
     </div>
   );
