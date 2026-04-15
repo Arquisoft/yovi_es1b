@@ -240,6 +240,7 @@ app.get('/users/profile/:username', async (req, res) => {
       birthDate: user.birthDate,
       language: user.language,
       iconName: user.iconName,
+      totalScore: user.totalScore || 0,
       // Usamos el tamaño del array directamente si no vas a popular
       followingCount: user.following?.length || 0,
       followersCount: user.followers?.length || 0
@@ -451,7 +452,8 @@ app.get('/users/public-profile/:username', async (req, res) => {
         gameStats = {
           wins: rustStats.wins,
           losses: rustStats.losses,
-          totalGames: rustStats.total // Transformamos "total" en "totalGames"
+          totalGames: rustStats.total, // Transformamos "total" en "totalGames"
+          totalScore: rustStats.total_score // Nuevo campo para puntos totales
         };
       }
     }catch (e) {
@@ -511,11 +513,24 @@ app.post('/move', async (req, res) => {
     }
 
     const newBoard = await rustResponse.json();
+
+    // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
+    if (newBoard.winner === 0 && newBoard.score > 0) {
+      const User = require('./models/user'); // Asegúrate de tener acceso al modelo
+      
+      // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
+      await User.findOneAndUpdate(
+        { username: username },
+        { $inc: { totalScore: newBoard.score || 0} } // Suma el score actual al totalScore de la DB
+      );
+      console.log(`Puntos guardados para ${username}: +${newBoard.score}`);
+    }
     
     // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
-      winner: newBoard.winner
+      winner: newBoard.winner,
+      score: newBoard.score // Nuevo campo para el puntaje de la partida
     });
   }
   catch (e) {
@@ -649,6 +664,23 @@ app.get('/history', async (req, res) => {
   } catch (e) {
     console.error("Error de conexión con Rust:", e);
     res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
+  }
+});
+
+/**
+ * Endpoint para comprar puntos de experiencia (XP) y acreditarlos al usuario
+ */
+app.post('/users/purchase-xp', async (req, res) => {
+  const { username, amount } = req.body;
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { username },
+      { $inc: { totalScore: amount } }, // Sumamos los puntos comprados
+      { new: true }
+    );
+    res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
+  } catch (e) {
+    res.status(500).json({ error: "No se pudo procesar la compra" });
   }
 });
 

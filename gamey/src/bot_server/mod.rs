@@ -97,6 +97,7 @@ pub struct UserStats {
     pub wins: i64,
     pub losses: i64,
     pub total: i64,
+    pub total_score: i64,
 }
 
 use utoipa::OpenApi;
@@ -315,11 +316,33 @@ pub async fn realizar_movimiento(
         _ => None,
     };
 
+    let mut final_score = 0;
+
     if winner_id.is_some() {
         let db = state.db.clone();
         let final_bot_name = active_bot_name.clone();
         let final_difficulty = current_difficulty_guard.to_string();
+        let b_size = game.board_size();
         let player_name = payload.player.clone();
+
+        // logica de puntuación
+
+        let diff_mult = match final_difficulty.as_str() {
+            "Medium" => 2.0,
+            "Hard" => 3.0,
+            _ => 1.0, // Easy o cualquier otro valor no reconocido
+        };
+
+        let size_mult = (b_size as f32) / 6.0;
+
+        // Calcular score total
+        final_score = if winner_id == Some(0) {
+            (100.0 * diff_mult * size_mult) as i32
+        } else {
+            0 // derrota
+        };
+
+        let record_score = final_score;
 
         tokio::spawn(async move {
             let collection = db.collection::<serde_json::Value>("partidas");
@@ -329,7 +352,8 @@ pub async fn realizar_movimiento(
                 "opponent": final_bot_name,
                 "board_size": b_size,
                 "difficulty": final_difficulty,
-                "result": if winner_id == Some(0) { "Victoria" } else { "Derrota" }
+                "result": if winner_id == Some(0) { "Victoria" } else { "Derrota" },
+                "score": record_score
             });
             let _ = collection.insert_one(record).await;
         });
@@ -338,7 +362,8 @@ pub async fn realizar_movimiento(
     let yen_data: crate::YEN = (&*game).into();
     axum::Json(serde_json::json!({
         "board": yen_data,
-        "winner": winner_id
+        "winner": winner_id,
+        "score": final_score
     }))
 }
 
@@ -501,6 +526,20 @@ pub async fn obtener_estadisticas(
 ) -> impl axum::response::IntoResponse {
     let collection = state.db.collection::<serde_json::Value>("partidas");
 
+    // Obtener puntuacion
+    let filter = doc! { "player": &params.username };
+    let mut cursor = collection.find(filter).await.unwrap();
+    let mut total_score = 0i64;
+
+    while let Some(Ok(doc)) = cursor.next().await {
+        // CAMBIO AQUÍ: Usamos as_i64() en lugar de as_i32()
+        let s = doc.get("score")
+            .and_then(|v| v.as_i64()) 
+            .unwrap_or(0);
+        
+        total_score += s;
+    }
+
     // Contar victorias
     let wins_filter = doc! { "player": &params.username, "result": "Victoria" };
     let wins = collection.count_documents(wins_filter).await.unwrap_or(0);
@@ -517,5 +556,6 @@ pub async fn obtener_estadisticas(
         wins: wins as i64,
         losses: losses as i64,
         total: (wins + losses) as i64,
+        total_score: total_score,
     })
 }

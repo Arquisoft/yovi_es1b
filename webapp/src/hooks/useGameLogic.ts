@@ -6,6 +6,7 @@ import type { GameYData } from '../types/game';
 type MoveResponse = {
   responseFromRust?: GameYData;
   winner: number | null;
+  score: number;
 };
 
 export const useGameLogic = () => {

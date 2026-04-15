@@ -17,6 +17,7 @@ interface PublicProfileData {
         wins: number;
         losses: number;
         totalGames: number;
+        totalScore: number;
     };
     relationship: 'none' | 'pending' | 'accepted' | 'self';
 }
@@ -130,6 +131,12 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
                     <h2 className="profile-nickname">{data.nickname}</h2>
                     <span className="profile-friend-code">#{data.friendCode}</span>
                     {renderActionButton()}
+                </div>
+
+                {/* ... victorias y derrotas ... */}
+                <div className="profile-stat-box highlight">
+                    <span className="stat-num">{data.stats.totalScore || 0}</span>
+                    <span className="stat-desc">Puntos Totales</span>
                 </div>
 
                 <div className="profile-stats-grid">

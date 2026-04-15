@@ -15,6 +15,7 @@ export interface GameYData {
   turn: number;
   players: string[];
   layout: string;
+  score: number;
 }
 
 /**
@@ -28,6 +29,7 @@ export interface HistoryGameRecord {
   board_size: number;
   difficulty: string;
   result: string;
+  score?: number;
 }
 
 /**
@@ -42,6 +44,7 @@ export interface PublicProfile {
     gamesPlayed: number;
     losses: number;
     winRate: number;
+    totalScore: number;
   };
   isFollowing: boolean;
 }
