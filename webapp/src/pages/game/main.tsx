@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -7,18 +7,22 @@ import { HistoryModal } from '../../components/modals/HistoryModal';
 import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
 import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
+import { GuestAccessModal, type GuestAccessReason } from '../../components/modals/GuestAccessModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
+import { TutorialScreen } from '../../screens/TutorialScreen';
+import { MenuBackgroundChrome } from '../../components/layout/MenuBackgroundChrome';
 
 // Hooks, Servicios y Utils
+import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
+import { getGameIdentity, mapUiDifficultyToBackend, resolveIconFromAssets } from '../../utils/gamePageUtils';
+import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
 
 // Assets y Estilos
-import menuVideo from '../../assets/background_video.mp4';
-import backgroundMusic from '../../assets/background_music.mp3';
 import '../../css/App.css';
 import '../../css/Game.css';
 import '../../css/Log.css';
@@ -38,50 +42,63 @@ const botIconPool = Object.entries(iconModules)
   .filter(([path]) => !path.toLowerCase().includes('sinavatar'))
   .map(([, src]) => src);
 
+const getRandomIndex = (length: number): number | null => {
+  if (!Number.isInteger(length) || length <= 0) return null;
+
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi?.getRandomValues) return null;
+
+  const limit = Math.floor(0x100000000 / length) * length;
+  const buffer = new Uint32Array(1);
+
+  let value = 0;
+  do {
+    cryptoApi.getRandomValues(buffer);
+    value = buffer[0];
+  } while (value >= limit);
+
+  return value % length;
+};
+
 const pickRandomBotIcon = (): string | null => {
   const pool = botIconPool.length ? botIconPool : Object.values(iconModules);
   if (!pool.length) return null;
-  const index = Math.floor(Math.random() * pool.length);
+  const index = getRandomIndex(pool.length);
+  if (index === null) return null;
   return pool[index] ?? null;
 };
 
-const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
-  const iconValue = String(rawIcon || '').trim();
-  if (!iconValue) return null;
+const GameApp = () => {
+  const isGuestMode = isGuestSession();
+  const storedUsername = localStorage.getItem('yovi_user') || '';
 
-  // Si ya viene como URL/ruta válida, la usamos tal cual.
-  if (
-    iconValue.startsWith('http://') ||
-    iconValue.startsWith('https://') ||
-    iconValue.startsWith('/') ||
-    iconValue.startsWith('data:')
-  ) {
-    return iconValue;
-  }
+  useEffect(() => {
+    if (!storedUsername && !isGuestMode) {
+      globalThis.location.href = '/index.html';
+    }
+  }, [isGuestMode, storedUsername]);
 
-  // Si viene como nombre de archivo (ej: "hombre1.png"), lo resolvemos desde assets.
-  const match = Object.entries(iconModules).find(([path]) =>
-    path.toLowerCase().includes(iconValue.toLowerCase())
-  );
-  return match ? match[1] : iconValue;
+  if (!storedUsername && !isGuestMode) return null;
+
+  return <GameAppContent isGuestMode={isGuestMode} storedUsername={storedUsername} />;
 };
 
-const GameApp = () => {
-  // --- SEGURIDAD Y SESIÓN ---
-  const username = localStorage.getItem('yovi_user') || '';
-  const friendCode = localStorage.getItem('yovi_friend_code') || '';
-  const displayName = localStorage.getItem('yovi_user_nickname') || username;
-  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(localStorage.getItem('yovi_user_icon')));
-  const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
+type GameAppContentProps = {
+  isGuestMode: boolean;
+  storedUsername: string;
+};
 
-  // Si no hay usuario, redirigimos inmediatamente a la home
-  if (!username) {
-    window.location.href = '/index.html';
-    return null;
-  }
+const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) => {
+  // --- SEGURIDAD Y SESIÓN ---
+  const { displayName, friendCode, username } = getGameIdentity(isGuestMode, storedUsername);
+  const [playerIcon, setPlayerIcon] = useState(resolveIconFromAssets(isGuestMode ? null : localStorage.getItem('yovi_user_icon'), iconModules));
+  const [botIcon] = useState<string | null>(() => pickRandomBotIcon());
+  const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
+  const handleTimeUp = useCallback(() => {
+    void handleAutoMoveRef.current();
+  }, []);
 
   // --- ESTADOS DE UI ---
-  const [connectionStatus, setConnectionStatus] = useState('Conectado');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
@@ -90,12 +107,9 @@ const GameApp = () => {
   const [showResultModal, setShowResultModal] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [showTutorialScreen, setShowTutorialScreen] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
-  const [musicVolume, setMusicVolume] = useState(0.4);
-  const [isVideoPaused, setIsVideoPaused] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const background = useMenuBackgroundMedia();
 
   // --- ESTADOS DE HISTORIAL ---
   const [showHistory, setShowHistory] = useState(false);
@@ -103,6 +117,7 @@ const GameApp = () => {
   const [historyFilter, setHistoryFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [guestAccessReason, setGuestAccessReason] = useState<GuestAccessReason | null>(null);
 
   // --- HOOKS DE LÓGICA ---
   const {
@@ -120,60 +135,13 @@ const GameApp = () => {
     startTimer,
     stopTimer,
     setIsVisible: setTimerVisible,
-  } = useGameTimer(() => handleAutoMove());
+  } = useGameTimer(handleTimeUp);
 
-  const startNewGame = (size: number, difficulty: DifficultyChoice) => {
+  const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
     setTimerVisible(false);
-    setBotIcon(pickRandomBotIcon());
-    resetGame(size, difficulty);
-  };
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = Math.min(1, Math.max(0, musicVolume));
-    }
-  }, [musicVolume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const storedTime = Number(localStorage.getItem('yovi_bg_time') || '0');
-    if (!Number.isNaN(storedTime) && storedTime > 0) {
-      const applyTime = () => {
-        audio.currentTime = Math.min(storedTime, Math.max(0, audio.duration || storedTime));
-      };
-      if (audio.readyState >= 1) {
-        applyTime();
-      } else {
-        audio.addEventListener('loadedmetadata', applyTime, { once: true });
-      }
-    }
-
-    const saveTime = () => {
-      localStorage.setItem('yovi_bg_time', String(audio.currentTime || 0));
-    };
-    const intervalId = window.setInterval(saveTime, 1000);
-    window.addEventListener('beforeunload', saveTime);
-    document.addEventListener('visibilitychange', saveTime);
-
-    return () => {
-      saveTime();
-      window.clearInterval(intervalId);
-      window.removeEventListener('beforeunload', saveTime);
-      document.removeEventListener('visibilitychange', saveTime);
-    };
-  }, []);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isVideoPaused) {
-      video.pause();
-    } else {
-      video.play().catch(() => {});
-    }
-  }, [isVideoPaused]);
+    void resetGame(size, difficulty);
+  }, [resetGame, stopTimer, setTimerVisible]);
 
   // --- EFECTOS INICIALES ---
   useEffect(() => {
@@ -183,8 +151,10 @@ const GameApp = () => {
       .catch((err) => console.error('Error API:', err));
 
     // 2. Iniciar la partida por defecto
-    startNewGame(6, 'Easy');
-  }, []);
+    queueMicrotask(() => {
+      void startNewGame(6, 'Easy');
+    });
+  }, [startNewGame]);
 
   useEffect(() => {
     let active = true;
@@ -194,14 +164,15 @@ const GameApp = () => {
         const profile = await gameService.getProfile();
         if (!active || profile?.error) return;
 
-        const resolvedIcon = resolveUserIcon(
-          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon
+        const resolvedIcon = resolveIconFromAssets(
+          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon,
+          iconModules
         );
         if (resolvedIcon) {
           setPlayerIcon(resolvedIcon);
           localStorage.setItem('yovi_user_icon', resolvedIcon);
         }
-      } catch (error) {
+      } catch {
         // En caso de error de red, mantenemos el icono local actual.
       }
     };
@@ -213,30 +184,25 @@ const GameApp = () => {
   }, [username]);
 
   // --- MANEJADORES DE ACCIONES ---
-  const handleAutoMove = async () => {
-    setConnectionStatus('⏱️ Movimiento automático...');
+  const handleAutoMove = useCallback(async () => {
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data?.winner !== null) setShowResultModal(true);
-      setConnectionStatus('Conectado');
-    } catch (error) {
-      setConnectionStatus('Error en movimiento automático');
-    }
-  };
+    } catch {}
+  }, [difficultyChoice, executeAutoMove, startTimer]);
 
+  useEffect(() => {
+    handleAutoMoveRef.current = handleAutoMove;
+  }, [handleAutoMove]);
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
-    setConnectionStatus('Moviendo...');
     try {
       const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
         setTimerVisible(false);
         setShowResultModal(true);
       }
-      setConnectionStatus('Conectado');
-    } catch (error) {
-      setConnectionStatus('Error en el movimiento');
-    }
+    } catch {}
   };
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
@@ -255,19 +221,27 @@ const GameApp = () => {
     setShowFriendsMenu(true);
   };
 
+  const openGuestAccessPrompt = (reason: GuestAccessReason) => {
+    setGuestAccessReason(reason);
+  };
+
   // Mapeo para la interfaz
   //const displayDifficulty = difficultyChoice;
 
   return (
-    <div className="App">
-      {/* Fondo de video */}
-      <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline>
-        <source src={menuVideo} type="video/mp4" />
-      </video>
-      <div className="menu-video-overlay" />
-      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop />
-
-      {/* Pantalla Principal */}
+    <MenuBackgroundChrome
+      audioRef={background.audioRef}
+      isVideoPaused={background.isVideoPaused}
+      musicVolume={background.musicVolume}
+      setIsVideoPaused={background.setIsVideoPaused}
+      setMusicVolume={background.setMusicVolume}
+      setShowSettings={background.setShowSettings}
+      settingsAriaLabel="Configuración de elementos de fondo"
+      settingsTitle="Configuración de elementos de fondo"
+      showSettings={background.showSettings}
+      videoLabel="Video en movimiento"
+      videoRef={background.videoRef}
+    >
       <GameScreen
         username={username}
         displayName={displayName}
@@ -275,7 +249,6 @@ const GameApp = () => {
         botIcon={botIcon}
         boardData={boardData}
         winner={winner}
-        connectionStatus={connectionStatus}
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
@@ -283,25 +256,20 @@ const GameApp = () => {
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
-        onFetchHistory={() => fetchHistory()}
-        onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
+        onFetchHistory={() => (isGuestMode ? openGuestAccessPrompt('historial') : fetchHistory())}
+        onExit={() => {
+          stopTimer();
+          if (isGuestMode) {
+            clearGuestSession();
+          }
+          globalThis.location.href = '/index.html';
+        }}
         onChangeDifficulty={(uiDiff: string) => {
-          // 1. Mapa de traducción para el backend
-          const backendMap: Record<string, string> = {
-            'Fácil': 'facil',
-            'Medio': 'medio',
-            'Difícil': 'dificil'
-          };
-
-          const valueForBackend = backendMap[uiDiff] || 'facil';
-
-          // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
-          setDifficultyChoice(uiDiff as any);
-          setPreviousDifficultyChoice(uiDiff as any);
-          
-          // 3. Llamamos al servicio con el valor que entiende el Backend
+          const valueForBackend = mapUiDifficultyToBackend(uiDiff);
+          setDifficultyChoice(uiDiff);
+          setPreviousDifficultyChoice(uiDiff);
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
-          startNewGame(dimension, valueForBackend as any);
+          startNewGame(dimension, valueForBackend);
         }}
         onChangeSize={(newSize: SizeChoice) => {
           setPreviousSizeChoice(newSize);
@@ -316,12 +284,12 @@ const GameApp = () => {
           await surrender(difficultyChoice!);
           setShowResultModal(true);
         }}
-        onAddFriend={() => openFriendsMenu()}
-        onViewProfile={() => setShowProfileScreen(true)}
-        onOpenSettings={() => setShowSettings(true)}
+        onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
+        onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
+        onOpenSettings={() => background.setShowSettings(true)}
+        onOpenTutorial={() => setShowTutorialScreen(true)}
       />
 
-      {/* Modales de Configuración */}
       <SelectionModals
         currentScreen="game"
         difficultyChoice={difficultyChoice}
@@ -341,7 +309,6 @@ const GameApp = () => {
         onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Pequeño')}
       />
 
-      {/* Modales de Resultados e Historial */}
       <ResultModal
         isOpen={showResultModal}
         winner={winner}
@@ -359,66 +326,46 @@ const GameApp = () => {
         onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
       />
 
-      {/* 1. Panel de Amigos: el emisor del evento */}
       <FriendsPanel
           isOpen={showFriendsMenu}
           onClose={() => setShowFriendsMenu(false)}
-          username={username} // Tu sesión
+          username={username}
           displayName={displayName}
           friendCode={friendCode}
           icon={playerIcon}
-          // Captura el nombre del amigo y lo guarda en el estado local de main.tsx
           onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
 
-      {/* 2. Modal de Perfil Público: el receptor */}
-      {/* Solo se monta si hay un nombre en el estado 'publicProfileToView' */}
       {publicProfileToView && (
           <PublicProfileModal
-              username={publicProfileToView} // El usuario a consultar (distinto al de la sesión)
-              onClose={() => setPublicProfileToView(null)} // Al cerrar, limpiamos para poder abrir otro
+              username={publicProfileToView}
+              onClose={() => setPublicProfileToView(null)}
           />
       )}
 
-      {/* 3. Tu propio perfil (Session Storage) */}
       <ProfileScreen
           isOpen={showProfileScreen}
-          username={username} // Tu sesión activa
+          username={username}
           onClose={() => setShowProfileScreen(false)}
       />
 
-      {showSettings && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
-          <div className="modal-box">
-            <h3>Configuración de elementos de fondo</h3>
-            <div className="form-group">
-              <label htmlFor="music-volume">Volumen de la música</label>
-              <input
-                id="music-volume"
-                className="form-input"
-                type="range"
-                min="0"
-                max="100"
-                value={Math.round(musicVolume * 100)}
-                onChange={(e) => setMusicVolume(Number(e.target.value) / 100)}
-              />
-            </div>
-            <div className="form-group">
-              <label htmlFor="video-static">Video en movimiento</label>
-              <input
-                id="video-static"
-                type="checkbox"
-                checked={!isVideoPaused}
-                onChange={(e) => setIsVideoPaused(!e.target.checked)}
-              />
-            </div>
-            <button type="button" className="submit-button" onClick={() => setShowSettings(false)}>
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+      <TutorialScreen
+        isOpen={showTutorialScreen}
+        onClose={() => setShowTutorialScreen(false)}
+      />
+      <GuestAccessModal
+        reason={guestAccessReason}
+        onClose={() => setGuestAccessReason(null)}
+        onGoLogin={() => {
+          setGuestAccessReason(null)
+          globalThis.location.href = '/login.html'
+        }}
+        onGoRegister={() => {
+          setGuestAccessReason(null)
+          globalThis.location.href = '/register.html'
+        }}
+      />
+    </MenuBackgroundChrome>
   );
 };
 
@@ -429,5 +376,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   </React.StrictMode>
 );
 
+export { GameApp, GameAppContent };
 
 

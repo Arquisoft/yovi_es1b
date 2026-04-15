@@ -1,4 +1,4 @@
-﻿import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import LoginScreen from '../screens/LoginScreen'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -25,8 +25,10 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     expect(onLogin).not.toHaveBeenCalled()
     expect(fetchSpy).not.toHaveBeenCalled()
@@ -38,13 +40,13 @@ describe('LoginForm', () => {
     const fetchSpy = vi.fn()
     global.fetch = fetchSpy as unknown as typeof fetch
 
-    const { container } = render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
-    const form = container.querySelector('form')
-    expect(form).toBeTruthy()
+    render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), '   ')
-    await user.type(screen.getByLabelText(/contraseña/i), '12345')
-    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), '   ')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     expect(await screen.findByText(/usuario y contraseña no pueden estar en blanco/i)).toBeInTheDocument()
     expect(onLogin).not.toHaveBeenCalled()
@@ -57,13 +59,13 @@ describe('LoginForm', () => {
     const fetchSpy = vi.fn()
     global.fetch = fetchSpy as unknown as typeof fetch
 
-    const { container } = render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
-    const form = container.querySelector('form')
-    expect(form).toBeTruthy()
+    render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.type(screen.getByLabelText(/contraseña/i), '   ')
-    form!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '   ')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     expect(await screen.findByText(/usuario y contraseña no pueden estar en blanco/i)).toBeInTheDocument()
     expect(onLogin).not.toHaveBeenCalled()
@@ -79,9 +81,11 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.type(screen.getByLabelText(/contraseña/i), 'bad-password')
-    await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), 'bad-password')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     expect(await screen.findByText(/credenciales invalidas/i)).toBeInTheDocument()
   })
@@ -95,9 +99,11 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.type(screen.getByLabelText(/contraseña/i), '12345')
-    await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     expect(await screen.findByText(/error al iniciar sesión/i)).toBeInTheDocument()
   })
@@ -120,9 +126,11 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'AliceClient')
-    await user.type(screen.getByLabelText(/contraseña/i), '12345')
-    await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'AliceClient')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     await waitFor(() => {
       expect(onLogin).toHaveBeenCalledWith('AliceServer', 'XYZ789', 'avatar1.png', 'Ali', 'Spain')
@@ -148,9 +156,11 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'AliceClient')
-    await user.type(screen.getByLabelText(/contraseña/i), '12345')
-    await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'AliceClient')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     await waitFor(() => {
       expect(onLogin).toHaveBeenCalledWith('AliceClient', 'ABC111', 'avatar-fallback.png', null, null)
@@ -166,9 +176,11 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.type(screen.getByLabelText(/contraseña/i), '12345')
-    await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     expect(await screen.findByText(/error de conexión al iniciar sesión/i)).toBeInTheDocument()
   })
@@ -187,11 +199,11 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.type(screen.getByLabelText(/contraseña/i), '12345')
-
-    const submitBtn = screen.getByRole('button', { name: /iniciar sesión/i })
-    await user.click(submitBtn)
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     expect(screen.getByRole('button', { name: /iniciando sesión/i })).toBeDisabled()
 
@@ -214,8 +226,39 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={onBack} onLogin={vi.fn()} />)
 
-    await user.click(screen.getByRole('button', { name: /volver/i }))
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /volver/i }))
+    })
 
     expect(onBack).toHaveBeenCalled()
+  })
+
+  test('el boton volver usa el estilo de cancelacion rojo', () => {
+    render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: /volver/i })).toHaveClass('cancel-button')
+  })
+
+  test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {
+    const user = userEvent.setup()
+    const onSettings = vi.fn()
+    const onTutorial = vi.fn()
+
+    render(
+      <LoginScreen
+        onBack={vi.fn()}
+        onLogin={vi.fn()}
+        onOpenSettings={onSettings}
+        onOpenTutorial={onTutorial}
+      />
+    )
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /configuración de elementos de fondo/i }))
+      await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
+    })
+
+    expect(onSettings).toHaveBeenCalled()
+    expect(onTutorial).toHaveBeenCalled()
   })
 })

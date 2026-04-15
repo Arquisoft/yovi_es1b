@@ -1,247 +1,134 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { gameService } from '../services/gameService'
+import { renderHook, act } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { useGameLogic } from '../hooks/useGameLogic';
+import { patchTriangularLayoutCell } from '../utils/boardUtils';
+import { gameService } from '../services/gameService';
+import type { GameYData } from '../types/game';
 
-// Mock global fetch
-const mockFetch = vi.fn()
-vi.stubGlobal('fetch', mockFetch)
+vi.mock('../services/gameService', () => ({
+  gameService: {
+    makeMove: vi.fn(),
+    resetBoard: vi.fn(),
+    surrender: vi.fn(),
+  },
+}));
 
-// Mock de localStorage para simular la sesión activa
-const localStorageMock = (() => {
-    let store: Record<string, string> = {
-        'yovi_user': 'alice' // Usuario por defecto para los tests
-    };
-    return {
-        getItem: (key: string) => store[key] || null,
-        setItem: (key: string, value: string) => { store[key] = value },
-        clear: () => { store = {} }
-    };
-})();
-vi.stubGlobal('localStorage', localStorageMock);
+const makeBoard = (layout: string, size = 3): GameYData => ({
+  size,
+  turn: 0,
+  players: ['B', 'R'],
+  layout,
+});
 
-const mockJsonResponse = (data: unknown, ok = true) =>
-    Promise.resolve({
-        ok,
-        json: () => Promise.resolve(data),
-        text: () => Promise.resolve(JSON.stringify(data)),
-    } as Response)
+const mockedGameService = vi.mocked(gameService);
 
-describe('gameService', () => {
-    // Al principio del archivo, después de los imports
-    beforeEach(() => {
-        vi.clearAllMocks();
-        // Forzamos que cada vez que el código pida el usuario, devuelva 'alice'
-        vi.stubGlobal('sessionStorage', {
-            getItem: vi.fn().mockReturnValue('alice'),
-            setItem: vi.fn(),
-            clear: vi.fn(),
-        });
-        vi.stubGlobal('localStorage', {
-            getItem: vi.fn().mockReturnValue('alice'),
-            setItem: vi.fn(),
-            clear: vi.fn(),
-        });
+describe('useGameLogic', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  test('executeHumanMove actualiza el tablero y reanuda el temporizador si no hay ganador', async () => {
+    const startTimer = vi.fn();
+    const stopTimer = vi.fn();
+    const responseBoard = makeBoard('......');
+
+    mockedGameService.makeMove.mockResolvedValue({
+      responseFromRust: responseBoard,
+      winner: null,
     });
 
-    // ── getDifficulties ────────────────────────
+    const { result } = renderHook(() => useGameLogic());
 
-    test('getDifficulties devuelve un array de dificultades', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse(['Easy', 'Medium', 'Hard']))
+    let moveResult: Awaited<ReturnType<typeof result.current.executeHumanMove>> | undefined;
+    await act(async () => {
+      moveResult = await result.current.executeHumanMove(0, 'Easy', stopTimer, startTimer);
+    });
 
-        const result = await gameService.getDifficulties()
+    expect(stopTimer).toHaveBeenCalledTimes(1);
+    expect(mockedGameService.makeMove).toHaveBeenCalledWith(0, 'Easy', undefined);
+    expect(moveResult).toEqual({
+      responseFromRust: responseBoard,
+      winner: null,
+    });
+    expect(result.current.boardData?.layout).toBe(
+      patchTriangularLayoutCell(responseBoard.layout, responseBoard.size, 0, 'B')
+    );
 
-        expect(result).toEqual(['Easy', 'Medium', 'Hard'])
-        expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/difficulties'))
-    })
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
 
-    // ── makeMove ───────────────────────────────
+    expect(startTimer).toHaveBeenCalledWith('Easy');
+  });
 
-    test('makeMove envía el movimiento correctamente sin pasar username manual', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ winner: null }))
+  test('executeAutoMove elige una celda vacia y actualiza el tablero', async () => {
+    const startTimer = vi.fn();
+    const responseBoard = makeBoard('B.....');
+    const getRandomValuesSpy = vi
+      .spyOn(window.crypto, 'getRandomValues')
+      .mockImplementation((array) => {
+        (array as Uint32Array)[0] = 0;
+        return array;
+      });
 
-        await gameService.makeMove(5, 'Easy', 6)
+    mockedGameService.makeMove.mockResolvedValue({
+      responseFromRust: responseBoard,
+      winner: null,
+    });
 
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/move'),
-            expect.objectContaining({
-                method: 'POST',
-                // El servicio debe haber incluido "alice" automáticamente en el body
-                body: expect.stringContaining('"username":"alice"'),
-            })
-        )
-    })
+    const { result } = renderHook(() => useGameLogic());
 
-    // ── resetBoard ─────────────────────────────
+    await act(async () => {
+      await result.current.executeHumanMove(0, 'Easy', vi.fn(), vi.fn());
+    });
 
-    test('resetBoard devuelve responseFromRust y usa sesión interna', async () => {
-        const board = { size: 6, turn: 0, players: ['B', 'R'], layout: '.' }
-        mockFetch.mockReturnValue(mockJsonResponse({ responseFromRust: board }))
+    let autoMoveResult: Awaited<ReturnType<typeof result.current.executeAutoMove>> | undefined;
+    await act(async () => {
+      autoMoveResult = await result.current.executeAutoMove('Easy', startTimer);
+    });
 
-        const result = await gameService.resetBoard(6, 'Easy')
+    expect(getRandomValuesSpy).toHaveBeenCalled();
+    expect(mockedGameService.makeMove).toHaveBeenLastCalledWith(1, 'Easy', 3);
+    expect(autoMoveResult).toEqual({
+      responseFromRust: responseBoard,
+      winner: null,
+    });
+    expect(result.current.boardData?.layout).toBe(
+      patchTriangularLayoutCell(responseBoard.layout, responseBoard.size, 1, 'B')
+    );
+    expect(startTimer).toHaveBeenCalledWith('Easy');
+  });
 
-        expect(result).toEqual(board)
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.anything(),
-            expect.objectContaining({
-                body: expect.stringContaining('"username":"alice"')
-            })
-        )
-    })
+  test('resetGame reemplaza el tablero y limpia el ganador', async () => {
+    const board = makeBoard('......');
+    mockedGameService.resetBoard.mockResolvedValue(board);
 
-    // ── surrender ──────────────────────────────
+    const { result } = renderHook(() => useGameLogic());
 
-    test('surrender envía los datos correctamente usando sesión', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({}))
+    await act(async () => {
+      await result.current.resetGame(3, 'Medium');
+    });
 
-        await gameService.surrender('Easy', 6)
+    expect(mockedGameService.resetBoard).toHaveBeenCalledWith(3, 'Medium');
+    expect(result.current.boardData).toEqual(board);
+    expect(result.current.winner).toBeNull();
+  });
 
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/surrender'),
-            expect.objectContaining({
-                method: 'POST',
-                body: expect.stringContaining('"username":"alice"'),
-            })
-        )
-    })
+  test('surrender delega en el servicio y marca la derrota', async () => {
+    mockedGameService.surrender.mockResolvedValue(new Response(null));
 
-    // ── getHistory ─────────────────────────────
+    const { result } = renderHook(() => useGameLogic());
 
-    test('getHistory construye la URL correctamente usando sesión', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ data: [], total_pages: 1, page: 1 }))
+    await act(async () => {
+      await result.current.surrender('Hard');
+    });
 
-        await gameService.getHistory(1)
-
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('username=alice&page=1&limit=5')
-        )
-    })
-
-    test('getHistory añade el filtro a la URL si se pasa', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ data: [], total_pages: 1, page: 1 }))
-
-        await gameService.getHistory(1, 'win')
-
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('result=win')
-        )
-    })
-
-    // ── getFriends ─────────────────────────────
-
-    test('getFriends devuelve lista de amigos usando sesión', async () => {
-        const friends = [{ name: 'bob', status: 'online' }]
-        mockFetch.mockReturnValue(mockJsonResponse(friends))
-
-        const result = await gameService.getFriends()
-
-        expect(result).toEqual(friends)
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('username=alice'),
-            expect.anything()
-        )
-    })
-
-    // ── getProfile ─────────────────────────────
-
-    /*test('getProfile llama al endpoint correcto usando sesión', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ username: 'alice' }))
-
-        await gameService.getProfile()
-
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/users/profile/alice'),
-            expect.objectContaining({
-                method: 'GET',
-                headers: expect.objectContaining({
-                    'Content-Type': 'application/json',
-                }),
-            })
-        )
-    })*/
-
-    // ── updateProfile ──────────────────────────
-
-    test('updateProfile envía PATCH usando sesión', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ ok: true }))
-
-        await gameService.updateProfile({ nickname: 'Ali', language: 'es' })
-
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/users/profile/alice'),
-            expect.objectContaining({
-                method: 'PATCH',
-                body: JSON.stringify({ nickname: 'Ali', language: 'es' }),
-            })
-        )
-    })
-
-    // ── changePassword ─────────────────────────
-
-    test('changePassword envía las contraseñas correctamente usando sesión', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ ok: true }))
-
-        await gameService.changePassword('oldpass', 'newpass')
-
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/users/profile/alice/change-password'),
-            expect.objectContaining({
-                method: 'POST',
-                body: JSON.stringify({ currentPassword: 'oldpass', newPassword: 'newpass' }),
-            })
-        )
-    })
-
-    // ── searchUserByCode ───────────────────────
-
-    test('searchUserByCode devuelve el primer usuario encontrado', async () => {
-        const user = { username: 'bob', friendCode: 'ABC123' }
-        mockFetch.mockReturnValue(mockJsonResponse([user]))
-
-        const result = await gameService.searchUserByCode('ABC123')
-
-        expect(result).toEqual(user)
-    })
-
-    // ── followUser ─────────────────────────────
-
-    test('followUser envía follower (sesión) y following correctamente', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ ok: true }))
-
-        await gameService.followUser('bob')
-
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/users/follow'),
-            expect.objectContaining({
-                body: JSON.stringify({ follower: 'alice', following: 'bob' }),
-            })
-        )
-    })
-
-    // ── respondToFriendRequest ─────────────────
-
-    test('respondToFriendRequest envía requestId y action', async () => {
-        mockFetch.mockReturnValue(mockJsonResponse({ ok: true }))
-
-        await gameService.respondToFriendRequest('req123', 'accepted')
-
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('/friends/respond'),
-            expect.objectContaining({
-                body: JSON.stringify({ requestId: 'req123', action: 'accepted' }),
-            })
-        )
-    })
-
-    // ── getPendingRequests ─────────────────────
-
-   /* test('getPendingRequests devuelve las solicitudes pendientes usando sesión', async () => {
-        const requests = [{ id: '1', from: 'bob' }]
-        mockFetch.mockReturnValue(mockJsonResponse(requests))
-
-        const result = await gameService.getPendingRequests()
-
-        expect(result).toEqual(requests)
-        expect(mockFetch).toHaveBeenCalledWith(
-            expect.stringContaining('username=alice')
-        )
-    })*/
-})
+    expect(mockedGameService.surrender).toHaveBeenCalledWith('Hard', undefined);
+    expect(result.current.winner).toBe(1);
+  });
+});

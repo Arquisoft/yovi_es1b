@@ -41,7 +41,6 @@ const baseProps = (overrides?: {
     layout: makeTriangularLayout(6),
   } as GameYData),
   winner: overrides?.winner ?? null,
-  connectionStatus: 'Conectado', // Prop requerida en el nuevo GameScreen
   sizeLabel: 'Pequeño',
   timerVisible: overrides?.timerVisible ?? false,
   turnTimeLeft: overrides?.turnTimeLeft ?? null,
@@ -167,7 +166,7 @@ describe('Game UI (MPA Ready)', () => {
     const props = baseProps()
     render(<GameScreen {...props} />)
 
-    expect(screen.getByText(/partida personalizada contra un bot/i)).toBeInTheDocument()
+    expect(screen.getByText(/partida vs ia/i)).toBeInTheDocument()
     expect(screen.getByText(/jugador:/i)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
