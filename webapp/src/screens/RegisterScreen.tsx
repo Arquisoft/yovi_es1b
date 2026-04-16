@@ -148,7 +148,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
     <div className="register-screen">
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log">ZONA DE REGISTRO</h2>
+        <h2 className="title-log">{t('register.title')}</h2>
         {(onOpenSettings || onOpenTutorial) && (
           <div className="header-action-group">
             {onOpenSettings && (

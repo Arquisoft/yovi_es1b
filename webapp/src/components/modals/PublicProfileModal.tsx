@@ -138,7 +138,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
                 {/* ... victorias y derrotas ... */}
                 <div className="profile-stat-box highlight">
                     <span className="stat-num">{data.stats.totalScore || 0}</span>
-                    <span className="stat-desc">Puntos Totales</span>
+                    <span className="stat-desc">{t('profile.total_score')}</span>
                 </div>
 
                 <div className="profile-stats-grid">

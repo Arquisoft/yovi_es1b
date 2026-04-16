@@ -377,28 +377,28 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
             {avatarError && <small className="error-message">{avatarError}</small>}
             <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
               {shouldShowNoIconsMessage(availableIcons) ? (
-                <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
+                <small className="error-message">{t('profile.no_icons')}</small>
               ) : (
                 <>
                   {noAvatarIcon && (
                     <>
-                      <div className="icon-row-label">Sin Avatar</div>
+                      <div className="icon-row-label">{t('profile.no_avatar')}</div>
                       <div className="icon-row-grid icon-row-grid-single">
                         <button
                           type="button"
                           className={`icon-option ${avatarDraft === noAvatarIcon.name ? 'icon-option-selected' : ''}`}
                           onClick={() => setAvatarDraft(noAvatarIcon.name)}
-                          title="Sin Avatar"
-                          aria-label="Elegir Sin Avatar"
+                          title={t('profile.no_avatar')}
+                          aria-label={t('profile.choose_no_avatar')}
                           aria-pressed={avatarDraft === noAvatarIcon.name}
                         >
-                          <img src={noAvatarIcon.src} alt="Sin Avatar" className="icon-option-img" />
+                          <img src={noAvatarIcon.src} alt={t('profile.no_avatar')} className="icon-option-img" />
                         </button>
                       </div>
                     </>
                   )}
 
-                  <div className="icon-row-label">Hombre</div>
+                  <div className="icon-row-label">{t('profile.male')}</div>
                   <div className="icon-row-grid">
                     {maleIcons.map((icon) => {
                       const isSelected = avatarDraft === icon.name;
@@ -418,7 +418,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
                     })}
                   </div>
 
-                  <div className="icon-row-label">Mujer</div>
+                  <div className="icon-row-label">{t('profile.female')}</div>
                   <div className="icon-row-grid">
                     {femaleIcons.map((icon) => {
                       const isSelected = avatarDraft === icon.name;

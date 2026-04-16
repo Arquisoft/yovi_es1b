@@ -194,7 +194,7 @@ function GameScreen({
             </button>
         </div>
 
-        <div className="nav-center-title">Partida vs IA</div>
+        <div className="nav-center-title">{t('game.title')}</div>
 
         <div className="nav-game-settings">
           {/* MENÚ TAMAÑO */}
@@ -255,77 +255,77 @@ function GameScreen({
 
           <div className="nav-btn-spacer" aria-hidden="true" />
           <div className="nav-icon-action">
-            <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title="Terminar partida">
-              <img className="nav-btn-png" src={botonRojo} alt="Terminar partida" />
+            <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title={t('game.end_game')}>
+              <img className="nav-btn-png" src={botonRojo} alt={t('game.end_game')} />
               <span className="nav-btn-lottie-hover" aria-hidden="true">
                 <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">Rendirse</span>
+            <span className="nav-icon-caption">{t('game.end_game')}</span>
           </div>
           <div className="nav-icon-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title="Reiniciar partida">
-              <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt="Reiniciar partida" />
+            <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title={t('game.restart')}>
+              <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt={t('game.restart')} />
               <span className="nav-btn-restart-hover" aria-hidden="true">
                 <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">Reiniciar</span>
+            <span className="nav-icon-caption">{t('game.restart')}</span>
           </div>
           <div className="nav-icon-action">
             <button
               className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
               onClick={onOpenSettings}
-              title="Configuración"
-              aria-label="Configuración"
+              title={t('game.settings')}
+              aria-label={t('game.settings')}
             >
-              <img className="nav-btn-settings-img" src={settingsImg} alt="Configuración" />
+              <img className="nav-btn-settings-img" src={settingsImg} alt={t('game.settings')} />
               <span className="nav-btn-settings-hover" aria-hidden="true">
                 <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">Ajustes</span>
+            <span className="nav-icon-caption">{t('game.settings')}</span>
           </div>
           <div className="nav-btn-spacer" aria-hidden="true" />
           <div className="nav-icon-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title="Ver historial">
-              <img className="nav-btn-history-img" src={historialImg} alt="Historial" />
+            <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title={t('game.view_history')}>
+              <img className="nav-btn-history-img" src={historialImg} alt={t('game.history')} />
               <span className="nav-btn-history-hover" aria-hidden="true">
                 <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">Historial</span>
+            <span className="nav-icon-caption">{t('game.history')}</span>
           </div>
           {onOpenTutorial && (
             <div className="nav-icon-action">
               <button
                 className="nav-btn nav-btn-icon-frame nav-btn-with-help"
                 onClick={onOpenTutorial}
-                title="Abrir ayuda"
-                aria-label="Ayuda"
+                title={t('common.help_aria')}
+                aria-label={t('common.help')}
               >
                 <span className="nav-btn-help-glyph" aria-hidden="true">?</span>
                 <span className="nav-btn-help-hover" aria-hidden="true">?</span>
               </button>
-              <span className="nav-icon-caption">Ayuda</span>
+              <span className="nav-icon-caption">{t('common.help')}</span>
             </div>
           )}
           <div className="nav-icon-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
-              <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
+            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title={t('game.friends_menu')}>
+              <img className="nav-btn-friends-img" src={amigosImg} alt={t('game.friends_menu_short')} />
             </button>
-            <span className="nav-icon-caption">Amigos</span>
+            <span className="nav-icon-caption">{t('game.friends_menu_short')}</span>
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />
           <div className="nav-icon-action">
-            <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title="Volver al menú">
-              <img className="nav-btn-exit-img" src={salirMenuImg} alt="Salir" />
+            <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title={t('game.exit')}>
+              <img className="nav-btn-exit-img" src={salirMenuImg} alt={t('game.exit_alt')} />
               <span className="nav-btn-logout-hover" aria-hidden="true">
                 <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">Salir</span>
+            <span className="nav-icon-caption">{t('game.exit_alt')}</span>
           </div>
         </div>
 
@@ -335,7 +335,7 @@ function GameScreen({
 
         <div className="game-main-content">
           <div className="board-area">
-            <div className="player-slot player-slot-left" aria-label="Jugador humano">
+            <div className="player-slot player-slot-left" aria-label={t('game.human_player')}>
               <div className="player-info">
                 <div className="player-header-row">
                   <div className="player-avatar-box">
@@ -394,7 +394,7 @@ function GameScreen({
               )}
             </div>
 
-            <div className="player-slot player-slot-right" aria-label="Jugador bot">
+            <div className="player-slot player-slot-right" aria-label={t('game.bot_player_slot')}>
               <div className="player-info player-info-right">
                 <div className="player-header-row player-header-row-right">
                   <p className="player-label player-label-red">{botName}</p>
@@ -408,7 +408,7 @@ function GameScreen({
 
         </div>
 
-      <div className="match-info-floating" aria-label="Informacion de la partida">
+      <div className="match-info-floating" aria-label={t('game.match_info')}>
         <div className="match-info-box">
           <strong className="match-info-title">{t('game.match_info')}</strong>
           <div className="match-info-line">{t('game.difficulty')}: {difficultyLabel}</div>

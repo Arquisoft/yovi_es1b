@@ -136,8 +136,8 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
                           type="button"
                           className="header-settings-btn header-action-btn"
                           onClick={onOpenSettings}
-                          title="Configuración"
-                          aria-label="Configuración de elementos de fondo"
+                          title={t('common.settings')}
+                          aria-label={t('common.settings_aria')}
                       >
                         <img src={settingsImg} alt="" className="floating-action-icon"/>
                       </button>
@@ -147,8 +147,8 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
                           type="button"
                           className="header-settings-btn header-action-btn"
                           onClick={onOpenTutorial}
-                          title="Ayuda"
-                          aria-label="Abrir ayuda"
+                          title={t('common.help')}
+                          aria-label={t('common.help_aria')}
                       >
                         <span className="help-icon-glyph" aria-hidden="true">?</span>
                       </button>
