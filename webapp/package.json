@@ -17,6 +17,7 @@
     "start:all": "concurrently \"npm run dev\" \"npm --prefix ../users start\""
   },
   "dependencies": {
+    "@paypal/react-paypal-js": "^9.1.1",
     "i18next": "^26.0.4",
     "lottie-react": "^2.4.1",
     "react": "^18.3.1",

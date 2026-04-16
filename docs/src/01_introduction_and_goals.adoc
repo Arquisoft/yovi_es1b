@@ -3,50 +3,55 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-introduction-and-goals]]
 == Introducción y Objetivos
 
-El proyecto **yovi_es1b** es una iniciativa llevada a cabo en la Universidad de Oviedo, dentro del marco de la asignatura de Ingeniería del Software. El propósito es desarrollar, integrar y desplegar una versión digital del juego de estrategia abstracta "Juego Y" (Game of Y).
+El proyecto **yovi_es1b** es un sistema distribuido desarrollado en la Universidad de Oviedo para la asignatura de Ingeniería del Software. El objetivo es digitalizar el "Juego Y", un juego de estrategia abstracta, mediante una arquitectura moderna de microservicios.
 
-El equipo comprometido con este desarrollo está formado por:
+El equipo de desarrollo está compuesto por:
+* Diego Abeijon Rodriguez, Hugo Tejedor Arcoitza, Nahiara Sanchez Garcia, Eva Menéndez Hernández y Moisés Montes Iglesias.
 
-* Diego Abeijon Rodriguez
-* Hugo Tejedor Arcoitza
-* Nahiara Sanchez Garcia
-* Eva Menéndez Hernández
-* Moisés Montes Iglesias
-
-En la aplicación, los usuarios podrán jugar al "Juego Y" en dos modalidades principales: enfrentamiento contra otro jugador (local) o contra un Bot (IA), haciendo uso de un núcleo lógico preexistente.
+La solución permite enfrentamientos en tiempo real (Local) y contra una Inteligencia Artificial avanzada, integrando tecnologías heterogéneas (React, Node.js y Rust) para maximizar el rendimiento y la escalabilidad.
 
 === Visión General de los Requisitos
 
-La funcionalidad principal se basa en la integración de componentes y la correcta ejecución del juego.
+La aplicación debe garantizar la integridad de las reglas del Juego Y y proporcionar una experiencia fluida.
 
 .Requisitos Funcionales Clave
-* **Modos de Juego:** Soporte para partidas Humano vs Humano y Humano vs Bot.
-* **Integración del Núcleo:** La aplicación utiliza una librería externa (Kernel) para la validación de movimientos y detección de victoria, asegurando que las reglas oficiales se cumplen estrictamente.
-* **Interfaz de Usuario:** Visualización clara del tablero triangular, permitiendo interactuar con las celdas para colocar fichas de manera intuitiva.
-* **Despliegue y Ejecución:** El sistema está configurado para iniciarse correctamente en los entornos de laboratorio, gestionando las dependencias necesarias automáticamente.
-* **Ciclo de la Partida:** Gestión completa del flujo de juego: inicio, turnos alternos, detección de fin de partida y opción de reinicio.
+* **Arquitectura Multitier:** Separación estricta entre la interfaz (Webapp), la gestión de usuarios (Users Service) y el motor de lógica (GameY Engine).
+* **Gestión de Sesiones:** Autenticación persistente de usuarios mediante JWT (JSON Web Tokens) y almacenamiento en base de datos NoSQL (MongoDB).
+* **Motor de Juego (Kernel):** Integración de un motor lógico desarrollado en Rust para el cálculo de movimientos y validación de estados de victoria.
+* **Inteligencia Artificial:** Implementación de diferentes estrategias de juego para el modo Humano vs Bot.
+* **Historial de Partidas:** Persistencia de resultados y estadísticas de juego para cada usuario registrado.
 
 === Objetivos de Calidad
 
-Los objetivos de calidad se centran en la arquitectura de integración y la facilidad de puesta en marcha del software.
+Siguiendo el estándar ISO/IEC 25010, se han definido las siguientes metas:
 
 [options="header",cols="1,2,2"]
 |===
-|Prioridad |Meta de Calidad |Escenario
-| 1 | **Desplegabilidad (Deployability)** | El proyecto debe poder clonarse y ejecutarse en los equipos del laboratorio con una configuración mínima, evitando errores de rutas o dependencias faltantes.
-| 2 | **Interoperabilidad** | La interfaz gráfica debe comunicarse con el núcleo lógico (backend/kernel) sin errores de formato, respetando la API proporcionada.
-| 3 | **Usabilidad** | Un jugador nuevo debe poder identificar fácilmente de quién es el turno, dónde puede colocar una ficha y si ha ganado o perdido, sin consultar un manual.
-| 4 | **Mantenibilidad** | La arquitectura debe separar claramente el código de la vista del código de la lógica, facilitando futuras actualizaciones del núcleo o cambios en la interfaz.
+|Prioridad |Meta de Calidad |Escenario de Medición
+| 1 | **Desplegabilidad** | Un desarrollador nuevo debe poder levantar el ecosistema completo (Frontend, Backend, DB) en menos de 5 minutos usando **Docker Compose**.
+| 2 | **Interoperabilidad** | El sistema debe manejar la comunicación asíncrona entre el Frontend (Vite) y los servicios (Node/Rust) sin bloqueos de interfaz (UX fluida).
+| 3 | **Seguridad** | Las credenciales de usuario deben estar cifradas en reposo (Bcrypt) y las comunicaciones protegidas, evitando la exposición de datos sensibles en el repositorio (uso de Secrets).
+| 4 | **Robustez** | El sistema debe recuperarse automáticamente de caídas en la conexión con la base de datos Atlas mediante reintentos configurados en el driver de Mongoose.
 |===
 
 === Stakeholders
 
-Personas y roles involucrados en el desarrollo y evaluación del sistema.
-
 [options="header",cols="1,2,2"]
 |===
-|Rol/Nombre |Contacto |Expectativas
+|Rol |Sujetos |Expectativas
 
+| **Equipo de desarrollo**
+| Diego, Hugo, Nahiara, Eva, Moisés
+| Aplicar buenas prácticas de CI/CD (GitHub Actions) y documentar una arquitectura limpia y mantenible.
+
+| **Usuarios Finales**
+| Jugadores de la comunidad
+| Interfaz intuitiva, respuesta rápida del Bot y seguridad en la gestión de sus perfiles.
+
+| **Cuerpo Docente**
+| Labra Gayo, P. González, I. Cid, D. Martín
+| Cumplimiento de los hitos de entrega, uso correcto de Docker, SonarQube para calidad de código y despliegue funcional en Azure/SSH.
+|===
 | **Equipo de desarrollo**
 | Diego Abeijon, Hugo Tejedor, Nahiara Sanchez, Eva Menéndez, Moisés Montes
 | Integrar correctamente el sistema, documentar la arquitectura (arc42) y superar la evaluación de la asignatura mediante un despliegue exitoso.

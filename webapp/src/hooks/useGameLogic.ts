@@ -1,14 +1,20 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { gameService } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
 import type { GameYData } from '../types/game';
+
+type MoveResponse = {
+  responseFromRust?: GameYData;
+  winner: number | null;
+  score: number;
+};
 
 export const useGameLogic = () => {
   const [boardData, setBoardData] = useState<GameYData | null>(null);
   const [winner, setWinner] = useState<number | null>(null);
 
   // Función interna para aplicar el parche visual y actualizar estado
-  const updateBoardState = (data: any, cellIndex: number) => {
+  const updateBoardState = useCallback((data: MoveResponse, cellIndex: number) => {
     if (data.responseFromRust) {
       const serverBoard = data.responseFromRust as GameYData;
       const boardSize = serverBoard.size || 5;
@@ -23,10 +29,10 @@ export const useGameLogic = () => {
       setWinner(data.winner);
     }
     return data;
-  };
+  }, []);
 
   // Movimiento del Jugador
-  const executeHumanMove = async (index: number, difficulty: string, stopTimer: () => void, startTimer: (d: string) => void) => {
+  const executeHumanMove = useCallback(async (index: number, difficulty: string, stopTimer: () => void, startTimer: (d: string) => void) => {
     stopTimer();
     // ELIMINADO: username ya no se envía como argumento aquí
     const data = await gameService.makeMove(index, difficulty, boardData?.size);
@@ -36,10 +42,10 @@ export const useGameLogic = () => {
       setTimeout(() => startTimer(difficulty), 300);
     }
     return result;
-  };
+  }, [boardData?.size, updateBoardState]);
 
   // Movimiento Automático (Bot/Tiempo agotado)
-  const executeAutoMove = async (difficulty: string, startTimer: (d: string) => void) => {
+  const executeAutoMove = useCallback(async (difficulty: string, startTimer: (d: string) => void) => {
     if (!boardData || winner !== null) return;
 
     const flat = boardData.layout.replaceAll('/', '');
@@ -59,22 +65,22 @@ export const useGameLogic = () => {
       startTimer(difficulty);
     }
     return result;
-  };
+  }, [boardData, updateBoardState, winner]);
 
-  const resetGame = async (dimension: number, difficulty: string, stopTimer?: () => void) => {
+  const resetGame = useCallback(async (dimension: number, difficulty: string, stopTimer?: () => void) => {
     stopTimer?.();
     // ELIMINADO: username ya no se envía como argumento aquí
     const board = await gameService.resetBoard(dimension, difficulty);
     setBoardData(board);
     setWinner(null);
     return board;
-  };
+  }, []);
 
-  const surrender = async (difficulty: string) => {
+  const surrender = useCallback(async (difficulty: string) => {
     // ELIMINADO: username ya no se envía como argumento aquí
     await gameService.surrender(difficulty, boardData?.size);
     setWinner(1);
-  };
+  }, [boardData?.size]);
 
   return { boardData, winner, executeHumanMove, executeAutoMove, resetGame, surrender };
 };

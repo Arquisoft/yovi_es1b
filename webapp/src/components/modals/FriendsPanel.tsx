@@ -169,7 +169,15 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
   if (!isOpen) return null;
 
   return ReactDOM.createPortal(
-    <div className="friends-sidebar-overlay" onClick={onClose}>
+    <div
+      className="friends-sidebar-overlay"
+      onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+          onClose();
+        }
+      }}
+    >
       <div className="friends-sidebar-content" onClick={e => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>&times;</button>
         

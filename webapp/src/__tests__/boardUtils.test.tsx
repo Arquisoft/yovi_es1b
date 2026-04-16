@@ -5,15 +5,15 @@ import type { SizeChoice } from '../types/game'
 describe('getBoardDimensionFromSizeChoice', () => {
 
     test('devuelve 6 para "Tamaño 6x6x6"', () => {
-        expect(getBoardDimensionFromSizeChoice('Tamaño 6x6x6' as SizeChoice)).toBe(6)
+        expect(getBoardDimensionFromSizeChoice('Pequeño' as SizeChoice)).toBe(6)
     })
 
     test('devuelve 9 para "Tamaño 9x9x9"', () => {
-        expect(getBoardDimensionFromSizeChoice('Tamaño 9x9x9' as SizeChoice)).toBe(9)
+        expect(getBoardDimensionFromSizeChoice('Mediano' as SizeChoice)).toBe(9)
     })
 
     test('devuelve 12 para "Tamaño 12x12x12"', () => {
-        expect(getBoardDimensionFromSizeChoice('Tamaño 12x12x12' as SizeChoice)).toBe(12)
+        expect(getBoardDimensionFromSizeChoice('Grande' as SizeChoice)).toBe(12)
     })
 
     test('devuelve null si el choice es null', () => {
@@ -77,7 +77,7 @@ describe('patchTriangularLayoutCell', () => {
         expect(patchTriangularLayoutCell(layout, Infinity, 0, 'B')).toBe(layout)
     })
 
-    // ── Layout con separadores ─────────────────
+    // ── Layout con separadores ────────────────
 
     test('maneja correctamente un layout que ya viene con separadores /', () => {
         const result = patchTriangularLayoutCell('./../', 3, 1, 'R')

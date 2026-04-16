@@ -240,6 +240,7 @@ app.get('/users/profile/:username', async (req, res) => {
       birthDate: user.birthDate,
       language: user.language,
       iconName: user.iconName,
+      totalScore: user.totalScore || 0,
       // Usamos el tamaño del array directamente si no vas a popular
       followingCount: user.following?.length || 0,
       followersCount: user.followers?.length || 0
@@ -451,7 +452,8 @@ app.get('/users/public-profile/:username', async (req, res) => {
         gameStats = {
           wins: rustStats.wins,
           losses: rustStats.losses,
-          totalGames: rustStats.total // Transformamos "total" en "totalGames"
+          totalGames: rustStats.total, // Transformamos "total" en "totalGames"
+          totalScore: rustStats.total_score // Nuevo campo para puntos totales
         };
       }
     }catch (e) {
@@ -494,7 +496,7 @@ app.post('/move', async (req, res) => {
   const { cellIndex, username} = req.body; // NEW: Recibir difficulty
 
   try {
-    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust
+    // 1. Integración: Llamada al servicio de Rust
     const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -511,11 +513,24 @@ app.post('/move', async (req, res) => {
     }
 
     const newBoard = await rustResponse.json();
+
+    // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
+    if (newBoard.winner === 0 && newBoard.score > 0) {
+      const User = require('./models/user'); // Asegúrate de tener acceso al modelo
+      
+      // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
+      await User.findOneAndUpdate(
+        { username: username },
+        { $inc: { totalScore: newBoard.score || 0} } // Suma el score actual al totalScore de la DB
+      );
+      console.log(`Puntos guardados para ${username}: +${newBoard.score}`);
+    }
     
     // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
-      winner: newBoard.winner
+      winner: newBoard.winner,
+      score: newBoard.score // Nuevo campo para el puntaje de la partida
     });
   }
   catch (e) {
@@ -524,12 +539,12 @@ app.post('/move', async (req, res) => {
   }
 });
 
-// NEW: Endpoint para registrar una rendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n (derrota)
+// NEW: Endpoint para registrar una rendición (derrota)
 app.post('/surrender', async (req, res) => {
   const { username, difficulty, boardSize } = req.body;
 
   try {
-    // 1. IntegraciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n: Llamada al servicio de Rust (GameY)
+    // 1. Integración: Llamada al servicio de Rust (GameY)
     const rustResponse = await fetch(`${GAMEY_URL}/surrender`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -551,12 +566,12 @@ app.post('/surrender', async (req, res) => {
 
     // 3. Respuesta al Frontend
     res.json({ 
-      message: "RendiciÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n registrada correctamente",
+      message: "Rendición registrada correctamente",
       details: data 
     });
 
   } catch (e) {
-    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust en surrender:", e);
+    console.error("Error de conexión con Rust en surrender:", e);
     res.status(500).json({ error: 'Error communicating with Rust server' });
   }
 });
@@ -614,7 +629,7 @@ app.get('/difficulties', async (req, res) => {
 
 // Para el historial
 app.get('/history', async (req, res) => {
-  // 1. Extraemos TODOS los parÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡metros de la URL, incluido 'result'
+  // 1. Extraemos TODOS los parámetros de la URL, incluido 'result'
   const { username, page = 1, limit = 10, result } = req.query;
   
   if (!username) {
@@ -630,7 +645,7 @@ app.get('/history', async (req, res) => {
         rustUrl += `&result=${encodeURIComponent(result)}`;
     }
 
-    // 4. AHORA SÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â, ejecutamos el fetch pasÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¡ndole el string de la URL
+    // 4. AHORA Sí, ejecutamos el fetch pasándole el string de la URL
     const rustResponse = await fetch(rustUrl);
 
     if (!rustResponse.ok) {
@@ -647,8 +662,25 @@ app.get('/history', async (req, res) => {
     res.json(paginatedData); 
     
   } catch (e) {
-    console.error("Error de conexiÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â³n con Rust:", e);
+    console.error("Error de conexión con Rust:", e);
     res.status(500).json({ error: 'No se pudo conectar con el servicio de Rust' });
+  }
+});
+
+/**
+ * Endpoint para comprar puntos de experiencia (XP) y acreditarlos al usuario
+ */
+app.post('/users/purchase-xp', async (req, res) => {
+  const { username, amount } = req.body;
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { username },
+      { $inc: { totalScore: amount } }, // Sumamos los puntos comprados
+      { new: true }
+    );
+    res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
+  } catch (e) {
+    res.status(500).json({ error: "No se pudo procesar la compra" });
   }
 });
 

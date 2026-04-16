@@ -18,6 +18,7 @@ interface PublicProfileData {
         wins: number;
         losses: number;
         totalGames: number;
+        totalScore: number;
     };
     relationship: 'none' | 'pending' | 'accepted' | 'self';
 }
@@ -109,7 +110,15 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
 
     return ReactDOM.createPortal(
         // Añadido onClick={onClose} al fondo para poder cerrar al hacer clic fuera
-        <div className="modal-backdrop profile-overlay" onClick={onClose}>
+        <div
+            className="modal-backdrop profile-overlay"
+            onClick={onClose}
+            onKeyDown={(e) => {
+                if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+                    onClose();
+                }
+            }}
+        >
             <div className="profile-card" onClick={e => e.stopPropagation()}>
                 <button className="profile-close-button" onClick={onClose}>&times;</button>
 
@@ -124,6 +133,12 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
                     <h2 className="profile-nickname">{data.nickname}</h2>
                     <span className="profile-friend-code">#{data.friendCode}</span>
                     {renderActionButton()}
+                </div>
+
+                {/* ... victorias y derrotas ... */}
+                <div className="profile-stat-box highlight">
+                    <span className="stat-num">{data.stats.totalScore || 0}</span>
+                    <span className="stat-desc">Puntos Totales</span>
                 </div>
 
                 <div className="profile-stats-grid">

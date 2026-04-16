@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import LoginScreen from '../screens/LoginScreen'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
@@ -7,8 +7,9 @@ import '@testing-library/jest-dom'
 describe('LoginForm', () => {
   beforeEach(() => {
     vi.stubGlobal('scrollTo', vi.fn())
-    // Importante: Mockeamos window.location para verificar redirecciones
     vi.stubGlobal('location', { href: '' })
+    sessionStorage.clear()
+    vi.unstubAllGlobals()
   })
 
   afterEach(() => {
@@ -16,21 +17,62 @@ describe('LoginForm', () => {
     vi.clearAllMocks()
   })
 
-  test('con datos incompletos no deja avanzar', async () => {
+  test('con datos incompletos no deja avanzar y muestra error de validacion', async () => {
     const user = userEvent.setup()
     const onLogin = vi.fn()
-    
+    const fetchSpy = vi.fn()
+    global.fetch = fetchSpy as unknown as typeof fetch
+
     render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    // Solo escribimos usuario, falta contraseña
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
-    // No debe haber llamado a la funciÃƒÂ³n de ÃƒÂ©xito ni cambiado de pÃƒÂ¡gina
     expect(onLogin).not.toHaveBeenCalled()
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  test('con credenciales incorrectas muestra error', async () => {
+  test('valida usuario en blanco aunque haya contraseña', async () => {
+    const user = userEvent.setup()
+    const onLogin = vi.fn()
+    const fetchSpy = vi.fn()
+    global.fetch = fetchSpy as unknown as typeof fetch
+
+    render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
+
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), '   ')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
+
+    expect(await screen.findByText(/usuario y contraseña no pueden estar en blanco/i)).toBeInTheDocument()
+    expect(onLogin).not.toHaveBeenCalled()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  test('valida contraseña en blanco aunque haya usuario', async () => {
+    const user = userEvent.setup()
+    const onLogin = vi.fn()
+    const fetchSpy = vi.fn()
+    global.fetch = fetchSpy as unknown as typeof fetch
+
+    render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
+
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '   ')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
+
+    expect(await screen.findByText(/usuario y contraseña no pueden estar en blanco/i)).toBeInTheDocument()
+    expect(onLogin).not.toHaveBeenCalled()
+    expect(fetchSpy).not.toHaveBeenCalled()
+  })
+
+  test('con credenciales incorrectas muestra error del backend', async () => {
     const user = userEvent.setup()
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
@@ -39,54 +81,184 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.type(screen.getByLabelText(/contra/i), 'bad-password')
-    await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
-
-    await waitFor(() => {
-      expect(screen.getByText(/credenciales invalidas/i)).toBeInTheDocument()
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), 'bad-password')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
     })
+
+    expect(await screen.findByText(/credenciales invalidas/i)).toBeInTheDocument()
   })
 
-  test('con éxito llama a onLogin', async () => {
+  test('si backend responde ok=false sin error usa mensaje por defecto', async () => {
+    const user = userEvent.setup()
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({}),
+    } as Response)
+
+    render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
+
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
+
+    expect(await screen.findByText(/error al iniciar sesión/i)).toBeInTheDocument()
+  })
+
+  test('con exito guarda token/username y llama a onLogin con iconName', async () => {
     const user = userEvent.setup()
     const onLogin = vi.fn()
-    
-    // 1. Actualizamos el mock para que devuelva lo que el nuevo Back envía
+
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ 
-        username: 'Alice', 
-        friendCode: 'XYZ789', // Simulamos un código de amigo
-        icon: 'avatar.png',    // Simulamos un icono
+      json: async () => ({
+        token: 'token-123',
+        username: 'AliceServer',
+        friendCode: 'XYZ789',
+        iconName: 'avatar1.png',
         nickname: 'Ali',
-        language: 'Spain'
+        language: 'Spain',
       }),
     } as Response)
 
     render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
 
-    await user.type(screen.getByLabelText(/usuario/i), 'Alice')
-    await user.type(screen.getByLabelText(/contra/i), '12345')
-    await user.click(screen.getByRole('button', { name: /^iniciar sesion$/i }))
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'AliceClient')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
 
     await waitFor(() => {
-      // 2. Verificamos que se llame con los argumentos correctos
-      expect(onLogin).toHaveBeenCalledWith('Alice', 'XYZ789', 'avatar.png', 'Ali', 'Spain')
+      expect(onLogin).toHaveBeenCalledWith('AliceServer', 'XYZ789', 'avatar1.png', 'Ali', 'Spain')
+    })
+
+    expect(sessionStorage.getItem('token')).toBe('token-123')
+    expect(sessionStorage.getItem('username')).toBe('AliceServer')
+  })
+
+  test('con exito sin token usa username del formulario y fallback de icon', async () => {
+    const user = userEvent.setup()
+    const onLogin = vi.fn()
+
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        friendCode: 'ABC111',
+        icon: 'avatar-fallback.png',
+        nickname: 123,
+        language: null,
+      }),
+    } as Response)
+
+    render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
+
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'AliceClient')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
+
+    await waitFor(() => {
+      expect(onLogin).toHaveBeenCalledWith('AliceClient', 'ABC111', 'avatar-fallback.png', null, null)
+    })
+
+    expect(sessionStorage.getItem('token')).toBeNull()
+    expect(sessionStorage.getItem('username')).toBe('AliceClient')
+  })
+
+  test('si fetch lanza excepcion muestra error de conexion', async () => {
+    const user = userEvent.setup()
+    global.fetch = vi.fn().mockRejectedValue(new Error('network down'))
+
+    render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
+
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
+
+    expect(await screen.findByText(/error de conexión al iniciar sesión/i)).toBeInTheDocument()
+  })
+
+  test('finally vuelve a habilitar boton tras completar request', async () => {
+    const user = userEvent.setup()
+    const onLogin = vi.fn()
+
+    let resolveFetch: (value: Response) => void = () => {}
+    global.fetch = vi.fn().mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve
+        })
+    )
+
+    render(<LoginScreen onBack={vi.fn()} onLogin={onLogin} />)
+
+    await act(async () => {
+      await user.type(screen.getByLabelText(/nombre de usuario/i), 'Alice')
+      await user.type(screen.getByLabelText(/contraseña/i), '12345')
+      await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
+    })
+
+    expect(screen.getByRole('button', { name: /iniciando sesión/i })).toBeDisabled()
+
+    resolveFetch({
+      ok: true,
+      json: async () => ({ friendCode: 'OK1', username: 'Alice' }),
+    } as Response)
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /iniciar sesión/i })).not.toBeDisabled()
+      expect(onLogin).toHaveBeenCalled()
     })
   })
 
-  test('el botón volver intenta regresar a index.html', async () => {
+  test('el boton volver intenta regresar a index.html', async () => {
     const user = userEvent.setup()
-    // En MPA, el botón volver suele ejecutar un window.location.href = 'index.html'
-    // O llamar a una prop que lo hace. Verificamos la prop:
-    const onBack = vi.fn(() => { window.location.href = '/index.html' })
+    const onBack = vi.fn(() => {
+      window.location.href = '/index.html'
+    })
 
     render(<LoginScreen onBack={onBack} onLogin={vi.fn()} />)
 
-    await user.click(screen.getByRole('button', { name: /volver/i }))
-    
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /volver/i }))
+    })
+
     expect(onBack).toHaveBeenCalled()
-    expect(window.location.href).toBe('/index.html')
+  })
+
+  test('el boton volver usa el estilo de cancelacion rojo', () => {
+    render(<LoginScreen onBack={vi.fn()} onLogin={vi.fn()} />)
+
+    expect(screen.getByRole('button', { name: /volver/i })).toHaveClass('cancel-button')
+  })
+
+  test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {
+    const user = userEvent.setup()
+    const onSettings = vi.fn()
+    const onTutorial = vi.fn()
+
+    render(
+      <LoginScreen
+        onBack={vi.fn()}
+        onLogin={vi.fn()}
+        onOpenSettings={onSettings}
+        onOpenTutorial={onTutorial}
+      />
+    )
+
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /configuración de elementos de fondo/i }))
+      await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
+    })
+
+    expect(onSettings).toHaveBeenCalled()
+    expect(onTutorial).toHaveBeenCalled()
   })
 })

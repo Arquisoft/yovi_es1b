@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import failedJson from '../assets/buttons/Failed.json';
 import logoutJson from '../assets/buttons/Logout.json';
 import historyJson from '../assets/buttons/History.json';
@@ -22,7 +22,19 @@ interface GameYData {
   layout: string;
 }
 
-interface GameScreenProps {
+const getCellClassName = (cell: string): string => {
+  if (cell === 'B') return 'blue';
+  if (cell === 'R') return 'red';
+  return 'empty';
+};
+
+const getCellStatusLabel = (cell: string): string => {
+  if (cell === 'B') return 'ocupada por azul';
+  if (cell === 'R') return 'ocupada por rojo';
+  return 'vacia';
+};
+
+type GameScreenProps = Readonly<{
   username: string;
   displayName?: string;
   playerIcon?: string | null;
@@ -31,11 +43,11 @@ interface GameScreenProps {
   selectedBoardDimension: number | null;
   boardData: GameYData | null;
   winner: number | null;
-  connectionStatus: string;
   turnTimeLeft: number | null;
   turnTimeLimit: number | null;
   timerVisible: boolean;
   sizeLabel: string | null;
+  totalScore: number; // Nuevo prop para el puntaje total acumulado del usuario
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
@@ -46,7 +58,9 @@ interface GameScreenProps {
   onAddFriend?: () => void; // Abre el panel de amigos
   onViewProfile?: () => void; // Abre el perfil del usuario
   onOpenSettings?: () => void; // Abre el panel de configuracion
-}
+  onOpenTutorial?: () => void; // Abre la pantalla de tutorial
+  onScoreButtonClick?: () => void; // Nuevo callback para cuando se hace clic en el puntaje total acumulado
+}>;
 
 function GameScreen({
   username,
@@ -61,6 +75,7 @@ function GameScreen({
   turnTimeLimit,
   timerVisible,
   sizeLabel,
+  totalScore,
   onCellClick,
   onEndGame,
   onResetGame,
@@ -70,7 +85,9 @@ function GameScreen({
   onFetchHistory,
   onAddFriend,
   onViewProfile,
-  onOpenSettings
+  onOpenSettings,
+  onOpenTutorial,
+  onScoreButtonClick,
 }: GameScreenProps) {
   const { t } = useTranslation();
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -93,19 +110,44 @@ function GameScreen({
     settingsLottieRef.current?.setSpeed(0.5);
   }, []);
 
+  useEffect(() => {
+    const closeDropdowns = () => {
+      setShowSizeMenu(false);
+      setShowDiffMenu(false);
+    };
+
+    const handlePointerOutsideDropdown = (event: PointerEvent) => {
+      const target = event.target as Element | null;
+      if (!target) return;
+      const insideDropdown = target.closest('.custom-dropdown-container');
+      if (!insideDropdown) closeDropdowns();
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeDropdowns();
+    };
+
+    document.addEventListener('pointerdown', handlePointerOutsideDropdown);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerOutsideDropdown);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []);
+
   // Etiqueta para la UI: Directa, sin diccionarios extra aquí para no liarnos
   const difficultyLabel = difficultyChoice || 'Sin seleccionar';
+  const difficultyOptions: DifficultyChoice[] = ['Fácil', 'Medio', 'Difícil'];
 
   // Nombre del Bot: Dinámico según lo que recibimos
-  const botName = difficultyLabel !== 'Sin seleccionar' 
-    ? `Bot Player (${difficultyLabel})` 
-    : 'Bot Player';
+  const botName = difficultyLabel === 'Sin seleccionar'
+    ? 'Bot Player'
+    : `Bot Player (${difficultyLabel})`;
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
-  //const currentSizeValue: SizeChoice = `Tamaño ${boardDimension}x${boardDimension}x${boardDimension}` as SizeChoice;
-  const safePlayerIcon = playerIcon && playerIcon.trim() ? playerIcon : defaultAvatar;
-  const safeBotIcon = botIcon && botIcon.trim() ? botIcon : defaultAvatar;
-  const playerLabel = displayName && displayName.trim() ? displayName : username;
+  const safePlayerIcon = playerIcon?.trim() ? playerIcon : defaultAvatar;
+  const safeBotIcon = botIcon?.trim() ? botIcon : defaultAvatar;
+  const playerLabel = displayName?.trim() ? displayName : username;
 
   const rawLayout = boardData?.layout ?? '';
   const expectedTotalCells = (boardDimension * (boardDimension + 1)) / 2;
@@ -143,7 +185,16 @@ function GameScreen({
         <div className="nav-user-info">
           <h2>{t('game.player')} <span>{username}</span></h2>
         </div>
-        <div className="nav-center-title">{t('game.title')}</div>
+
+        {/* --- BOTÓN DE PUNTOS CENTRAL --- */}
+        <div className="nav-center-score">
+            <button className="score-badge-button" onClick={onScoreButtonClick}>
+                <span className="score-star">★</span>
+                <span className="score-text">{totalScore.toLocaleString()} XP</span>
+            </button>
+        </div>
+
+        <div className="nav-center-title">Partida vs IA</div>
 
         <div className="nav-game-settings">
           {/* MENÚ TAMAÑO */}
@@ -158,8 +209,9 @@ function GameScreen({
             {showSizeMenu && (
               <div className="dropdown-floating-list">
                 {SIZE_OPTIONS.map((option) => (
-                  <div 
+                  <button
                     key={option} 
+                    type="button"
                     className="dropdown-item"
                     onClick={() => {
                       onChangeSize(option);
@@ -167,7 +219,7 @@ function GameScreen({
                     }}
                   >
                     {option}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
@@ -184,64 +236,97 @@ function GameScreen({
             
             {showDiffMenu && (
               <div className="dropdown-floating-list">
-                {['Fácil', 'Medio', 'Difícil'].map((diff) => (
-                  <div 
+                {difficultyOptions.map((diff) => (
+                  <button
                     key={diff} 
+                    type="button"
                     className="dropdown-item"
                     onClick={() => {
-                      onChangeDifficulty(diff as DifficultyChoice);
+                      onChangeDifficulty(diff);
                       setShowDiffMenu(false);
                     }}
                   >
                     {diff.charAt(0).toUpperCase() + diff.slice(1)}
-                  </div>
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />
-          <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title={t('game.end_game')}>
-            <img className="nav-btn-png" src={botonRojo} alt={t('game.end_game')} />
-            <span className="nav-btn-lottie-hover" aria-hidden="true">
-              <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
-            </span>
-          </button>
-          <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title={t('game.restart')}>
-            <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt={t('game.restart')} />
-            <span className="nav-btn-restart-hover" aria-hidden="true">
-              <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
-            </span>
-          </button>
-          <button
-            className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
-            onClick={onOpenSettings}
-            title={t('game.settings')}
-            aria-label="Configuración"
-          >
-            <img className="nav-btn-settings-img" src={settingsImg} alt={t('game.settings')} />
-            <span className="nav-btn-settings-hover" aria-hidden="true">
-              <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
-            </span>
-          </button>
+          <div className="nav-icon-action">
+            <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title="Terminar partida">
+              <img className="nav-btn-png" src={botonRojo} alt="Terminar partida" />
+              <span className="nav-btn-lottie-hover" aria-hidden="true">
+                <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Rendirse</span>
+          </div>
+          <div className="nav-icon-action">
+            <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title="Reiniciar partida">
+              <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt="Reiniciar partida" />
+              <span className="nav-btn-restart-hover" aria-hidden="true">
+                <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Reiniciar</span>
+          </div>
+          <div className="nav-icon-action">
+            <button
+              className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
+              onClick={onOpenSettings}
+              title="Configuración"
+              aria-label="Configuración"
+            >
+              <img className="nav-btn-settings-img" src={settingsImg} alt="Configuración" />
+              <span className="nav-btn-settings-hover" aria-hidden="true">
+                <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Ajustes</span>
+          </div>
           <div className="nav-btn-spacer" aria-hidden="true" />
-          <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title={t('game.view_history')}>
-            <img className="nav-btn-history-img" src={historialImg} alt={t('game.history')} />
-            <span className="nav-btn-history-hover" aria-hidden="true">
-              <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
-            </span>
-          </button>
-          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title={t('game.friends_menu')}>
-            <img className="nav-btn-friends-img" src={amigosImg} alt={t('game.friends_menu')} />
-          </button>
-          
+          <div className="nav-icon-action">
+            <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title="Ver historial">
+              <img className="nav-btn-history-img" src={historialImg} alt="Historial" />
+              <span className="nav-btn-history-hover" aria-hidden="true">
+                <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Historial</span>
+          </div>
+          {onOpenTutorial && (
+            <div className="nav-icon-action">
+              <button
+                className="nav-btn nav-btn-icon-frame nav-btn-with-help"
+                onClick={onOpenTutorial}
+                title="Abrir ayuda"
+                aria-label="Ayuda"
+              >
+                <span className="nav-btn-help-glyph" aria-hidden="true">?</span>
+                <span className="nav-btn-help-hover" aria-hidden="true">?</span>
+              </button>
+              <span className="nav-icon-caption">Ayuda</span>
+            </div>
+          )}
+          <div className="nav-icon-action">
+            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
+              <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
+            </button>
+            <span className="nav-icon-caption">Amigos</span>
+          </div>
+
           <div className="nav-btn-spacer" aria-hidden="true" />
-          <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title={t('game.exit')}>
-            <img className="nav-btn-exit-img" src={salirMenuImg} alt={t('game.exit_alt')} />
-            <span className="nav-btn-logout-hover" aria-hidden="true">
-              <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
-            </span>
-          </button>
+          <div className="nav-icon-action">
+            <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title="Volver al menú">
+              <img className="nav-btn-exit-img" src={salirMenuImg} alt="Salir" />
+              <span className="nav-btn-logout-hover" aria-hidden="true">
+                <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">Salir</span>
+          </div>
         </div>
 
       </nav>
@@ -278,23 +363,26 @@ function GameScreen({
             <div className={`board-container board-size-${boardDimension}`}>
               {boardData ? (
                 rows.map((row, rowIndex) => (
-                  <div key={rowIndex} className="board-row">
+                  <div key={row} className="board-row">
                   {row.split('').map((cell, cellIndex) => {
-                      // Ãndice lineal triangular que espera el backend para /move.
+                      // Índice lineal triangular que espera el backend para /move.
                       const currentIndex = rowStartIndex(rowIndex) + cellIndex;
                       const isRealCell = hasRealCellAtIndex(currentIndex);
+                      const cellClassName = getCellClassName(cell);
+                      const cellStatusLabel = getCellStatusLabel(cell);
+                      const cellContent = cell === '.' ? '' : cell;
                       return (
                         <button
-                          key={cellIndex}
+                          key={`${currentIndex}-${cell}`}
                           type="button"
-                          className={`cell ${cell === 'B' ? 'blue' : cell === 'R' ? 'red' : 'empty'}`}
+                          className={`cell ${cellClassName}`}
                           onClick={() =>
                             isRealCell && cell === '.' && winner === null && onCellClick(currentIndex)
                           } // Solo permite celdas vacias
                           disabled={!isRealCell || cell !== '.' || winner !== null} // Bloquea celdas virtuales, ocupadas o partida terminada
-                          aria-label={`Celda ${currentIndex}, ${cell === 'B' ? 'ocupada por azul' : cell === 'R' ? 'ocupada por rojo' : 'vacia'}`}
+                          aria-label={`Celda ${currentIndex}, ${cellStatusLabel}`}
                         >
-                          {cell !== '.' ? cell : ''}
+                          {cellContent}
                         </button>
                       );
                     })}
@@ -349,9 +437,5 @@ function GameScreen({
 }
 
 export default GameScreen;
-
-
-
-
 
 

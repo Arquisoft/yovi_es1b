@@ -23,32 +23,102 @@
 
 .auth-header {
   width: min(48rem, 92vw);
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 1rem;
-  align-items: center;
-  justify-content: start;
+  position: relative;
+  display: block;
   margin-top: 3rem;
+  min-height: 7.25rem;
+  box-sizing: border-box;
+  padding: 0 5.5rem;
+}
+
+.auth-header-with-settings {
+  padding-left: 5.5rem;
+  padding-right: 5.5rem;
 }
 
 .auth-logo-left {
   width: 15rem;
-  margin: 0.75rem 0 0;
+  margin: 0;
+  position: absolute;
+  left: -3rem;
+  top: 42%;
+  transform: translateY(-50%);
+}
+
+.header-settings-btn {
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  justify-self: end;
+}
+
+.header-settings-btn:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.header-action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.header-action-btn {
+  position: relative;
+  overflow: hidden;
 }
 
 .home-screen > .welcome-title {
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
   position: relative;
   margin-top: 0;
   transform: translateY(0);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
   z-index: 3;
-  padding: 0.0625rem 0.125rem;
-  border-radius: 0.75rem;
-  color: #d63a29;
-  box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.25);
-  font-size: 2.4rem;
-  text-shadow: 0 0.25rem 0.875rem rgba(0, 0, 0, 0.7);
+  width: min(48rem, 92vw);
+  padding: 0.9rem 1.2rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  background: linear-gradient(135deg, rgba(7, 20, 37, 0.78), rgba(18, 47, 78, 0.64));
+  color: #f8fbff;
+  font-size: clamp(1.9rem, 4.1vw, 3rem);
+  line-height: 1.08;
+  font-weight: 800;
+  text-align: center;
+  letter-spacing: 0.02em;
+  box-shadow: 0 0.7rem 1.8rem rgba(0, 0, 0, 0.32);
+  text-shadow: 0 0.3rem 0.9rem rgba(0, 0, 0, 0.45);
+}
+
+.welcome-kicker {
+  display: inline-block;
+  font-size: clamp(0.7rem, 1.2vw, 0.95rem);
+  letter-spacing: 0.05em;
+  font-weight: 800;
+  color: #c4def7;
+}
+
+.welcome-main {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.welcome-brand {
+  color: #ffd76a;
+  text-shadow: 0 0.25rem 0.8rem rgba(0, 0, 0, 0.5);
 }
 
 .home-screen > .choose-option {
@@ -74,14 +144,87 @@
   width: 100%;
 }
 
-.home-screen > div:last-child {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 0.625rem;
-  padding: 0.75rem 1rem;
+.home-auth-button {
+  background: linear-gradient(135deg, #050505, #6b6b6b);
 }
 
-.home-screen > div:last-child h3 {
-  margin: 0;
+.home-auth-button:hover {
+  background: linear-gradient(135deg, #121212, #8a8a8a);
+}
+
+.home-guest-button {
+  background: linear-gradient(135deg, #0d2f61, #2e6fd0);
+}
+
+.home-guest-button:hover {
+  background: linear-gradient(135deg, #113976, #4b85e1);
+}
+
+.home-settings-below {
+  width: 3.25rem;
+  height: 3.25rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+.home-settings-below:hover {
+  background: rgba(255, 255, 255, 0.26);
+}
+
+.home-action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.home-action-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.floating-action-icon,
+.help-icon-glyph {
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.header-action-btn:hover .floating-action-icon,
+.header-action-btn:hover .help-icon-glyph,
+.header-action-btn:focus-visible .floating-action-icon,
+.header-action-btn:focus-visible .help-icon-glyph,
+.home-action-btn:hover .floating-action-icon,
+.home-action-btn:hover .help-icon-glyph,
+.home-action-btn:focus-visible .floating-action-icon,
+.home-action-btn:focus-visible .help-icon-glyph {
+  transform: scale(1.1);
+  filter: brightness(1.15);
+  animation: action-icon-pulse 0.35s ease;
+}
+
+@keyframes action-icon-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.16); }
+  100% { transform: scale(1.1); }
+}
+
+.floating-action-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  object-fit: contain;
+  display: block;
+}
+
+.help-icon-glyph {
+  font-size: 1.55rem;
+  line-height: 1;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 0.2rem 0.4rem rgba(0, 0, 0, 0.35);
 }
 
 .register-screen {
@@ -116,6 +259,28 @@
   text-shadow: 0 0.25rem 0.875rem rgba(0, 0, 0, 0.7);
 }
 
+.login-title-highlight {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 1;
+  display: inline-block;
+  margin: 0;
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.6rem;
+  background: rgba(16, 28, 44, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(2px);
+  box-shadow: 0 0.35rem 0.85rem rgba(0, 0, 0, 0.18);
+  color: #ffffff;
+  line-height: 1.2;
+  text-shadow: 0 0.2rem 0.6rem rgba(0, 0, 0, 0.45);
+  transform: translate(-50%, -50%);
+  width: fit-content;
+  max-width: calc(100% - 11rem);
+  text-align: center;
+}
+
 .register-screen > .choose-option {
   display: flex;
   flex-direction: column;
@@ -129,6 +294,37 @@
   background-color: rgba(255, 255, 255, 0.92);
   align-items: stretch;
   justify-content: center;
+}
+
+.register-panel-with-settings {
+  position: relative;
+  padding-top: 2.8rem;
+}
+
+.panel-settings-btn {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  border: 1px solid #d6dce5;
+  border-radius: 0.6rem;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.panel-settings-btn:hover {
+  background: #f2f6fc;
+}
+
+.panel-settings-icon {
+  width: 1.7rem;
+  height: 1.7rem;
+  object-fit: contain;
+  display: block;
 }
 
 .register-form-layout {
@@ -151,6 +347,36 @@
 
 .register-screen > .choose-option .submit-button {
   width: 100%;
+}
+
+.guest-access-actions .submit-button {
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+}
+
+.guest-access-auth-button {
+  background: linear-gradient(135deg, #050505, #6b6b6b);
+}
+
+.guest-access-auth-button:hover {
+  background: linear-gradient(135deg, #131313, #8a8a8a);
+  filter: brightness(1.03);
+}
+
+.guest-access-auth-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.18), 0 0 0 6px rgba(18, 18, 18, 0.55);
+}
+
+.guest-access-guest-button {
+  background: linear-gradient(135deg, #0d2f61, #2e6fd0);
+}
+
+.guest-access-guest-button:hover {
+  background: linear-gradient(135deg, #113976, #4b85e1);
+  filter: brightness(1.03);
+}
+
+.guest-access-guest-button:focus-visible {
+  box-shadow: 0 0 0 3px rgba(47, 111, 255, 0.18), 0 0 0 6px rgba(13, 47, 97, 0.55);
 }
 
 .register-screen > div:last-child {
@@ -249,6 +475,31 @@
 
 .submit-button:hover {
   background-color: #0056b3;
+}
+
+.settings-close-button {
+  background: linear-gradient(135deg, #050505, #6b6b6b);
+  transition: background 0.2s ease-in-out, transform 0.2s ease-in-out, filter 0.2s ease-in-out;
+}
+
+.settings-close-button:hover {
+  background: linear-gradient(135deg, #121212, #8a8a8a);
+  filter: brightness(1.03);
+}
+
+.cancel-button {
+  background: linear-gradient(135deg, #2a0505, #8c1c1c);
+}
+
+.cancel-button:hover {
+  background: linear-gradient(135deg, #3a0707, #b42929);
+}
+
+.guest-access-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1rem;
 }
 
 .icon-picker-box {

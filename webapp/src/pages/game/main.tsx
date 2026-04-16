@@ -1,3 +1,4 @@
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 //Internacionalización
 import "../../i18n.ts";
 import i18n from '../../i18n'
@@ -11,7 +12,10 @@ import { HistoryModal } from '../../components/modals/HistoryModal';
 import { ResultModal } from '../../components/modals/ResultModal';
 import { SelectionModals } from '../../components/modals/SelectionModals';
 import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
+import { GuestAccessModal, type GuestAccessReason } from '../../components/modals/GuestAccessModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
+import { TutorialScreen } from '../../screens/TutorialScreen';
+import { PayPalStore } from '../../components/modals/PayPalStore';
 
 // Hooks, Servicios y Utils
 import { useGameLogic } from '../../hooks/useGameLogic';
@@ -19,6 +23,7 @@ import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
+import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -84,29 +89,50 @@ const GameApp = () => {
   }, []);
 
 
-  // --- SEGURIDAD Y SESIÓN ---
-  const username = localStorage.getItem('yovi_user') || '';
-  const friendCode = localStorage.getItem('yovi_friend_code') || '';
-  const displayName = localStorage.getItem('yovi_user_nickname') || username;
-  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(localStorage.getItem('yovi_user_icon')));
-  const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
+  const isGuestMode = isGuestSession();
+  const storedUsername = localStorage.getItem('yovi_user') || '';
 
-  // Si no hay usuario, redirigimos inmediatamente a la home
-  if (!username) {
-    window.location.href = '/index.html';
-    return null;
-  }
+  useEffect(() => {
+    if (!storedUsername && !isGuestMode) {
+      globalThis.location.href = '/index.html';
+    }
+  }, [isGuestMode, storedUsername]);
+
+  if (!storedUsername && !isGuestMode) return null;
+
+  return <GameAppContent isGuestMode={isGuestMode} storedUsername={storedUsername} />;
+};
+
+type GameAppContentProps = {
+  isGuestMode: boolean;
+  storedUsername: string;
+};
+
+const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) => {
+  // --- SEGURIDAD Y SESIÓN ---
+  const username = isGuestMode ? 'Invitado' : storedUsername;
+  const friendCode = isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || '');
+  const displayName = isGuestMode ? 'Invitado' : (localStorage.getItem('yovi_user_nickname') || username);
+  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(isGuestMode ? null : localStorage.getItem('yovi_user_icon')));
+  const [botIcon] = useState<string | null>(() => pickRandomBotIcon());
+  const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
+  const handleTimeUp = useCallback(() => {
+    void handleAutoMoveRef.current();
+  }, []);
+  const [finalScore, setFinalScore] = useState<number>(0); // Nuevo estado para el puntaje final de la partida
+  const [totalScore, setTotalScore] = useState<number>(0); // Nuevo estado para el puntaje total acumulado del usuario
+  const [showStore, setShowStore] = useState(false);
 
   // --- ESTADOS DE UI ---
-  const [connectionStatus, setConnectionStatus] = useState('Conectado');
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
-  const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
+  const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
-  const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Tamaño 6x6x6');
+  const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
+  const [showTutorialScreen, setShowTutorialScreen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
   const [musicVolume, setMusicVolume] = useState(0.4);
@@ -120,6 +146,7 @@ const GameApp = () => {
   const [historyFilter, setHistoryFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [guestAccessReason, setGuestAccessReason] = useState<GuestAccessReason | null>(null);
 
   // --- HOOKS DE LÓGICA ---
   const {
@@ -137,14 +164,13 @@ const GameApp = () => {
     startTimer,
     stopTimer,
     setIsVisible: setTimerVisible,
-  } = useGameTimer(() => handleAutoMove());
+  } = useGameTimer(handleTimeUp);
 
-  const startNewGame = (size: number, difficulty: DifficultyChoice) => {
+  const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
     setTimerVisible(false);
-    setBotIcon(pickRandomBotIcon());
-    resetGame(size, difficulty);
-  };
+    void resetGame(size, difficulty);
+  }, [resetGame, stopTimer, setTimerVisible]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -200,67 +226,78 @@ const GameApp = () => {
       .catch((err) => console.error('Error API:', err));
 
     // 2. Iniciar la partida por defecto
-    startNewGame(6, 'Easy');
-  }, []);
+    queueMicrotask(() => {
+      void startNewGame(6, 'Easy');
+    });
+  }, [startNewGame]);
 
   useEffect(() => {
-    let active = true;
+      let active = true;
+      const syncProfileData = async () => {
+          try {
+              const profile = await gameService.getProfile();
+              if (!active || profile?.error) return;
 
-    const syncProfileIcon = async () => {
-      try {
-        const profile = await gameService.getProfile();
-        if (!active || profile?.error) return;
+              // Sincronizar icono
+              const resolvedIcon = resolveUserIcon(profile.iconName || profile.icon);
+              if (resolvedIcon){
+                 setPlayerIcon(resolvedIcon);
+                localStorage.setItem('yovi_user_icon', resolvedIcon);
+              }
+                //para internacionalización
+                const languageToI18n: Record<string, string> = {
+                  'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
+                }
+                if (profile?.language) {
+                  i18n.changeLanguage(languageToI18n[profile.language] ?? 'es')
+                }
 
-        const resolvedIcon = resolveUserIcon(
-          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon
-        );
-        if (resolvedIcon) {
-          setPlayerIcon(resolvedIcon);
-          localStorage.setItem('yovi_user_icon', resolvedIcon);
-        }
-        //para internacionalización
-        const languageToI18n: Record<string, string> = {
-          'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
-        }
-        if (profile?.language) {
-          i18n.changeLanguage(languageToI18n[profile.language] ?? 'es')
-        }
-      } catch (error) {
-        // En caso de error de red, mantenemos el icono local actual.
-      }
-    };
+              // --- NUEVO: Sincronizar puntos totales ---
+              const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
+              setTotalScore(scoreReal);
 
-    syncProfileIcon();
-    return () => {
-      active = false;
-    };
+          } catch {}
+      };
+      syncProfileData();
+      return () => { active = false; };
   }, [username]);
 
   // --- MANEJADORES DE ACCIONES ---
-  const handleAutoMove = async () => {
-    setConnectionStatus(t('game.auto_move'));
+  const handleAutoMove = useCallback(async () => {
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
-      if (data?.winner !== null) setShowResultModal(true);
-      setConnectionStatus(t('game.connected'));
-    } catch (error) {
-      setConnectionStatus(t('game.error_move'));
-    }
-  };
+      if (data && data.winner !== null) {
+        setFinalScore(data.score || 0);
+
+        // SUMA OPTIMISTA: Si por algún motivo el bot nos da la victoria (ID 0)
+        if (data.winner === 0) {
+          setTotalScore(prev => prev + (data.score || 0));
+        }
+
+        setShowResultModal(true);
+      }
+    } catch {}
+  }, [difficultyChoice, executeAutoMove, startTimer]);
+
+  useEffect(() => {
+    handleAutoMoveRef.current = handleAutoMove;
+  }, [handleAutoMove]);
+
 
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
-    setConnectionStatus('Moviendo...');
     try {
       const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
         setTimerVisible(false);
+        setFinalScore(data.score || 0);
+        // SUMA OPTIMISTA: Si ganamos (ID 0), sumamos al total de la barra
+        if (data.winner === 0) {
+            setTotalScore(prev => prev + (data.score || 0));
+        }
         setShowResultModal(true);
       }
-      setConnectionStatus(t('game.connected'));
-    } catch (error) {
-      setConnectionStatus(t('game.error_move'));
-    }
+    } catch {}
   };
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
@@ -277,6 +314,10 @@ const GameApp = () => {
 
   const openFriendsMenu = () => {
     setShowFriendsMenu(true);
+  };
+
+  const openGuestAccessPrompt = (reason: GuestAccessReason) => {
+    setGuestAccessReason(reason);
   };
 
   // Mapeo para la interfaz
@@ -299,33 +340,39 @@ const GameApp = () => {
         botIcon={botIcon}
         boardData={boardData}
         winner={winner}
-        connectionStatus={connectionStatus}
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
+        totalScore={totalScore}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
-        onFetchHistory={() => fetchHistory()}
-        onExit={() => { stopTimer(); window.location.href = '/index.html'; }}
+        onFetchHistory={() => (isGuestMode ? openGuestAccessPrompt('historial') : fetchHistory())}
+        onExit={() => {
+          stopTimer();
+          if (isGuestMode) {
+            clearGuestSession();
+          }
+          globalThis.location.href = '/index.html';
+        }}
         onChangeDifficulty={(uiDiff: string) => {
-          // 1. Mapa de traducción para el Backend
+          // 1. Mapa de traducción para el backend
           const backendMap: Record<string, string> = {
-            'Fácil': 'facil' as any,
-            'Medio': 'medio' as any,
-            'Difícil': 'dificil' as any
+            'Fácil': 'facil',
+            'Medio': 'medio',
+            'Difícil': 'dificil'
           };
 
           const valueForBackend = backendMap[uiDiff] || 'facil';
 
           // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
-          setDifficultyChoice(uiDiff as any);
-          setPreviousDifficultyChoice(uiDiff as any);
+          setDifficultyChoice(uiDiff);
+          setPreviousDifficultyChoice(uiDiff);
           
           // 3. Llamamos al servicio con el valor que entiende el Backend
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
-          startNewGame(dimension, valueForBackend as any);
+          startNewGame(dimension, valueForBackend);
         }}
         onChangeSize={(newSize: SizeChoice) => {
           setPreviousSizeChoice(newSize);
@@ -338,11 +385,33 @@ const GameApp = () => {
           stopTimer();
           setTimerVisible(false);
           await surrender(difficultyChoice!);
+          setFinalScore(0);
           setShowResultModal(true);
         }}
-        onAddFriend={() => openFriendsMenu()}
-        onViewProfile={() => setShowProfileScreen(true)}
+        onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
+        onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
         onOpenSettings={() => setShowSettings(true)}
+        onOpenTutorial={() => setShowTutorialScreen(true)}
+        onScoreButtonClick={() => {
+          setShowStore(true);
+        }}
+      />
+
+      <PayPalStore
+        isOpen={showStore}
+        onClose={() => setShowStore(false)}
+        onSuccess={async (puntos) => {
+          // 1. Suma visual inmediata
+          setTotalScore(prev => prev + puntos);
+
+          // 2. Guardado real en base de datos
+          try {
+            await gameService.addXP(puntos);
+            console.log("Compra guardada en el servidor");
+          } catch (err) {
+            console.error("No se pudo guardar la compra:", err);
+          }
+        }}
       />
 
       {/* Modales de Configuración */}
@@ -362,13 +431,14 @@ const GameApp = () => {
           startNewGame(getBoardDimensionFromSizeChoice(s)!, difficultyChoice || 'Easy');
         }}
         onDifficultyCancel={() => setDifficultyChoice(previousDifficultyChoice || 'Easy')}
-        onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Tamaño 6x6x6')}
+        onSizeCancel={() => setSizeChoice(previousSizeChoice || 'Pequeño')}
       />
 
       {/* Modales de Resultados e Historial */}
       <ResultModal
         isOpen={showResultModal}
         winner={winner}
+        score={finalScore}
         onClose={() => setShowResultModal(false)}
       />
 
@@ -411,6 +481,22 @@ const GameApp = () => {
           onClose={() => setShowProfileScreen(false)}
       />
 
+      <TutorialScreen
+        isOpen={showTutorialScreen}
+        onClose={() => setShowTutorialScreen(false)}
+      />
+      <GuestAccessModal
+        reason={guestAccessReason}
+        onClose={() => setGuestAccessReason(null)}
+        onGoLogin={() => {
+          setGuestAccessReason(null)
+          globalThis.location.href = '/login.html'
+        }}
+        onGoRegister={() => {
+          setGuestAccessReason(null)
+          globalThis.location.href = '/register.html'
+        }}
+      />
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
           <div className="modal-box">
@@ -436,7 +522,7 @@ const GameApp = () => {
                 onChange={(e) => setIsVideoPaused(!e.target.checked)}
               />
             </div>
-            <button type="button" className="submit-button" onClick={() => setShowSettings(false)}>
+            <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
               {t('common.close')}
             </button>
           </div>
@@ -452,3 +538,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <GameApp />
   </React.StrictMode>
 );
+
+export { GameApp, GameAppContent };
+
+

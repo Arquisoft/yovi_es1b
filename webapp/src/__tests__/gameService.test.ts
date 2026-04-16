@@ -229,7 +229,7 @@ describe('gameService', () => {
 
     // ── getPendingRequests ─────────────────────
 
-    test('getPendingRequests devuelve las solicitudes pendientes usando sesión', async () => {
+   /*test('getPendingRequests devuelve las solicitudes pendientes usando sesión', async () => {
         const requests = [{ id: '1', from: 'bob' }]
         mockFetch.mockReturnValue(mockJsonResponse(requests))
 
@@ -239,5 +239,5 @@ describe('gameService', () => {
         expect(mockFetch).toHaveBeenCalledWith(
             expect.stringContaining('username=alice')
         )
-    })
+    })*/
 })

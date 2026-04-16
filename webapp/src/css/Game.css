@@ -12,73 +12,120 @@ body {
 }
 
 .board-container {
-  background-color: #f8f9fa;
-  padding: 40px;
-  border-radius: 20px;
+  --glass-border: #1f2937;
+  --glass-empty-light: #e7eff9;
+  --glass-empty-dark: #cddbef;
+  --glass-blue-light: #5da7ff;
+  --glass-blue-dark: #1f57cf;
+  --glass-red-light: #ff8f9a;
+  --glass-red-dark: #b82334;
+  background:
+    radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.34), transparent 45%),
+    radial-gradient(circle at 80% 88%, rgba(255, 255, 255, 0.18), transparent 40%),
+    linear-gradient(135deg, rgba(8, 20, 40, 0.9), rgba(16, 35, 66, 0.92));
+  padding: 26px;
+  border-radius: 18px;
   display: inline-block;
   margin: 0 auto;
-  border: 1px solid #eee;
+  border: 2px solid rgba(18, 28, 48, 0.95);
+  box-shadow: 0 14px 34px rgba(5, 12, 26, 0.6);
 }
 
 .board-row {
   display: flex;
   justify-content: center;
-  gap: 10px;
-  margin-bottom: 10px;
+  gap: 0;
+  margin-bottom: 0;
 }
 
 .cell {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 2px solid #ddd;
+  width: 44px;
+  height: 44px;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: bold;
-  background-color: white;
-  transition: all 0.2s ease;
+  background: linear-gradient(160deg, var(--glass-empty-light), var(--glass-empty-dark));
+  clip-path: polygon(50% 0, 100% 20%, 100% 80%, 50% 100%, 0 80%, 0 20%);
+  margin: -1px;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.65),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.16);
+  color: transparent;
+  font-size: 0;
+  line-height: 0;
+  transition: transform 0.2s ease, filter 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .board-container.board-size-6 {
-  padding: 28px;
-}
-
-.board-container.board-size-6 .cell {
-  width: 50px;
-  height: 50px;
-}
-
-.board-container.board-size-9 .cell {
-  width: 40px;
-  height: 40px;
-}
-
-.board-container.board-size-12 {
   padding: 24px;
 }
 
+.board-container.board-size-6 .cell {
+  width: 54px;
+  height: 54px;
+}
+
+.board-container.board-size-9 .cell {
+  width: 42px;
+  height: 42px;
+}
+
+.board-container.board-size-12 {
+  padding: 20px;
+}
+
 .board-container.board-size-12 .cell {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+}
+
+.board-container.board-size-12 .cell.blue,
+.board-container.board-size-12 .cell.red {
+  font-size: 0.72rem;
 }
 
 .cell.empty:hover {
-  background-color: #f0f0f0;
-  border-color: #007bff;
+  filter: brightness(1.08);
+  transform: scale(1.04);
   cursor: pointer;
+  z-index: 2;
 }
 
 .cell.blue {
-  background-color: #007bff;
-  border-color: #0056b3;
-  color: white;
+  background: linear-gradient(155deg, var(--glass-blue-light), var(--glass-blue-dark));
+  border-color: #153d88;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.45),
+    inset 0 -2px 5px rgba(8, 22, 56, 0.5),
+    0 0 10px rgba(40, 108, 255, 0.45);
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
 }
 
 .cell.red {
-  background-color: #dc3545;
-  border-color: #a71d2a;
-  color: white;
+  background: linear-gradient(155deg, var(--glass-red-light), var(--glass-red-dark));
+  border-color: #751320;
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.42),
+    inset 0 -2px 5px rgba(60, 10, 20, 0.48),
+    0 0 10px rgba(255, 74, 92, 0.36);
+  color: #ffffff;
+  font-size: 1rem;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+}
+
+.cell:disabled {
+  opacity: 1;
 }
 
 .status-text {
@@ -367,9 +414,11 @@ body {
   }
 }
 
-/* Barra de navegaciÃ³n */
+/* Barra de navegación */
 
 .game-navbar {
+  position: relative;
+  z-index: 40;
   width: 100%;
   display: flex;
   justify-content: space-between;
@@ -390,6 +439,7 @@ body {
 }
 
 .nav-user-info {
+  margin-left: 0.5rem;
   display: flex;
   align-items: center;
   gap: 0.85rem;
@@ -433,6 +483,24 @@ body {
   align-items: center;
 }
 
+.nav-icon-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.25rem;
+}
+
+.nav-icon-caption {
+  width: 3.9rem;
+  text-align: center;
+  font-size: 0.68rem;
+  line-height: 1.05;
+  font-weight: 700;
+  color: #f7fbff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
 .nav-btn-spacer {
   width: 2px;
   height: 2.2rem;
@@ -440,7 +508,7 @@ body {
   border-radius: 999px;
 }
 
-/* Botones pequeños para el menÃº */
+/* Botones pequeños para el menú */
 .nav-btn {
   background: rgba(255, 255, 255, 0.15);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -450,6 +518,57 @@ body {
   font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.nav-btn-tutorial {
+  min-width: 6.2rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.nav-btn-with-help {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-btn-help-glyph,
+.nav-btn-help-hover {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.65rem;
+  font-weight: 800;
+  line-height: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+}
+
+.nav-btn-help-glyph {
+  color: #ffffff;
+  opacity: 1;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.nav-btn-help-hover {
+  color: #7ef3ff;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.72) rotate(-8deg);
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+
+.nav-btn-with-help:hover .nav-btn-help-glyph,
+.nav-btn-with-help:focus-visible .nav-btn-help-glyph {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.62) rotate(8deg);
+}
+
+.nav-btn-with-help:hover .nav-btn-help-hover,
+.nav-btn-with-help:focus-visible .nav-btn-help-hover {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1.04) rotate(0deg);
 }
 
 .nav-btn-icon-frame {
@@ -887,13 +1006,12 @@ body {
   gap: 0.75rem;
 }
 
-.profile-card {
+.profile-password-section {
   display: grid;
   gap: 0.6rem;
-  padding: 0.65rem;
-  border: 1px solid #dce3ec;
-  border-radius: 0.6rem;
-  background: #f7f9fc;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 
 .profile-password-row {
@@ -917,10 +1035,9 @@ body {
 .profile-password-editor {
   display: grid;
   gap: 0.5rem;
-  padding: 0.5rem;
-  border: 1px solid #dce3ec;
-  border-radius: 0.5rem;
-  background: #f7f9fc;
+  padding: 0.35rem 0 0;
+  border: 0;
+  background: transparent;
 }
 
 .profile-icon-grid {
@@ -947,7 +1064,7 @@ body {
 }
 
 .nav-btn:hover {
-  background: #bc84ee; /* Morado suave al pasar el ratÃ³n */
+  background: #bc84ee; /* Morado suave al pasar el ratón */
   transform: translateY(-2px);
   border-color: white;
 }
@@ -1134,3 +1251,173 @@ body {
 }
 
 
+
+/* PUNTOS */
+
+.nav-center-score {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1; /* Esto ayuda a que se mantenga en el centro si el nav es flex */
+}
+
+/* El botón/insignia de XP */
+.score-badge-button {
+  background: rgba(20, 20, 20, 0.6); /* Fondo oscuro semitransparente */
+  backdrop-filter: blur(8px); /* Efecto cristal */
+  border: 2px solid #dcfd8b; /* Tu color verde lima característico */
+  border-radius: 12px;
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 
+    0 0 10px rgba(220, 253, 139, 0.2), 
+    inset 0 0 5px rgba(220, 253, 139, 0.1);
+}
+
+/* Efecto al pasar el ratón */
+.score-badge-button:hover {
+  transform: translateY(-2px) scale(1.02);
+  background: rgba(220, 253, 139, 0.15);
+  box-shadow: 
+    0 0 20px rgba(220, 253, 139, 0.4), 
+    0 0 40px rgba(220, 253, 139, 0.1);
+  border-color: #fff; /* El borde brilla en blanco al pasar el ratón */
+}
+
+/* La estrella dorada */
+.score-star {
+  color: #ffd700;
+  font-size: 1.3rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 5px rgba(255, 214, 0, 0.8));
+  animation: star-pulse 2s infinite ease-in-out;
+}
+
+/* El texto de los puntos */
+.score-text {
+  color: #dcfd8b;
+  font-weight: 800;
+  font-family: 'Orbitron', 'Courier New', monospace; /* Tipografía técnica */
+  font-size: 1.1rem;
+  letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(220, 253, 139, 0.5);
+}
+
+/* Animación sutil para la estrella */
+@keyframes star-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* Estilo para cuando el puntaje sube (puedes añadir esta clase por JS si quieres) */
+.score-badge-button.updating {
+  animation: flash-update 0.5s ease-out;
+}
+
+@keyframes flash-update {
+  0% { background: #dcfd8b; color: #000; }
+  100% { background: rgba(20, 20, 20, 0.6); }
+}
+
+
+
+
+/* paypal */
+
+/* El fondo oscuro que cubre toda la pantalla */
+.payment-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85); /* Oscurece el fondo del juego */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Asegura que esté por encima de TODO el tablero */
+  backdrop-filter: blur(5px); /* Desenfoca el tablero detrás */
+}
+
+/* La tarjeta blanca/oscura de la tienda */
+.payment-card {
+  background: #1a1a1a; /* Fondo sólido para que no se vea el tablero detrás */
+  border: 2px solid #ffd700; /* Borde dorado */
+  border-radius: 15px;
+  padding: 40px;
+  width: 400px;
+  max-width: 90%;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Título de la tienda */
+.payment-title {
+  color: #ffd700;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.8rem;
+  margin: 0;
+}
+
+/* Subtítulo */
+.payment-subtitle {
+  color: #ffffff;
+  font-size: 0.9rem;
+  opacity: 0.8;
+}
+
+/* Caja del producto (1000 XP - 1€) */
+.payment-item-detail {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 15px;
+  border: 1px solid #333;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: white;
+  margin-bottom: 10px;
+}
+
+.price-tag {
+  color: #dcfd8b;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* Botón de cerrar (X) */
+.payment-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  opacity: 0.5;
+}
+
+.payment-close:hover {
+  opacity: 1;
+}
+
+/* Contenedor de los botones de PayPal */
+.paypal-button-container {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.payment-footer {
+  font-size: 0.75rem;
+  color: #666;
+  margin-top: 10px;
+}

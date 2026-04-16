@@ -1,5 +1,8 @@
-import { type FormEvent, useState } from 'react';
+﻿import { type FormEvent, useState } from 'react';
 import logoGameY from '../assets/Logo_GameY.png';
+import settingsImg from '../assets/buttons/configuracion.png';
+import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
+import { clearGuestSession } from '../utils/sessionUtils';
 import {useTranslation} from "react-i18next";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -8,7 +11,7 @@ const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,web
   import: 'default',
 }) as Record<string, string>;
 
-const getLanguageIcon = (token: string): string | null => {
+export const getLanguageIcon = (token: string): string | null => {
   const entry = Object.entries(languageModules).find(([path]) => path.toLowerCase().includes(token.toLowerCase()));
   return entry ? entry[1] : null;
 };
@@ -27,15 +30,20 @@ const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}',
 
 const availableIcons = Object.entries(iconModules)
   .sort(([a], [b]) => a.localeCompare(b))
-  .map(([path, src], index) => ({
-    id: `${index}-${path.split('/').pop() ?? 'icon'}`,
-    src,
-    name: path.split('/').pop() ?? `Icono ${index + 1}`,
-  }));
+  .map(([path, src], index) => {
+    const fileName = path.substring(path.lastIndexOf('/') + 1);
+    return {
+      id: `${index}-${fileName}`,
+      src,
+      name: fileName,
+    };
+  });
 
 const noAvatarIcon = availableIcons.find((icon) => icon.name.toLowerCase().includes('sinavatar'));
 const maleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('hombre')).slice(0, 4);
 const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('mujer')).slice(0, 4);
+
+export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
 interface RegisterData {
   name: string;
@@ -48,6 +56,8 @@ interface RegisterData {
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
+  readonly onOpenSettings?: () => void;
+  readonly onOpenTutorial?: () => void;
   readonly onCreateAccount: (
     name: string,
     friendCode: string,
@@ -57,7 +67,9 @@ interface RegisterScreenProps {
   ) => Promise<void> | void;
 }
 
-function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
+const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
+
+function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const { t } = useTranslation();
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
@@ -70,7 +82,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
   const [formError, setFormError] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [selectedIconName, setSelectedIconName] = useState<string>(noAvatarIcon?.name ?? availableIcons[0]?.name ?? 'SinAvatar.png');
+  const [selectedIconName, setSelectedIconName] = useState<string>('SinAvatar.png');
 
   const handleChange = (field: keyof RegisterData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -112,6 +124,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
       const data = await response.json();
 
       if (response.ok) {
+        clearGuestSession();
         await onCreateAccount(
           formData.name.trim(),
           data.friendCode,
@@ -120,18 +133,48 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
           formData.nickname.trim()
         );
       } else {
-        setFormError(data.error || t('register.error_create'));
+        setFormError(
+          isServerOrDatabaseError(data.error, response.status)
+            ? REGISTER_SERVER_ERROR_MESSAGE
+            : data.error || 'Error al crear la cuenta.'
+        );
       }
-    } catch (error) {
-      setFormError(t('register.error_network'));
+    } catch {
+      setFormError(REGISTER_SERVER_ERROR_MESSAGE);
     }
   };
 
   return (
     <div className="register-screen">
-      <div className="auth-header">
+      <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log">{t('register.title')}</h2>
+        <h2 className="title-log">ZONA DE REGISTRO</h2>
+        {(onOpenSettings || onOpenTutorial) && (
+          <div className="header-action-group">
+            {onOpenSettings && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenSettings}
+                title="Configuración"
+                aria-label="Configuración de elementos de fondo"
+              >
+                <img src={settingsImg} alt="" className="floating-action-icon" />
+              </button>
+            )}
+            {onOpenTutorial && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenTutorial}
+                title="Ayuda"
+                aria-label="Abrir ayuda"
+              >
+                <span className="help-icon-glyph" aria-hidden="true">?</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
@@ -203,8 +246,8 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
           <div className="register-right-zone">
             <div className="form-group">
-              <label>{t('register.language')}</label>
-              <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
+              <fieldset className="country-checkbox-box">
+                <legend>Idioma</legend>
                 {countryOptions.map((option) => {
                   const checked = formData.language === option.value;
                   return (
@@ -226,14 +269,14 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                     </label>
                   );
                 })}
-              </div>
+              </fieldset>
             </div>
 
             <div className="form-group">
-              <label>{t('register.choose_icon')}</label>
-              <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
-                {availableIcons.length === 0 ? (
-                  <small className="error-message">{t('register.no_icons')}</small>
+              <fieldset className="icon-picker-box">
+                <legend>Elige tu icono</legend>
+                {shouldShowNoIconsMessage(availableIcons) ? (
+                  <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
                 ) : (
                   <>
                     {noAvatarIcon && (
@@ -295,7 +338,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                     </div>
                   </>
                 )}
-              </div>
+              </fieldset>
             </div>
           </div>
         </div>
@@ -305,8 +348,8 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
           {t('register.submit')}
         </button>
 
-          <button type="button" className="submit-button" onClick={onBack}>
-            {t('common.back')}
+          <button type="button" className="submit-button cancel-button" onClick={onBack}>
+            Volver
           </button>
         </div>
       </form>
@@ -315,3 +358,5 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 }
 
 export default RegisterScreen;
+
+
