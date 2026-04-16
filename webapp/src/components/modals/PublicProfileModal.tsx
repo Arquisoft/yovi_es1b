@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import { gameService } from '../../services/gameService';
@@ -27,6 +28,7 @@ interface PublicProfileModalProps {
 }
 
 export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProps) => {
+    const { t } = useTranslation();
     const [data, setData] = useState<PublicProfileData | null>(null);
     const [loading, setLoading] = useState(true);
     const myUsername = localStorage.getItem('yovi_user') || '';
@@ -58,7 +60,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
             // Refrescamos sin mostrar el loader para que el botón cambie suavemente
             fetchProfile(false); 
         } catch (error: any) {
-            alert(error.message || "Error al añadir amigo");
+            alert(error.message || t('profile.error_add_friend'));
         }
     };
 
@@ -68,7 +70,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
             await gameService.cancelFriendRequest(myUsername, data.username);
             fetchProfile(false); 
         } catch (error: any) {
-            alert("No se pudo cancelar la solicitud");
+            alert(t('profile.error_cancel_request'));
         }
     };
 
@@ -83,20 +85,20 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
     const renderActionButton = () => {
         if (!data) return null;
         switch (data.relationship) {
-            case 'self': return <button className="profile-add-btn disabled" disabled>ERES TÚ</button>;
+            case 'self': return <button className="profile-add-btn disabled" disabled>{t('profile.is_you')}</button>;
             case 'pending': return (
                 <button className="profile-add-btn cancel" onClick={handleCancelRequest}>
-                    CANCELAR SOLICITUD
+                    {t('profile.cancel_request')}
                 </button>
             );
-            case 'accepted': return <button className="profile-add-btn accepted" disabled>YA SOIS AMIGOS</button>;
-            default: return <button className="profile-add-btn" onClick={handleAddFriend}>AÑADIR AMIGO</button>;
+            case 'accepted': return <button className="profile-add-btn accepted" disabled>{t('profile.already_friends')}</button>;
+            default: return <button className="profile-add-btn" onClick={handleAddFriend}>{t('profile.add_friend')}</button>;
         }
     };
 
     if (loading) return ReactDOM.createPortal(
         <div className="modal-backdrop profile-overlay">
-            <div className="loader-neon">Cargando...</div>
+            <div className="loader-neon">{t('common.loading')}</div>
         </div>,
         document.body
     );
@@ -127,11 +129,11 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
                 <div className="profile-stats-grid">
                     <div className="profile-stat-box">
                         <span className="stat-num">{data.stats.wins}</span>
-                        <span className="stat-desc">Victorias</span>
+                        <span className="stat-desc">{t('profile.wins')}</span>
                     </div>
                     <div className="profile-stat-box">
                         <span className="stat-num">{data.stats.losses}</span>
-                        <span className="stat-desc">Derrotas</span>
+                        <span className="stat-desc">{t('profile.losses')}</span>
                     </div>
                     <div className="profile-stat-box">
                         <span className="stat-num">
@@ -139,7 +141,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
                                 ? ((data.stats.wins / data.stats.totalGames) * 100).toFixed(1)
                                 : 0}%
                         </span>
-                        <span className="stat-desc">Ratio de victorias</span>
+                        <span className="stat-desc">{t('profile.win_rate')}</span>
                     </div>
                 </div>
             </div>

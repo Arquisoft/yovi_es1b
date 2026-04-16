@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { HistoryGameRecord } from '../../types/game';
 
 interface HistoryModalProps {
@@ -15,26 +16,27 @@ interface HistoryModalProps {
 export const HistoryModal = ({ 
   isOpen, onClose, data, currentPage, totalPages, onPageChange, onFilterChange, currentFilter 
 }: HistoryModalProps) => {
-  
+
+  const { t } = useTranslation();
   if (!isOpen) return null; // Si no está abierto, no renderiza nada
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Historial de Partidas</h3>
+        <h3>{t('game.history_title')}</h3>
 
         {/* Selector de Filtro */}
         <div className="history-controls">
-          <label htmlFor="result-filter">Filtrar por resultado: </label>
+          <label htmlFor="result-filter">{t('game.filter_by_result')}: </label>
           <select 
             id="result-filter" 
             value={currentFilter || ''} 
             onChange={(e) => onFilterChange(e.target.value)}
             className="filter-select"
           >
-            <option value="">Todas</option>
-            <option value="Victoria">Victorias</option>
-            <option value="Derrota">Derrotas</option>
+            <option value="">{t('game.filter_all')}</option>
+            <option value="Victoria">{t('game.filter_wins')}</option>
+            <option value="Derrota">{t('game.filter_losses')}</option>
           </select>
         </div>
 
@@ -44,11 +46,11 @@ export const HistoryModal = ({
             <table className="history-table">
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Rival</th>
-                  <th>Tamaño</th>
-                  <th>Dificultad</th>
-                  <th>Resultado</th>
+                  <th>{t('game.col_date')}</th>
+                  <th>{t('game.col_rival')}</th>
+                  <th>{t('game.col_size')}</th>
+                  <th>{t('game.col_difficulty')}</th>
+                  <th>{t('game.col_result')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -66,7 +68,7 @@ export const HistoryModal = ({
               </tbody>
             </table>
           ) : (
-            <p>No hay partidas guardadas.</p>
+            <p>{t('game.no_history')}</p>
           )}
         </div>
 
@@ -77,20 +79,20 @@ export const HistoryModal = ({
               className="submit-button"
               onClick={() => onPageChange(currentPage - 1)} 
               disabled={currentPage === 1}
-            >Anterior</button>
+            >{t('game.prev_page')}</button>
             <span className="history-pagination-info">
-              Página {currentPage} de {totalPages}
+              {t('game.page_info', { current: currentPage, total: totalPages })}
             </span>
             <button 
               className="submit-button"
               onClick={() => onPageChange(currentPage + 1)} 
               disabled={currentPage === totalPages}
-            >Siguiente</button>
+            >{t('game.next_page')}</button>
           </div>
         )}
 
         <button className="submit-button" onClick={onClose}>
-          Volver al Juego
+          {t('game.back_to_game')}
         </button>
       </div>
     </div>
