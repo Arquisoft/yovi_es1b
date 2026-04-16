@@ -79,7 +79,14 @@
     "objective_2": "Ganha quem primeiro ligar as 3 paredes",
     "instructions_title": "Instruções",
     "instructions_1": "Clica numa célula vazia para colocar a tua peça antes do tempo acabar",
-    "instructions_2": "Liga peças em células adjacentes até o teu grupo tocar as 3 paredes"
+    "instructions_2": "Liga peças em células adjacentes até o teu grupo tocar as 3 paredes",
+    "settings_title": "Configurações de fundo",
+    "music_volume": "Volume da música",
+    "video_moving": "Vídeo em movimento",
+    "connected": "Ligado",
+    "moving": "A mover...",
+    "error_auto_move": "Erro no movimento automático",
+    "error_move": "Erro no movimento"
   },
   "profile": {
     "title": "Ver o meu perfil",

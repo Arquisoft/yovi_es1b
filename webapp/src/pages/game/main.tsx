@@ -31,6 +31,7 @@ import '../../index.css';
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
+import {useTranslation} from "react-i18next";
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -73,12 +74,15 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
 };
 
 const GameApp = () => {
-  // Aplicar idioma guardado inmediatamente, antes de cualquier render
-  const storedLang = localStorage.getItem('yovi_user_language') || 'es';
-  const langMap: Record<string, string> = {
-    'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
-  };
-  i18n.changeLanguage(langMap[storedLang] ?? storedLang);
+  const { t } = useTranslation();
+  useEffect(() => {
+    const storedLang = localStorage.getItem('yovi_user_language') || 'es';
+    const langMap: Record<string, string> = {
+      'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
+    };
+    i18n.changeLanguage(langMap[storedLang] ?? storedLang);
+  }, []);
+
 
   // --- SEGURIDAD Y SESIÓN ---
   const username = localStorage.getItem('yovi_user') || '';
@@ -234,13 +238,13 @@ const GameApp = () => {
 
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = async () => {
-    setConnectionStatus('⏱️ Movimiento automático...');
+    setConnectionStatus(t('game.auto_move'));
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data?.winner !== null) setShowResultModal(true);
-      setConnectionStatus('Conectado');
+      setConnectionStatus(t('game.connected'));
     } catch (error) {
-      setConnectionStatus('Error en movimiento automático');
+      setConnectionStatus(t('game.error_move'));
     }
   };
 
@@ -253,9 +257,9 @@ const GameApp = () => {
         setTimerVisible(false);
         setShowResultModal(true);
       }
-      setConnectionStatus('Conectado');
+      setConnectionStatus(t('game.connected'));
     } catch (error) {
-      setConnectionStatus('Error en el movimiento');
+      setConnectionStatus(t('game.error_move'));
     }
   };
 
@@ -410,9 +414,9 @@ const GameApp = () => {
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
           <div className="modal-box">
-            <h3>Configuración de elementos de fondo</h3>
+            <h3>{t('game.settings_title')}</h3>
             <div className="form-group">
-              <label htmlFor="music-volume">Volumen de la música</label>
+              <label htmlFor="music-volume">{t('game.music_volume')}</label>
               <input
                 id="music-volume"
                 className="form-input"
@@ -424,7 +428,7 @@ const GameApp = () => {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="video-static">Video en movimiento</label>
+              <label htmlFor="video-static">{t('game.video_moving')}</label>
               <input
                 id="video-static"
                 type="checkbox"
@@ -433,7 +437,7 @@ const GameApp = () => {
               />
             </div>
             <button type="button" className="submit-button" onClick={() => setShowSettings(false)}>
-              Cerrar
+              {t('common.close')}
             </button>
           </div>
         </div>

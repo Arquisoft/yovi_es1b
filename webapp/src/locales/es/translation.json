@@ -79,7 +79,14 @@
     "objective_2": "Gana el que primero toque las 3 paredes por una union de sus fichas",
     "instructions_title": "Instrucciones",
     "instructions_1": "Haz clic en una celda vacia para colocar tu ficha, antes de que se acabe el tiempo y se coloque de forma aleatoria",
-    "instructions_2": "Enlaza fichas en una casilla contigua a otra tuya hasta hacer un conjunto de fichas que toquen las 3 paredes"
+    "instructions_2": "Enlaza fichas en una casilla contigua a otra tuya hasta hacer un conjunto de fichas que toquen las 3 paredes",
+    "settings_title": "Configuración de elementos de fondo",
+    "music_volume": "Volumen de la música",
+    "video_moving": "Video en movimiento",
+    "connected": "Conectado",
+    "moving": "Moviendo...",
+    "error_auto_move": "Error en movimiento automático",
+    "error_move": "Error en el movimiento"
   },
   "profile": {
     "title": "Ver mi perfil",

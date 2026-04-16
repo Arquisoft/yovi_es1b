@@ -13,6 +13,7 @@ import defaultAvatar from '../assets/icon/SinAvatar.png';
 import amigosImg from '../assets/buttons/agregar-usuario.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import { type DifficultyChoice, type SizeChoice, SIZE_OPTIONS } from '../types/game';
+import { useTranslation } from 'react-i18next';
 
 interface GameYData {
   size: number;
@@ -71,6 +72,7 @@ function GameScreen({
   onViewProfile,
   onOpenSettings
 }: GameScreenProps) {
+  const { t } = useTranslation();
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const logoutLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const historyLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -139,9 +141,9 @@ function GameScreen({
         </button>
 
         <div className="nav-user-info">
-          <h2>Jugador: <span>{username}</span></h2>
+          <h2>{t('game.player')} <span>{username}</span></h2>
         </div>
-        <div className="nav-center-title">Partida personalizada contra un bot</div>
+        <div className="nav-center-title">{t('game.title')}</div>
 
         <div className="nav-game-settings">
           {/* MENÚ TAMAÑO */}
@@ -150,7 +152,7 @@ function GameScreen({
               className={`dropdown-trigger ${showSizeMenu ? 'active' : ''}`}
               onClick={() => { setShowSizeMenu(!showSizeMenu); setShowDiffMenu(false); }}
             >
-              Cambiar Tamaño ▾
+              {t('game.change_size')} ▾
             </button>
             
             {showSizeMenu && (
@@ -177,7 +179,7 @@ function GameScreen({
               className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
               onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
             >
-              Dificultad: {difficultyLabel} ▾
+              {t('game.difficulty')}: {difficultyLabel} ▾
             </button>
             
             {showDiffMenu && (
@@ -224,12 +226,12 @@ function GameScreen({
           </button>
           <div className="nav-btn-spacer" aria-hidden="true" />
           <button className="nav-btn nav-btn-icon-frame nav-btn-with-history" onClick={onFetchHistory} title="Ver historial">
-            <img className="nav-btn-history-img" src={historialImg} alt="Historial" />
+            <img className="nav-btn-history-img" src={historialImg} alt={t('game.history')} />
             <span className="nav-btn-history-hover" aria-hidden="true">
               <Lottie animationData={historyJson} loop autoplay lottieRef={historyLottieRef} />
             </span>
           </button>
-          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title="Ver menú de amigos">
+          <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title={t('game.friends_menu')}>
             <img className="nav-btn-friends-img" src={amigosImg} alt="Amigos" />
           </button>
           
@@ -254,12 +256,12 @@ function GameScreen({
                   <div className="player-avatar-box">
                     <img src={safePlayerIcon} alt={`Avatar de ${playerLabel}`} className="player-avatar-image" />
                   </div>
-                  <p className="player-label player-label-blue">Jugador: {playerLabel}</p>
+                  <p className="player-label player-label-blue">{t('game.player')}: {playerLabel}</p>
                 </div>
                 {timerVisible && turnTimeLimit !== null && winner === null && (
                   <div className="turn-timer-under" style={{ width: '100%', maxWidth: '16rem' }}>
                     <div className="turn-timer-header">
-                      <span className="turn-timer-label">Tu turno</span>
+                      <span className="turn-timer-label">{t('game.your_turn')}</span>
                       <span className={`turn-timer-seconds ${(turnTimeLeft ?? 0) <= 5 ? 'turn-timer-urgent' : ''}`}> {turnTimeLeft ?? 0}s</span>
                     </div>
                     <div className="turn-timer-bar-bg">
@@ -300,7 +302,7 @@ function GameScreen({
                 ))
               ) : (
                 // Mensaje mostrado si todavia no llego tablero desde /reset
-                <p>Carga el tablero para comenzar</p>
+                <p>{t('game.load_board')}</p>
               )}
             </div>
 
@@ -320,26 +322,26 @@ function GameScreen({
 
       <div className="match-info-floating" aria-label="Informacion de la partida">
         <div className="match-info-box">
-          <strong className="match-info-title">Información de la partida</strong>
-          <div className="match-info-line">Dificultad: {difficultyLabel}</div>
-          <div className="match-info-line">Tamaño de tablero: {sizeLabel || `${boardDimension}x${boardDimension}x${boardDimension}`}</div>
-          <div className="match-info-line">Nombre del rival: {botName}</div>
+          <strong className="match-info-title">{t('game.match_info')}</strong>
+          <div className="match-info-line">{t('game.difficulty')}{difficultyLabel}</div>
+          <div className="match-info-line">{t('game.size_name')}: {sizeLabel || `${boardDimension}x${boardDimension}x${boardDimension}`}</div>
+          <div className="match-info-line">{t('game.rival_name')}: {botName}</div>
         </div>
       </div>
       <div className="bot-guide-floating" aria-label="Guia rapida bot">
         <div className="bot-guide-box">
-          <strong className="guide-center-heading">Objetivo</strong>
+          <strong className="guide-center-heading">{t('game.objective_title')}</strong>
           <br />
-          - Tocar las 3 paredes por una union de tus fichas
+          - {t('game.objective_1')}
           <br />
-          - Gana el que primero toque las 3 paredes por una union de sus fichas
+          - {t('game.objective_2')}
           <br />
           <br />
-          <strong className="guide-center-heading">Instrucciones</strong>
+          <strong className="guide-center-heading">{t('game.instructions_title')}</strong>
           <br />
-          - Haz clic en una celda vacia para colocar tu ficha, antes de que se acabe el tiempo y se coloque de forma aleatoria
+          - {t('game.instructions_1')}
           <br />
-          - Enlaza fichas en una casilla contigua a otra tuya hasta hacer un conjunto de fichas que toquen las 3 paredes
+          - {t('game.instructions_2')}
         </div>
       </div>
     </div>

@@ -79,7 +79,14 @@
     "objective_2": "The first player to connect all 3 walls wins",
     "instructions_title": "Instructions",
     "instructions_1": "Click an empty cell to place your piece before the timer runs out",
-    "instructions_2": "Connect pieces in adjacent cells until your group touches all 3 walls"
+    "instructions_2": "Connect pieces in adjacent cells until your group touches all 3 walls",
+    "settings_title": "Background settings",
+    "music_volume": "Music volume",
+    "video_moving": "Moving background",
+    "connected": "Connected",
+    "moving": "Moving...",
+    "error_auto_move": "Error in automatic move",
+    "error_move": "Error in move"
   },
   "profile": {
     "title": "View my profile",

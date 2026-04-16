@@ -79,7 +79,14 @@
     "objective_2": "Wer zuerst alle 3 Wände verbindet, gewinnt",
     "instructions_title": "Anleitung",
     "instructions_1": "Klicke auf eine leere Zelle, bevor die Zeit abläuft",
-    "instructions_2": "Verbinde Steine in benachbarten Zellen bis deine Gruppe alle 3 Wände berührt"
+    "instructions_2": "Verbinde Steine in benachbarten Zellen bis deine Gruppe alle 3 Wände berührt",
+    "settings_title": "Hintergrundeinstellungen",
+    "music_volume": "Musiklautstärke",
+    "video_moving": "Bewegtes Video",
+    "connected": "Verbunden",
+    "moving": "Bewegen...",
+    "error_auto_move": "Fehler beim automatischen Zug",
+    "error_move": "Fehler beim Zug"
   },
   "profile": {
     "title": "Mein Profil",
