@@ -52,21 +52,21 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
 
   return (
     <div className="home-screen">
-      <h2 className="welcome-title">{t('title')}</h2>
+      <h2 className="welcome-title">{t('friends.title')}</h2>
 
       <div className="choose-option">
-        <h3>{t('search_title')}</h3>
+        <h3>{t('friends.search_title')}</h3>
         
         <input
           type="text"
           className="form-input"
-          placeholder={t('search_placeholder')}
+          placeholder={t('friends.search_placeholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         
         <button className="submit-button" onClick={handleSearch}>
-          {t('search_button')}
+          {t('friends.search_button')}
         </button>
 
         <div className="results-container" style={{ marginTop: '1rem' }}>
@@ -80,18 +80,18 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
                 style={{ fontSize: '0.7rem', padding: '4px 8px' }}
                 onClick={() => handleFollow(displayName)}
               >
-                Seguir
+                {t('friends.follow')}
               </button>
             </div>
           )})}
           {results.length === 0 && searchQuery && (
-            <p>{t('no_results')}</p>
+            <p>{t('friends.no_results')}</p>
           )}
         </div>
       </div>
 
       <button className="submit-button" onClick={onBack}>
-        {t('back')}
+        {t('common.back')}
       </button>
     </div>
   );

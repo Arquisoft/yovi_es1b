@@ -44,7 +44,7 @@
     "error_password_mismatch": "La confirmacion de Contraseña no coincide.",
     "error_create": "Error al crear la cuenta.",
     "error_network": "Error de red al crear la cuenta.",
-    "no_icons": "Anade iconos en `webapp/src/assets/icon` para poder elegir uno."
+    "no_icons": "Anade iconos en webapp/src/assets/icon para poder elegir uno."
   },
   "game": {
     "title": "Partida personalizada contra un bot",
@@ -102,7 +102,7 @@
     "no_avatar": "Sin Avatar",
     "male": "Hombre",
     "female": "Mujer",
-    "no_icons": "Anade iconos en `webapp/src/assets/icon` para poder elegir uno.",
+    "no_icons": "Anade iconos en webapp/src/assets/icon para poder elegir uno.",
     "error_load": "No se pudo cargar el perfil.",
     "error_save": "No se pudo actualizar el perfil.",
     "error_password": "No se pudo actualizar la Contraseña.",
@@ -110,15 +110,32 @@
     "error_password_mismatch": "La nueva Contraseña y su confirmacion no coinciden.",
     "success_save": "Perfil actualizado correctamente.",
     "success_password": "Contraseña actualizada correctamente.",
-    "avatar_ready": "Avatar preparado. Pulsa \"Guardar perfil\" para confirmar cambios.",
+    "avatar_ready": "Avatar preparado. Pulsa Guardar perfil para confirmar cambios.",
     "error_no_avatar": "Debes elegir un avatar para continuar o cancelar."
   },
   "friends": {
     "title": "Zona Social",
     "search_title": "Buscar nuevos amigos",
     "search_placeholder": "Nombre del usuario...",
+    "search_friend_placeholder": "Buscar jugador...",
     "search_button": "Buscar",
     "follow": "Seguir",
-    "no_results": "No se han encontrado usuarios."
+    "social": "Social",
+    "no_results": "No se han encontrado usuarios.",
+    "send_request": "Enviar Solicitud",
+    "connected_count": "Amigos conectados — {{count}}",
+    "invite": "Invitar",
+    "empty_list": "Tu lista está vacía",
+    "pending_requests": "SOLICITUDES PENDIENTES",
+    "code_placeholder": "CÓDIGO",
+    "view_profile": "Ver Perfil",
+    "add": "Añadir",
+    "received_requests": "Solicitudes recibidas",
+    "back_to_friends": "Volver a amigos",
+    "no_pending": "No hay solicitudes pendientes",
+    "alert_now_following": "¡Ahora sigues a {{username}}!",
+    "alert_not_found": "No se encontró ningún jugador con ese código.",
+    "alert_respond_error": "No se pudo procesar la respuesta.",
+    "alert_search_error": "Error al buscar el perfil."
   }
 }

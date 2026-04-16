@@ -1,6 +1,8 @@
+import "../../i18n";
 import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { gameService } from '../../services/gameService';
+import {useTranslation} from "react-i18next";
 
 interface FriendsPanelProps {
   isOpen: boolean;
@@ -10,7 +12,8 @@ interface FriendsPanelProps {
 }
 
 export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsPanelProps) => {
-  const [friends, setFriends] = useState<any[]>([]);
+    const { t } = useTranslation();
+    const [friends, setFriends] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -36,7 +39,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsP
       <div className="friends-sidebar-content" onClick={e => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>&times;</button>
 
-        <h2 className="sidebar-title">Social</h2>
+        <h2 className="sidebar-title">{t('friends.social')}</h2>
 
         {/* Perfil del usuario actual */}
         <div className="user-mini-profile">
@@ -52,22 +55,22 @@ export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsP
 
         {/* Buscador para añadir nuevos amigos */}
         <div className="search-container">
-          <input type="text" className="friends-input" placeholder="Buscar jugador..." />
-          <button className="add-friend-btn">Enviar Solicitud</button>
+          <input type="text" className="friends-input" placeholder={t('friends.search_friend_placeholder')} />
+          <button className="add-friend-btn">{t('friends.send_request')}</button>
         </div>
 
         {/* Área dinámica de la lista de amigos */}
         <div className="friends-list-area">
-          <p className="list-status-label">Amigos conectados — 0</p>
+          <p className="list-status-label">{t('friends.connected_count', { count: friends.length })}</p>
           <div className="empty-list-box">
-             Tu lista está vacía
+              {t('friends.empty_list')}
           </div>
           <p className="list-status-label">
-            Amigos conectados — {friends.length}
+              {t('friends.connected_count', { count: friends.length })}
           </p>
           
           {loading ? (
-            <div className="empty-list-box">Cargando...</div>
+            <div className="empty-list-box">{t('common.loading')}</div>
           ) : friends.length > 0 ? (
             // Si hay amigos, los listamos
             friends.map((friend, index) => (
@@ -78,14 +81,14 @@ export const FriendsPanel = ({ isOpen, onClose, username, friendCode }: FriendsP
                   className="invite-btn" 
                   onClick={() => console.log(`Invitando a ${friend.name}`)}
                 >
-                  Invitar
+                    {t('friends.invite')}
                 </button>
               </div>
             ))
           ) : (
             // Si la lista está vacía
             <div className="empty-list-box">
-               Tu lista está vacía
+                {t('friends.empty_list')}
             </div>
           )}
         </div>

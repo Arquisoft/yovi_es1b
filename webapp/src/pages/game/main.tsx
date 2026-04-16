@@ -1,3 +1,7 @@
+//Internacionalización
+import "../../i18n.ts";
+import i18n from '../../i18n'
+
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -27,10 +31,6 @@ import '../../index.css';
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
-
-//Internacionalización
-import i18n from "../../i18n";
-
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -73,6 +73,13 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
 };
 
 const GameApp = () => {
+  // Aplicar idioma guardado inmediatamente, antes de cualquier render
+  const storedLang = localStorage.getItem('yovi_user_language') || 'es';
+  const langMap: Record<string, string> = {
+    'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
+  };
+  i18n.changeLanguage(langMap[storedLang] ?? storedLang);
+
   // --- SEGURIDAD Y SESIÓN ---
   const username = localStorage.getItem('yovi_user') || '';
   const friendCode = localStorage.getItem('yovi_friend_code') || '';

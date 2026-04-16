@@ -23,16 +23,16 @@
     "submit": "Log in",
     "loading": "Logging in...",
     "error_empty": "Username and password cannot be blank.",
-    "error_login": "Error logging in.",
-    "error_network": "Network error while logging in."
+    "error_login": "Login error.",
+    "error_network": "Connection error while logging in."
   },
   "register": {
-    "title": "REGISTRATION",
+    "title": "REGISTRATION ZONE",
     "name": "Name",
     "nickname": "Nickname",
     "birth_date": "Date of birth",
     "password": "Password",
-    "confirm_password": "Confirm password",
+    "confirm_password": "Confirm Password",
     "language": "Language",
     "choose_icon": "Choose your icon",
     "submit": "Create account",
@@ -43,8 +43,8 @@
     "error_no_language": "You must select a language to continue.",
     "error_password_mismatch": "Password confirmation does not match.",
     "error_create": "Error creating account.",
-    "error_network": "Network error creating account.",
-    "no_icons": "Add icons in `webapp/src/assets/icon` to be able to choose one."
+    "error_network": "Network error while creating account.",
+    "no_icons": "Add icons in webapp/src/assets/icon to choose one."
   },
   "game": {
     "title": "Custom game against a bot",
@@ -72,17 +72,17 @@
     "bot_player_slot": "Bot player",
     "match_info": "Match information",
     "board_size": "Board size",
-    "rival_name": "Opponent name",
+    "rival_name": "Rival name",
     "auto_move": "Automatic move...",
     "objective_title": "Objective",
-    "objective_1": "Touch the 3 walls with a connected chain of your pieces",
-    "objective_2": "The first player to connect all 3 walls with their pieces wins",
+    "objective_1": "Touch all 3 walls with a connected group of your pieces",
+    "objective_2": "The first player to connect all 3 walls wins",
     "instructions_title": "Instructions",
-    "instructions_1": "Click an empty cell to place your piece before the timer runs out and a random move is made",
-    "instructions_2": "Connect pieces in adjacent cells until your chain touches all 3 walls"
+    "instructions_1": "Click an empty cell to place your piece before the timer runs out",
+    "instructions_2": "Connect pieces in adjacent cells until your group touches all 3 walls"
   },
   "profile": {
-    "title": "My profile",
+    "title": "View my profile",
     "name": "Name",
     "nickname": "Nickname",
     "birth_date": "Date of birth",
@@ -90,7 +90,7 @@
     "current_avatar": "Current avatar",
     "change_avatar": "Change avatar",
     "password": "Password",
-    "change_password": "Change password (verification)",
+    "change_password": "Change Password (verification)",
     "cancel_password": "Cancel password change",
     "current_password": "Current password",
     "new_password": "New password",
@@ -102,7 +102,7 @@
     "no_avatar": "No Avatar",
     "male": "Male",
     "female": "Female",
-    "no_icons": "Add icons in `webapp/src/assets/icon` to be able to choose one.",
+    "no_icons": "Add icons in webapp/src/assets/icon to choose one.",
     "error_load": "Could not load profile.",
     "error_save": "Could not update profile.",
     "error_password": "Could not update password.",
@@ -110,15 +110,32 @@
     "error_password_mismatch": "New password and confirmation do not match.",
     "success_save": "Profile updated successfully.",
     "success_password": "Password updated successfully.",
-    "avatar_ready": "Avatar ready. Click \"Save profile\" to confirm changes.",
+    "avatar_ready": "Avatar ready. Press Save profile to confirm changes.",
     "error_no_avatar": "You must choose an avatar to continue or cancel."
   },
   "friends": {
     "title": "Social Zone",
     "search_title": "Find new friends",
     "search_placeholder": "Username...",
+    "search_friend_placeholder": "Search player...",
     "search_button": "Search",
     "follow": "Follow",
-    "no_results": "No users found."
+    "social": "Social",
+    "no_results": "No users found.",
+    "send_request": "Send Request",
+    "connected_count": "Connected friends — {{count}}",
+    "invite": "Invite",
+    "empty_list": "Your list is empty",
+    "pending_requests": "PENDING REQUESTS",
+    "code_placeholder": "CODE",
+    "view_profile": "View Profile",
+    "add": "Add",
+    "received_requests": "Received requests",
+    "back_to_friends": "Back to friends",
+    "no_pending": "No pending requests",
+    "alert_now_following": "You are now following {{username}}!",
+    "alert_not_found": "No player found with that code.",
+    "alert_respond_error": "Could not process the response.",
+    "alert_search_error": "Error searching for profile."
   }
 }
