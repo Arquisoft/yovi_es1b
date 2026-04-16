@@ -1,5 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import logoGameY from '../assets/Logo_GameY.png';
+import {useTranslation} from "react-i18next";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -57,6 +58,7 @@ interface RegisterScreenProps {
 }
 
 function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProps>) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -78,17 +80,17 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
     event.preventDefault();
 
     if (!formData.name.trim() || !formData.nickname.trim() || !formData.password.trim() || !formData.confirmPassword.trim() || !formData.birthDate) {
-      setFormError('Nombre, nickname, fecha de nacimiento, Contraseña y confirmacion no pueden estar en blanco.');
+      setFormError(t('register.error_empty'));
       return;
     }
     if (!formData.language.trim()) {
-      setFormError('Debes seleccionar un idioma para continuar.');
+      setFormError(t('register.error_no_language'));
       return;
     }
     setFormError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      setPasswordError('La confirmacion de Contraseña no coincide.');
+      setPasswordError(t('register.error_password_mismatch'));
       return;
     }
     setPasswordError(null);
@@ -118,10 +120,10 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
           formData.nickname.trim()
         );
       } else {
-        setFormError(data.error || 'Error al crear la cuenta.');
+        setFormError(data.error || t('register.error_create'));
       }
     } catch (error) {
-      setFormError('Error de red al crear la cuenta.');
+      setFormError(t('register.error_network'));
     }
   };
 
@@ -129,7 +131,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
     <div className="register-screen">
       <div className="auth-header">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log">ZONA DE REGISTRO</h2>
+        <h2 className="title-log">{t('register.title')}</h2>
       </div>
 
       <form className="choose-option menu-content" onSubmit={handleSubmit}>
@@ -139,7 +141,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
         <div className="register-form-layout">
           <div className="register-left-zone">
             <div className="form-group">
-              <label htmlFor="register-name">Nombre</label>
+              <label htmlFor="register-name">{t('register.name')}</label>
               <input
                 id="register-name"
                 className="form-input"
@@ -151,7 +153,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-nickname">Apodo</label>
+              <label htmlFor="register-nickname">{t('register.nickname')}</label>
               <input
                 id="register-nickname"
                 className="form-input"
@@ -163,7 +165,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-birth-date">Fecha de nacimiento</label>
+              <label htmlFor="register-birth-date">{t('register.birth_date')}</label>
               <input
                 id="register-birth-date"
                 className="form-input"
@@ -175,7 +177,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-password">Contraseña</label>
+              <label htmlFor="register-password">{t('register.password')}</label>
               <input
                 id="register-password"
                 className="form-input"
@@ -187,7 +189,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-confirm-password">Confirmar Contraseña</label>
+              <label htmlFor="register-confirm-password">{t('register.confirm_password')}</label>
               <input
                 id="register-confirm-password"
                 className="form-input"
@@ -201,7 +203,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
           <div className="register-right-zone">
             <div className="form-group">
-              <label>Idioma</label>
+              <label>{t('register.language')}</label>
               <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
                 {countryOptions.map((option) => {
                   const checked = formData.language === option.value;
@@ -228,15 +230,15 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
             </div>
 
             <div className="form-group">
-              <label>Elige tu icono</label>
+              <label>{t('register.choose_icon')}</label>
               <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
                 {availableIcons.length === 0 ? (
-                  <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
+                  <small className="error-message">{t('register.no_icons')}</small>
                 ) : (
                   <>
                     {noAvatarIcon && (
                       <>
-                        <div className="icon-row-label">Sin Avatar</div>
+                        <div className="icon-row-label">{t('register.no_avatar')}</div>
                         <div className="icon-row-grid icon-row-grid-single">
                           <button
                             type="button"
@@ -252,7 +254,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                       </>
                     )}
 
-                    <div className="icon-row-label">Hombre</div>
+                    <div className="icon-row-label">{t('register.male')}</div>
                     <div className="icon-row-grid">
                       {maleIcons.map((icon) => {
                         const isSelected = selectedIconName === icon.name;
@@ -272,7 +274,7 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
                       })}
                     </div>
 
-                    <div className="icon-row-label">Mujer</div>
+                    <div className="icon-row-label">{t('register.female')}</div>
                     <div className="icon-row-grid">
                       {femaleIcons.map((icon) => {
                         const isSelected = selectedIconName === icon.name;
@@ -300,11 +302,11 @@ function RegisterScreen({ onBack, onCreateAccount }: Readonly<RegisterScreenProp
 
         <div className="register-actions">
         <button type="submit" className="submit-button" disabled={!formData.language.trim()}>
-          Crear cuenta
+          {t('register.submit')}
         </button>
 
           <button type="button" className="submit-button" onClick={onBack}>
-            Volver
+            {t('common.back')}
           </button>
         </div>
       </form>
