@@ -17,7 +17,7 @@
     "title": "BIENVENIDO A 'Y'",
     "select_register": "Seleccione una forma de acceso",
     "register": "Registrarse",
-    "login": "Iniciar sesion",
+    "login": "Iniciar sesión",
     "guest": "Entrar como invitado",
     "welcome_main": "Bienvenido a GameY",
     "welcome_kicker": "La estrategia no tiene suerte"
@@ -27,11 +27,11 @@
     "subtitle": "¿Cómo era tu nombre?",
     "username": "Nombre de usuario",
     "password": "Contraseña",
-    "submit": "Iniciar sesion",
-    "loading": "Iniciando sesion...",
+    "submit": "Iniciar sesión",
+    "loading": "Iniciando sesión...",
     "error_empty": "Usuario y contraseña no pueden estar en blanco.",
-    "error_login": "Error al iniciar sesion.",
-    "error_network": "Error de conexion al iniciar sesion."
+    "error_login": "Error al iniciar sesión.",
+    "error_network": "Error de conexion al iniciar sesión."
   },
   "register": {
     "title": "ZONA DE REGISTRO",
