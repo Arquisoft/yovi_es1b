@@ -7,13 +7,20 @@
     "loading": "Laden...",
     "saving": "Speichern...",
     "error_network": "Verbindungsfehler.",
-    "no_results": "Keine Benutzer gefunden."
+    "no_results": "Keine Benutzer gefunden.",
+    "settings": "Einstellungen",
+    "settings_aria": "Hintergrundeinstellungen",
+    "help": "Hilfe",
+    "help_aria": "Hilfe öffnen"
   },
   "home": {
     "title": "WILLKOMMEN BEI 'Y'",
-    "select_register": "Registrierungsmethode wählen",
+    "select_register": "Zugriffsmethode wählen",
     "register": "Registrieren",
-    "login": "Anmelden"
+    "login": "Anmelden",
+    "guest": "Als Gast eintreten",
+    "welcome_main": "Willkommen bei GameY",
+    "welcome_kicker": "Strategie hat kein Glück"
   },
   "login": {
     "title": "Willkommen zurück bei GameY",

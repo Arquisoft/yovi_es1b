@@ -21,20 +21,21 @@ interface HomeActionsProps {
 
 // Subcomponente para aislar las acciones de acceso (invitado / registro / login)
 function HomeActions({ onStart, onGoToRegister, onGoToLogin }: HomeActionsProps) {
-  return (
+    const { t } = useTranslation()
+    return (
     <div className="choose-option menu-content">
-      <h3>Seleccione una forma de acceso</h3>
+      <h3>{t('home.select_register')}</h3>
 
       <button type="button" className="submit-button home-auth-button" onClick={onGoToLogin}>
-        Iniciar sesion
+          {t('home.login')}
       </button>
 
       <button type="button" className="submit-button home-auth-button" onClick={onGoToRegister}>
-        Registrarse
+          {t('home.register')}
       </button>
 
       <button type="button" className="submit-button home-guest-button" onClick={onStart}>
-        Entrar como invitado
+          {t('home.guest')}
       </button>
     </div>
   );
@@ -53,9 +54,9 @@ function HomeScreen({
     <div className="home-screen">
       <h2 className="welcome-title">
         <span className="welcome-main">
-          Bienvenido a <span className="welcome-brand">GameY</span>
+          {t('home.welcome_main')}
         </span>
-        <span className="welcome-kicker">La estrategia no tiene suerte</span>
+        <span className="welcome-kicker">{t('home.welcome_kicker')}</span>
       </h2>
       <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
       {/* Bloque con botones para ir a registro/login */}
@@ -71,8 +72,8 @@ function HomeScreen({
               type="button"
               className="home-settings-below home-action-btn"
               onClick={onOpenSettings}
-              title="Configuracion"
-              aria-label="Configuracion de elementos de fondo"
+              title={t('common.settings')}
+              aria-label={t('common.settings_aria')}
             >
               <img src={settingsImg} alt="" className="floating-action-icon" />
             </button>
@@ -82,8 +83,8 @@ function HomeScreen({
               type="button"
               className="home-settings-below home-action-btn"
               onClick={onOpenTutorial}
-              title="Ayuda"
-              aria-label="Abrir ayuda"
+              title={t('common.help')}
+              aria-label={t('common.help_aria')}
             >
               <span className="help-icon-glyph" aria-hidden="true">?</span>
             </button>

@@ -1,4 +1,5 @@
 import { SIZE_OPTIONS, type DifficultyChoice, type SizeChoice } from '../../types/game';
+import { useTranslation } from 'react-i18next';
 
 interface SelectionModalsProps {
   currentScreen: string;

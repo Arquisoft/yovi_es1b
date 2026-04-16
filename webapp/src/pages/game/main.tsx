@@ -3,7 +3,6 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import "../../i18n.ts";
 import i18n from '../../i18n'
 
-import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -79,7 +78,6 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
 };
 
 const GameApp = () => {
-  const { t } = useTranslation();
   useEffect(() => {
     const storedLang = localStorage.getItem('yovi_user_language') || 'es';
     const langMap: Record<string, string> = {
@@ -109,6 +107,7 @@ type GameAppContentProps = {
 };
 
 const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) => {
+  const { t } = useTranslation()
   // --- SEGURIDAD Y SESIÓN ---
   const username = isGuestMode ? 'Invitado' : storedUsername;
   const friendCode = isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || '');

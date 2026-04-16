@@ -7,13 +7,20 @@
     "loading": "Loading...",
     "saving": "Saving...",
     "error_network": "Connection error.",
-    "no_results": "No users found."
+    "no_results": "No users found.",
+    "settings": "Settings",
+    "settings_aria": "Background settings",
+    "help": "Help",
+    "help_aria": "Open help"
   },
   "home": {
     "title": "WELCOME TO 'Y'",
-    "select_register": "Select a registration method",
+    "select_register": "Select an access method",
     "register": "Register",
-    "login": "Log in"
+    "login": "Log in",
+    "guest": "Enter as guest",
+    "welcome_main": "Welcome to GameY",
+    "welcome_kicker": "Strategy has no luck"
   },
   "login": {
     "title": "Welcome back to GameY",

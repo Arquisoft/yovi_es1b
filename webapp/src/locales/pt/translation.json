@@ -7,13 +7,20 @@
     "loading": "A carregar...",
     "saving": "A guardar...",
     "error_network": "Erro de ligação.",
-    "no_results": "Nenhum utilizador encontrado."
+    "no_results": "Nenhum utilizador encontrado.",
+    "settings": "Configurações",
+    "settings_aria": "Configurações de fundo",
+    "help": "Ajuda",
+    "help_aria": "Abrir ajuda"
   },
   "home": {
     "title": "BEM-VINDO A 'Y'",
-    "select_register": "Selecione uma forma de registo",
+    "select_register": "Selecione um método de acesso",
     "register": "Registar",
-    "login": "Iniciar sessão"
+    "login": "Iniciar sessão",
+    "guest": "Entrar como convidado",
+    "welcome_main": "Bem-vindo ao GameY",
+    "welcome_kicker": "A estratégia não tem sorte"
   },
   "login": {
     "title": "Bem-vindo de volta ao GameY",

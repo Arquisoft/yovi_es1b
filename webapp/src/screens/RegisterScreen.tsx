@@ -156,8 +156,8 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                 type="button"
                 className="header-settings-btn header-action-btn"
                 onClick={onOpenSettings}
-                title="Configuración"
-                aria-label="Configuración de elementos de fondo"
+                title={t('common.settings')}
+                aria-label={t('common.settings_aria')}
               >
                 <img src={settingsImg} alt="" className="floating-action-icon" />
               </button>
@@ -167,8 +167,8 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                 type="button"
                 className="header-settings-btn header-action-btn"
                 onClick={onOpenTutorial}
-                title="Ayuda"
-                aria-label="Abrir ayuda"
+                title={t('common.help')}
+                aria-label={t('common.help_aria')}
               >
                 <span className="help-icon-glyph" aria-hidden="true">?</span>
               </button>
@@ -247,7 +247,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
           <div className="register-right-zone">
             <div className="form-group">
               <fieldset className="country-checkbox-box">
-                <legend>Idioma</legend>
+                <legend>{t('register.language')}</legend>
                 {countryOptions.map((option) => {
                   const checked = formData.language === option.value;
                   return (
@@ -274,9 +274,9 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
 
             <div className="form-group">
               <fieldset className="icon-picker-box">
-                <legend>Elige tu icono</legend>
+                <legend>{t('register.choose_icon')}</legend>
                 {shouldShowNoIconsMessage(availableIcons) ? (
-                  <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
+                  <small className="error-message">{t('register.no_icons')}</small>
                 ) : (
                   <>
                     {noAvatarIcon && (
@@ -287,11 +287,11 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                             type="button"
                             className={`icon-option ${selectedIconName === noAvatarIcon.name ? 'icon-option-selected' : ''}`}
                             onClick={() => setSelectedIconName(noAvatarIcon.name)}
-                            title="Sin Avatar"
+                            title={t('register.no_avatar')}
                             aria-label="Elegir Sin Avatar"
                             aria-pressed={selectedIconName === noAvatarIcon.name}
                           >
-                            <img src={noAvatarIcon.src} alt="Sin Avatar" className="icon-option-img" />
+                            <img src={noAvatarIcon.src} alt={t('register.no_avatar')} className="icon-option-img" />
                           </button>
                         </div>
                       </>
@@ -349,7 +349,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
         </button>
 
           <button type="button" className="submit-button cancel-button" onClick={onBack}>
-            Volver
+            {t('common.back')}
           </button>
         </div>
       </form>
@@ -358,5 +358,3 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
 }
 
 export default RegisterScreen;
-
-
