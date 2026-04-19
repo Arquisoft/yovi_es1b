@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 import { findIconSrcByName, getLanguageIcon, ProfileScreen, shouldShowNoIconsMessage } from '../screens/ProfileScreen'
 import defaultAvatar from '../assets/icon/SinAvatar.png'
@@ -24,6 +24,11 @@ describe('ProfileScreen', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+  })
+
+  afterEach(async () => {
+    const i18n = (await import('../i18n')).default
+    await i18n.changeLanguage('es')
   })
 
   test('getLanguageIcon cubre casos encontrado y no encontrado', () => {

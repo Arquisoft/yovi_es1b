@@ -22,7 +22,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/__tests__/setup.ts'],
+    setupFiles: ['./src/__tests__/i18n-test.ts', './src/__tests__/setup.ts'],
     testTimeout: 20000,
     coverage: {
       reporter: ['text', 'lcov'],

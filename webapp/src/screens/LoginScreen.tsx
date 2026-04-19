@@ -186,7 +186,7 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
             <button type="submit" className="submit-button" disabled={isLoading}>
               {isLoading ? t('common.loading') : t('login.submit')}
             </button>
-            <button type="button" className="submit-button" onClick={onBack}> {/* No envia formulario */}
+            <button type="button" className="submit-button cancel-button" onClick={onBack}> {/* No envia formulario */}
               {t('common.back')}
             </button>
           </form>

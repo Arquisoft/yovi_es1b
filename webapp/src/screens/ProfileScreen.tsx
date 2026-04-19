@@ -120,7 +120,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               : 'SinAvatar.png';
         setIconName(resolvedIconName || 'SinAvatar.png');
       } catch (error) {
-        if (active) setErrorMessage(t('error_load'));
+        if (active) setErrorMessage(t('profile.error_load'));
       } finally {
         if (active) setIsLoading(false);
       }
