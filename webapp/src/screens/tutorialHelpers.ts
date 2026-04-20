@@ -1,3 +1,4 @@
+import i18n from '../i18n';
 const helpImageModules = import.meta.glob('../assets/help/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
   import: 'default',
@@ -15,12 +16,12 @@ export const pickImageByName = (fileName: string) =>
 export const getHelpCaption = (imageName: string) => {
   const normalized = imageName.toLowerCase();
 
-  if (normalized.includes('registeremptyspace')) return 'Campos vacíos';
-  if (normalized.includes('registerempty')) return 'Formulario vacío';
-  if (normalized.includes('registererrorpswd')) return 'Error de contraseña';
-  if (normalized.includes('registergood')) return 'Formulario correcto';
-  if (normalized.includes('settings')) return 'Ajustes';
-  if (normalized.includes('home')) return 'Pantalla de inicio';
+  if (normalized.includes('registeremptyspace')) return i18n.t('tutorial.caption_register_empty_space');
+  if (normalized.includes('registerempty')) return i18n.t('tutorial.caption_register_empty');
+  if (normalized.includes('registererrorpswd')) return i18n.t('tutorial.caption_register_error_pswd');
+  if (normalized.includes('registergood')) return i18n.t('tutorial.caption_register_good');
+  if (normalized.includes('settings')) return i18n.t('tutorial.caption_settings');
+  if (normalized.includes('home')) return i18n.t('tutorial.caption_home');
 
   return imageName;
 };

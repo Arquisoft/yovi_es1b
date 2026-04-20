@@ -1,4 +1,5 @@
-﻿import React, { useEffect, useRef, useState } from 'react'
+import '../../i18n'
+import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import LoginScreen from '../../screens/LoginScreen'
 import { TutorialScreen } from '../../screens/TutorialScreen'
@@ -7,8 +8,10 @@ import '../../css/Log.css'
 import '../../index.css'
 import menuVideo from '../../assets/background_video.mp4'
 import backgroundMusic from '../../assets/background_music.mp3'
+import {useTranslation} from "react-i18next";
 
 const LoginPage = () => {
+  const { t } = useTranslation()
   const [showSettings, setShowSettings] = useState(false)
   const [showTutorialScreen, setShowTutorialScreen] = useState(false)
   const [musicVolume, setMusicVolume] = useState(0.4)
@@ -115,9 +118,9 @@ const LoginPage = () => {
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración">
           <div className="modal-box">
-            <h3>Configuración</h3>
+            <h3>{t('game.settings_title')}</h3>
             <div className="form-group">
-              <label htmlFor="music-volume">Volumen de la música</label>
+              <label htmlFor="music-volume">{t('game.music_volume')}</label>
               <input
                 id="music-volume"
                 className="form-input"
@@ -129,7 +132,7 @@ const LoginPage = () => {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="video-static">Vídeo en movimiento</label>
+              <label htmlFor="video-static">{t('game.video_moving')}</label>
               <input
                 id="video-static"
                 type="checkbox"
@@ -138,7 +141,7 @@ const LoginPage = () => {
               />
             </div>
             <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
-              Cerrar
+              {t('common.close')}
             </button>
           </div>
         </div>

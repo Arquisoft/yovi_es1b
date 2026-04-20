@@ -1,10 +1,6 @@
-type GuestAccessReason = 'perfil' | 'historial' | 'amigos';
+import { useTranslation } from 'react-i18next'
 
-const guestAccessLabels: Record<GuestAccessReason, string> = {
-  perfil: 'ver tu perfil',
-  historial: 'consultar el historial',
-  amigos: 'añadir amigos',
-};
+type GuestAccessReason = 'perfil' | 'historial' | 'amigos';
 
 interface GuestAccessModalProps {
   reason: GuestAccessReason | null;
@@ -14,13 +10,14 @@ interface GuestAccessModalProps {
 }
 
 export function GuestAccessModal({ reason, onClose, onGoLogin, onGoRegister }: Readonly<GuestAccessModalProps>) {
+  const { t } = useTranslation()
   if (!reason) return null;
 
   return (
     <dialog
       open
       className="modal-backdrop"
-      aria-label="Acceso restringido para invitados"
+      aria-label={t('guest.restricted_aria')}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -33,17 +30,17 @@ export function GuestAccessModal({ reason, onClose, onGoLogin, onGoRegister }: R
       }}
     >
       <div className="modal-box">
-        <h3>Acceso restringido</h3>
-        <p>Para {guestAccessLabels[reason]} necesitas iniciar sesión o registrarte.</p>
+        <h3>{t('guest.restricted_title')}</h3>
+        <p>{t(`guest.reason_${reason}`)}</p>
         <div className="guest-access-actions">
           <button type="button" className="submit-button guest-access-auth-button" onClick={onGoLogin}>
-            Iniciar sesión
+            {t('home.login')}
           </button>
           <button type="button" className="submit-button guest-access-auth-button" onClick={onGoRegister}>
-            Registrarse
+            {t('home.register')}
           </button>
           <button type="button" className="submit-button guest-access-guest-button" onClick={onClose}>
-            Seguir como invitado
+            {t('guest.continue_guest')}
           </button>
         </div>
       </div>

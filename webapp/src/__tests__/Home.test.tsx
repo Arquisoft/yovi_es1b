@@ -35,7 +35,7 @@ describe('Home', () => {
 
     // Ajustado para que coincida con el texto real
     expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
-    const loginBtn = screen.getByRole('button', { name: /iniciar sesion/i })
+    const loginBtn = screen.getByRole('button', { name: /iniciar sesión/i })
     const registerBtn = screen.getByRole('button', { name: /registrarse/i })
     const guestBtn = screen.getByRole('button', { name: /entrar como invitado/i })
 
@@ -70,7 +70,7 @@ describe('Home', () => {
     fireEvent.click(screen.getByRole('button', { name: /registrarse/i }))
     expect(onRegister).toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: /iniciar sesion/i }))
+    fireEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }))
     expect(onLogin).toHaveBeenCalled()
   })
 
@@ -91,7 +91,7 @@ describe('Home', () => {
       />
     )
 
-    await user.click(screen.getByRole('button', { name: /configuracion de elementos de fondo/i }))
+    await user.click(screen.getByRole('button', { name: /configuración de elementos de fondo/i }))
     await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
 
     expect(onSettings).toHaveBeenCalled()
