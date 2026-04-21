@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import '@testing-library/jest-dom'
@@ -25,6 +25,7 @@ const baseProps = (overrides?: {
   timerVisible?: boolean
   turnTimeLeft?: number | null
   turnTimeLimit?: number | null
+  totalScore?: number
 }) => ({
   username: 'Alice',
   displayName: 'Ali',
@@ -45,6 +46,7 @@ const baseProps = (overrides?: {
   timerVisible: overrides?.timerVisible ?? false,
   turnTimeLeft: overrides?.turnTimeLeft ?? null,
   turnTimeLimit: overrides?.turnTimeLimit ?? null,
+  totalScore: overrides?.totalScore ?? 0,
   onFetchHistory: vi.fn(),
   onChangeDifficulty: vi.fn(),
   onChangeSize: vi.fn(),
@@ -55,6 +57,7 @@ const baseProps = (overrides?: {
   onAddFriend: vi.fn(),
   onViewProfile: vi.fn(),
   onOpenSettings: vi.fn(),
+  onScoreButtonClick: vi.fn(),
 })
 
 describe('Game UI (MPA Ready)', () => {
@@ -84,7 +87,7 @@ describe('Game UI (MPA Ready)', () => {
     expect(props.onChangeDifficulty).toHaveBeenCalledWith('Fácil')
 
     // 3. Cambiar Tamaño
-    const triggerTamano = screen.getByText(/Cambiar Tamaño ▾/i)
+    const triggerTamano = screen.getByRole('button', { name: /Tamaño/i })
     await user.click(triggerTamano)
     
     // Buscamos la opción 9x9x9 que está en tus SIZE_OPTIONS
@@ -166,8 +169,8 @@ describe('Game UI (MPA Ready)', () => {
     const props = baseProps()
     render(<GameScreen {...props} />)
 
-    expect(screen.getByText(/partida vs ia/i)).toBeInTheDocument()
-    expect(screen.getByText(/jugador:/i)).toBeInTheDocument()
+    const navbar = screen.getByRole('navigation')
+    expect(within(navbar).getByText(/jugador/i)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
   })

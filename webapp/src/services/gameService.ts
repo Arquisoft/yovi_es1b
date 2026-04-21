@@ -1,6 +1,14 @@
 import { API_BASE_URL } from '../constants/config';
 import type { GameYData } from '../types/game';
 import { getAuthHeaders, getCurrentUser } from '../utils/sessionUtils';
+import { getHistoryFilterKey } from '../utils/gameLabelUtils';
+
+type GameHistoryContext = Readonly<{
+  boardLabel?: string | null;
+  locale?: string | null;
+  resultLabel?: string | null;
+}>;
+
 export const gameService = {
   // Obtener dificultades
   async getDifficulties(): Promise<string[]> {
@@ -9,11 +17,17 @@ export const gameService = {
   },
 
   // Realizar un movimiento
-  async makeMove(cellIndex: number,  difficulty: string, boardSize?: number) {
+  async makeMove(cellIndex: number,  difficulty: string, boardSize?: number, context?: GameHistoryContext) {
     const res = await fetch(`${API_BASE_URL}/move`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ cellIndex, username: getCurrentUser(), difficulty, boardSize }),
+      body: JSON.stringify({ 
+        cellIndex, 
+        username: getCurrentUser(), 
+        difficulty, 
+        boardSize,
+        ...context,
+      }),
     });
     return res.json();
   },
@@ -30,18 +44,19 @@ export const gameService = {
   },
 
   // Rendirse
-  async surrender( difficulty: string, boardSize?: number) {
+  async surrender( difficulty: string, boardSize?: number, context?: GameHistoryContext) {
     return fetch(`${API_BASE_URL}/surrender`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ username: getCurrentUser(), difficulty, boardSize }),
+      body: JSON.stringify({ username: getCurrentUser(), difficulty, boardSize, ...context }),
     });
   },
 
   // Historial
   async getHistory( page: number, filter?: string | null) {
     let url = `${API_BASE_URL}/history?username=${getCurrentUser()}&page=${page}&limit=5`;
-    if (filter) url += `&result=${encodeURIComponent(filter)}`;
+    const normalizedFilter = getHistoryFilterKey(filter);
+    if (normalizedFilter) url += `&result=${encodeURIComponent(normalizedFilter)}`;
     const res = await fetch(url);
     return res.json();
   },
@@ -182,11 +197,23 @@ export const gameService = {
    * @returns 
    */
   async cancelFriendRequest(follower: string, following: string) {
-  const response = await fetch(`${API_BASE_URL}/friends/cancel`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ follower, following })
-  });
-  return await response.json();
-}
+    const response = await fetch(`${API_BASE_URL}/friends/cancel`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ follower, following })
+    });
+    return await response.json();
+  },
+
+  async addXP(amount: number) {
+    const res = await fetch(`${API_BASE_URL}/users/purchase-xp`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ 
+        username: getCurrentUser(), 
+        amount 
+      }),
+    });
+    return res.json();
+  }
 };

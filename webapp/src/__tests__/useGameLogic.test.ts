@@ -18,6 +18,7 @@ const makeBoard = (layout: string, size = 3): GameYData => ({
   turn: 0,
   players: ['B', 'R'],
   layout,
+  score: 0,
 });
 
 const mockedGameService = vi.mocked(gameService);

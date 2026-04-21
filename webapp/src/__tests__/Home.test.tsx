@@ -35,7 +35,7 @@ describe('Home', () => {
 
     // Ajustado para que coincida con el texto real
     expect(screen.getByRole('heading', { level: 2 })).toBeInTheDocument();
-    const loginBtn = screen.getByRole('button', { name: /iniciar sesion/i })
+    const loginBtn = screen.getByRole('button', { name: /iniciar sesión/i })
     const registerBtn = screen.getByRole('button', { name: /registrarse/i })
     const guestBtn = screen.getByRole('button', { name: /entrar como invitado/i })
 
@@ -70,12 +70,13 @@ describe('Home', () => {
     fireEvent.click(screen.getByRole('button', { name: /registrarse/i }))
     expect(onRegister).toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: /iniciar sesion/i }))
+    fireEvent.click(screen.getByRole('button', { name: /iniciar sesión/i }))
     expect(onLogin).toHaveBeenCalled()
   })
 
   test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {
     const user = userEvent.setup()
+    const onLanguage = vi.fn()
     const onSettings = vi.fn()
     const onTutorial = vi.fn()
 
@@ -86,14 +87,24 @@ describe('Home', () => {
         onStart={vi.fn()}
         onGoToRegister={vi.fn()}
         onGoToLogin={vi.fn()}
+        onOpenLanguage={onLanguage}
         onOpenSettings={onSettings}
         onOpenTutorial={onTutorial}
       />
     )
 
-    await user.click(screen.getByRole('button', { name: /configuracion de elementos de fondo/i }))
-    await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
+    const languageBtn = screen.getByRole('button', { name: /idioma/i })
+    const settingsBtn = screen.getByRole('button', { name: /configuración de elementos de fondo/i })
+    const tutorialBtn = screen.getByRole('button', { name: /abrir ayuda/i })
 
+    expect(languageBtn.compareDocumentPosition(settingsBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(settingsBtn.compareDocumentPosition(tutorialBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+
+    await user.click(languageBtn)
+    await user.click(screen.getByRole('button', { name: /configuración de elementos de fondo/i }))
+    await user.click(tutorialBtn)
+
+    expect(onLanguage).toHaveBeenCalled()
     expect(onSettings).toHaveBeenCalled()
     expect(onTutorial).toHaveBeenCalled()
   })

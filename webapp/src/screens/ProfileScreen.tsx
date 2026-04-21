@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { gameService } from '../services/gameService';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
+import i18n from '../i18n';
+import { useTranslation } from 'react-i18next';
+import { languageOptions } from '../utils/languageUtils';
 
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -24,12 +27,18 @@ type AvatarIcon = {
   name: string;
 };
 
-const countryOptions = [
-  { value: 'Spain', icon: getLanguageIcon('espana') },
-  { value: 'English', icon: getLanguageIcon('reino-unido') },
-  { value: 'German', icon: getLanguageIcon('alemania') },
-  { value: 'Portuguese', icon: getLanguageIcon('portugal') },
-];
+const countryOptions = languageOptions.map((option) => ({
+  ...option,
+  icon: option.icon || getLanguageIcon(
+    option.value === 'Spain'
+      ? 'espana'
+      : option.value === 'English'
+        ? 'reino-unido'
+        : option.value === 'German'
+          ? 'alemania'
+          : 'portugal'
+  ),
+}));
 
 const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -141,6 +150,7 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: ProfileScreenProps) => {
+  const { t } = useTranslation()
   const [profileName, setProfileName] = useState(username);
   const [nickname, setNickname] = useState(() => localStorage.getItem('yovi_user_nickname') || '');
   const [birthDate, setBirthDate] = useState('');
@@ -204,7 +214,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               : 'SinAvatar.png';
         setIconName(resolvedIconName || 'SinAvatar.png');
       } catch (error) {
-        if (active) setErrorMessage('No se pudo cargar el perfil.');
+        if (active) setErrorMessage(t('profile.error_load'));
       } finally {
         if (active) setIsLoading(false);
       }
@@ -235,11 +245,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
 
   const applyAvatarSelection = () => {
     if (!avatarDraft) {
-      setAvatarError('Debes elegir un avatar para continuar o cancelar.');
+      setAvatarError(t('profile.error_no_avatar'));
       return;
     }
     setIconName(avatarDraft);
-    setInfoMessage('Avatar preparado. Pulsa "Guardar perfil" para confirmar cambios.');
+    setInfoMessage(t('profile.avatar_ready'));
     setErrorMessage('');
     setAvatarError('');
     setShowAvatarEditor(false);
@@ -256,11 +266,18 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         nickname,
         iconName,
       });
+      const languageToI18n: Record<string, string> = {
+        'Spain': 'es',
+        'English': 'en',
+        'German': 'de',
+        'Portuguese': 'pt',
+      }
       if (data?.error) {
         setErrorMessage(data.error);
       } else {
-        setInfoMessage('Perfil actualizado correctamente.');
+        setInfoMessage(t('profile.success_save'));
         if (language) {
+          i18n.changeLanguage(languageToI18n[language] ?? 'es')
           localStorage.setItem('yovi_user_language', language);
         } else {
           localStorage.removeItem('yovi_user_language');
@@ -273,7 +290,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         if (onIconUpdated) onIconUpdated(iconName);
       }
     } catch (error) {
-      setErrorMessage('No se pudo actualizar el perfil.');
+      setErrorMessage(t('profile.error_save'));
     } finally {
       setIsLoading(false);
     }
@@ -284,11 +301,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
     setInfoMessage('');
 
     if (!currentPassword || !newPassword || !confirmPassword) {
-      setErrorMessage('Completa los tres campos de Contraseña.');
+      setErrorMessage(t('profile.error_empty_password'));
       return;
     }
     if (newPassword !== confirmPassword) {
-      setErrorMessage('La nueva Contraseña y su confirmacion no coinciden.');
+      setErrorMessage(t('profile.error_password_mismatch'));
       return;
     }
 
@@ -298,14 +315,14 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
       if (data?.error) {
         setErrorMessage(data.error);
       } else {
-        setInfoMessage('Contraseña actualizada correctamente.');
+        setInfoMessage(t('profile.success_password'));
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setShowPasswordEditor(false);
       }
     } catch (error) {
-      setErrorMessage('No se pudo actualizar la Contraseña.');
+      setErrorMessage(t('profile.error_password'));
     } finally {
       setIsLoading(false);
     }
@@ -314,7 +331,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
   return (
     <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Ver mi perfil">
       <div className="modal-box profile-modal">
-        <h3 className="profile-title">Ver mi perfil</h3>
+        <h3 className="profile-title">{t('profile.title')}</h3>
 
         {errorMessage && <small className="error-message">{errorMessage}</small>}
         {infoMessage && <small className="success-message">{infoMessage}</small>}
@@ -322,21 +339,21 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         <div className="profile-modal-layout">
           <div className="profile-left-pane">
             <img src={selectedIcon} alt="Avatar seleccionado" className="profile-main-avatar" />
-            <div className="profile-left-caption">Avatar actual</div>
+            <div className="profile-left-caption">{t('profile.current_avatar')}</div>
             <button type="button" className="submit-button profile-avatar-change-btn" onClick={openAvatarEditor}>
-              Modificar avatar
+              {t('profile.change_avatar')}
             </button>
           </div>
 
           <div className="profile-right-pane">
             <div className="profile-form-grid">
               <div className="form-group">
-                <label htmlFor="profile-name">Nombre</label>
+                <label htmlFor="profile-name">{t('profile.name')}</label>
                 <input id="profile-name" className="form-input" type="text" value={profileName} disabled />
               </div>
 
             <div className="form-group">
-              <label htmlFor="profile-nickname">Apodo</label>
+              <label htmlFor="profile-nickname">{t('profile.nickname')}</label>
               <input
                 id="profile-nickname"
                 className="form-input"
@@ -348,7 +365,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
             </div>
 
             <div className="form-group">
-              <label htmlFor="profile-birthdate">Fecha de nacimiento</label>
+              <label htmlFor="profile-birthdate">{t('profile.birth_date')}</label>
               <input
                 id="profile-birthdate"
                 className="form-input"
@@ -359,7 +376,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
             </div>
 
             <div className="form-group">
-              <label>Idioma</label>
+              <label>{t('profile.language')}</label>
               <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
                 {countryOptions.map((option) => {
                   const checked = language === option.value;
@@ -369,7 +386,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
                       <span className="country-checkbox-left">
                         <img
                           src={displayState.src}
-                          alt={option.value}
+                          alt={t(option.labelKey)}
                           className="country-flag-icon"
                           style={{ display: displayState.iconDisplay }}
                         />
@@ -378,7 +395,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
                           aria-hidden="true"
                           style={{ display: displayState.fallbackDisplay }}
                         />
-                        <span>{option.value}</span>
+                        <span>{t(option.labelKey)}</span>
                       </span>
                       <input
                         type="checkbox"
@@ -394,7 +411,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
 
             <div className="profile-password-section">
               <div className="form-group">
-                <label htmlFor="profile-password">Contraseña</label>
+                <label htmlFor="profile-password">{t('profile.password')}</label>
                 <div className="profile-password-row">
                   <input id="profile-password" className="form-input" type="password" value="********" disabled />
                   <button
@@ -402,7 +419,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
                     className="submit-button profile-password-toggle"
                     onClick={() => setShowPasswordEditor((prev) => !prev)}
                   >
-                    {showPasswordEditor ? 'Cancelar cambio de Contraseña' : 'Cambiar Contraseña (verificacion)'}
+                    {showPasswordEditor ? t('profile.cancel_password') : t('profile.change_password')}
                   </button>
                 </div>
               </div>
@@ -412,26 +429,26 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
                   <input
                     className="form-input"
                     type="password"
-                    placeholder="Contraseña actual"
+                    placeholder={t('profile.current_password')}
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                   />
                   <input
                     className="form-input"
                     type="password"
-                    placeholder="Nueva Contraseña"
+                    placeholder={t('profile.new_password')}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                   />
                   <input
                     className="form-input"
                     type="password"
-                    placeholder="Confirmar nueva Contraseña"
+                    placeholder={t('profile.confirm_new_password')}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                   />
                   <button type="button" className="submit-button" onClick={handleChangePassword} disabled={isLoading}>
-                    Guardar nueva Contraseña
+                    {t('profile.save_password')}
                   </button>
                 </div>
               )}
@@ -441,27 +458,27 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
 
         <div className="profile-modal-actions">
           <button type="button" className="submit-button" onClick={handleSaveProfile} disabled={isLoading}>
-            {isLoading ? 'Guardando...' : 'Guardar perfil'}
+            {isLoading ? t('common.saving') : t('profile.save_profile')}
           </button>
           <button type="button" className="submit-button" onClick={onClose}>
-            Cerrar
+            {t('common.close')}
           </button>
         </div>
       </div>
       {showAvatarEditor && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Seleccionar avatar">
           <div className="modal-box profile-avatar-modal">
-            <h3>Selecciona un avatar</h3>
+            <h3>{t('profile.select_avatar')}</h3>
             {avatarError && <small className="error-message">{avatarError}</small>}
             <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
               {renderAvatarIconPicker(availableIcons, avatarDraft, setAvatarDraft, noAvatarIcon, maleIcons, femaleIcons)}
             </div>
             <div className="profile-avatar-editor-actions">
               <button type="button" className="submit-button" onClick={applyAvatarSelection}>
-                Guardar avatar
+                {t('profile.save_avatar')}
               </button>
               <button type="button" className="submit-button" onClick={cancelAvatarEditor}>
-                Cancelar
+                {t('common.cancel')}
               </button>
             </div>
           </div>

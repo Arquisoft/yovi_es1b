@@ -1,7 +1,10 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import { useTranslation } from 'react-i18next';
 
-// Componentes UI y Pantallas
+import '../../i18n.ts';
+import i18n from '../../i18n';
+
 import GameScreen from '../../screens/GameScreen';
 import { HistoryModal } from '../../components/modals/HistoryModal';
 import { ResultModal } from '../../components/modals/ResultModal';
@@ -11,27 +14,25 @@ import { GuestAccessModal, type GuestAccessReason } from '../../components/modal
 import { ProfileScreen } from '../../screens/ProfileScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
 import { MenuBackgroundChrome } from '../../components/layout/MenuBackgroundChrome';
+import { PayPalStore } from '../../components/modals/PayPalStore';
+import { FriendsPanel } from '../../components/modals/FriendsPanel';
 
-// Hooks, Servicios y Utils
 import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
-import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
+import { TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY } from '../../constants/config';
 import { getGameIdentity, mapUiDifficultyToBackend, resolveIconFromAssets } from '../../utils/gamePageUtils';
 import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
+import { getSizeLabelKey } from '../../utils/gameLabelUtils';
 
-// Assets y Estilos
 import '../../css/App.css';
 import '../../css/Game.css';
 import '../../css/Log.css';
 import '../../index.css';
 
-// Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
-import { FriendsPanel } from '../../components/modals/FriendsPanel';
-
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -63,6 +64,7 @@ const getRandomIndex = (length: number): number | null => {
 const pickRandomBotIcon = (): string | null => {
   const pool = botIconPool.length ? botIconPool : Object.values(iconModules);
   if (!pool.length) return null;
+
   const index = getRandomIndex(pool.length);
   if (index === null) return null;
   return pool[index] ?? null;
@@ -89,7 +91,7 @@ type GameAppContentProps = {
 };
 
 const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) => {
-  // --- SEGURIDAD Y SESIÓN ---
+  const { t } = useTranslation();
   const { displayName, friendCode, username } = getGameIdentity(isGuestMode, storedUsername);
   const [playerIcon, setPlayerIcon] = useState(resolveIconFromAssets(isGuestMode ? null : localStorage.getItem('yovi_user_icon'), iconModules));
   const [botIcon] = useState<string | null>(() => pickRandomBotIcon());
@@ -98,28 +100,30 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     void handleAutoMoveRef.current();
   }, []);
 
-  // --- ESTADOS DE UI ---
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
   const [sizeChoice, setSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [previousDifficultyChoice, setPreviousDifficultyChoice] = useState<DifficultyChoice | null>('Easy');
   const [previousSizeChoice, setPreviousSizeChoice] = useState<SizeChoice | null>('Pequeño');
   const [availableDifficulties, setAvailableDifficulties] = useState<string[]>([]);
   const [showResultModal, setShowResultModal] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
-  const background = useMenuBackgroundMedia();
-
-  // --- ESTADOS DE HISTORIAL ---
-  const [showHistory, setShowHistory] = useState(false);
+  const [finalScore, setFinalScore] = useState<number>(0);
+  const [totalScore, setTotalScore] = useState<number>(0);
+  const [showStore, setShowStore] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
   const [historyData, setHistoryData] = useState<HistoryGameRecord[]>([]);
   const [historyFilter, setHistoryFilter] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [guestAccessReason, setGuestAccessReason] = useState<GuestAccessReason | null>(null);
+  const background = useMenuBackgroundMedia();
+  const historyLocale = (i18n.resolvedLanguage || i18n.language || 'es').split('-')[0];
+  const resolvedBoardLabel = sizeChoice ? t(`game.${getSizeLabelKey(sizeChoice)}`) : null;
 
-  // --- HOOKS DE LÓGICA ---
   const {
     boardData,
     winner,
@@ -140,26 +144,24 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
     setTimerVisible(false);
+    setGameStarted(false);
     void resetGame(size, difficulty);
   }, [resetGame, stopTimer, setTimerVisible]);
 
-  // --- EFECTOS INICIALES ---
   useEffect(() => {
-    // 1. Cargar dificultades para los modales
     gameService.getDifficulties()
       .then(setAvailableDifficulties)
       .catch((err) => console.error('Error API:', err));
 
-    // 2. Iniciar la partida por defecto
     queueMicrotask(() => {
-      void startNewGame(6, 'Easy');
+      startNewGame(6, 'Easy');
     });
   }, [startNewGame]);
 
   useEffect(() => {
     let active = true;
 
-    const syncProfileIcon = async () => {
+    const syncProfileData = async () => {
       try {
         const profile = await gameService.getProfile();
         if (!active || profile?.error) return;
@@ -172,34 +174,60 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
           setPlayerIcon(resolvedIcon);
           localStorage.setItem('yovi_user_icon', resolvedIcon);
         }
+
+        const languageToI18n: Record<string, string> = {
+          Spain: 'es',
+          English: 'en',
+          German: 'de',
+          Portuguese: 'pt',
+        };
+        if (profile?.language) {
+          i18n.changeLanguage(languageToI18n[profile.language] ?? 'es');
+        }
+
+        const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
+        setTotalScore(scoreReal);
       } catch {
-        // En caso de error de red, mantenemos el icono local actual.
+        // Mantenemos el estado local si falla la petición.
       }
     };
 
-    syncProfileIcon();
+    syncProfileData();
     return () => {
       active = false;
     };
   }, [username]);
 
-  // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = useCallback(async () => {
     try {
-      const data = await executeAutoMove(difficultyChoice!, startTimer);
+      const data = await executeAutoMove(difficultyChoice!, startTimer, {
+        boardLabel: resolvedBoardLabel,
+        locale: historyLocale,
+      });
       if (data?.winner !== null) setShowResultModal(true);
     } catch {}
-  }, [difficultyChoice, executeAutoMove, startTimer]);
+  }, [difficultyChoice, executeAutoMove, historyLocale, resolvedBoardLabel, startTimer]);
 
   useEffect(() => {
     handleAutoMoveRef.current = handleAutoMove;
   }, [handleAutoMove]);
+
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
     try {
-      const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
+      if (!gameStarted) {
+        setGameStarted(true);
+      }
+      const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer, {
+        boardLabel: resolvedBoardLabel,
+        locale: historyLocale,
+      });
       if (data.winner !== null) {
         setTimerVisible(false);
+        setFinalScore(data.score || 0);
+        if (data.winner === 0) {
+          setTotalScore(prev => prev + (data.score || 0));
+        }
         setShowResultModal(true);
       }
     } catch {}
@@ -207,7 +235,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
     try {
-      const result = await gameService.getHistory( page, filter);
+      const result = await gameService.getHistory(page, filter);
       setHistoryData(result.data || []);
       setTotalPages(result.total_pages || 1);
       setCurrentPage(result.page || 1);
@@ -217,16 +245,9 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     }
   };
 
-  const openFriendsMenu = () => {
-    setShowFriendsMenu(true);
-  };
-
   const openGuestAccessPrompt = (reason: GuestAccessReason) => {
     setGuestAccessReason(reason);
   };
-
-  // Mapeo para la interfaz
-  //const displayDifficulty = difficultyChoice;
 
   return (
     <MenuBackgroundChrome
@@ -252,6 +273,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
+        totalScore={totalScore}
+        gameStarted={gameStarted}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
@@ -281,13 +304,33 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         onEndGame={async () => {
           stopTimer();
           setTimerVisible(false);
-          await surrender(difficultyChoice!);
+          await surrender(difficultyChoice!, {
+            boardLabel: resolvedBoardLabel,
+            locale: historyLocale,
+            resultLabel: t('game.you_lose'),
+          });
+          setFinalScore(0);
           setShowResultModal(true);
         }}
-        onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
+        onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : setShowFriendsMenu(true))}
         onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
         onOpenSettings={() => background.setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
+        onScoreButtonClick={() => setShowStore(true)}
+      />
+
+      <PayPalStore
+        isOpen={showStore}
+        onClose={() => setShowStore(false)}
+        onSuccess={async (puntos) => {
+          setTotalScore(prev => prev + puntos);
+          try {
+            await gameService.addXP(puntos);
+            console.log('Compra guardada en el servidor');
+          } catch (err) {
+            console.error('No se pudo guardar la compra:', err);
+          }
+        }}
       />
 
       <SelectionModals
@@ -312,6 +355,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
       <ResultModal
         isOpen={showResultModal}
         winner={winner}
+        score={finalScore}
         onClose={() => setShowResultModal(false)}
       />
 
@@ -323,53 +367,56 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         totalPages={totalPages}
         currentFilter={historyFilter}
         onPageChange={fetchHistory}
-        onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
+        onFilterChange={(f) => {
+          setHistoryFilter(f);
+          fetchHistory(1, f);
+        }}
       />
 
       <FriendsPanel
-          isOpen={showFriendsMenu}
-          onClose={() => setShowFriendsMenu(false)}
-          username={username}
-          displayName={displayName}
-          friendCode={friendCode}
-          icon={playerIcon}
-          onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
+        isOpen={showFriendsMenu}
+        onClose={() => setShowFriendsMenu(false)}
+        username={username}
+        displayName={displayName}
+        friendCode={friendCode}
+        icon={playerIcon}
+        onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />
 
       {publicProfileToView && (
-          <PublicProfileModal
-              username={publicProfileToView}
-              onClose={() => setPublicProfileToView(null)}
-          />
+        <PublicProfileModal
+          username={publicProfileToView}
+          onClose={() => setPublicProfileToView(null)}
+        />
       )}
 
       <ProfileScreen
-          isOpen={showProfileScreen}
-          username={username}
-          onClose={() => setShowProfileScreen(false)}
+        isOpen={showProfileScreen}
+        username={username}
+        onClose={() => setShowProfileScreen(false)}
       />
 
       <TutorialScreen
         isOpen={showTutorialScreen}
         onClose={() => setShowTutorialScreen(false)}
       />
+
       <GuestAccessModal
         reason={guestAccessReason}
         onClose={() => setGuestAccessReason(null)}
         onGoLogin={() => {
-          setGuestAccessReason(null)
-          globalThis.location.href = '/login.html'
+          setGuestAccessReason(null);
+          globalThis.location.href = '/login.html';
         }}
         onGoRegister={() => {
-          setGuestAccessReason(null)
-          globalThis.location.href = '/register.html'
+          setGuestAccessReason(null);
+          globalThis.location.href = '/register.html';
         }}
       />
     </MenuBackgroundChrome>
   );
 };
 
-// Renderizado directo al root
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <GameApp />
@@ -377,5 +424,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 export { GameApp, GameAppContent };
-
-
