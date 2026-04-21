@@ -1,10 +1,10 @@
 // Node.js Server
 
-const https = require('https');
-const fs = require('fs');
+const https = require('node:https');
+const fs = require('node:fs');
 
 const mongoose = require('mongoose');
-const path = require('path');
+const path = require('node:path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
@@ -37,12 +37,30 @@ const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://gamey:4000';
 
 
 // HTTPS
-const sslOptions = {
-  key: fs.readFileSync(path.join(__dirname, '../certs/key.pem')),
-  cert: fs.readFileSync(path.join(__dirname, '../certs/cert.pem'))
+let sslOptions = null;
+
+// Solo intentamos cargar certificados si NO estamos en un entorno de test
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    const keyPath = fs.existsSync('/certs/key.pem') 
+      ? '/certs/key.pem' 
+      : path.join(__dirname, '../certs/key.pem');
+
+    const certPath = fs.existsSync('/certs/cert.pem') 
+      ? '/certs/cert.pem' 
+      : path.join(__dirname, '../certs/cert.pem');
+
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+      sslOptions = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+      };
+      console.log("🔒 Certificados SSL cargados correctamente.");
+    }
+  } catch (err) {
+    console.warn("No se pudieron cargar los certificados SSL, se usará HTTP. " + err.message );
+  }
 }
-
-
 
 
 const normalizeIconName = (rawValue) => {
@@ -177,7 +195,7 @@ app.post('/login', async (req, res) => {
     }
       
   } catch (err) {
-    res.status(500).json({ error: "Error del servidor" });
+    res.status(500).json({ error: "Error del servidor. " + err.message });
   }
 })
 
@@ -229,7 +247,7 @@ app.post('/users/follow', async (req, res) => {
 
     res.json({ message: 'Solicitud enviada correctamente' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al enviar solicitud' });
+    res.status(500).json({ error: 'Error al enviar solicitud. ' + err.message });
   }
 });
 
@@ -321,7 +339,7 @@ app.patch('/users/profile/:username', async (req, res) => {
       iconName: user.iconName
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    return res.status(500).json({ error: 'Error del servidor. ' + err.message });
   }
 });
 
@@ -359,7 +377,7 @@ app.post('/users/profile/:username/change-password', async (req, res) => {
 
     return res.json({ message: 'contraseña actualizada correctamente' });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    return res.status(500).json({ error: 'Error del servidor. ' + err.message });
   }
 });
 
@@ -380,7 +398,7 @@ app.get('/friends', async (req, res) => {
 
     res.json(friendsList);
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching friends' });
+    res.status(500).json({ error: 'Error fetching friends. ' + err.message });
   }
 });
 
@@ -401,7 +419,7 @@ app.get('/friends/requests', async (req, res) => {
     
     res.json(requests);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener solicitudes' });
+    res.status(500).json({ error: 'Error al obtener solicitudes. ' + err.message });
   }
 });
 
@@ -421,7 +439,7 @@ app.post('/friends/respond', async (req, res) => {
 
     res.json({ message: '¡Ahora sois amigos!', friendship });
   } catch (err) {
-    res.status(500).json({ error: 'Error al responder solicitud' });
+    res.status(500).json({ error: 'Error al responder solicitud. ' + err.message });
   }
 });
 
@@ -482,7 +500,7 @@ app.get('/users/public-profile/:username', async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: 'Error del servidor' });
+    res.status(500).json({ error: 'Error del servidor. ' + err.message });
   }
 })
 
@@ -499,7 +517,7 @@ app.post('/friends/cancel', async (req, res) => {
     });
     res.json({ message: 'Solicitud cancelada' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al cancelar la solicitud' });
+    res.status(500).json({ error: 'Error al cancelar la solicitud. ' + err.message });
   }
 });
 
@@ -552,7 +570,7 @@ app.post('/move', async (req, res) => {
   }
   catch (e) {
     console.error(e);
-    res.status(500).json({error: 'Error communicating with Rust server'});
+    res.status(500).json({error: 'Error communicating with Rust server. ' + e.message});
   }
 });
 
@@ -592,7 +610,7 @@ app.post('/surrender', async (req, res) => {
 
   } catch (e) {
     console.error("Error de conexión con Rust en surrender:", e);
-    res.status(500).json({ error: 'Error communicating with Rust server' });
+    res.status(500).json({ error: 'Error communicating with Rust server. ' + e.message });
   }
 });
 
@@ -626,7 +644,7 @@ app.post('/reset', async (req, res) => {
     res.json({ responseFromRust: newBoard });
   } catch (e) {
     console.error("Fallo en reset:", e.message);
-    res.status(500).json({ error: 'Error communicating with Rust server' });
+    res.status(500).json({ error: 'Error communicating with Rust server. ' + e.message });
   }
 });
 
@@ -700,7 +718,7 @@ app.post('/users/purchase-xp', async (req, res) => {
     );
     res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
   } catch (e) {
-    res.status(500).json({ error: "No se pudo procesar la compra" });
+    res.status(500).json({ error: "No se pudo procesar la compra. " + e.message });
   }
 });
 
@@ -712,10 +730,17 @@ if (require.main === module) {
     .catch(err => console.error('Could not connect to MongoDB', err));
 
   // https
-  https.createServer(sslOptions, app).listen(port, () => {
-    console.log(`🔒 User Service listening at https://localhost:${port}`);
-    console.log(`📖 Swagger docs at https://localhost:${port}/api-docs`);
-  });
+  if (sslOptions) {
+    // Si tenemos certs, levantamos HTTPS
+    https.createServer(sslOptions, app).listen(port, () => {
+      console.log(`User Service (HTTPS) listening at https://localhost:${port}`);
+    });
+  } else {
+    // Si no (como en CI o tests), levantamos HTTP normal
+    app.listen(port, () => {
+      console.log(`User Service (HTTP) listening at http://localhost:${port}`);
+    });
+  }
 }
 
 module.exports = app
