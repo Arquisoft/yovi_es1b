@@ -22,4 +22,6 @@ i18n.use(initReactI18next).init({
     keySeparator: '.',
 })
 
+document.documentElement.lang = langMap[storedLang] ?? storedLang
+
 export default i18n

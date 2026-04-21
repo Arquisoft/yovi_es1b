@@ -14,6 +14,8 @@ import amigosImg from '../assets/buttons/agregar-usuario.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import { type DifficultyChoice, type SizeChoice, SIZE_OPTIONS } from '../types/game';
 import { useTranslation } from 'react-i18next';
+import { getVictoryPointsLabel } from '../utils/scoreUtils';
+import { getDifficultyLabelKey, getSizeLabelKey } from '../utils/gameLabelUtils';
 
 interface GameYData {
   size: number;
@@ -48,6 +50,7 @@ type GameScreenProps = Readonly<{
   timerVisible: boolean;
   sizeLabel: string | null;
   totalScore: number; // Nuevo prop para el puntaje total acumulado del usuario
+  gameStarted?: boolean;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
@@ -76,6 +79,7 @@ function GameScreen({
   timerVisible,
   sizeLabel,
   totalScore,
+  gameStarted = false,
   onCellClick,
   onEndGame,
   onResetGame,
@@ -136,18 +140,29 @@ function GameScreen({
   }, []);
 
   // Etiqueta para la UI: Directa, sin diccionarios extra aquí para no liarnos
-  const difficultyLabel = difficultyChoice || 'Sin seleccionar';
+  const difficultyLabel = difficultyChoice ? t(`game.${getDifficultyLabelKey(difficultyChoice)}`) : t('game.no_difficulty');
   const difficultyOptions: DifficultyChoice[] = ['Fácil', 'Medio', 'Difícil'];
+  const translatedSizeLabel = t(`game.${getSizeLabelKey(sizeLabel)}`);
 
   // Nombre del Bot: Dinámico según lo que recibimos
-  const botName = difficultyLabel === 'Sin seleccionar'
-    ? 'Bot Player'
-    : `Bot Player (${difficultyLabel})`;
+  const botName = difficultyChoice
+    ? `Bot Player (${difficultyLabel})`
+    : 'Bot Player';
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
   const safePlayerIcon = playerIcon?.trim() ? playerIcon : defaultAvatar;
   const safeBotIcon = botIcon?.trim() ? botIcon : defaultAvatar;
   const playerLabel = displayName?.trim() ? displayName : username;
+  const victoryPointsLabel = getVictoryPointsLabel(difficultyChoice, boardDimension);
+  const canSurrender = boardData !== null && winner === null;
+  const canChangeGameSetup = !gameStarted;
+
+  useEffect(() => {
+    if (gameStarted) {
+      setShowSizeMenu(false);
+      setShowDiffMenu(false);
+    }
+  }, [gameStarted]);
 
   const rawLayout = boardData?.layout ?? '';
   const expectedTotalCells = (boardDimension * (boardDimension + 1)) / 2;
@@ -194,16 +209,20 @@ function GameScreen({
             </button>
         </div>
 
-        <div className="nav-center-title">{t('game.title')}</div>
-
         <div className="nav-game-settings">
           {/* MENÚ TAMAÑO */}
           <div className="custom-dropdown-container">
             <button 
               className={`dropdown-trigger ${showSizeMenu ? 'active' : ''}`}
               onClick={() => { setShowSizeMenu(!showSizeMenu); setShowDiffMenu(false); }}
+              disabled={!canChangeGameSetup}
+              aria-disabled={!canChangeGameSetup}
             >
-              {t('game.change_size')} ▾
+              <span className="dropdown-trigger-text">
+                <span className="dropdown-trigger-label">{t('game.size')}:</span>
+                <span className="dropdown-trigger-value">{translatedSizeLabel}</span>
+              </span>
+              <span className="dropdown-trigger-arrow" aria-hidden="true">▾</span>
             </button>
             
             {showSizeMenu && (
@@ -218,7 +237,7 @@ function GameScreen({
                       setShowSizeMenu(false);
                     }}
                   >
-                    {option}
+                    {t(`game.${getSizeLabelKey(option)}`)}
                   </button>
                 ))}
               </div>
@@ -230,6 +249,8 @@ function GameScreen({
             <button 
               className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
               onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
+              disabled={!canChangeGameSetup}
+              aria-disabled={!canChangeGameSetup}
             >
               {t('game.difficulty')}: {difficultyLabel} ▾
             </button>
@@ -246,7 +267,7 @@ function GameScreen({
                       setShowDiffMenu(false);
                     }}
                   >
-                    {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                    {t(`game.${getDifficultyLabelKey(diff)}`)}
                   </button>
                 ))}
               </div>
@@ -255,13 +276,19 @@ function GameScreen({
 
           <div className="nav-btn-spacer" aria-hidden="true" />
           <div className="nav-icon-action">
-            <button className="nav-btn danger nav-btn-with-lottie" onClick={onEndGame} title={t('game.end_game')}>
+            <button
+              className="nav-btn danger nav-btn-with-lottie"
+              onClick={onEndGame}
+              title={t('game.end_game')}
+              disabled={!canSurrender}
+              aria-disabled={!canSurrender}
+            >
               <img className="nav-btn-png" src={botonRojo} alt={t('game.end_game')} />
               <span className="nav-btn-lottie-hover" aria-hidden="true">
                 <Lottie animationData={failedJson} loop autoplay lottieRef={failedLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">{t('game.end_game')}</span>
+            <span className="nav-icon-caption">{t('game.surrender')}</span>
           </div>
           <div className="nav-icon-action">
             <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title={t('game.restart')}>
@@ -270,21 +297,7 @@ function GameScreen({
                 <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">{t('game.restart')}</span>
-          </div>
-          <div className="nav-icon-action">
-            <button
-              className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
-              onClick={onOpenSettings}
-              title={t('game.settings')}
-              aria-label={t('game.settings')}
-            >
-              <img className="nav-btn-settings-img" src={settingsImg} alt={t('game.settings')} />
-              <span className="nav-btn-settings-hover" aria-hidden="true">
-                <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
-              </span>
-            </button>
-            <span className="nav-icon-caption">{t('game.settings')}</span>
+            <span className="nav-icon-caption">{t('game.restart_short')}</span>
           </div>
           <div className="nav-btn-spacer" aria-hidden="true" />
           <div className="nav-icon-action">
@@ -311,6 +324,20 @@ function GameScreen({
             </div>
           )}
           <div className="nav-icon-action">
+            <button
+              className="nav-btn nav-btn-icon-frame nav-btn-with-settings"
+              onClick={onOpenSettings}
+              title={t('game.settings')}
+              aria-label={t('game.settings')}
+            >
+              <img className="nav-btn-settings-img" src={settingsImg} alt={t('game.settings')} />
+              <span className="nav-btn-settings-hover" aria-hidden="true">
+                <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
+              </span>
+            </button>
+            <span className="nav-icon-caption">{t('game.settings')}</span>
+          </div>
+          <div className="nav-icon-action">
             <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title={t('game.friends_menu')}>
               <img className="nav-btn-friends-img" src={amigosImg} alt={t('game.friends_menu_short')} />
             </button>
@@ -325,7 +352,7 @@ function GameScreen({
                 <Lottie animationData={logoutJson} loop autoplay lottieRef={logoutLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">{t('game.exit_alt')}</span>
+            <span className="nav-icon-caption nav-icon-caption-exit">{t('game.exit_alt')}</span>
           </div>
         </div>
 
@@ -412,13 +439,14 @@ function GameScreen({
         <div className="match-info-box">
           <strong className="match-info-title">{t('game.match_info')}</strong>
           <div className="match-info-line">{t('game.difficulty')}: {difficultyLabel}</div>
-          <div className="match-info-line">{t('game.board_size')}: {sizeLabel || `${boardDimension}x${boardDimension}x${boardDimension}`}</div>
+          <div className="match-info-line">{t('game.board_size')}: {translatedSizeLabel || `${boardDimension}x${boardDimension}x${boardDimension}`}</div>
+          <div className="match-info-line">{t('game.victory_points')}: {victoryPointsLabel}</div>
           <div className="match-info-line">{t('game.rival_name')}: {botName}</div>
         </div>
       </div>
       <div className="bot-guide-floating" aria-label="Guia rapida bot">
         <div className="bot-guide-box">
-          <strong className="guide-center-heading">{t('game.objective_title')}</strong>
+          <strong className="guide-center-heading guide-objective-heading">{t('game.objective_title')}</strong>
           <br />
           - {t('game.objective_1')}
           <br />

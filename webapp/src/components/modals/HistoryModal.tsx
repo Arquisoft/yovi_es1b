@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { HistoryGameRecord } from '../../types/game';
+import { getDifficultyLabelKey, getHistoryResultKey, getSizeLabelKeyFromDimension } from '../../utils/gameLabelUtils';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -43,8 +44,8 @@ export const HistoryModal = ({
             className="filter-select"
           >
             <option value="">{t('game.filter_all')}</option>
-            <option value="Victoria">{t('game.filter_wins')}</option>
-            <option value="Derrota">{t('game.filter_losses')}</option>
+            <option value="win">{t('game.filter_wins')}</option>
+            <option value="loss">{t('game.filter_losses')}</option>
           </select>
         </div>
 
@@ -62,17 +63,27 @@ export const HistoryModal = ({
                 </tr>
               </thead>
               <tbody>
-                {data.map((game, index) => (
-                  <tr key={game._id?.$oid || index}>
-                    <td>{new Date(game.date).toLocaleDateString()}</td>
-                    <td>{game.opponent}</td>
-                    <td>{game.board_size}x{game.board_size}</td>
-                    <td>{game.difficulty}</td>
-                    <td className={game.result === 'Victoria' ? 'text-win' : 'text-loss'}>
-                      {game.result}
-                    </td>
-                  </tr>
-                ))}
+                {data.map((game, index) => {
+                  const sizeLabel = game.board_label || t(`game.${getSizeLabelKeyFromDimension(game.board_size)}`);
+                  const difficultyLabel = t(`game.${getDifficultyLabelKey(game.difficulty)}`);
+                  const resultKey = getHistoryResultKey(game.result_label || game.result);
+                  const rawResultLabel = game.result_label?.trim() || '';
+                  const resultLabel = rawResultLabel && !['you_win', 'you_lose', 'win', 'loss'].includes(rawResultLabel)
+                    ? rawResultLabel
+                    : t(`game.${resultKey}`);
+
+                  return (
+                    <tr key={game._id?.$oid || index}>
+                      <td>{new Date(game.date).toLocaleDateString()}</td>
+                      <td>{game.opponent}</td>
+                      <td>{sizeLabel}</td>
+                      <td>{difficultyLabel}</td>
+                      <td className={resultKey === 'you_win' ? 'text-win' : 'text-loss'}>
+                        {resultLabel}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           ) : (

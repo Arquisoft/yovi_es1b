@@ -9,6 +9,12 @@ type MoveResponse = {
   score: number;
 };
 
+type GameHistoryContext = Readonly<{
+  boardLabel?: string | null;
+  locale?: string | null;
+  resultLabel?: string | null;
+}>;
+
 export const useGameLogic = () => {
   const [boardData, setBoardData] = useState<GameYData | null>(null);
   const [winner, setWinner] = useState<number | null>(null);
@@ -32,10 +38,15 @@ export const useGameLogic = () => {
   }, []);
 
   // Movimiento del Jugador
-  const executeHumanMove = useCallback(async (index: number, difficulty: string, stopTimer: () => void, startTimer: (d: string) => void) => {
+  const executeHumanMove = useCallback(async (
+    index: number,
+    difficulty: string,
+    stopTimer: () => void,
+    startTimer: (d: string) => void,
+    historyContext?: GameHistoryContext,
+  ) => {
     stopTimer();
-    // ELIMINADO: username ya no se envía como argumento aquí
-    const data = await gameService.makeMove(index, difficulty, boardData?.size);
+    const data = await gameService.makeMove(index, difficulty, boardData?.size, historyContext);
     const result = updateBoardState(data, index);
 
     if (result.winner === null) {
@@ -45,7 +56,11 @@ export const useGameLogic = () => {
   }, [boardData?.size, updateBoardState]);
 
   // Movimiento Automático (Bot/Tiempo agotado)
-  const executeAutoMove = useCallback(async (difficulty: string, startTimer: (d: string) => void) => {
+  const executeAutoMove = useCallback(async (
+    difficulty: string,
+    startTimer: (d: string) => void,
+    historyContext?: GameHistoryContext,
+  ) => {
     if (!boardData || winner !== null) return;
 
     const flat = boardData.layout.replaceAll('/', '');
@@ -57,8 +72,7 @@ export const useGameLogic = () => {
     window.crypto.getRandomValues(array);
     const randomIndex = emptyCells[array[0] % emptyCells.length];
 
-    // ELIMINADO: username ya no se envía como argumento aquí
-    const data = await gameService.makeMove(randomIndex, difficulty, boardData?.size);
+    const data = await gameService.makeMove(randomIndex, difficulty, boardData?.size, historyContext);
     const result = updateBoardState(data, randomIndex);
 
     if (result.winner === null) {
@@ -69,16 +83,17 @@ export const useGameLogic = () => {
 
   const resetGame = useCallback(async (dimension: number, difficulty: string, stopTimer?: () => void) => {
     stopTimer?.();
-    // ELIMINADO: username ya no se envía como argumento aquí
     const board = await gameService.resetBoard(dimension, difficulty);
     setBoardData(board);
     setWinner(null);
     return board;
   }, []);
 
-  const surrender = useCallback(async (difficulty: string) => {
-    // ELIMINADO: username ya no se envía como argumento aquí
-    await gameService.surrender(difficulty, boardData?.size);
+  const surrender = useCallback(async (
+    difficulty: string,
+    historyContext?: GameHistoryContext,
+  ) => {
+    await gameService.surrender(difficulty, boardData?.size, historyContext);
     setWinner(1);
   }, [boardData?.size]);
 

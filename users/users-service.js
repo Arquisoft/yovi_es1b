@@ -493,7 +493,7 @@ app.post('/friends/cancel', async (req, res) => {
 
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex, username} = req.body; // NEW: Recibir difficulty
+  const { cellIndex, username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
     // 1. Integración: Llamada al servicio de Rust
@@ -503,6 +503,11 @@ app.post('/move', async (req, res) => {
       body: JSON.stringify({
          index: cellIndex,
          player: username,
+         difficulty,
+         board_size: boardSize,
+         board_label: boardLabel,
+         locale,
+         result_label: resultLabel,
       })
     });
 
@@ -541,7 +546,7 @@ app.post('/move', async (req, res) => {
 
 // NEW: Endpoint para registrar una rendición (derrota)
 app.post('/surrender', async (req, res) => {
-  const { username, difficulty, boardSize } = req.body;
+  const { username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
     // 1. Integración: Llamada al servicio de Rust (GameY)
@@ -551,7 +556,10 @@ app.post('/surrender', async (req, res) => {
       body: JSON.stringify({
         player: username,       // Rust espera "player"
         difficulty: difficulty,
-        board_size: boardSize   // Rust espera "board_size"
+        board_size: boardSize,   // Rust espera "board_size"
+        board_label: boardLabel,
+        locale,
+        result_label: resultLabel,
       })
     });
 

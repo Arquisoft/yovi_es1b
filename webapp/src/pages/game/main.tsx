@@ -23,6 +23,7 @@ import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
 import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
+import { getSizeLabelKey } from '../../utils/gameLabelUtils';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -121,6 +122,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const [finalScore, setFinalScore] = useState<number>(0); // Nuevo estado para el puntaje final de la partida
   const [totalScore, setTotalScore] = useState<number>(0); // Nuevo estado para el puntaje total acumulado del usuario
   const [showStore, setShowStore] = useState(false);
+  const [gameStarted, setGameStarted] = useState(false);
 
   // --- ESTADOS DE UI ---
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
@@ -146,6 +148,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [guestAccessReason, setGuestAccessReason] = useState<GuestAccessReason | null>(null);
+  const historyLocale = (i18n.resolvedLanguage || i18n.language || 'es').split('-')[0];
+  const resolvedBoardLabel = sizeChoice ? t(`game.${getSizeLabelKey(sizeChoice)}`) : null;
 
   // --- HOOKS DE LÓGICA ---
   const {
@@ -168,6 +172,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
     setTimerVisible(false);
+    setGameStarted(false);
     void resetGame(size, difficulty);
   }, [resetGame, stopTimer, setTimerVisible]);
 
@@ -264,7 +269,10 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = useCallback(async () => {
     try {
-      const data = await executeAutoMove(difficultyChoice!, startTimer);
+      const data = await executeAutoMove(difficultyChoice!, startTimer, {
+        boardLabel: resolvedBoardLabel,
+        locale: historyLocale,
+      });
       if (data && data.winner !== null) {
         setFinalScore(data.score || 0);
 
@@ -276,7 +284,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         setShowResultModal(true);
       }
     } catch {}
-  }, [difficultyChoice, executeAutoMove, startTimer]);
+  }, [difficultyChoice, executeAutoMove, historyLocale, resolvedBoardLabel, startTimer]);
 
   useEffect(() => {
     handleAutoMoveRef.current = handleAutoMove;
@@ -286,7 +294,13 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
     try {
-      const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
+      if (!gameStarted) {
+        setGameStarted(true);
+      }
+      const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer, {
+        boardLabel: resolvedBoardLabel,
+        locale: historyLocale,
+      });
       if (data.winner !== null) {
         setTimerVisible(false);
         setFinalScore(data.score || 0);
@@ -343,6 +357,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
         totalScore={totalScore}
+        gameStarted={gameStarted}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
@@ -383,7 +398,11 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         onEndGame={async () => {
           stopTimer();
           setTimerVisible(false);
-          await surrender(difficultyChoice!);
+          await surrender(difficultyChoice!, {
+            boardLabel: resolvedBoardLabel,
+            locale: historyLocale,
+            resultLabel: t('game.you_lose'),
+          });
           setFinalScore(0);
           setShowResultModal(true);
         }}

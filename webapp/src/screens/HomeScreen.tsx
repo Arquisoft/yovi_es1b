@@ -1,6 +1,7 @@
 import '../i18n.ts';
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
+import languageImg from '../assets/language/idioma.png';
 import { useTranslation } from 'react-i18next'
 
 interface HomeScreenProps {
@@ -9,6 +10,7 @@ interface HomeScreenProps {
   readonly onStart: () => void; // Inicia una partida directa
   readonly onGoToRegister: () => void; // Navega a pantalla de registro
   readonly onGoToLogin: () => void; // Navega a pantalla de login
+  readonly onOpenLanguage?: () => void;
   readonly onOpenSettings?: () => void;
   readonly onOpenTutorial?: () => void;
 }
@@ -46,6 +48,7 @@ function HomeScreen({
   onStart,
   onGoToRegister,
   onGoToLogin,
+  onOpenLanguage,
   onOpenSettings,
   onOpenTutorial,
 }: HomeScreenProps) {
@@ -65,8 +68,19 @@ function HomeScreen({
         onGoToRegister={onGoToRegister}
         onGoToLogin={onGoToLogin}
       />
-      {(onOpenSettings || onOpenTutorial) && (
+      {(onOpenLanguage || onOpenSettings || onOpenTutorial) && (
         <div className="home-action-group">
+          {onOpenLanguage && (
+            <button
+              type="button"
+              className="home-settings-below home-action-btn"
+              onClick={onOpenLanguage}
+              title={t('common.language')}
+              aria-label={t('common.language_aria')}
+            >
+              <img src={languageImg} alt="" className="floating-action-icon" />
+            </button>
+          )}
           {onOpenSettings && (
             <button
               type="button"

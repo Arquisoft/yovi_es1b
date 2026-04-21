@@ -1,5 +1,6 @@
 import { SIZE_OPTIONS, type DifficultyChoice, type SizeChoice } from '../../types/game';
 import { useTranslation } from 'react-i18next';
+import { getDifficultyLabelKey, getSizeLabelKey } from '../../utils/gameLabelUtils';
 
 interface SelectionModalsProps {
   currentScreen: string;
@@ -32,7 +33,7 @@ export const SelectionModals = ({
           <h3>{t('game.select_difficulty')}</h3>
           {availableDifficulties.map((diff) => (
             <button key={diff} className="submit-button" onClick={() => onDifficultySelect(diff)}>
-              {diff}
+              {t(`game.${getDifficultyLabelKey(diff)}`)}
             </button>
           ))}
           <button type="button" className="submit-button" onClick={onDifficultyCancel}>
@@ -50,7 +51,7 @@ export const SelectionModals = ({
           <h3>{t('game.select_size')}</h3>
           {SIZE_OPTIONS.map((size) => (
             <button key={size} className="submit-button" onClick={() => onSizeSelect(size)}>
-              {size}
+              {t(`game.${getSizeLabelKey(size)}`)}
             </button>
           ))}
           <button type="button" className="submit-button" onClick={onSizeCancel}>

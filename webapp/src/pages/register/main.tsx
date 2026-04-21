@@ -3,16 +3,19 @@ import React, { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import RegisterScreen from '../../screens/RegisterScreen'
 import { TutorialScreen } from '../../screens/TutorialScreen'
+import { LanguageModal } from '../../components/modals/LanguageModal'
 import '../../css/App.css'
 import '../../css/Log.css'
 import '../../index.css'
 import menuVideo from '../../assets/background_video.mp4'
 import backgroundMusic from '../../assets/background_music.mp3'
 import { useTranslation } from 'react-i18next'
+import { isSupportedLanguage, setAppLanguage } from '../../utils/languageUtils'
 
 const RegisterPage = () => {
   const { t } = useTranslation()
   const [showSettings, setShowSettings] = useState(false)
+  const [showLanguage, setShowLanguage] = useState(false)
   const [showTutorialScreen, setShowTutorialScreen] = useState(false)
   const [musicVolume, setMusicVolume] = useState(0.4)
   const [isVideoPaused, setIsVideoPaused] = useState(false)
@@ -82,8 +85,9 @@ const RegisterPage = () => {
     } else {
       localStorage.removeItem('yovi_user_icon')
     }
-    if (typeof language === 'string' && language.trim()) {
-      localStorage.setItem('yovi_user_language', language.trim())
+    const resolvedLanguage = typeof language === 'string' ? language.trim() : ''
+    if (isSupportedLanguage(resolvedLanguage)) {
+      setAppLanguage(resolvedLanguage)
     } else {
       localStorage.removeItem('yovi_user_language')
     }
@@ -109,10 +113,13 @@ const RegisterPage = () => {
 
       <RegisterScreen
         onBack={handleBack}
+        onOpenLanguage={() => setShowLanguage(true)}
         onOpenSettings={() => setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
         onCreateAccount={handleRegisterSuccess}
       />
+
+      <LanguageModal isOpen={showLanguage} onClose={() => setShowLanguage(false)} />
 
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">

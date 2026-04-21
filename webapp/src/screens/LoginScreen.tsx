@@ -2,6 +2,7 @@
 import { API_BASE_URL } from '../constants/config';
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
+import languageImg from '../assets/language/idioma.png';
 import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
 import { clearGuestSession } from '../utils/sessionUtils';
 
@@ -25,6 +26,7 @@ interface LoginResponse {
 
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
+  readonly onOpenLanguage?: () => void;
   readonly onOpenSettings?: () => void;
   readonly onOpenTutorial?: () => void;
   readonly onLogin: (
@@ -61,7 +63,7 @@ const persistLoginSession = (username: string, token?: string) => {
   sessionStorage.setItem('username', username);
 };
 
-function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
+function LoginScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
     const {t} = useTranslation()
     const [formData, setFormData] = useState<LoginData>({
       username: '',
@@ -129,8 +131,19 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
               <br/>
               {t('login.subtitle')}
             </h2>
-            {(onOpenSettings || onOpenTutorial) && (
+            {(onOpenLanguage || onOpenSettings || onOpenTutorial) && (
                 <div className="header-action-group">
+                  {onOpenLanguage && (
+                      <button
+                          type="button"
+                          className="header-settings-btn header-action-btn"
+                          onClick={onOpenLanguage}
+                          title={t('common.language')}
+                          aria-label={t('common.language_aria')}
+                      >
+                        <img src={languageImg} alt="" className="floating-action-icon"/>
+                      </button>
+                  )}
                   {onOpenSettings && (
                       <button
                           type="button"
@@ -156,7 +169,7 @@ function LoginScreen({ onBack, onOpenSettings, onOpenTutorial, onLogin }: Readon
                 </div>
             )}
           </div>
-          <form className="choose-option menu-content" onSubmit={handleSubmit}>
+          <form className="choose-option menu-content login-panel" onSubmit={handleSubmit}>
             {formError && <small className="error-message">{formError}</small>}
 
             <div className="form-group">

@@ -87,7 +87,7 @@ describe('Game UI (MPA Ready)', () => {
     expect(props.onChangeDifficulty).toHaveBeenCalledWith('Fácil')
 
     // 3. Cambiar Tamaño
-    const triggerTamano = screen.getByText(/Cambiar Tamaño ▾/i)
+    const triggerTamano = screen.getByRole('button', { name: /Tamaño/i })
     await user.click(triggerTamano)
     
     // Buscamos la opción 9x9x9 que está en tus SIZE_OPTIONS
@@ -169,7 +169,6 @@ describe('Game UI (MPA Ready)', () => {
     const props = baseProps()
     render(<GameScreen {...props} />)
 
-    expect(screen.getByText(/partida personalizada contra un bot/i)).toBeInTheDocument()
     const navbar = screen.getByRole('navigation')
     expect(within(navbar).getByText(/jugador/i)).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()

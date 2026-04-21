@@ -1,6 +1,7 @@
 ﻿import { type FormEvent, useState } from 'react';
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
+import languageImg from '../assets/language/idioma.png';
 import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
 import { clearGuestSession } from '../utils/sessionUtils';
 import {useTranslation} from "react-i18next";
@@ -56,6 +57,7 @@ interface RegisterData {
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
+  readonly onOpenLanguage?: () => void;
   readonly onOpenSettings?: () => void;
   readonly onOpenTutorial?: () => void;
   readonly onCreateAccount: (
@@ -69,7 +71,7 @@ interface RegisterScreenProps {
 
 const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
 
-function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
+function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const { t } = useTranslation();
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
@@ -149,8 +151,19 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
         <h2 className="title-log">{t('register.title')}</h2>
-        {(onOpenSettings || onOpenTutorial) && (
+        {(onOpenLanguage || onOpenSettings || onOpenTutorial) && (
           <div className="header-action-group">
+            {onOpenLanguage && (
+              <button
+                type="button"
+                className="header-settings-btn header-action-btn"
+                onClick={onOpenLanguage}
+                title={t('common.language')}
+                aria-label={t('common.language_aria')}
+              >
+                <img src={languageImg} alt="" className="floating-action-icon" />
+              </button>
+            )}
             {onOpenSettings && (
               <button
                 type="button"

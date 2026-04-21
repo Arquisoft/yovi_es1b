@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import ReactDOM from 'react-dom/client'
 import HomeScreen from '../../screens/HomeScreen'
 import { TutorialScreen } from '../../screens/TutorialScreen'
+import { LanguageModal } from '../../components/modals/LanguageModal'
 import { enableGuestSession } from '../../utils/sessionUtils'
 import '../../css/App.css'
 import '../../css/Log.css'
@@ -14,6 +15,7 @@ const HomeApp = () => {
   const { t } = useTranslation()
   const [username, setUsername] = useState(localStorage.getItem('yovi_user') || '')
   const [showSettings, setShowSettings] = useState(false)
+  const [showLanguage, setShowLanguage] = useState(false)
   const [showTutorialScreen, setShowTutorialScreen] = useState(false)
   const [musicVolume, setMusicVolume] = useState(0.4)
   const [isVideoPaused, setIsVideoPaused] = useState(false)
@@ -87,9 +89,12 @@ const HomeApp = () => {
         }}
         onGoToRegister={() => (globalThis.location.href = '/register.html')}
         onGoToLogin={() => (globalThis.location.href = '/login.html')}
+        onOpenLanguage={() => setShowLanguage(true)}
         onOpenSettings={() => setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
       />
+
+      <LanguageModal isOpen={showLanguage} onClose={() => setShowLanguage(false)} />
 
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">

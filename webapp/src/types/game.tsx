@@ -27,8 +27,11 @@ export interface HistoryGameRecord {
   date: string;
   opponent: string;
   board_size: number;
+  board_label?: string;
   difficulty: string;
   result: string;
+  result_label?: string;
+  locale?: string;
   score?: number;
 }
 
