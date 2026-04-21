@@ -352,6 +352,7 @@
     "caption_register_error_pswd": "Password error",
     "caption_register_good": "Correct form",
     "caption_load_failed": "Could not load",
+    "no_capture_available": "No capture available yet.",
     "s1_title": "Home",
     "s2_title": "Register",
     "s3_title": "Login",

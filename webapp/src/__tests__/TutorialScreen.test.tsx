@@ -94,7 +94,7 @@ describe('TutorialScreen', () => {
   test('renderiza el índice, las secciones y todas las imágenes de ayuda', () => {
     render(<TutorialScreen isOpen onClose={vi.fn()} />)
 
-    expect(screen.getByRole('dialog', { name: /ayuda de gamey/i })).toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: /ayuda sobre esta web/i })).toBeInTheDocument()
     expect(screen.getByText(/ayuda sobre esta web/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /1\. ventana de inicio/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /2\. ventana de registro/i })).toBeInTheDocument()
@@ -102,7 +102,7 @@ describe('TutorialScreen', () => {
     expect(screen.getByRole('button', { name: /4\. ventana de juego/i })).toBeInTheDocument()
 
     expectedFilenames.forEach((fileName) => {
-      expect(screen.getByAltText(fileName)).toBeInTheDocument()
+      expect(screen.getAllByAltText(fileName).length).toBeGreaterThan(0)
     })
   })
 
@@ -113,21 +113,29 @@ describe('TutorialScreen', () => {
       /1\. ventana de inicio/i,
       /1\.1 ajustes/i,
       /1\.2 captura de referencia/i,
+      /1\.3 idioma/i,
+      /1\.4 ayuda/i,
       /2\. ventana de registro/i,
       /2\.1 formulario vacío/i,
       /2\.2 campos vacíos/i,
       /2\.3 error de contraseña/i,
       /2\.4 formulario correcto/i,
+      /2\.5 idioma/i,
+      /2\.6 ajustes/i,
+      /2\.7 ayuda/i,
       /3\. ventana de inicio de sesión/i,
       /3\.1 formulario vacío/i,
       /3\.2 error de datos/i,
       /3\.3 error de servidor/i,
       /3\.4 inicio correcto/i,
+      /3\.5 idioma/i,
+      /3\.6 ajustes/i,
+      /3\.7 ayuda/i,
       /4\. ventana de juego/i,
-      /4\.1 ejemplo 1/i,
-      /4\.2 ejemplo 2/i,
-      /4\.3 ejemplo 3/i,
-      /4\.4 ejemplo 4/i,
+      /4\.1 interacción con una celda/i,
+      /4\.2 temporizador por turno/i,
+      /4\.3 panel de información/i,
+      /4\.4 guía rápida del bot/i,
     ]
 
     buttonsToClick.forEach((name) => {
@@ -146,7 +154,8 @@ describe('TutorialScreen', () => {
   ])('muestra caption de fallback para %s', (fileName, expectedCaption) => {
     render(<TutorialScreen isOpen onClose={vi.fn()} />)
 
-    fireEvent.error(screen.getByAltText(fileName))
+    const image = screen.getAllByAltText(fileName)[0]
+    fireEvent.error(image)
 
     expect(screen.getByText(expectedCaption)).toBeInTheDocument()
   })

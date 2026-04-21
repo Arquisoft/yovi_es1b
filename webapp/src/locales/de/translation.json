@@ -296,6 +296,7 @@
     "caption_register_error_pswd": "Passwortfehler",
     "caption_register_good": "Korrektes Formular",
     "caption_load_failed": "Konnte nicht geladen werden",
+    "no_capture_available": "Noch kein Screenshot verfugbar.",
     "s1_title": "Startbildschirm",
     "s2_title": "Registrierung",
     "s3_title": "Anmeldung",

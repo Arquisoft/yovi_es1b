@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { useTranslation } from 'react-i18next';
 
@@ -188,7 +188,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
         setTotalScore(scoreReal);
       } catch {
-        // Mantenemos el estado local si falla la petición.
+        // Mantenemos el estado local si falla la peticiÃ³n.
       }
     };
 
@@ -257,8 +257,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
       setIsVideoPaused={background.setIsVideoPaused}
       setMusicVolume={background.setMusicVolume}
       setShowSettings={background.setShowSettings}
-      settingsAriaLabel="Configuración de elementos de fondo"
-      settingsTitle="Configuración de elementos de fondo"
+      settingsAriaLabel="ConfiguraciÃ³n de elementos de fondo"
+      settingsTitle="ConfiguraciÃ³n de elementos de fondo"
       showSettings={background.showSettings}
       videoLabel="Video en movimiento"
       videoRef={background.videoRef}
@@ -424,3 +424,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 export { GameApp, GameAppContent };
+

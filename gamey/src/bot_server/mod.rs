@@ -144,6 +144,53 @@ pub struct GameRecord {
     pub result: String,
 }
 
+fn normalize_history_result(raw: &str) -> &'static str {
+    let stripped: String = raw
+        .trim()
+        .chars()
+        .map(|ch| match ch {
+            'á' | 'à' | 'ä' | 'â' | 'ã' | 'Á' | 'À' | 'Ä' | 'Â' | 'Ã' => 'a',
+            'é' | 'è' | 'ë' | 'ê' | 'É' | 'È' | 'Ë' | 'Ê' => 'e',
+            'í' | 'ì' | 'ï' | 'î' | 'Í' | 'Ì' | 'Ï' | 'Î' => 'i',
+            'ó' | 'ò' | 'ö' | 'ô' | 'õ' | 'Ó' | 'Ò' | 'Ö' | 'Ô' | 'Õ' => 'o',
+            'ú' | 'ù' | 'ü' | 'û' | 'Ú' | 'Ù' | 'Ü' | 'Û' => 'u',
+            'ñ' | 'Ñ' => 'n',
+            '¡' | '!' | ' ' => '\0',
+            other => other,
+        })
+        .filter(|ch| *ch != '\0')
+        .collect::<String>()
+        .to_lowercase();
+
+    match stripped.as_str() {
+        "victoria" | "win" | "won" | "ganado" | "youwin" | "duhastgewonnen" | "ganhaste" => "Victoria",
+        "derrota" | "defeat" | "loss" | "lost" | "perdido" | "youlose" | "duhastverloren" | "perdeste" => {
+            "Derrota"
+        }
+        "hasganado" => "Victoria",
+        "hasperdido" => "Derrota",
+        _ => "Derrota",
+    }
+}
+
+fn normalize_history_document(record: &mut serde_json::Value) {
+    if let Some(obj) = record.as_object_mut() {
+        if let Some(result) = obj.get("result").and_then(|value| value.as_str()) {
+            obj.insert(
+                "result".to_string(),
+                serde_json::Value::String(normalize_history_result(result).to_string()),
+            );
+        }
+
+        if let Some(result_label) = obj.get("result_label").and_then(|value| value.as_str()) {
+            obj.insert(
+                "result_label".to_string(),
+                serde_json::Value::String(normalize_history_result(result_label).to_string()),
+            );
+        }
+    }
+}
+
 // Routes
 /// Creates the Axum router with the given state.
 ///
@@ -329,7 +376,7 @@ pub async fn realizar_movimiento(
                 "opponent": final_bot_name,
                 "board_size": b_size,
                 "difficulty": final_difficulty,
-                "result": if winner_id == Some(0) { "Victoria" } else { "Derrota" }
+                "result": normalize_history_result(if winner_id == Some(0) { "Victoria" } else { "Derrota" })
             });
             let _ = collection.insert_one(record).await;
         });
@@ -454,7 +501,8 @@ pub async fn obtener_historial(
     // 6. Recoger los resultados del cursor
     // Recuerda que esto necesita importar: use futures::stream::StreamExt;
     let mut partidas = Vec::new();
-    while let Some(Ok(doc)) = cursor.next().await {
+    while let Some(Ok(mut doc)) = cursor.next().await {
+        normalize_history_document(&mut doc);
         partidas.push(doc);
     }
 

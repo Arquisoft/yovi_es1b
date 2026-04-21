@@ -45,11 +45,11 @@ describe('Friends & Social Zone', () => {
 
     render(<FriendsScreen currentUser="Drus" onBack={vi.fn()} />)
 
-    // Buscamos para que salga el bot�n
+    // Buscamos para que salga el botón
     await user.click(screen.getByRole('button', { name: /buscar/i }))
     const btnFollow = await screen.findByRole('button', { name: /seguir/i })
 
-    // Mock para la acci�n de seguir
+    // Mock para la acción de seguir
     ;(globalThis.fetch as any).mockResolvedValueOnce({ ok: true })
     await user.click(btnFollow)
 

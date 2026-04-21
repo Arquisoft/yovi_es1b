@@ -155,8 +155,8 @@ function GameScreen({
   const safeBotIcon = botIcon?.trim() ? botIcon : defaultAvatar;
   const playerLabel = displayName?.trim() ? displayName : username;
   const victoryPointsLabel = getVictoryPointsLabel(difficultyChoice, boardDimension);
-  const canSurrender = boardData !== null && winner === null;
-  const canChangeGameSetup = !gameStarted;
+  const canSurrender = boardData !== null && winner === null && gameStarted;
+  const canChangeGameSetup = !gameStarted || winner !== null;
 
   useEffect(() => {
     if (gameStarted) {
@@ -196,8 +196,8 @@ function GameScreen({
         <div className="nav-left-group">
           <img src={logoGameY} alt="GameY" className="nav-gamey-logo" />
           <div className="nav-profile-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title={t('profile.view_profile')}>
-              <img className="nav-btn-profile-img" src={safePlayerIcon} alt={t('profile.view_profile')} />
+            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title={t('profile.title')}>
+              <img className="nav-btn-profile-img" src={safePlayerIcon} alt={t('profile.title')} />
             </button>
             <span className="nav-icon-caption nav-profile-caption">Ver perfil</span>
           </div>

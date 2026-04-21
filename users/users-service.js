@@ -474,6 +474,31 @@ app.get('/users/public-profile/:username', async (req, res) => {
   }
 })
 
+const normalizeDifficulty = (difficulty) =>
+  String(difficulty || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '');
+
+const calculateVictoryScore = (difficulty, boardSize) => {
+  const size = Number(boardSize);
+  if (!Number.isFinite(size) || size <= 0) return 0;
+
+  const normalizedDifficulty = normalizeDifficulty(difficulty);
+  if (!normalizedDifficulty || normalizedDifficulty === 'sinseleccionar') return 0;
+
+  let multiplier = 1;
+  if (normalizedDifficulty === 'medio' || normalizedDifficulty === 'medium') {
+    multiplier = 2;
+  } else if (normalizedDifficulty === 'dificil' || normalizedDifficulty === 'hard') {
+    multiplier = 3;
+  }
+
+  return Math.round(100 * multiplier * (size / 6));
+};
+
 /**
  * Endpoint para cancelar una solicitud de amistad pendiente
  */
@@ -518,24 +543,28 @@ app.post('/move', async (req, res) => {
     }
 
     const newBoard = await rustResponse.json();
+    const fallbackScore = calculateVictoryScore(difficulty, boardSize);
+    const finalScore = typeof newBoard.score === 'number' && newBoard.score > 0
+      ? newBoard.score
+      : fallbackScore;
 
     // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
-    if (newBoard.winner === 0 && newBoard.score > 0) {
+    if (newBoard.winner === 0 && finalScore > 0) {
       const User = require('./models/user'); // Asegúrate de tener acceso al modelo
       
       // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
       await User.findOneAndUpdate(
         { username: username },
-        { $inc: { totalScore: newBoard.score || 0} } // Suma el score actual al totalScore de la DB
+        { $inc: { totalScore: finalScore } } // Suma el score actual al totalScore de la DB
       );
-      console.log(`Puntos guardados para ${username}: +${newBoard.score}`);
+      console.log(`Puntos guardados para ${username}: +${finalScore}`);
     }
     
     // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
       winner: newBoard.winner,
-      score: newBoard.score // Nuevo campo para el puntaje de la partida
+      score: newBoard.score || finalScore // Nuevo campo para el puntaje de la partida
     });
   }
   catch (e) {

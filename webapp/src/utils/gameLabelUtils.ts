@@ -1,4 +1,4 @@
-const SIZE_LABEL_KEY_MAP: Record<string, 'size_small' | 'size_medium' | 'size_large'> = {
+﻿const SIZE_LABEL_KEY_MAP: Record<string, 'size_small' | 'size_medium' | 'size_large'> = {
   Pequeño: 'size_small',
   Pequeña: 'size_small',
   Pequeno: 'size_small',
@@ -81,6 +81,16 @@ const getHistoryResultKey = (result: string | null | undefined): 'you_win' | 'yo
   return HISTORY_RESULT_KEY_MAP[normalizedResult] ?? 'you_lose';
 };
 
+const HISTORY_RESULT_DISPLAY_LABELS: Record<'you_win' | 'you_lose', 'Victoria' | 'Derrota'> = {
+  you_win: 'Victoria',
+  you_lose: 'Derrota',
+};
+
+const getHistoryResultDisplayLabel = (result: string | null | undefined): 'Victoria' | 'Derrota' => {
+  const resultKey = getHistoryResultKey(result);
+  return HISTORY_RESULT_DISPLAY_LABELS[resultKey];
+};
+
 const HISTORY_FILTER_KEY_MAP: Record<string, 'win' | 'loss'> = {
   win: 'win',
   victory: 'win',
@@ -106,4 +116,12 @@ const getHistoryFilterKey = (filter: string | null | undefined): 'win' | 'loss' 
   return HISTORY_FILTER_KEY_MAP[normalizedFilter] ?? null;
 };
 
-export { getSizeLabelKey, getSizeLabelKeyFromDimension, getDifficultyLabelKey, getHistoryResultKey, getHistoryFilterKey };
+export {
+  getSizeLabelKey,
+  getSizeLabelKeyFromDimension,
+  getDifficultyLabelKey,
+  getHistoryResultKey,
+  getHistoryResultDisplayLabel,
+  getHistoryFilterKey,
+};
+

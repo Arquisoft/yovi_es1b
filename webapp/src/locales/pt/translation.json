@@ -344,6 +344,7 @@
     "caption_register_error_pswd": "Erro de palavra-passe",
     "caption_register_good": "Formulário correto",
     "caption_load_failed": "Não foi possível carregar",
+    "no_capture_available": "Ainda não há captura disponível.",
     "s1_title": "Início",
     "s2_title": "Registo",
     "s3_title": "Início de Sessão",

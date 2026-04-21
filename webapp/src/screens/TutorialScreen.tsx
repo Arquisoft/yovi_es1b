@@ -1,4 +1,4 @@
-﻿import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import '../css/Tutorial.css';
 import {
   getHelpCaption,
@@ -20,11 +20,43 @@ interface TutorialScreenProps {
   onClose: () => void;
 }
 
+type TutorialImage = Readonly<{
+  id: string;
+  src: string;
+  name: string;
+}>;
+
+type TutorialSubsection = Readonly<{
+  index: string;
+  menuLabel: string;
+  title: string;
+  description: string;
+  images: TutorialImage[];
+  emptyMessage: string;
+  sectionId: string;
+}>;
+
+type TutorialSection = Readonly<{
+  menuLabel: string;
+  title: string;
+  sectionId: string;
+  introHeading?: string;
+  introText?: string;
+  featureHeading?: string;
+  features?: string[];
+  importantHeading?: string;
+  importantText?: string;
+  tipsHeading?: string;
+  tips?: string[];
+  subsectionHeading?: string;
+  subsections: TutorialSubsection[];
+}>;
+
 const HelpGallery = ({
   images,
   emptyMessage,
 }: {
-  images: Array<{ id: string; src: string; name: string }>;
+  images: TutorialImage[];
   emptyMessage: string;
 }) => {
   if (images.length === 0) {
@@ -40,11 +72,7 @@ const HelpGallery = ({
   );
 };
 
-const HelpImageCard = ({
-  image,
-}: {
-  image: { id: string; src: string; name: string };
-}) => {
+const HelpImageCard = ({ image }: { image: TutorialImage }) => {
   const { t } = useTranslation();
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -54,6 +82,8 @@ const HelpImageCard = ({
         src={image.src}
         alt={image.name}
         className="tutorial-image"
+        loading="lazy"
+        decoding="async"
         onError={() => setLoadFailed(true)}
       />
       {loadFailed ? (
@@ -65,94 +95,444 @@ const HelpImageCard = ({
   );
 };
 
-const HelpSubsection = ({
-  index,
-  title,
-  images,
-  emptyMessage,
-  description,
-  sectionRef,
-}: {
-  index: string;
-  title: string;
-  images: Array<{ id: string; src: string; name: string }>;
-  emptyMessage: string;
-  description?: string;
-  sectionRef: { current: HTMLElement | null };
-}) => {
+const HelpSubsectionBlock = ({ subsection }: { subsection: TutorialSubsection }) => {
+  const displayTitle = subsection.title.startsWith(subsection.index)
+    ? subsection.title.slice(subsection.index.length).replace(/^[\s.:-]+/, '')
+    : subsection.title;
+
   return (
-    <section className="tutorial-subsection" id={`help-${index.replaceAll('.', '-')}`} ref={sectionRef}>
+    <section className="tutorial-subsection" id={subsection.sectionId}>
       <h5 className="tutorial-subtitle">
-        {index}. {title}
+        {subsection.index}. {displayTitle}
       </h5>
-      {description ? <p>{description}</p> : null}
-      <HelpGallery images={images} emptyMessage={emptyMessage} />
+      <p>{subsection.description}</p>
+      <HelpGallery images={subsection.images} emptyMessage={subsection.emptyMessage} />
+    </section>
+  );
+};
+
+const TutorialSectionBlock = ({ section }: { section: TutorialSection }) => {
+  return (
+    <section className="tutorial-section" id={section.sectionId}>
+      <h4>{section.title}</h4>
+
+      {section.introHeading ? <h5 className="tutorial-subtitle">{section.introHeading}</h5> : null}
+      {section.introText ? <p>{section.introText}</p> : null}
+
+      {section.featureHeading && section.features ? (
+        <>
+          <h5 className="tutorial-subtitle">{section.featureHeading}</h5>
+          <ul className="tutorial-list">
+            {section.features.map((feature) => (
+              <li key={feature}>{feature}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      {section.importantHeading && section.importantText ? (
+        <>
+          <h5 className="tutorial-subtitle">{section.importantHeading}</h5>
+          <p>{section.importantText}</p>
+        </>
+      ) : null}
+
+      {section.tipsHeading && section.tips ? (
+        <>
+          <h5 className="tutorial-subtitle">{section.tipsHeading}</h5>
+          <ul className="tutorial-list">
+            {section.tips.map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+
+      {section.subsectionHeading ? (
+        <h5 className="tutorial-subtitle">{section.subsectionHeading}</h5>
+      ) : null}
+
+      {section.subsections.map((subsection) => (
+        <HelpSubsectionBlock key={subsection.index} subsection={subsection} />
+      ))}
     </section>
   );
 };
 
 export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
   const { t } = useTranslation();
-  const homeSectionRef = useRef<HTMLElement | null>(null);
-  const registerSectionRef = useRef<HTMLElement | null>(null);
-  const loginSectionRef = useRef<HTMLElement | null>(null);
-  const homeSettingsRef = useRef<HTMLElement | null>(null);
-  const homeLanguageRef = useRef<HTMLElement | null>(null);
-  const homeReferenceRef = useRef<HTMLElement | null>(null);
-  const homeHelpRef = useRef<HTMLElement | null>(null);
-  const registerEmptyRef = useRef<HTMLElement | null>(null);
-  const registerEmptySpaceRef = useRef<HTMLElement | null>(null);
-  const registerErrorRef = useRef<HTMLElement | null>(null);
-  const registerGoodRef = useRef<HTMLElement | null>(null);
-  const registerSettingsRef = useRef<HTMLElement | null>(null);
-  const registerHelpRef = useRef<HTMLElement | null>(null);
-  const registerLanguageRef = useRef<HTMLElement | null>(null);
-  const loginEmptyRef = useRef<HTMLElement | null>(null);
-  const loginErrorDataRef = useRef<HTMLElement | null>(null);
-  const loginErrorServerRef = useRef<HTMLElement | null>(null);
-  const loginGoodRef = useRef<HTMLElement | null>(null);
-  const loginSettingsRef = useRef<HTMLElement | null>(null);
-  const loginHelpRef = useRef<HTMLElement | null>(null);
-  const loginLanguageRef = useRef<HTMLElement | null>(null);
-  const gameSectionRef = useRef<HTMLElement | null>(null);
-  const gamePoint1Ref = useRef<HTMLElement | null>(null);
-  const gamePoint2Ref = useRef<HTMLElement | null>(null);
-  const gamePoint3Ref = useRef<HTMLElement | null>(null);
-  const gamePoint4Ref = useRef<HTMLElement | null>(null);
-  const gamePoint5Ref = useRef<HTMLElement | null>(null);
-  const gamePoint6Ref = useRef<HTMLElement | null>(null);
-  const gamePoint7Ref = useRef<HTMLElement | null>(null);
-  const gamePoint8Ref = useRef<HTMLElement | null>(null);
+  const dialogRef = useRef<HTMLDialogElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const scrollToSection = (sectionRef: { current: HTMLElement | null }) => {
-    sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  useEffect(() => {
+    if (isOpen) {
+      closeButtonRef.current?.focus();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const handleClick = (event: MouseEvent) => {
+      if (event.target === event.currentTarget) {
+        onClose();
+      }
+    };
+
+    const handleCancel = (event: Event) => {
+      event.preventDefault();
+      onClose();
+    };
+
+    dialog.addEventListener('click', handleClick);
+    dialog.addEventListener('cancel', handleCancel);
+
+    return () => {
+      dialog.removeEventListener('click', handleClick);
+      dialog.removeEventListener('cancel', handleCancel);
+    };
+  }, [onClose]);
 
   if (!isOpen) return null;
 
+  const noCaptureMessage = t('tutorial.no_capture_available');
+
+  const sections: TutorialSection[] = [
+    {
+      menuLabel: t('tutorial.s1'),
+      title: t('tutorial.window_home'),
+      sectionId: 'help-home',
+      introHeading: t('tutorial.subtitle_information'),
+      introText: t('tutorial.home_info_paragraph'),
+      featureHeading: t('tutorial.subtitle_features'),
+      features: [
+        t('tutorial.home_feature_1'),
+        t('tutorial.home_feature_2'),
+        t('tutorial.home_feature_3'),
+        t('tutorial.home_feature_4'),
+      ],
+      importantHeading: t('tutorial.subtitle_important'),
+      importantText: t('tutorial.home_important_paragraph'),
+      subsectionHeading: t('tutorial.subtitle_captures'),
+      subsections: [
+        {
+          index: '1.1',
+          menuLabel: t('tutorial.s1_2'),
+          title: t('tutorial.home_capture_title'),
+          description: t('tutorial.home_ref_description'),
+          images: homeImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-home-reference',
+        },
+        {
+          index: '1.2',
+          menuLabel: t('tutorial.s1_3'),
+          title: t('tutorial.home_language_title'),
+          description: t('tutorial.home_language_description'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-home-language',
+        },
+        {
+          index: '1.3',
+          menuLabel: t('tutorial.s1_1'),
+          title: t('tutorial.caption_settings'),
+          description: t('tutorial.home_settings_description'),
+          images: settingsImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-home-settings',
+        },
+        {
+          index: '1.4',
+          menuLabel: t('tutorial.s1_4'),
+          title: t('tutorial.home_help_title'),
+          description: t('tutorial.home_help_description'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-home-help',
+        },
+      ],
+    },
+    {
+      menuLabel: t('tutorial.s2'),
+      title: t('tutorial.window_register'),
+      sectionId: 'help-register',
+      introHeading: t('tutorial.subtitle_information'),
+      introText: t('tutorial.register_fields_text'),
+      featureHeading: t('tutorial.subtitle_features'),
+      features: [
+        t('tutorial.register_feature_1'),
+        t('tutorial.register_feature_2'),
+        t('tutorial.register_feature_3'),
+      ],
+      importantHeading: t('tutorial.subtitle_important'),
+      importantText: t('tutorial.register_security_text'),
+      subsections: [
+        {
+          index: '2.1',
+          menuLabel: t('tutorial.s2_1'),
+          title: t('tutorial.caption_register_empty'),
+          description: t('tutorial.register_empty_desc'),
+          images: registerEmptyImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-register-empty',
+        },
+        {
+          index: '2.2',
+          menuLabel: t('tutorial.s2_2'),
+          title: t('tutorial.caption_register_empty_space'),
+          description: t('tutorial.register_empty_space_desc'),
+          images: registerEmptySpaceImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-register-empty-space',
+        },
+        {
+          index: '2.3',
+          menuLabel: t('tutorial.s2_3'),
+          title: t('tutorial.caption_register_error_pswd'),
+          description: t('tutorial.register_error_pswd_desc'),
+          images: registerErrorPswdImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-register-error',
+        },
+        {
+          index: '2.4',
+          menuLabel: t('tutorial.s2_4'),
+          title: t('tutorial.caption_register_good'),
+          description: t('tutorial.register_good_desc'),
+          images: registerGoodImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-register-good',
+        },
+        {
+          index: '2.5',
+          menuLabel: t('tutorial.s2_5'),
+          title: t('tutorial.s2_5_title'),
+          description: t('tutorial.register_language_text'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-register-language',
+        },
+        {
+          index: '2.6',
+          menuLabel: t('tutorial.s2_6'),
+          title: t('tutorial.caption_settings'),
+          description: t('tutorial.register_settings_description'),
+          images: settingsImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-register-settings',
+        },
+        {
+          index: '2.7',
+          menuLabel: t('tutorial.s2_7'),
+          title: t('tutorial.register_help_title'),
+          description: t('tutorial.register_help_description'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-register-help',
+        },
+      ],
+    },
+    {
+      menuLabel: t('tutorial.s3'),
+      title: t('tutorial.window_login'),
+      sectionId: 'help-login',
+      introHeading: t('tutorial.subtitle_information'),
+      introText: t('tutorial.login_what_text'),
+      featureHeading: t('tutorial.subtitle_features'),
+      features: [
+        t('tutorial.login_feature_1'),
+        t('tutorial.login_feature_2'),
+        t('tutorial.login_feature_3'),
+      ],
+      importantHeading: t('tutorial.subtitle_important'),
+      importantText: t('tutorial.login_validation_text'),
+      tipsHeading: t('tutorial.subtitle_tips'),
+      tips: [t('tutorial.login_tip_1'), t('tutorial.login_tip_2'), t('tutorial.login_tip_3')],
+      subsections: [
+        {
+          index: '3.1',
+          menuLabel: t('tutorial.s3_1'),
+          title: t('tutorial.caption_register_empty'),
+          description: t('tutorial.login_empty_desc'),
+          images: loginEmptyImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-login-empty',
+        },
+        {
+          index: '3.2',
+          menuLabel: t('tutorial.s3_2'),
+          title: t('tutorial.s3_2_title'),
+          description: t('tutorial.login_error_data_desc'),
+          images: loginErrorDataImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-login-error-data',
+        },
+        {
+          index: '3.3',
+          menuLabel: t('tutorial.s3_3'),
+          title: t('tutorial.s3_3_title'),
+          description: t('tutorial.login_error_server_desc'),
+          images: loginErrorServerImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-login-error-server',
+        },
+        {
+          index: '3.4',
+          menuLabel: t('tutorial.s3_4'),
+          title: t('tutorial.s3_4_title'),
+          description: t('tutorial.login_good_desc'),
+          images: loginGoodImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-login-good',
+        },
+        {
+          index: '3.5',
+          menuLabel: t('tutorial.s3_5'),
+          title: t('tutorial.s3_5_title'),
+          description: t('tutorial.login_language_text'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-login-language',
+        },
+        {
+          index: '3.6',
+          menuLabel: t('tutorial.s3_6'),
+          title: t('tutorial.caption_settings'),
+          description: t('tutorial.login_settings_description'),
+          images: settingsImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-login-settings',
+        },
+        {
+          index: '3.7',
+          menuLabel: t('tutorial.s3_7'),
+          title: t('tutorial.login_help_title'),
+          description: t('tutorial.login_help_description'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-login-help',
+        },
+      ],
+    },
+    {
+      menuLabel: t('tutorial.s4'),
+      title: t('tutorial.window_game'),
+      sectionId: 'help-game',
+      introHeading: t('tutorial.subtitle_information'),
+      introText: t('tutorial.game_info_paragraph'),
+      featureHeading: t('tutorial.subtitle_features'),
+      features: [
+        t('tutorial.game_feature_1'),
+        t('tutorial.game_feature_2'),
+        t('tutorial.game_feature_3'),
+        t('tutorial.game_feature_4'),
+        t('tutorial.game_feature_5'),
+        t('tutorial.game_feature_6'),
+        t('tutorial.game_feature_7'),
+        t('tutorial.game_feature_8'),
+      ],
+      importantHeading: t('tutorial.subtitle_important'),
+      importantText: t('tutorial.game_important_paragraph'),
+      subsectionHeading: t('tutorial.captures_recommended'),
+      subsections: [
+        {
+          index: '4.1',
+          menuLabel: t('tutorial.s4_1'),
+          title: t('tutorial.s4_1'),
+          description: t('tutorial.s4_1_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-1',
+        },
+        {
+          index: '4.2',
+          menuLabel: t('tutorial.s4_2'),
+          title: t('tutorial.s4_2'),
+          description: t('tutorial.s4_2_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-2',
+        },
+        {
+          index: '4.3',
+          menuLabel: t('tutorial.s4_3'),
+          title: t('tutorial.s4_3'),
+          description: t('tutorial.s4_3_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-3',
+        },
+        {
+          index: '4.4',
+          menuLabel: t('tutorial.s4_4'),
+          title: t('tutorial.s4_4'),
+          description: t('tutorial.s4_4_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-4',
+        },
+        {
+          index: '4.5',
+          menuLabel: t('tutorial.s4_5'),
+          title: t('tutorial.s4_5'),
+          description: t('tutorial.s4_5_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-5',
+        },
+        {
+          index: '4.6',
+          menuLabel: t('tutorial.s4_6'),
+          title: t('tutorial.s4_6'),
+          description: t('tutorial.s4_6_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-6',
+        },
+        {
+          index: '4.7',
+          menuLabel: t('tutorial.s4_7'),
+          title: t('tutorial.s4_7'),
+          description: t('tutorial.s4_7_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-7',
+        },
+        {
+          index: '4.8',
+          menuLabel: t('tutorial.s4_8'),
+          title: t('tutorial.s4_8'),
+          description: t('tutorial.s4_8_desc'),
+          images: [],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-8',
+        },
+      ],
+    },
+  ];
+
+  const scrollToSection = (sectionId: string) => {
+    document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   return (
     <dialog
+      ref={dialogRef}
       open
-      role="dialog"
       aria-modal="true"
-      tabIndex={0}
       className="modal-backdrop tutorial-overlay"
       aria-label={t('tutorial.aria')}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape' || event.key === 'Enter' || event.key === ' ') {
-          onClose();
-        }
-      }}
+      aria-labelledby="tutorial-title"
     >
       <div className="modal-box tutorial-modal">
         <div className="tutorial-header">
-          <h3 className="tutorial-header-title">{t('tutorial.title')}</h3>
+          <h3 id="tutorial-title" className="tutorial-header-title">
+            {t('tutorial.title')}
+          </h3>
           <button
+            ref={closeButtonRef}
             type="button"
             className="tutorial-close-icon"
             onClick={onClose}
@@ -167,414 +547,38 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           <aside className="tutorial-sidebar" aria-label={t('tutorial.index_aria')}>
             <h4 className="tutorial-sidebar-title">{t('tutorial.index')}</h4>
             <div className="tutorial-sidebar-scroll">
-            <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(homeSectionRef)}>
-              {t('tutorial.s1')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(homeSettingsRef)}>
-              {t('tutorial.s1_1')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(homeReferenceRef)}>
-              {t('tutorial.s1_2')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(homeLanguageRef)}>
-              {t('tutorial.s1_3')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(homeHelpRef)}>
-              {t('tutorial.s1_4')}
-            </button>
-            <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(registerSectionRef)}>
-              {t('tutorial.s2')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerEmptyRef)}>
-              {t('tutorial.s2_1')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerEmptySpaceRef)}>
-              {t('tutorial.s2_2')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerErrorRef)}>
-              {t('tutorial.s2_3')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerGoodRef)}>
-              {t('tutorial.s2_4')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerLanguageRef)}>
-              {t('tutorial.s2_5')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerSettingsRef)}>
-              {t('tutorial.s2_6')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerHelpRef)}>
-              {t('tutorial.s2_7')}
-            </button>
-            <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(loginSectionRef)}>
-              {t('tutorial.s3')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginEmptyRef)}>
-              {t('tutorial.s3_1')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginErrorDataRef)}>
-              {t('tutorial.s3_2')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginErrorServerRef)}>
-              {t('tutorial.s3_3')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginGoodRef)}>
-              {t('tutorial.s3_4')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginLanguageRef)}>
-              {t('tutorial.s3_5')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginSettingsRef)}>
-              {t('tutorial.s3_6')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginHelpRef)}>
-              {t('tutorial.s3_7')}
-            </button>
-            <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(gameSectionRef)}>
-              {t('tutorial.s4')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint1Ref)}>
-              {t('tutorial.s4_1')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint2Ref)}>
-              {t('tutorial.s4_2')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint3Ref)}>
-              {t('tutorial.s4_3')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint4Ref)}>
-              {t('tutorial.s4_4')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint5Ref)}>
-              {t('tutorial.s4_5')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint6Ref)}>
-              {t('tutorial.s4_6')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint7Ref)}>
-              {t('tutorial.s4_7')}
-            </button>
-            <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint8Ref)}>
-              {t('tutorial.s4_8')}
-            </button>
+              {sections.map((section) => (
+                <div key={section.sectionId} className="tutorial-sidebar-group">
+                  <button
+                    type="button"
+                    className="tutorial-sidebar-btn"
+                    onClick={() => scrollToSection(section.sectionId)}
+                  >
+                    {section.menuLabel}
+                  </button>
+
+                  {section.subsections.map((subsection) => (
+                    <button
+                      key={subsection.sectionId}
+                      type="button"
+                      className="tutorial-sidebar-subbtn"
+                      onClick={() => scrollToSection(subsection.sectionId)}
+                    >
+                      {subsection.menuLabel}
+                    </button>
+                  ))}
+                </div>
+              ))}
             </div>
           </aside>
 
-            <div className="tutorial-content">
-            <section className="tutorial-section" id="help-home" ref={homeSectionRef}>
-              <h4>{t('tutorial.window_home')}</h4>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_information')}</h5>
-              <p>{t('tutorial.home_info_paragraph')}</p>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_features')}</h5>
-              <ul className="tutorial-list">
-                <li>{t('tutorial.home_feature_1')}</li>
-                <li>{t('tutorial.home_feature_2')}</li>
-                <li>{t('tutorial.home_feature_3')}</li>
-                <li>{t('tutorial.home_feature_4')}</li>
-              </ul>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_important')}</h5>
-              <p>{t('tutorial.home_important_paragraph')}</p>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_captures')}</h5>
-              {/* 1.1 Captura de referencia */}
-              <HelpSubsection
-                index="1.1"
-                title={t('tutorial.home_capture_title')}
-                images={homeImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 1 })}
-                description={t('tutorial.home_ref_description') + ' ' + t('tutorial.placeholder_image', { num: 1 })}
-                sectionRef={homeReferenceRef}
-              />
-
-              {/* 1.2 Idioma */}
-              <HelpSubsection
-                index="1.2"
-                title={t('tutorial.home_language_title')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 2 })}
-                description={t('tutorial.home_language_description') + ' ' + t('tutorial.placeholder_image', { num: 2 })}
-                sectionRef={homeLanguageRef}
-              />
-
-              {/* 1.3 Ajustes */}
-              <HelpSubsection
-                index="1.3"
-                title={t('tutorial.caption_settings')}
-                images={settingsImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 3 })}
-                description={t('tutorial.home_settings_description') + ' ' + t('tutorial.placeholder_image', { num: 3 })}
-                sectionRef={homeSettingsRef}
-              />
-
-              {/* 1.4 Ayuda */}
-              <HelpSubsection
-                index="1.4"
-                title={t('tutorial.home_help_title')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 4 })}
-                description={t('tutorial.home_help_description') + ' ' + t('tutorial.placeholder_image', { num: 4 })}
-                sectionRef={homeHelpRef}
-              />
-            </section>
-
-            <section className="tutorial-section" id="help-register" ref={registerSectionRef}>
-              <h4>{t('tutorial.window_register')}</h4>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_information')}</h5>
-              <p>{t('tutorial.register_fields_text')}</p>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_features')}</h5>
-              <ul className="tutorial-list">
-                <li>{t('tutorial.register_feature_1')}</li>
-                <li>{t('tutorial.register_feature_2')}</li>
-                <li>{t('tutorial.register_feature_3')}</li>
-              </ul>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_important')}</h5>
-              <p>{t('tutorial.register_security_text')}</p>
-              <HelpSubsection
-                index="2.1"
-                title={t('tutorial.caption_register_empty')}
-                images={registerEmptyImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 5 })}
-                description={t('tutorial.register_empty_desc') + ' ' + t('tutorial.placeholder_image', { num: 5 })}
-                sectionRef={registerEmptyRef}
-              />
-              <HelpSubsection
-                index="2.2"
-                title={t('tutorial.caption_register_empty_space')}
-                images={registerEmptySpaceImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 6 })}
-                description={t('tutorial.register_empty_space_desc') + ' ' + t('tutorial.placeholder_image', { num: 6 })}
-                sectionRef={registerEmptySpaceRef}
-              />
-              <HelpSubsection
-                index="2.3"
-                title={t('tutorial.caption_register_error_pswd')}
-                images={registerErrorPswdImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 7 })}
-                description={t('tutorial.register_error_pswd_desc') + ' ' + t('tutorial.placeholder_image', { num: 7 })}
-                sectionRef={registerErrorRef}
-              />
-              <HelpSubsection
-                index="2.4"
-                title={t('tutorial.caption_register_good')}
-                images={registerGoodImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 8 })}
-                description={t('tutorial.register_good_desc') + ' ' + t('tutorial.placeholder_image', { num: 8 })}
-                sectionRef={registerGoodRef}
-              />
-              <HelpSubsection
-                index="2.5"
-                title={t('tutorial.s2_5_title')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 9 })}
-                description={t('tutorial.register_language_text') + ' ' + t('tutorial.placeholder_image', { num: 9 })}
-                sectionRef={registerLanguageRef}
-              />
-              <HelpSubsection
-                index="2.6"
-                title={t('tutorial.caption_settings')}
-                images={settingsImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 10 })}
-                description={t('tutorial.register_settings_description') + ' ' + t('tutorial.placeholder_image', { num: 10 })}
-                sectionRef={registerSettingsRef}
-              />
-              <HelpSubsection
-                index="2.7"
-                title={t('tutorial.register_help_title')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 11 })}
-                description={t('tutorial.register_help_description') + ' ' + t('tutorial.placeholder_image', { num: 11 })}
-                sectionRef={registerHelpRef}
-              />
-            </section>
-
-            <section className="tutorial-section" id="help-login" ref={loginSectionRef}>
-              <h4>{t('tutorial.window_login')}</h4>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_information')}</h5>
-              <p>{t('tutorial.login_what_text')}</p>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_features')}</h5>
-              <ul className="tutorial-list">
-                <li>{t('tutorial.login_feature_1')}</li>
-                <li>{t('tutorial.login_feature_2')}</li>
-                <li>{t('tutorial.login_feature_3')}</li>
-              </ul>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_important')}</h5>
-              <p>{t('tutorial.login_validation_text')}</p>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_tips')}</h5>
-              <ul className="tutorial-list">
-                <li>{t('tutorial.login_tip_1')}</li>
-                <li>{t('tutorial.login_tip_2')}</li>
-                <li>{t('tutorial.login_tip_3')}</li>
-              </ul>
-              <HelpSubsection
-                index="3.1"
-                title={t('tutorial.caption_register_empty')}
-                images={loginEmptyImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 12 })}
-                description={t('tutorial.login_empty_desc') + ' ' + t('tutorial.placeholder_image', { num: 12 })}
-                sectionRef={loginEmptyRef}
-              />
-              <HelpSubsection
-                index="3.2"
-                title={t('tutorial.s3_2_title')}
-                images={loginErrorDataImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 13 })}
-                description={t('tutorial.login_error_data_desc') + ' ' + t('tutorial.placeholder_image', { num: 13 })}
-                sectionRef={loginErrorDataRef}
-              />
-              <HelpSubsection
-                index="3.3"
-                title={t('tutorial.s3_3_title')}
-                images={loginErrorServerImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 14 })}
-                description={t('tutorial.login_error_server_desc') + ' ' + t('tutorial.placeholder_image', { num: 14 })}
-                sectionRef={loginErrorServerRef}
-              />
-              <HelpSubsection
-                index="3.4"
-                title={t('tutorial.s3_4_title')}
-                images={loginGoodImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 15 })}
-                description={t('tutorial.login_good_desc') + ' ' + t('tutorial.placeholder_image', { num: 15 })}
-                sectionRef={loginGoodRef}
-              />
-              <HelpSubsection
-                index="3.5"
-                title={t('tutorial.s3_5_title')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 16 })}
-                description={t('tutorial.login_language_text') + ' ' + t('tutorial.placeholder_image', { num: 16 })}
-                sectionRef={loginLanguageRef}
-              />
-              <HelpSubsection
-                index="3.6"
-                title={t('tutorial.caption_settings')}
-                images={settingsImages}
-                emptyMessage={t('tutorial.placeholder_image', { num: 17 })}
-                description={t('tutorial.login_settings_description') + ' ' + t('tutorial.placeholder_image', { num: 17 })}
-                sectionRef={loginSettingsRef}
-              />
-              <HelpSubsection
-                index="3.7"
-                title={t('tutorial.login_help_title')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 18 })}
-                description={t('tutorial.login_help_description') + ' ' + t('tutorial.placeholder_image', { num: 18 })}
-                sectionRef={loginHelpRef}
-              />
-            </section>
-
-            <section className="tutorial-section" id="help-game" ref={gameSectionRef}>
-              <h4>{t('tutorial.window_game')}</h4>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_information')}</h5>
-              <p>{t('tutorial.game_info_paragraph')}</p>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_features')}</h5>
-              <ul className="tutorial-list">
-                <li>{t('tutorial.game_feature_1')}</li>
-                <li>{t('tutorial.game_feature_2')}</li>
-                <li>{t('tutorial.game_feature_3')}</li>
-                <li>{t('tutorial.game_feature_4')}</li>
-                <li>{t('tutorial.game_feature_5')}</li>
-                <li>{t('tutorial.game_feature_6')}</li>
-                <li>{t('tutorial.game_feature_7')}</li>
-                <li>{t('tutorial.game_feature_8')}</li>
-              </ul>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.subtitle_important')}</h5>
-              <p>{t('tutorial.game_important_paragraph')}</p>
-
-              <h5 className="tutorial-subtitle">{t('tutorial.captures_recommended')}</h5>
-
-              <HelpSubsection
-                index="4.1"
-                title={t('tutorial.s4_1')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 19 })}
-                description={t('tutorial.s4_1_desc') + ' ' + t('tutorial.placeholder_image', { num: 19 })}
-                sectionRef={gamePoint1Ref}
-              />
-
-              <HelpSubsection
-                index="4.2"
-                title={t('tutorial.s4_2')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 20 })}
-                description={t('tutorial.s4_2_desc') + ' ' + t('tutorial.placeholder_image', { num: 20 })}
-                sectionRef={gamePoint2Ref}
-              />
-
-              <HelpSubsection
-                index="4.3"
-                title={t('tutorial.s4_3')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 21 })}
-                description={t('tutorial.s4_3_desc') + ' ' + t('tutorial.placeholder_image', { num: 21 })}
-                sectionRef={gamePoint3Ref}
-              />
-
-              <HelpSubsection
-                index="4.4"
-                title={t('tutorial.s4_4')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 22 })}
-                description={t('tutorial.s4_4_desc') + ' ' + t('tutorial.placeholder_image', { num: 22 })}
-                sectionRef={gamePoint4Ref}
-              />
-
-              <HelpSubsection
-                index="4.5"
-                title={t('tutorial.s4_5')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 23 })}
-                description={t('tutorial.s4_5_desc') + ' ' + t('tutorial.placeholder_image', { num: 23 })}
-                sectionRef={gamePoint5Ref}
-              />
-
-              <HelpSubsection
-                index="4.6"
-                title={t('tutorial.s4_6')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 24 })}
-                description={t('tutorial.s4_6_desc') + ' ' + t('tutorial.placeholder_image', { num: 24 })}
-                sectionRef={gamePoint6Ref}
-              />
-
-              <HelpSubsection
-                index="4.7"
-                title={t('tutorial.s4_7')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 25 })}
-                description={t('tutorial.s4_7_desc') + ' ' + t('tutorial.placeholder_image', { num: 25 })}
-                sectionRef={gamePoint7Ref}
-              />
-
-              <HelpSubsection
-                index="4.8"
-                title={t('tutorial.s4_8')}
-                images={[]}
-                emptyMessage={t('tutorial.placeholder_image', { num: 26 })}
-                description={t('tutorial.s4_8_desc') + ' ' + t('tutorial.placeholder_image', { num: 26 })}
-                sectionRef={gamePoint8Ref}
-              />
-
-            </section>
+          <div className="tutorial-content">
+            {sections.map((section) => (
+              <TutorialSectionBlock key={section.sectionId} section={section} />
+            ))}
           </div>
         </div>
       </div>
     </dialog>
   );
 };
-
-
-

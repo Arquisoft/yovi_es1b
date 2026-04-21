@@ -1,8 +1,11 @@
-export const mapUiDifficultyToBackend = (uiDiff: string): string => {
+﻿export const mapUiDifficultyToBackend = (uiDiff: string): string => {
   const backendMap: Record<string, string> = {
     'Fácil': 'facil',
     'Medio': 'medio',
     'Difícil': 'dificil',
+    'Easy': 'facil',
+    'Medium': 'medio',
+    'Hard': 'dificil',
   }
 
   return backendMap[uiDiff] || 'facil'
@@ -35,3 +38,4 @@ export const getGameIdentity = (isGuestMode: boolean, storedUsername: string) =>
   friendCode: isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || ''),
   username: isGuestMode ? 'Invitado' : storedUsername,
 })
+

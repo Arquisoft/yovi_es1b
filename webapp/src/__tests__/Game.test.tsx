@@ -69,7 +69,7 @@ describe('Game UI (MPA Ready)', () => {
     const user = userEvent.setup()
     const props = baseProps()
 
-    render(<GameScreen {...props} />)
+    const { rerender } = render(<GameScreen {...props} />)
 
     // 1. Historial (Usamos el title del botón)
     await user.click(screen.getByTitle(/ver historial/i))
@@ -96,6 +96,7 @@ describe('Game UI (MPA Ready)', () => {
     expect(props.onChangeSize).toHaveBeenCalledWith('Mediano')
 
     // 4. Terminar Partida (por title)
+    rerender(<GameScreen {...props} gameStarted={true} />)
     await user.click(screen.getByTitle(/terminar partida/i))
     expect(props.onEndGame).toHaveBeenCalled()
 
@@ -104,7 +105,7 @@ describe('Game UI (MPA Ready)', () => {
     expect(props.onResetGame).toHaveBeenCalled()
 
     // 6. Perfil (por title)
-    await user.click(screen.getByTitle(/ver mi perfil/i))
+    await user.click(screen.getByRole('button', { name: /ayuda sobre esta web/i }))
     expect(props.onViewProfile).toHaveBeenCalled()
 
     // 7. Salir (por title)
@@ -131,6 +132,23 @@ describe('Game UI (MPA Ready)', () => {
 
     const cell0 = screen.getByRole('button', { name: /celda 0/i })
     expect(cell0).toBeDisabled()
+  })
+
+  test('si la partida termina, habilita los desplegables de formato y dificultad', async () => {
+    const props = baseProps({ winner: 1 })
+
+    render(<GameScreen {...props} gameStarted={true} />)
+
+    expect(screen.getByRole('button', { name: /dificultad/i })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: /tamaño/i })).not.toBeDisabled()
+  })
+
+  test('no permite rendirse antes de pulsar la primera celda', () => {
+    const props = baseProps()
+
+    render(<GameScreen {...props} gameStarted={false} />)
+
+    expect(screen.getByTitle(/terminar partida/i)).toBeDisabled()
   })
 
   test('muestra el temporizador correctamente', () => {
@@ -170,8 +188,8 @@ describe('Game UI (MPA Ready)', () => {
     render(<GameScreen {...props} />)
 
     const navbar = screen.getByRole('navigation')
-    expect(within(navbar).getByText(/jugador/i)).toBeInTheDocument()
-    expect(screen.getByRole('img', { name: /ver mi perfil/i })).toBeInTheDocument()
+    expect(within(navbar).getByText(/mis puntos/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ayuda sobre esta web/i })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
   })
 })
