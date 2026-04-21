@@ -205,7 +205,7 @@ describe('LoginForm', () => {
       await user.click(screen.getByRole('button', { name: /iniciar sesión/i }))
     })
 
-    expect(screen.getByRole('button', { name: /iniciando sesión/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /cargando/i })).toBeDisabled()
 
     resolveFetch({
       ok: true,

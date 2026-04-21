@@ -2,7 +2,8 @@
 import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
 import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
-
+import { clearGuestSession } from '../utils/sessionUtils';
+import {useTranslation} from "react-i18next";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
@@ -69,6 +70,7 @@ interface RegisterScreenProps {
 const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
 
 function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -90,17 +92,17 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
     event.preventDefault();
 
     if (!formData.name.trim() || !formData.nickname.trim() || !formData.password.trim() || !formData.confirmPassword.trim() || !formData.birthDate) {
-      setFormError('Nombre, nickname, fecha de nacimiento, Contraseña y confirmacion no pueden estar en blanco.');
+      setFormError(t('register.error_empty'));
       return;
     }
     if (!formData.language.trim()) {
-      setFormError('Debes seleccionar un idioma para continuar.');
+      setFormError(t('register.error_no_language'));
       return;
     }
     setFormError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      setPasswordError('La confirmacion de Contraseña no coincide.');
+      setPasswordError(t('register.error_password_mismatch'));
       return;
     }
     setPasswordError(null);
@@ -147,7 +149,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
     <div className="register-screen">
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log">ZONA DE REGISTRO</h2>
+        <h2 className="title-log">{t('register.title')}</h2>
         {(onOpenSettings || onOpenTutorial) && (
           <div className="header-action-group">
             {onOpenSettings && (
@@ -155,8 +157,8 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                 type="button"
                 className="header-settings-btn header-action-btn"
                 onClick={onOpenSettings}
-                title="Configuración"
-                aria-label="Configuración de elementos de fondo"
+                title={t('common.settings')}
+                aria-label={t('common.settings_aria')}
               >
                 <img src={settingsImg} alt="" className="floating-action-icon" />
               </button>
@@ -166,8 +168,8 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                 type="button"
                 className="header-settings-btn header-action-btn"
                 onClick={onOpenTutorial}
-                title="Ayuda"
-                aria-label="Abrir ayuda"
+                title={t('common.help')}
+                aria-label={t('common.help_aria')}
               >
                 <span className="help-icon-glyph" aria-hidden="true">?</span>
               </button>
@@ -183,7 +185,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
         <div className="register-form-layout">
           <div className="register-left-zone">
             <div className="form-group">
-              <label htmlFor="register-name">Nombre</label>
+              <label htmlFor="register-name">{t('register.name')}</label>
               <input
                 id="register-name"
                 className="form-input"
@@ -195,7 +197,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-nickname">Apodo</label>
+              <label htmlFor="register-nickname">{t('register.nickname')}</label>
               <input
                 id="register-nickname"
                 className="form-input"
@@ -207,7 +209,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-birth-date">Fecha de nacimiento</label>
+              <label htmlFor="register-birth-date">{t('register.birth_date')}</label>
               <input
                 id="register-birth-date"
                 className="form-input"
@@ -219,7 +221,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-password">Contraseña</label>
+              <label htmlFor="register-password">{t('register.password')}</label>
               <input
                 id="register-password"
                 className="form-input"
@@ -231,7 +233,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-confirm-password">Confirmar Contraseña</label>
+              <label htmlFor="register-confirm-password">{t('register.confirm_password')}</label>
               <input
                 id="register-confirm-password"
                 className="form-input"
@@ -246,7 +248,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
           <div className="register-right-zone">
             <div className="form-group">
               <fieldset className="country-checkbox-box">
-                <legend>Idioma</legend>
+                <legend>{t('register.language')}</legend>
                 {countryOptions.map((option) => {
                   const checked = formData.language === option.value;
                   return (
@@ -273,30 +275,30 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
 
             <div className="form-group">
               <fieldset className="icon-picker-box">
-                <legend>Elige tu icono</legend>
+                <legend>{t('register.choose_icon')}</legend>
                 {shouldShowNoIconsMessage(availableIcons) ? (
-                  <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>
+                  <small className="error-message">{t('register.no_icons')}</small>
                 ) : (
                   <>
                     {noAvatarIcon && (
                       <>
-                        <div className="icon-row-label">Sin Avatar</div>
+                        <div className="icon-row-label">{t('register.no_avatar')}</div>
                         <div className="icon-row-grid icon-row-grid-single">
                           <button
                             type="button"
                             className={`icon-option ${selectedIconName === noAvatarIcon.name ? 'icon-option-selected' : ''}`}
                             onClick={() => setSelectedIconName(noAvatarIcon.name)}
-                            title="Sin Avatar"
+                            title={t('register.no_avatar')}
                             aria-label="Elegir Sin Avatar"
                             aria-pressed={selectedIconName === noAvatarIcon.name}
                           >
-                            <img src={noAvatarIcon.src} alt="Sin Avatar" className="icon-option-img" />
+                            <img src={noAvatarIcon.src} alt={t('register.no_avatar')} className="icon-option-img" />
                           </button>
                         </div>
                       </>
                     )}
 
-                    <div className="icon-row-label">Hombre</div>
+                    <div className="icon-row-label">{t('register.male')}</div>
                     <div className="icon-row-grid">
                       {maleIcons.map((icon) => {
                         const isSelected = selectedIconName === icon.name;
@@ -316,7 +318,7 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
                       })}
                     </div>
 
-                    <div className="icon-row-label">Mujer</div>
+                    <div className="icon-row-label">{t('register.female')}</div>
                     <div className="icon-row-grid">
                       {femaleIcons.map((icon) => {
                         const isSelected = selectedIconName === icon.name;
@@ -344,11 +346,11 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
 
         <div className="register-actions">
         <button type="submit" className="submit-button" disabled={!formData.language.trim()}>
-          Crear cuenta
+          {t('register.submit')}
         </button>
 
           <button type="button" className="submit-button cancel-button" onClick={onBack}>
-            Volver
+            {t('common.back')}
           </button>
         </div>
       </form>
@@ -357,5 +359,3 @@ function RegisterScreen({ onBack, onOpenSettings, onOpenTutorial, onCreateAccoun
 }
 
 export default RegisterScreen;
-
-

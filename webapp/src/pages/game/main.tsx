@@ -1,4 +1,8 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+//Internacionalización
+import "../../i18n.ts";
+import i18n from '../../i18n'
+
 import ReactDOM from 'react-dom/client';
 
 // Componentes UI y Pantallas
@@ -9,6 +13,7 @@ import { SelectionModals } from '../../components/modals/SelectionModals';
 import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
+import { PayPalStore } from '../../components/modals/PayPalStore';
 
 // Hooks, Servicios y Utils
 import { useGameLogic } from '../../hooks/useGameLogic';
@@ -29,7 +34,7 @@ import '../../index.css';
 // Tipos
 import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
-
+import {useTranslation} from "react-i18next";
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -43,7 +48,10 @@ const botIconPool = Object.entries(iconModules)
 const pickRandomBotIcon = (): string | null => {
   const pool = botIconPool.length ? botIconPool : Object.values(iconModules);
   if (!pool.length) return null;
-  const index = Math.floor(Math.random() * pool.length);
+  //const index = Math.floor(Math.random() * pool.length);
+  const array = new Uint32Array(1);
+  crypto.getRandomValues(array);
+  const index = array[0] % pool.length;
   return pool[index] ?? null;
 };
 
@@ -85,16 +93,49 @@ window.fetch = async (...args) => {
 };
 
 const GameApp = () => {
+  useEffect(() => {
+    const storedLang = localStorage.getItem('yovi_user_language') || 'es';
+    const langMap: Record<string, string> = {
+      'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
+    };
+    i18n.changeLanguage(langMap[storedLang] ?? storedLang);
+  }, []);
+
+
+  const isGuestMode = isGuestSession();
+  const storedUsername = localStorage.getItem('yovi_user') || '';
+
+  useEffect(() => {
+    if (!storedUsername && !isGuestMode) {
+      globalThis.location.href = '/index.html';
+    }
+  }, [isGuestMode, storedUsername]);
+
+  if (!storedUsername && !isGuestMode) return null;
+
+  return <GameAppContent isGuestMode={isGuestMode} storedUsername={storedUsername} />;
+};
+
+type GameAppContentProps = {
+  isGuestMode: boolean;
+  storedUsername: string;
+};
+
+const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) => {
+  const { t } = useTranslation()
   // --- SEGURIDAD Y SESIÓN ---
-  const username = localStorage.getItem('yovi_user') || '';
-  const friendCode = localStorage.getItem('yovi_friend_code') || '';
-  const displayName = localStorage.getItem('yovi_user_nickname') || username;
-  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(localStorage.getItem('yovi_user_icon')));
-  const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
-    const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
-    const handleTimeUp = useCallback(() => {
-        void handleAutoMoveRef.current();
-    }, []);
+  const username = isGuestMode ? 'Invitado' : storedUsername;
+  const friendCode = isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || '');
+  const displayName = isGuestMode ? 'Invitado' : (localStorage.getItem('yovi_user_nickname') || username);
+  const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(isGuestMode ? null : localStorage.getItem('yovi_user_icon')));
+  const [botIcon] = useState<string | null>(() => pickRandomBotIcon());
+  const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
+  const handleTimeUp = useCallback(() => {
+    void handleAutoMoveRef.current();
+  }, []);
+  const [finalScore, setFinalScore] = useState<number>(0); // Nuevo estado para el puntaje final de la partida
+  const [totalScore, setTotalScore] = useState<number>(0); // Nuevo estado para el puntaje total acumulado del usuario
+  const [showStore, setShowStore] = useState(false);
   // Si no hay usuario, redirigimos inmediatamente a la home
   if (!username) {
     window.location.href = '/index.html';
@@ -210,48 +251,69 @@ const GameApp = () => {
   }, [startNewGame]);
 
   useEffect(() => {
-    let active = true;
+      let active = true;
+      const syncProfileData = async () => {
+          try {
+              const profile = await gameService.getProfile();
+              if (!active || profile?.error) return;
 
-    const syncProfileIcon = async () => {
-      try {
-        const profile = await gameService.getProfile();
-        if (!active || profile?.error) return;
+              // Sincronizar icono
+              const resolvedIcon = resolveUserIcon(profile.iconName || profile.icon);
+              if (resolvedIcon){
+                 setPlayerIcon(resolvedIcon);
+                localStorage.setItem('yovi_user_icon', resolvedIcon);
+              }
+                //para internacionalización
+                const languageToI18n: Record<string, string> = {
+                  'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
+                }
+                if (profile?.language) {
+                  i18n.changeLanguage(languageToI18n[profile.language] ?? 'es')
+                }
 
-        const resolvedIcon = resolveUserIcon(
-          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon
-        );
-        if (resolvedIcon) {
-          setPlayerIcon(resolvedIcon);
-          localStorage.setItem('yovi_user_icon', resolvedIcon);
-        }
-      } catch {
-        // En caso de error de red, mantenemos el icono local actual.
-      }
-    };
+              // --- NUEVO: Sincronizar puntos totales ---
+              const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
+              setTotalScore(scoreReal);
 
-    syncProfileIcon();
-    return () => {
-      active = false;
-    };
+          } catch {}
+      };
+      syncProfileData();
+      return () => { active = false; };
   }, [username]);
 
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = useCallback(async () => {
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
-      if (data?.winner !== null) setShowResultModal(true);
+      if (data && data.winner !== null) {
+        setFinalScore(data.score || 0);
+
+        // SUMA OPTIMISTA: Si por algún motivo el bot nos da la victoria (ID 0)
+        if (data.winner === 0) {
+          setTotalScore(prev => prev + (data.score || 0));
+        }
+
+        setShowResultModal(true);
+      }
     } catch {}
   }, [difficultyChoice, executeAutoMove, startTimer]);
 
   useEffect(() => {
     handleAutoMoveRef.current = handleAutoMove;
   }, [handleAutoMove]);
+
+
   const handleCellClick = async (index: number) => {
     if (winner !== null) return;
     try {
       const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
       if (data.winner !== null) {
         setTimerVisible(false);
+        setFinalScore(data.score || 0);
+        // SUMA OPTIMISTA: Si ganamos (ID 0), sumamos al total de la barra
+        if (data.winner === 0) {
+            setTotalScore(prev => prev + (data.score || 0));
+        }
         setShowResultModal(true);
       }
     } catch {}
@@ -312,6 +374,7 @@ const GameApp = () => {
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
+        totalScore={totalScore}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
@@ -347,12 +410,33 @@ const GameApp = () => {
           stopTimer();
           setTimerVisible(false);
           await surrender(difficultyChoice!);
+          setFinalScore(0);
           setShowResultModal(true);
         }}
         onAddFriend={() => openFriendsMenu()}
         onViewProfile={() => setShowProfileScreen(true)}
         onOpenSettings={() => setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
+        onScoreButtonClick={() => {
+          setShowStore(true);
+        }}
+      />
+
+      <PayPalStore
+        isOpen={showStore}
+        onClose={() => setShowStore(false)}
+        onSuccess={async (puntos) => {
+          // 1. Suma visual inmediata
+          setTotalScore(prev => prev + puntos);
+
+          // 2. Guardado real en base de datos
+          try {
+            await gameService.addXP(puntos);
+            console.log("Compra guardada en el servidor");
+          } catch (err) {
+            console.error("No se pudo guardar la compra:", err);
+          }
+        }}
       />
 
       {/* Modales de Configuración */}
@@ -379,6 +463,7 @@ const GameApp = () => {
       <ResultModal
         isOpen={showResultModal}
         winner={winner}
+        score={finalScore}
         onClose={() => setShowResultModal(false)}
       />
 
@@ -429,9 +514,9 @@ const GameApp = () => {
       {showSettings && (
         <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Configuración de elementos de fondo">
           <div className="modal-box">
-            <h3>Configuración de elementos de fondo</h3>
+            <h3>{t('game.settings_title')}</h3>
             <div className="form-group">
-              <label htmlFor="music-volume">Volumen de la música</label>
+              <label htmlFor="music-volume">{t('game.music_volume')}</label>
               <input
                 id="music-volume"
                 className="form-input"
@@ -443,7 +528,7 @@ const GameApp = () => {
               />
             </div>
             <div className="form-group">
-              <label htmlFor="video-static">Video en movimiento</label>
+              <label htmlFor="video-static">{t('game.video_moving')}</label>
               <input
                 id="video-static"
                 type="checkbox"
@@ -452,7 +537,7 @@ const GameApp = () => {
               />
             </div>
             <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
-              Cerrar
+              {t('common.close')}
             </button>
           </div>
         </div>

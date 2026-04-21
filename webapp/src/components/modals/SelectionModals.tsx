@@ -1,4 +1,5 @@
-﻿import { SIZE_OPTIONS, type DifficultyChoice, type SizeChoice } from '../../types/game';
+import { SIZE_OPTIONS, type DifficultyChoice, type SizeChoice } from '../../types/game';
+import { useTranslation } from 'react-i18next';
 
 interface SelectionModalsProps {
   currentScreen: string;
@@ -21,20 +22,21 @@ export const SelectionModals = ({
   onDifficultyCancel,
   onSizeCancel
 }: SelectionModalsProps) => {
+  const { t } = useTranslation();
   if (currentScreen !== 'game') return null;
 
   if (difficultyChoice === null) {
     return (
       <div className="modal-backdrop">
         <div className="modal-box">
-          <h3>¿Con qué dificultad quieres jugar?</h3>
+          <h3>{t('game.select_difficulty')}</h3>
           {availableDifficulties.map((diff) => (
             <button key={diff} className="submit-button" onClick={() => onDifficultySelect(diff)}>
               {diff}
             </button>
           ))}
           <button type="button" className="submit-button" onClick={onDifficultyCancel}>
-            Cancelar
+            {t('common.cancel')}
           </button>
         </div>
       </div>
@@ -45,14 +47,14 @@ export const SelectionModals = ({
     return (
       <div className="modal-backdrop">
         <div className="modal-box">
-          <h3>¿Con qué tamaño de tablero deseas jugar?</h3>
+          <h3>{t('game.select_size')}</h3>
           {SIZE_OPTIONS.map((size) => (
             <button key={size} className="submit-button" onClick={() => onSizeSelect(size)}>
               {size}
             </button>
           ))}
           <button type="button" className="submit-button" onClick={onSizeCancel}>
-            Cancelar
+            {t('common.cancel')}
           </button>
         </div>
       </div>

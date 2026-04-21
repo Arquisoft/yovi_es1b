@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { gameService } from '../../services/gameService';
 
+import '../../i18n';
+import { useTranslation } from 'react-i18next';
+
 // --- INTERFACES DE DATOS ---
 interface Friend {
   name: string;
@@ -24,6 +27,7 @@ interface FriendsPanelProps {
 }
 
 export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon,onTriggerPublicProfile }: FriendsPanelProps) => {
+  const { t } = useTranslation();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -107,7 +111,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
 
       if (targetUser) {
         await gameService.followUser(targetUser.username);
-        alert(`¡Ahora sigues a ${targetUser.username}!`);
+        alert(t('friends.alert_now_following', { username: targetUser.username }));
         setSearchCode(''); // Limpiamos el buscador
 
         fetchSocialData();
@@ -116,7 +120,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
         const updatedFriends = await gameService.getFriends();
         setFriends(updatedFriends);
       } else {
-        alert("No se encontró ningún jugador con ese código.");
+        alert(t('friends.alert_not_found'));
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Error al añadir amigo";
@@ -141,7 +145,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       }
     } catch (error: unknown) {
       console.error("Error al responder solicitud:", error);
-      alert("No se pudo procesar la respuesta.");
+      alert(t('friends.alert_respond_error'));
     }
   };
 
@@ -154,10 +158,10 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
         // Pasamos el username del usuario ENCONTRADO, no el nuestro
         onTriggerPublicProfile(targetUser.username);
       } else {
-        alert("No se encontró ningún jugador con ese código.");
+        alert(t('friends.alert_not_found'));
       }
     } catch (error) {
-      alert("Error al buscar el perfil.");
+      alert(t('friends.alert_search_error'));
     }
   };
 
@@ -177,7 +181,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       <div className="friends-sidebar-content" onClick={e => e.stopPropagation()}>
         <button className="close-button" onClick={onClose}>&times;</button>
         
-        <h2 className="sidebar-title">Social</h2>
+        <h2 className="sidebar-title">{t('friends.social')}</h2>
         
         {/* Perfil del usuario con botón de pendientes al lado */}
         <div className="user-mini-profile">
@@ -200,7 +204,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
               onClick={() => setShowRequests(true)}
               style={{ marginLeft: 'auto', position: 'relative' }} 
             >
-              SOLICITUDES PENDIENTES
+             {t('friends.pending_requests')}
               {requests.length > 0 && <span className="req-count">{requests.length}</span>}
             </button>
         </div>
@@ -212,17 +216,17 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
             <input 
               type="text" 
               className="friends-input-id" 
-              placeholder="CÓDIGO" 
+              placeholder={t('friends.code_placeholder')}
               value={searchCode}
               onChange={handleInputChange}
             />
           </div>
           <div className="search-button-group">
             <button className="view-profile-btn" onClick={handleViewProfileFromSearch}>
-              Ver Perfil
+              {t('friends.view_profile')}
             </button>
             <button className="add-friend-btn" onClick={handleAddFriend}>
-              Añadir
+              {t('friends.add')}
             </button>
           </div>
 
@@ -231,18 +235,18 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
         {/* Área dinámica de la lista */}
         <div className="friends-list-area">
           {loading ? (
-            <div className="empty-list-box">Cargando...</div>
+            <div className="empty-list-box">{t('common.loading')}</div>
           ) : showRequests ? (
             /* VISTA DE SOLICITUDES PENDIENTES */
             <>
               <div className="list-header">
-                <p className="list-status-label">Solicitudes recibidas</p>
+                <p className="list-status-label">{t('friends.received_requests')}</p>
                 <button 
                   type="button"
                   className="pending-friend-btn"
                   onClick={() => setShowRequests(false)}
                 >
-                  Volver a amigos
+                  {t('friends.back_to_friends')}
                 </button>
               </div>
               {requests.length > 0 ? (
@@ -256,23 +260,23 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
                   </div>
                 ))
               ) : (
-                <div className="empty-list-box">No hay solicitudes pendientes</div>
+                <div className="empty-list-box">{t('friends.no_pending')}</div>
               )}
             </>
           ) : (
             /* VISTA DE AMIGOS (Por defecto) */
             <>
-              <p className="list-status-label">Amigos conectados — {friends.length}</p>
+              <p className="list-status-label">{t('friends.connected_count', { count: friends.length })}</p>
               {friends.length > 0 ? (
                 friends.map((friend, index) => (
                   <div key={index} className="friend-item-row">
                     <div className={`status-dot ${friend.status}`}></div>
                     <span className="friend-name">{friend.name}</span>
-                    <button className="invite-btn">Invitar</button>
+                    <button className="invite-btn">{t('friends.invite')}</button>
                   </div>
                 ))
               ) : (
-                <div className="empty-list-box">Tu lista está vacía</div>
+                <div className="empty-list-box">{t('friends.empty_list')}</div>
               )}
             </>
           )}

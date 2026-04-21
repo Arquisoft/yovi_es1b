@@ -15,8 +15,12 @@ export const gameService = {
     const res = await fetch(`${API_BASE_URL}/move`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ cellIndex, username: getCurrentUser(), difficulty, boardSize }),
+        credentials: 'include',
+      body: JSON.stringify({
+        cellIndex,
+        username: getCurrentUser(),
+        difficulty,
+        boardSize }),
     });
     return res.json();
   },
@@ -215,5 +219,18 @@ export const gameService = {
       credentials: 'include'
     });
     return response.json();
+  },
+
+  async addXP(amount: number) {
+    const res = await fetch(`${API_BASE_URL}/users/purchase-xp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      body: JSON.stringify({
+        username: getCurrentUser(),
+        amount
+      }),
+    });
+    return res.json();
   }
 };
