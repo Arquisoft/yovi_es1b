@@ -21,7 +21,7 @@ import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
-import { clearSession } from '../../utils/sessionUtils';
+import {clearSession, isGuestSession} from '../../utils/sessionUtils';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -98,7 +98,7 @@ const GameApp = () => {
     const langMap: Record<string, string> = {
       'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
     };
-    i18n.changeLanguage(langMap[storedLang] ?? storedLang);
+    void i18n.changeLanguage(langMap[storedLang] ?? storedLang);
   }, []);
 
 
@@ -128,7 +128,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const friendCode = isGuestMode ? '' : (localStorage.getItem('yovi_friend_code') || '');
   const displayName = isGuestMode ? 'Invitado' : (localStorage.getItem('yovi_user_nickname') || username);
   const [playerIcon, setPlayerIcon] = useState(resolveUserIcon(isGuestMode ? null : localStorage.getItem('yovi_user_icon')));
-  const [botIcon] = useState<string | null>(() => pickRandomBotIcon());
+  const [botIcon, setBotIcon] = useState<string | null>(() => pickRandomBotIcon());
   const handleAutoMoveRef = useRef<() => Promise<void> | void>(() => {});
   const handleTimeUp = useCallback(() => {
     void handleAutoMoveRef.current();
@@ -189,7 +189,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     setTimerVisible(false);
     setBotIcon(pickRandomBotIcon());
     void resetGame(size, difficulty);
-  }, [resetGame, stopTimer, setTimerVisible]);
+  }, [resetGame, stopTimer, setTimerVisible, setBotIcon]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -268,7 +268,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
                   'Spain': 'es', 'English': 'en', 'German': 'de', 'Portuguese': 'pt',
                 }
                 if (profile?.language) {
-                  i18n.changeLanguage(languageToI18n[profile.language] ?? 'es')
+                  void i18n.changeLanguage(languageToI18n[profile.language] ?? 'es')
                 }
 
               // --- NUEVO: Sincronizar puntos totales ---
@@ -277,7 +277,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
 
           } catch {}
       };
-      syncProfileData();
+      void syncProfileData();
       return () => { active = false; };
   }, [username]);
 
@@ -379,7 +379,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         timerVisible={timerVisible}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
-        onFetchHistory={() => fetchHistory()}
+        onFetchHistory={() => void fetchHistory()}
         onExit={handleExit}
         onChangeDifficulty={(uiDiff: string) => {
           // 1. Mapa de traducción para el backend
@@ -475,7 +475,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         totalPages={totalPages}
         currentFilter={historyFilter}
         onPageChange={fetchHistory}
-        onFilterChange={(f) => { setHistoryFilter(f); fetchHistory(1, f); }}
+        onFilterChange={(f) => { setHistoryFilter(f); void fetchHistory(1, f); }}
       />
 
       {/* 1. Panel de Amigos: el emisor del evento */}

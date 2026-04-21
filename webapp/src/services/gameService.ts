@@ -10,6 +10,23 @@ export const gameService = {
     return res.json();
   },
 
+  async register(payload: {
+    username: string;
+    nickname: string;
+    password: string;
+    birthDate: string;
+    language: string;
+    iconName: string;
+  }) {
+    const res = await fetch(`${API_BASE_URL}/createuser`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload),
+    });
+    return res.json();
+  },
+
   // Realizar un movimiento
   async makeMove(cellIndex: number,  difficulty: string, boardSize?: number) {
     const res = await fetch(`${API_BASE_URL}/move`, {

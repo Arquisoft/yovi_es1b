@@ -16,3 +16,32 @@ export const getCurrentUser = (): string => {
 export const clearSession = () => {
     localStorage.removeItem('username');
 };
+
+/**
+ * Habilita una sesión de invitado.
+ */
+export const enableGuestSession = () => {
+    localStorage.setItem('username', 'Invitado');
+    localStorage.setItem('yovi_user', 'Invitado');
+    localStorage.setItem('yovi_user_nickname', 'Invitado');
+    localStorage.setItem('yovi_friend_code', 'GUEST');
+};
+
+/**
+ * Limpia la sesión de invitado si existe.
+ */
+export const clearGuestSession = () => {
+    if (localStorage.getItem('username') === 'Invitado') {
+        clearSession();
+        localStorage.removeItem('yovi_user');
+        localStorage.removeItem('yovi_user_nickname');
+        localStorage.removeItem('yovi_friend_code');
+    }
+};
+
+/**
+ * Retorna true si la sesión actual es de invitado.
+ */
+export const isGuestSession = (): boolean => {
+    return localStorage.getItem('username') === 'Invitado';
+};
