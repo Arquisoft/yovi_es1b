@@ -1,12 +1,12 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
 
 export default defineConfig({
-  // Plugings necesarios para react
+  // Plugins necesarios para React
   plugins: [react()],
 
-  // Configuración  multi-pagina (MPA)
+  // Configuración multi-página (MPA)
   build: {
     rollupOptions: {
       input: {
@@ -18,7 +18,7 @@ export default defineConfig({
     },
   },
 
-  // Configuracion de Vitest
+  // Configuración de Vitest
   test: {
     globals: true,
     environment: 'jsdom',
@@ -36,4 +36,4 @@ export default defineConfig({
       reportsDirectory: './coverage',
     },
   },
-})
+});
