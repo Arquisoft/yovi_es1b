@@ -1,5 +1,8 @@
 // Node.js Server
 
+const https = require('https');
+const fs = require('fs');
+
 const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -11,7 +14,6 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
-const fs = require('node:fs');
 const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
 
@@ -31,7 +33,17 @@ const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://gamey:4000';
+
+
+// HTTPS
+const sslOptions = {
+  key: fs.readFileSync(path.join(__dirname, '../certs/key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, '../certs/cert.pem'))
+}
+
+
+
 
 const normalizeIconName = (rawValue) => {
   const value = String(rawValue || '').trim();
@@ -699,9 +711,11 @@ if (require.main === module) {
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 
-  app.listen(port, () => {
-    console.log(`User Service listening at http://localhost:${port}`)
-  })
+  // https
+  https.createServer(sslOptions, app).listen(port, () => {
+    console.log(`🔒 User Service listening at https://localhost:${port}`);
+    console.log(`📖 Swagger docs at https://localhost:${port}/api-docs`);
+  });
 }
 
 module.exports = app
