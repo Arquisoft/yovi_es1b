@@ -1,5 +1,6 @@
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 
 interface PayPalStoreProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface PayPalStoreProps {
 }
 
 export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) => {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   const paypalOptions = {
@@ -21,12 +23,11 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
       <div className="payment-card" onClick={(e) => e.stopPropagation()}>
         <button className="payment-close" onClick={onClose}>&times;</button>
         
-        <h2 className="payment-title">TIENDA DE XP</h2>
-        <p className="payment-subtitle">Compra créditos para tu perfil (Modo Sandbox)</p>
+        <h2 className="payment-title">{t('store.title')}</h2>
+        <p className="payment-subtitle">{t('store.subtitle')}</p>
 
         <div className="payment-item-detail">
-          <span>Pack de Iniciación: <strong>1.000 XP</strong></span>
-          <span className="price-tag">1.00€</span>
+          <span>{t('store.pack_label')}</span>
         </div>
 
         <div className="paypal-button-container">
@@ -38,7 +39,7 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
                   intent: "CAPTURE",
                   purchase_units: [
                     {
-                      description: "Compra de 1.000 XP - GameY",
+                      description:  t('store.order_description'),
                       amount: {
                         currency_code: "EUR",
                         value: "1.00",
@@ -57,12 +58,12 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
               }}
               onError={(err) => {
                 console.error("Error en PayPal:", err);
-                alert("Hubo un problema con la transacción.");
+                alert(t('store.error'));
               }}
             />
           </PayPalScriptProvider>
         </div>
-        <p className="payment-footer">Utiliza tus cuentas de prueba de PayPal Developer</p>
+        <p className="payment-footer">{t('store.footer')}</p>
       </div>
     </div>,
     document.body

@@ -13,6 +13,8 @@ import {
   registerGoodImages,
   settingsImages,
 } from './tutorialHelpers';
+import { useTranslation } from 'react-i18next';
+
 interface TutorialScreenProps {
   isOpen: boolean;
   onClose: () => void;
@@ -43,6 +45,7 @@ const HelpImageCard = ({
 }: {
   image: { id: string; src: string; name: string };
 }) => {
+  const { t } = useTranslation();
   const [loadFailed, setLoadFailed] = useState(false);
 
   return (
@@ -55,7 +58,7 @@ const HelpImageCard = ({
       />
       {loadFailed ? (
         <figcaption className="tutorial-image-caption">
-          No se pudo cargar: {getHelpCaption(image.name)}
+          {t('tutorial.caption_load_failed')}: {getHelpCaption(image.name)}
         </figcaption>
       ) : null}
     </figure>
@@ -89,6 +92,7 @@ const HelpSubsection = ({
 };
 
 export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
+  const { t } = useTranslation();
   const homeSectionRef = useRef<HTMLElement | null>(null);
   const registerSectionRef = useRef<HTMLElement | null>(null);
   const loginSectionRef = useRef<HTMLElement | null>(null);
@@ -118,7 +122,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
     <dialog
       open
       className="modal-backdrop tutorial-overlay"
-      aria-label="Ayuda de GameY"
+      aria-label={t('tutorial.aria')}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
           onClose();
@@ -132,245 +136,235 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
     >
       <div className="modal-box tutorial-modal">
         <div className="tutorial-header">
-          <h3 className="tutorial-header-title">Ayuda sobre esta web</h3>
+          <h3 className="tutorial-header-title">{t('tutorial.title')}</h3>
           <button
             type="button"
             className="tutorial-close-icon"
             onClick={onClose}
-            aria-label="Cerrar ayuda"
-            title="Cerrar"
+            aria-label={t('tutorial.close_aria')}
+            title={t('common.close')}
           >
             ×
           </button>
         </div>
 
         <div className="tutorial-body">
-          <aside className="tutorial-sidebar" aria-label="Índice de ayuda">
-            <h4 className="tutorial-sidebar-title">Índice</h4>
+          <aside className="tutorial-sidebar" aria-label={t('tutorial.index_aria')}>
+            <h4 className="tutorial-sidebar-title">{t('tutorial.index')}</h4>
             <div className="tutorial-sidebar-scroll">
             <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(homeSectionRef)}>
-              1. Ventana de inicio
+              {t('tutorial.s1')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(homeSettingsRef)}>
-              1.1 Ajustes
+              {t('tutorial.s1_1')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(homeReferenceRef)}>
-              1.2 Captura de referencia
+              {t('tutorial.s1_2')}
             </button>
             <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(registerSectionRef)}>
-              2. Ventana de registro
+              {t('tutorial.s2')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerEmptyRef)}>
-              2.1 Formulario vacío
+              {t('tutorial.s2_1')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerEmptySpaceRef)}>
-              2.2 Campos vacíos
+              {t('tutorial.s2_2')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerErrorRef)}>
-              2.3 Error de contraseña
+              {t('tutorial.s2_3')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(registerGoodRef)}>
-              2.4 Formulario correcto
+              {t('tutorial.s2_4')}
             </button>
             <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(loginSectionRef)}>
-              3. Ventana de inicio de sesión
+              {t('tutorial.s3')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginEmptyRef)}>
-              3.1 Formulario vacío
+              {t('tutorial.s3_1')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginErrorDataRef)}>
-              3.2 Error de datos
+              {t('tutorial.s3_2')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginErrorServerRef)}>
-              3.3 Error de servidor
+              {t('tutorial.s3_3')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(loginGoodRef)}>
-              3.4 Inicio correcto
+              {t('tutorial.s3_4')}
             </button>
             <button type="button" className="tutorial-sidebar-btn" onClick={() => scrollToSection(gameSectionRef)}>
-              4. Ventana de juego
+              {t('tutorial.s4')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint1Ref)}>
-              4.1 Ejemplo 1
+              {t('tutorial.s4_1')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint2Ref)}>
-              4.2 Ejemplo 2
+              {t('tutorial.s4_2')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint3Ref)}>
-              4.3 Ejemplo 3
+              {t('tutorial.s4_3')}
             </button>
             <button type="button" className="tutorial-sidebar-subbtn" onClick={() => scrollToSection(gamePoint4Ref)}>
-              4.4 Ejemplo 4
+              {t('tutorial.s4_4')}
             </button>
             </div>
           </aside>
 
           <div className="tutorial-content">
             <section className="tutorial-section" id="help-home" ref={homeSectionRef}>
-              <h4>1. Home</h4>
-              <h5 className="tutorial-subtitle">Qué es esta pantalla</h5>
+              <h4>{t('tutorial.s1_title')}</h4>
+              <h5 className="tutorial-subtitle">{t('tutorial.home_what')}</h5>
               <p>
-                Home es el punto de entrada principal. Desde aquí eliges si quieres registrarte,
-                iniciar sesión o volver al flujo principal de la aplicación.
+                {t('tutorial.home_what_text')}
               </p>
-              <h5 className="tutorial-subtitle">Qué puedes hacer</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.home_can')}</h5>
               <p>
-                Si eres nuevo, empieza por Register. Si ya tienes cuenta, usa Login. Esta separación
-                evita confusiones y hace el recorrido más claro.
+                {t('tutorial.home_can_text')}
               </p>
-              <h5 className="tutorial-subtitle">Botón de configuración (todas las pantallas)</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.home_settings')}</h5>
               <p>
-                El botón de configuración te permite ajustar elementos visuales y opciones generales de
-                la aplicación desde cualquier pantalla donde aparezca.
+                {t('tutorial.home_settings_text')}
               </p>
               <HelpSubsection
                 index="1.1"
-                title="Ajustes"
+                title={t('tutorial.s1_1_title')}
                 images={settingsImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "settings" en `webapp/src/assets/help`.'}
-                description="La captura muestra el acceso a ajustes."
+                description={t('tutorial.settings_desc')}
                 sectionRef={homeSettingsRef}
               />
               <HelpSubsection
                 index="1.2"
-                title="Captura de referencia"
+                title={t('tutorial.s1_2_title')}
                 images={homeImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "home" en `webapp/src/assets/help`.'}
-                description="La pantalla principal de ayuda."
+                description={t('tutorial.home_ref_desc')}
                 sectionRef={homeReferenceRef}
               />
             </section>
 
             <section className="tutorial-section" id="help-register" ref={registerSectionRef}>
-              <h4>2. Register</h4>
-              <h5 className="tutorial-subtitle">Campos y uso de la información</h5>
+              <h4>{t('tutorial.s2_title')}</h4>
+              <h5 className="tutorial-subtitle">{t('tutorial.register_fields')}</h5>
               <p>
-                En Register creas tu cuenta. Debes completar nombre de usuario, apodo, fecha de
-                nacimiento, idioma y contraseña con confirmación.
+                {t('tutorial.register_fields_text')}
               </p>
-              <h5 className="tutorial-subtitle">Errores de campos</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.register_errors')}</h5>
               <p>
-                Si dejas campos obligatorios vacíos, o si la contraseña y la confirmación no coinciden,
-                el formulario mostrará un aviso para que lo corrijas antes de enviar.
+                {t('tutorial.register_errors_text')}
               </p>
-              <h5 className="tutorial-subtitle">Errores de servidor</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.register_server')}</h5>
               <p>
-                Si aparece este mensaje, no es algo que tengas que corregir tú. Suele indicar un
-                problema temporal en los servidores o una incidencia interna, y lo normal es esperar
-                un poco y volver a intentarlo más tarde.
+                {t('tutorial.register_server_text')}
               </p>
-              <h5 className="tutorial-subtitle">Recomendaciones de seguridad</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.register_security')}</h5>
               <p>
-                No incluyas información personal sensible en campos públicos. Usa datos necesarios para
-                jugar y mantener tu cuenta, evitando compartir credenciales o datos privados.
+                {t('tutorial.register_security_text')}
               </p>
               <HelpSubsection
                 index="2.1"
-                title="Formulario vacío"
+                title={t('tutorial.caption_register_empty')}
                 images={registerEmptyImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "registerEmpty" en `webapp/src/assets/help`.'}
-                description="El formulario sin completar."
+                description={t('tutorial.register_empty_desc')}
                 sectionRef={registerEmptyRef}
               />
               <HelpSubsection
                 index="2.2"
-                title="Campos vacíos"
+                title={t('tutorial.caption_register_empty_space')}
                 images={registerEmptySpaceImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "registerEmptySpace" en `webapp/src/assets/help`.'}
-                description="El aviso al dejar campos obligatorios vacíos."
+                description={t('tutorial.register_empty_space_desc')}
                 sectionRef={registerEmptySpaceRef}
               />
               <HelpSubsection
                 index="2.3"
-                title="Error de contraseña"
+                title={t('tutorial.caption_register_error_pswd')}
                 images={registerErrorPswdImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "registerErrorPswd" en `webapp/src/assets/help`.'}
-                description="El mensaje cuando la contraseña no es válida."
+                description={t('tutorial.register_error_pswd_desc')}
                 sectionRef={registerErrorRef}
               />
               <HelpSubsection
                 index="2.4"
-                title="Formulario correcto"
+                title={t('tutorial.caption_register_good')}
                 images={registerGoodImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "registerGood" en `webapp/src/assets/help`.'}
-                description="El registro completado correctamente."
+                description={t('tutorial.register_good_desc')}
                 sectionRef={registerGoodRef}
               />
             </section>
 
             <section className="tutorial-section" id="help-login" ref={loginSectionRef}>
-              <h4>3. Login</h4>
-              <h5 className="tutorial-subtitle">Qué datos debes introducir</h5>
+              <h4>{t('tutorial.s3_title')}</h4>
+              <h5 className="tutorial-subtitle">{t('tutorial.login_what')}</h5>
               <p>
-                En Login debes escribir el usuario y la contraseña con los que te registraste.
+                {t('tutorial.login_what_text')}
               </p>
-              <h5 className="tutorial-subtitle">Errores de validación</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.login_validation')}</h5>
               <p>
-                Si algún campo está vacío, no se enviará la solicitud y verás un aviso de validación.
+                {t('tutorial.login_validation_text')}
               </p>
-              <h5 className="tutorial-subtitle">Errores de credenciales o servidor</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.login_errors')}</h5>
               <p>
-                Si el usuario o contraseña no son correctos, aparecerá un error de autenticación. Si
-                aparece un error de conexión, normalmente es algo temporal y no depende de tus datos.
-                Espera un momento e inténtalo de nuevo.
+                {t('tutorial.login_errors_text')}
               </p>
-              <h5 className="tutorial-subtitle">Consejos rápidos</h5>
+              <h5 className="tutorial-subtitle">{t('tutorial.login_tips')}</h5>
               <ul className="tutorial-list">
-                <li>Revisa mayúsculas y minúsculas en usuario y contraseña.</li>
-                <li>Corrige el campo marcado y vuelve a intentar.</li>
-                <li>Si persiste, comprueba el estado de la conexión.</li>
+                <li> {t('tutorial.login_tip_1')}</li>
+                <li>{t('tutorial.login_tip_2')}</li>
+                <li>{t('tutorial.login_tip_3')}</li>
               </ul>
               <HelpSubsection
                 index="3.1"
-                title="Formulario vacío"
+                title={t('tutorial.caption_register_empty')}
                 images={loginEmptyImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "loginEmpty" en `webapp/src/assets/help`.'}
-                description="El formulario sin completar antes de iniciar sesión."
+                description={t('tutorial.login_empty_desc')}
                 sectionRef={loginEmptyRef}
               />
               <HelpSubsection
                 index="3.2"
-                title="Error de datos"
+                title={t('tutorial.s3_2_title')}
                 images={loginErrorDataImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "loginErrorData" en `webapp/src/assets/help`.'}
-                description="El aviso cuando el usuario o la contraseña no coinciden."
+                description={t('tutorial.login_error_data_desc')}
                 sectionRef={loginErrorDataRef}
               />
               <HelpSubsection
                 index="3.3"
-                title="Error de servidor"
+                title={t('tutorial.s3_3_title')}
                 images={loginErrorServerImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "loginErrorServer" en `webapp/src/assets/help`.'}
-                description="Si te sale este aviso, espera un momento e inténtalo otra vez."
+                description={t('tutorial.login_error_server_desc')}
                 sectionRef={loginErrorServerRef}
               />
               <HelpSubsection
                 index="3.4"
-                title="Inicio correcto"
+                title={t('tutorial.s3_4_title')}
                 images={loginGoodImages}
                 emptyMessage={'Captura pendiente: añade una imagen con "loginGood" en `webapp/src/assets/help`.'}
-                description="La sesión iniciada correctamente y lista para entrar en la aplicación."
+                description={t('tutorial.login_good_desc')}
                 sectionRef={loginGoodRef}
               />
             </section>
 
             <section className="tutorial-section" id="help-game" ref={gameSectionRef}>
-              <h4>4. Ventana de juego</h4>
+              <h4>{t('tutorial.game_title')}</h4>
               <section className="tutorial-subsection" id="help-4-1" ref={gamePoint1Ref}>
-                <h5 className="tutorial-subtitle">4.1 Ejemplo 1</h5>
-                <p>Texto de ejemplo para comprobar el desplazamiento del índice.</p>
+                <h5 className="tutorial-subtitle">{t('tutorial.s4_1')}</h5>
+                <p>{t('tutorial.example_1_text')}</p>
               </section>
               <section className="tutorial-subsection" id="help-4-2" ref={gamePoint2Ref}>
-                <h5 className="tutorial-subtitle">4.2 Ejemplo 2</h5>
-                <p>Segundo punto de prueba con texto sencillo.</p>
+                <h5 className="tutorial-subtitle">{t('tutorial.s4_2')}</h5>
+                <p>{t('tutorial.example_2_text')}</p>
               </section>
               <section className="tutorial-subsection" id="help-4-3" ref={gamePoint3Ref}>
-                <h5 className="tutorial-subtitle">4.3 Ejemplo 3</h5>
-                <p>Tercer punto de ejemplo para alargar la lista.</p>
+                <h5 className="tutorial-subtitle">{t('tutorial.s4_3')}</h5>
+                <p>{t('tutorial.example_3_text')}</p>
               </section>
               <section className="tutorial-subsection" id="help-4-4" ref={gamePoint4Ref}>
-                <h5 className="tutorial-subtitle">4.4 Ejemplo 4</h5>
-                <p>Cuarto punto de prueba para forzar el scroll vertical.</p>
+                <h5 className="tutorial-subtitle">{t('tutorial.s4_4')}</h5>
+                <p>{t('tutorial.example_4_text')}</p>
               </section>
             </section>
           </div>
