@@ -34,6 +34,11 @@ const UserSchema = new mongoose.Schema({
     required: false,
     default: 'SinAvatar.png'
   },
+  totalScore: {
+    type: Number,
+    required: false,
+    default: 0
+  },
   createdAt: { 
     type: Date, 
     default: Date.now

@@ -741,6 +741,134 @@ async fn test_history_endpoint_filters_correctly() {
 */
 
 #[tokio::test]
+async fn test_listar_dificultades_endpoint_returns_available_difficulties() {
+    let app = test_app().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/difficulties")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let difficulties: Vec<String> = serde_json::from_slice(&body).unwrap();
+
+    assert!(!difficulties.is_empty());
+}
+
+#[tokio::test]
+async fn test_reset_endpoint_resets_board_and_optional_difficulty() {
+    let app = test_app().await;
+
+    let payload = serde_json::json!({
+        "size": 4,
+        "player": "Alice"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/reset")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let yen: YEN = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(yen.size(), 4);
+}
+
+#[tokio::test]
+async fn test_history_endpoint_returns_paginated_data() {
+    let app = test_app().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/history?username=Drus&page=1&limit=5&result=Victoria")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json.get("data").is_some());
+    assert!(json.get("page").is_some());
+    assert!(json.get("total_pages").is_some());
+}
+
+#[tokio::test]
+async fn test_execute_move_endpoint_saves_victory_history() {
+    let app = test_app().await;
+
+    let reset_payload = serde_json::json!({
+        "size": 1,
+        "difficulty": "Easy",
+        "player": "Alice"
+    });
+
+    let reset_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/reset")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&reset_payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(reset_response.status(), StatusCode::OK);
+
+    let move_payload = serde_json::json!({
+        "index": 0,
+        "player": "Alice"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/execute-move")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&move_payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json.get("winner").is_some());
+    assert!(json.get("board").is_some());
+}
+
+#[tokio::test]
 async fn test_surrender_endpoint_saves_defeat() {
     let app = test_app().await;
 

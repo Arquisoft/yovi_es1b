@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { useTranslation } from 'react-i18next';
 
@@ -22,10 +22,9 @@ import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
-import { TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY } from '../../constants/config';
 import { getGameIdentity, mapUiDifficultyToBackend, resolveIconFromAssets } from '../../utils/gamePageUtils';
 import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
-import { getSizeLabelKey } from '../../utils/gameLabelUtils';
+import { resolveBoardLabel, resolveHistoryLocale, resolveTurnTimeLimit } from './gameMainHelpers';
 
 import '../../css/App.css';
 import '../../css/Game.css';
@@ -121,8 +120,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const [totalPages, setTotalPages] = useState(1);
   const [guestAccessReason, setGuestAccessReason] = useState<GuestAccessReason | null>(null);
   const background = useMenuBackgroundMedia();
-  const historyLocale = (i18n.resolvedLanguage || i18n.language || 'es').split('-')[0];
-  const resolvedBoardLabel = sizeChoice ? t(`game.${getSizeLabelKey(sizeChoice)}`) : null;
+  const historyLocale = resolveHistoryLocale(i18n.resolvedLanguage, i18n.language);
+  const resolvedBoardLabel = resolveBoardLabel(sizeChoice, t);
 
   const {
     boardData,
@@ -188,7 +187,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
         setTotalScore(scoreReal);
       } catch {
-        // Mantenemos el estado local si falla la peticiÃ³n.
+        // Mantenemos el estado local si falla la petición.
       }
     };
 
@@ -257,8 +256,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
       setIsVideoPaused={background.setIsVideoPaused}
       setMusicVolume={background.setMusicVolume}
       setShowSettings={background.setShowSettings}
-      settingsAriaLabel="ConfiguraciÃ³n de elementos de fondo"
-      settingsTitle="ConfiguraciÃ³n de elementos de fondo"
+      settingsAriaLabel="Configuración de elementos de fondo"
+      settingsTitle="Configuración de elementos de fondo"
       showSettings={background.showSettings}
       videoLabel="Video en movimiento"
       videoRef={background.videoRef}
@@ -277,7 +276,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         gameStarted={gameStarted}
         turnTimeLeft={turnTimeLeft}
         timerVisible={timerVisible}
-        turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
+        turnTimeLimit={resolveTurnTimeLimit(difficultyChoice)}
         onCellClick={handleCellClick}
         onFetchHistory={() => (isGuestMode ? openGuestAccessPrompt('historial') : fetchHistory())}
         onExit={() => {
@@ -424,4 +423,5 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 );
 
 export { GameApp, GameAppContent };
+
 

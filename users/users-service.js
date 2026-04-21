@@ -551,13 +551,14 @@ app.post('/move', async (req, res) => {
     // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
     if (newBoard.winner === 0 && finalScore > 0) {
       const User = require('./models/user'); // Asegúrate de tener acceso al modelo
+      const awardedScore = finalScore;
       
       // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
       await User.findOneAndUpdate(
         { username: username },
-        { $inc: { totalScore: finalScore } } // Suma el score actual al totalScore de la DB
+        { $inc: { totalScore: awardedScore } } // Suma el score actual al totalScore de la DB
       );
-      console.log(`Puntos guardados para ${username}: +${finalScore}`);
+      console.log(`Puntos guardados para ${username}: +${awardedScore}`);
     }
     
     // 3. Respuesta HTTP

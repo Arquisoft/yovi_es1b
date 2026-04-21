@@ -56,7 +56,7 @@ pub struct MoveRequest {
     pub player: String,
 }
 
-// Para obtener el historial de partidas de un usuario específico.
+// Para obtener el historial de partidas de un usuario especí­fico.
 //añadida la paginación con page y limit opcionales.
 #[derive(Deserialize)]
 pub struct HistoryQuery {
@@ -67,7 +67,7 @@ pub struct HistoryQuery {
 }
 
 /**
- * Estructura para recibir la consulta de estadísticas de un usuario específico.
+ * Estructura para recibir la consulta de estadí­sticas de un usuario especí­fico.
  */
 #[derive(Deserialize)]
 pub struct StatsQuery {
@@ -84,7 +84,7 @@ pub struct PaginatedHistoryResponse {
     pub total_pages: u64,
 }
 
-// Estructura para recibir la rendición
+// Estructura para recibir la Rendición
 #[derive(Deserialize)]
 pub struct SurrenderRequest {
     player: String,
@@ -122,20 +122,20 @@ pub struct ApiDoc;
  *
  * #[derive(Deserialize)] --> Convierte el JSON recibido a esta estructura de Rust
  *
- * pub size: usize -->  Tamaño del tablero
+ * pub size: usize -->  tamaño del tablero
  *
  */
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct ResetRequest {
     pub size: Option<u32>,
     pub difficulty: Option<String>,
-    pub player: Option<String>, // <--- AÑADE ESTA LÍNEA
+    pub player: Option<String>, // <--- AñADE ESTA LíNEA
 }
 
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct GameRecord {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<String>)] // <-- Esta línea soluciona el error de ObjectId
+    #[schema(value_type = Option<String>)] // <-- Esta lí­nea soluciona el error de ObjectId
     pub id: Option<mongodb::bson::oid::ObjectId>,
     pub date: String,
     pub opponent: String,
@@ -148,25 +148,13 @@ fn normalize_history_result(raw: &str) -> &'static str {
     let stripped: String = raw
         .trim()
         .chars()
-        .map(|ch| match ch {
-            'á' | 'à' | 'ä' | 'â' | 'ã' | 'Á' | 'À' | 'Ä' | 'Â' | 'Ã' => 'a',
-            'é' | 'è' | 'ë' | 'ê' | 'É' | 'È' | 'Ë' | 'Ê' => 'e',
-            'í' | 'ì' | 'ï' | 'î' | 'Í' | 'Ì' | 'Ï' | 'Î' => 'i',
-            'ó' | 'ò' | 'ö' | 'ô' | 'õ' | 'Ó' | 'Ò' | 'Ö' | 'Ô' | 'Õ' => 'o',
-            'ú' | 'ù' | 'ü' | 'û' | 'Ú' | 'Ù' | 'Ü' | 'Û' => 'u',
-            'ñ' | 'Ñ' => 'n',
-            '¡' | '!' | ' ' => '\0',
-            other => other,
-        })
-        .filter(|ch| *ch != '\0')
-        .collect::<String>()
-        .to_lowercase();
+        .filter(|ch| ch.is_ascii_alphanumeric())
+        .map(|ch| ch.to_ascii_lowercase())
+        .collect();
 
     match stripped.as_str() {
-        "victoria" | "win" | "won" | "ganado" | "youwin" | "duhastgewonnen" | "ganhaste" => "Victoria",
-        "derrota" | "defeat" | "loss" | "lost" | "perdido" | "youlose" | "duhastverloren" | "perdeste" => {
-            "Derrota"
-        }
+        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "duhastgewonnen" | "ganhaste" => "Victoria",
+        "derrota" | "defeat" | "loss" | "lost" | "perdido" | "youlose" | "duhastverloren" | "perdeste" => "Derrota",
         "hasganado" => "Victoria",
         "hasperdido" => "Derrota",
         _ => "Derrota",
@@ -238,26 +226,11 @@ pub fn create_default_state() -> AppState {
 /// - The server encounters an error while running
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     // Leer y validar la URI de MongoDB desde variables de entorno.
-    let uri = std::env::var("MONGODB_URI")
-        .map_err(|_| GameYError::ServerError {
+    let uri = validate_mongodb_uri(
+        &std::env::var("MONGODB_URI").map_err(|_| GameYError::ServerError {
             message: "La variable MONGODB_URI no esta configurada. Usa una URI completa, por ejemplo: mongodb://localhost:27017/gamey_db".to_string(),
-        })?;
-    let uri = uri.trim().to_string();
-
-    if uri.is_empty() {
-        return Err(GameYError::ServerError {
-            message: "La variable MONGODB_URI esta vacia. Debe incluir esquema (mongodb:// o mongodb+srv://).".to_string(),
-        });
-    }
-
-    if !uri.starts_with("mongodb://") && !uri.starts_with("mongodb+srv://") {
-        return Err(GameYError::ServerError {
-            message: format!(
-                "MONGODB_URI invalida: falta el esquema. Valor recibido: '{}'. Formato esperado: mongodb://... o mongodb+srv://...",
-                uri
-            ),
-        });
-    }
+        })?,
+    )?;
 
     // Conectar a la BBDD
     let client = mongodb::Client::with_uri_str(&uri)
@@ -298,6 +271,27 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     Ok(())
 }
 
+fn validate_mongodb_uri(raw_uri: &str) -> Result<String, GameYError> {
+    let uri = raw_uri.trim().to_string();
+
+    if uri.is_empty() {
+        return Err(GameYError::ServerError {
+            message: "La variable MONGODB_URI esta vacia. Debe incluir esquema (mongodb:// o mongodb+srv://).".to_string(),
+        });
+    }
+
+    if !uri.starts_with("mongodb://") && !uri.starts_with("mongodb+srv://") {
+        return Err(GameYError::ServerError {
+            message: format!(
+                "MONGODB_URI invalida: falta el esquema. Valor recibido: '{}'. Formato esperado: mongodb://... o mongodb+srv://...",
+                uri
+            ),
+        });
+    }
+
+    Ok(uri)
+}
+
 /// Health check endpoint handler.
 ///
 /// Returns "OK" to indicate the server is running.
@@ -324,7 +318,7 @@ pub async fn realizar_movimiento(
     // 1. Obtener la sesión del usuario (Corregido de ax_state a state)
     let session = state.get_or_create_session(&payload.player).await;
 
-    // Bloqueamos la sesión privada (Añadidos tipos explícitos para ayudar al compilador)
+    // Bloqueamos la sesión privada (Añadidos tipos explí­citos para ayudar al compilador)
     let mut game = session.game.lock().await;
     let current_difficulty_guard = session.current_difficulty.lock().await;
     let active_bot_name = session.active_bot.lock().await.clone();
@@ -459,11 +453,11 @@ pub async fn obtener_historial(
     let limit = params.limit.unwrap_or(10).clamp(1, 100); 
     let skip_value = (page - 1) * (limit as u64);
 
-    // 2. Construir un ÚNICO filtro dinámico
-    // CRÍTICO: Asegúrate de si tu campo en Mongo se llama "player" o "username". Aquí asumo "player".
+    // 2. Construir un úNICO filtro dinámico
+    // CRíTICO: Asegúrate de si tu campo en Mongo se llama "player" o "username". Aquí­ asumo "player".
     let mut filter = doc! { "player": &params.username };
 
-    // Añadimos el filtro de resultado si el frontend lo envía
+    // Añadimos el filtro de resultado si el frontend lo enví­a
     if let Some(res) = &params.result {
         filter.insert("result", res);
     }
@@ -567,3 +561,80 @@ pub async fn obtener_estadisticas(
         total: (wins + losses) as i64,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{normalize_history_document, normalize_history_result, validate_mongodb_uri, run_bot_server};
+
+    #[test]
+    fn normalize_history_result_maps_common_win_variants() {
+        assert_eq!(normalize_history_result("Has ganado"), "Victoria");
+        assert_eq!(normalize_history_result("Victory"), "Victoria");
+        assert_eq!(normalize_history_result("ganhaste"), "Victoria");
+    }
+
+    #[test]
+    fn normalize_history_result_maps_common_loss_variants() {
+        assert_eq!(normalize_history_result("Has perdido"), "Derrota");
+        assert_eq!(normalize_history_result("loss"), "Derrota");
+        assert_eq!(normalize_history_result("Du hast verloren"), "Derrota");
+    }
+
+    #[test]
+    fn normalize_history_document_updates_result_fields() {
+        let mut record = serde_json::json!({
+            "result": "Has ganado",
+            "result_label": "Has perdido",
+        });
+
+        normalize_history_document(&mut record);
+
+        assert_eq!(record["result"], "Victoria");
+        assert_eq!(record["result_label"], "Derrota");
+    }
+
+    #[test]
+    fn validate_mongodb_uri_rejects_empty_and_missing_scheme() {
+        let empty_err = validate_mongodb_uri("   ").unwrap_err();
+        assert!(empty_err.to_string().contains("esta vacia"));
+
+        let scheme_err = validate_mongodb_uri("localhost:27017/gamey_db").unwrap_err();
+        assert!(scheme_err.to_string().contains("falta el esquema"));
+    }
+
+    #[test]
+    fn validate_mongodb_uri_accepts_valid_uri() {
+        let uri = validate_mongodb_uri(" mongodb://localhost:27017/gamey_db ").unwrap();
+        assert_eq!(uri, "mongodb://localhost:27017/gamey_db");
+    }
+
+    #[tokio::test]
+    async fn run_bot_server_reports_bind_error_when_port_is_busy() {
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let _keep_alive = listener;
+
+        let original_uri = std::env::var("MONGODB_URI").ok();
+        unsafe {
+            std::env::set_var("MONGODB_URI", "mongodb://localhost:27017/gamey_db");
+        }
+
+        let result = tokio::time::timeout(std::time::Duration::from_secs(5), run_bot_server(port))
+            .await
+            .expect("run_bot_server should not hang when bind fails");
+
+        if let Some(value) = original_uri {
+            unsafe {
+                std::env::set_var("MONGODB_URI", value);
+            }
+        } else {
+            unsafe {
+                std::env::remove_var("MONGODB_URI");
+            }
+        }
+
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Failed to bind"));
+    }
+}
+

@@ -232,6 +232,55 @@ describe('game main entrypoint', () => {
     expect(screen.getByTestId('profile-screen').textContent).toBe('true')
   })
 
+  test('al ganar una jugada abre el modal de resultado', async () => {
+    localStorage.setItem('yovi_user', 'alice')
+
+    gameLogicMocks.executeHumanMove.mockResolvedValueOnce({
+      responseFromRust: null,
+      winner: 0,
+      score: 42,
+    })
+
+    const { GameAppContent } = await loadGameMain()
+    render(<GameAppContent isGuestMode={false} storedUsername="alice" />)
+
+    fireEvent.click(screen.getByRole('button', { name: /cell/i }))
+
+    await waitFor(() => {
+      expect(gameLogicMocks.executeHumanMove).toHaveBeenCalled()
+      expect(screen.getByTestId('result-modal').textContent).toBe('true')
+    })
+  })
+
+  test('al pedir historial carga datos y abre el modal', async () => {
+    localStorage.setItem('yovi_user', 'alice')
+
+    gameServiceMocks.getHistory.mockResolvedValueOnce({
+      data: [
+        {
+          _id: { $oid: '1' },
+          date: '2026-03-18T10:00:00Z',
+          opponent: 'pro_bot',
+          board_size: 6,
+          difficulty: 'Hard',
+          result: 'Victoria',
+        },
+      ],
+      total_pages: 2,
+      page: 1,
+    })
+
+    const { GameAppContent } = await loadGameMain()
+    render(<GameAppContent isGuestMode={false} storedUsername="alice" />)
+
+    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+
+    await waitFor(() => {
+      expect(gameServiceMocks.getHistory).toHaveBeenCalledWith(1, null)
+      expect(screen.getByTestId('history-modal').textContent).toBe('true')
+    })
+  })
+
   test('en modo invitado muestra el prompt de acceso', async () => {
     localStorage.setItem('yovi_user', 'alice')
 
