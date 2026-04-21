@@ -5,3 +5,5 @@ lcov.info
 docs/build
 .vscode/
 .env
+certs/*.pem
+certs/*.key

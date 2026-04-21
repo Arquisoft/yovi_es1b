@@ -20,7 +20,7 @@ describe('RegisterForm', () => {
   beforeEach(() => {
     vi.stubGlobal('scrollTo', vi.fn())
     // Ponemos una URL válida para evitar el error de Invalid URL
-    vi.stubGlobal('location', { href: 'http://localhost/' })
+    vi.stubGlobal('location', { href: 'https://localhost/', protocol: 'https:' })
     global.fetch = vi.fn()
   })
 
