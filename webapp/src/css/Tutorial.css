@@ -221,6 +221,10 @@
   color: #111827;
 }
 
+.tutorial-important-text {
+  white-space: pre-line;
+}
+
 .tutorial-capture-note {
   margin-top: 0.05rem;
   color: #4b5563;

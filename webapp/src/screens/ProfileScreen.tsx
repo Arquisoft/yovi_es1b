@@ -4,6 +4,7 @@ import defaultAvatar from '../assets/icon/SinAvatar.png';
 import i18n from '../i18n';
 import { useTranslation } from 'react-i18next';
 import { languageOptions } from '../utils/languageUtils';
+import { ModalDialog } from '../components/common/ModalDialog';
 
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -63,6 +64,31 @@ const availableIcons = Object.entries(iconModules)
 
 export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
+const renderIconGrid = (
+  icons: AvatarIcon[],
+  avatarDraft: string,
+  setAvatarDraft: (value: string) => void,
+) => (
+  <div className="icon-row-grid">
+    {icons.map((icon) => {
+      const isSelected = avatarDraft === icon.name;
+      return (
+        <button
+          key={icon.id}
+          type="button"
+          className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
+          onClick={() => setAvatarDraft(icon.name)}
+          title={icon.name}
+          aria-label={`Elegir ${icon.name}`}
+          aria-pressed={isSelected}
+        >
+          <img src={icon.src} alt={icon.name} className="icon-option-img" />
+        </button>
+      );
+    })}
+  </div>
+);
+
 export const renderAvatarIconPicker = (
   icons: AvatarIcon[],
   avatarDraft: string,
@@ -96,44 +122,10 @@ export const renderAvatarIconPicker = (
       )}
 
       <div className="icon-row-label">Hombre</div>
-      <div className="icon-row-grid">
-        {male.map((icon) => {
-          const isSelected = avatarDraft === icon.name;
-          return (
-            <button
-              key={icon.id}
-              type="button"
-              className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-              onClick={() => setAvatarDraft(icon.name)}
-              title={icon.name}
-              aria-label={`Elegir ${icon.name}`}
-              aria-pressed={isSelected}
-            >
-              <img src={icon.src} alt={icon.name} className="icon-option-img" />
-            </button>
-          );
-        })}
-      </div>
+      {renderIconGrid(male, avatarDraft, setAvatarDraft)}
 
       <div className="icon-row-label">Mujer</div>
-      <div className="icon-row-grid">
-        {female.map((icon) => {
-          const isSelected = avatarDraft === icon.name;
-          return (
-            <button
-              key={icon.id}
-              type="button"
-              className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-              onClick={() => setAvatarDraft(icon.name)}
-              title={icon.name}
-              aria-label={`Elegir ${icon.name}`}
-              aria-pressed={isSelected}
-            >
-              <img src={icon.src} alt={icon.name} className="icon-option-img" />
-            </button>
-          );
-        })}
-      </div>
+      {renderIconGrid(female, avatarDraft, setAvatarDraft)}
     </>
   );
 };
@@ -333,7 +325,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
   };
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Ver mi perfil">
+    <ModalDialog className="modal-backdrop" ariaLabel="Ver mi perfil">
       <div className="modal-box profile-modal">
         <h3 className="profile-title">{t('profile.title')}</h3>
 
@@ -471,7 +463,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         </div>
       </div>
       {showAvatarEditor && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Seleccionar avatar">
+        <ModalDialog className="modal-backdrop" ariaLabel="Seleccionar avatar">
           <div className="modal-box profile-avatar-modal">
             <h3>{t('profile.select_avatar')}</h3>
             {avatarError && <small className="error-message">{avatarError}</small>}
@@ -487,8 +479,8 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               </button>
             </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
-    </div>
+    </ModalDialog>
   );
 };

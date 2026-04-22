@@ -1,7 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 import '../css/Tutorial.css';
+import { ModalDialog } from '../components/common/ModalDialog';
 import {
   getHelpCaption,
+  gameDifficultImages,
+  gameEndedImages,
+  gameFriendsImages,
+  gameHistorialImages,
+  gameInGameImages,
+  gameLoseImages,
+  gameNavImages,
+  gamePointsImages,
+  gameSizeImages,
+  gameTemporizatorImages,
+  gameViewMyProfileImages,
+  gameWinImages,
+  helpGameImages,
   helpHomeImages,
   helpLoginImages,
   helpRegisterImages,
@@ -148,7 +162,7 @@ const TutorialSectionBlock = ({ section }: { section: TutorialSection }) => {
       {section.importantHeading && section.importantText ? (
         <>
           <h5 className="tutorial-subtitle">{section.importantHeading}</h5>
-          <p>{section.importantText}</p>
+          <p className="tutorial-important-text">{section.importantText}</p>
         </>
       ) : null}
 
@@ -435,6 +449,8 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
       menuLabel: t('tutorial.s4'),
       title: t('tutorial.window_game'),
       sectionId: 'help-game',
+      coverImages: helpGameImages,
+      coverEmptyMessage: noCaptureMessage,
       introHeading: t('tutorial.subtitle_information'),
       introText: t('tutorial.game_info_paragraph'),
       featureHeading: t('tutorial.subtitle_features'),
@@ -457,8 +473,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_1'),
           title: t('tutorial.s4_1'),
           description: t('tutorial.s4_1_desc'),
-          captureNote: t('tutorial.game_capture_1'),
-          images: [],
+          images: gameNavImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-1',
         },
@@ -467,8 +482,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_2'),
           title: t('tutorial.s4_2'),
           description: t('tutorial.s4_2_desc'),
-          captureNote: t('tutorial.game_capture_2'),
-          images: [],
+          images: gameSizeImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-2',
         },
@@ -477,8 +491,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_3'),
           title: t('tutorial.s4_3'),
           description: t('tutorial.s4_3_desc'),
-          captureNote: t('tutorial.game_capture_3'),
-          images: [],
+          images: gameDifficultImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-3',
         },
@@ -487,8 +500,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_4'),
           title: t('tutorial.s4_4'),
           description: t('tutorial.s4_4_desc'),
-          captureNote: t('tutorial.game_capture_4'),
-          images: [],
+          images: gamePointsImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-4',
         },
@@ -497,8 +509,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_5'),
           title: t('tutorial.s4_5'),
           description: t('tutorial.s4_5_desc'),
-          captureNote: t('tutorial.game_capture_5'),
-          images: [],
+          images: gameTemporizatorImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-5',
         },
@@ -507,8 +518,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_6'),
           title: t('tutorial.s4_6'),
           description: t('tutorial.s4_6_desc'),
-          captureNote: t('tutorial.game_capture_6'),
-          images: [],
+          images: gameInGameImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-6',
         },
@@ -517,8 +527,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_7'),
           title: t('tutorial.s4_7'),
           description: t('tutorial.s4_7_desc'),
-          captureNote: t('tutorial.game_capture_7'),
-          images: [],
+          images: gameViewMyProfileImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-7',
         },
@@ -527,10 +536,54 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_8'),
           title: t('tutorial.s4_8'),
           description: t('tutorial.s4_8_desc'),
-          captureNote: t('tutorial.game_capture_8'),
-          images: [],
+          images: gameFriendsImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-8',
+        },
+        {
+          index: '4.9',
+          menuLabel: t('tutorial.s4_9'),
+          title: t('tutorial.s4_9'),
+          description: t('tutorial.s4_9_desc'),
+          images: gameHistorialImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-9',
+        },
+        {
+          index: '4.10',
+          menuLabel: t('tutorial.s4_10'),
+          title: t('tutorial.s4_10'),
+          description: t('tutorial.s4_10_desc'),
+          images: gameEndedImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-10',
+        },
+        {
+          index: '4.11',
+          menuLabel: t('tutorial.s4_11'),
+          title: t('tutorial.s4_11'),
+          description: t('tutorial.s4_11_desc'),
+          images: gameWinImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-11',
+        },
+        {
+          index: '4.12',
+          menuLabel: t('tutorial.s4_12'),
+          title: t('tutorial.s4_12'),
+          description: t('tutorial.s4_12_desc'),
+          images: gameLoseImages,
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-12',
+        },
+        {
+          index: '4.13',
+          menuLabel: t('tutorial.s4_13'),
+          title: t('tutorial.s4_13_title'),
+          description: t('tutorial.s4_13_desc'),
+          images: [...settingsImages, ...helpGameImages],
+          emptyMessage: noCaptureMessage,
+          sectionId: 'help-game-settings-help',
         },
       ],
     },
@@ -541,13 +594,11 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
   };
 
   return (
-    <dialog
+    <ModalDialog
       ref={dialogRef}
-      open
-      aria-modal="true"
       className="modal-backdrop tutorial-overlay"
       aria-label={t('tutorial.aria')}
-      aria-labelledby="tutorial-title"
+      ariaLabelledby="tutorial-title"
     >
       <div className="modal-box tutorial-modal">
         <div className="tutorial-header">
@@ -602,6 +653,6 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           </div>
         </div>
       </div>
-    </dialog>
+    </ModalDialog>
   );
 };

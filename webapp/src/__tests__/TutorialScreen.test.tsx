@@ -1,12 +1,23 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import {
-  TutorialScreen,
-} from '../screens/TutorialScreen'
+import { TutorialScreen } from '../screens/TutorialScreen'
 import {
   allHelpImages,
+  gameDifficultImages,
+  gameEndedImages,
+  gameFriendsImages,
+  gameHistorialImages,
+  gameInGameImages,
+  gameLoseImages,
+  gameNavImages,
+  gamePointsImages,
+  gameSizeImages,
+  gameTemporizatorImages,
+  gameViewMyProfileImages,
+  gameWinImages,
   getHelpCaption,
+  helpGameImages,
   helpHomeImages,
   helpLoginImages,
   helpRegisterImages,
@@ -28,6 +39,7 @@ const expectedHelpFilenames = [
   'helpHome.png',
   'helpRegister.png',
   'helpLogin.png',
+  'helpGame.png',
   'home.png',
   'idiomaButton.png',
   'settings.png',
@@ -39,23 +51,18 @@ const expectedHelpFilenames = [
   'loginErrorBadUsernamePswd.png',
   'loginErrorServer.png',
   'loginGood.png',
-]
-
-const expectedRenderedFilenames = [
-  'helpHome.png',
-  'helpRegister.png',
-  'helpLogin.png',
-  'home.png',
-  'idiomaButton.png',
-  'settings.png',
-  'registerBlank.png',
-  'registerBad.png',
-  'registerBadPasswd.png',
-  'registerGood.png',
-  'loginBlank.png',
-  'loginErrorBadUsernamePswd.png',
-  'loginErrorServer.png',
-  'loginGood.png',
+  'gameNav.png',
+  'gamePoints.png',
+  'gameSize.png',
+  'gameDifficult.png',
+  'gameTemporizator.png',
+  'gameInGame.png',
+  'gameViewMyProfile.png',
+  'gameFriends.png',
+  'gameHistorial.png',
+  'gameEnded.png',
+  'gameWin.png',
+  'gameLose.png',
 ]
 
 describe('TutorialScreen helpers', () => {
@@ -68,6 +75,7 @@ describe('TutorialScreen helpers', () => {
     ['helpHome.png', helpHomeImages],
     ['helpRegister.png', helpRegisterImages],
     ['helpLogin.png', helpLoginImages],
+    ['helpGame.png', helpGameImages],
     ['home.png', homeImages],
     ['idiomaButton.png', languageImages],
     ['settings.png', settingsImages],
@@ -79,6 +87,18 @@ describe('TutorialScreen helpers', () => {
     ['loginErrorBadUsernamePswd.png', loginErrorBadUsernamePswdImages],
     ['loginErrorServer.png', loginErrorServerImages],
     ['loginGood.png', loginGoodImages],
+    ['gameNav.png', gameNavImages],
+    ['gamePoints.png', gamePointsImages],
+    ['gameSize.png', gameSizeImages],
+    ['gameDifficult.png', gameDifficultImages],
+    ['gameTemporizator.png', gameTemporizatorImages],
+    ['gameInGame.png', gameInGameImages],
+    ['gameViewMyProfile.png', gameViewMyProfileImages],
+    ['gameFriends.png', gameFriendsImages],
+    ['gameHistorial.png', gameHistorialImages],
+    ['gameEnded.png', gameEndedImages],
+    ['gameWin.png', gameWinImages],
+    ['gameLose.png', gameLoseImages],
   ])('pickImageByName devuelve la captura correcta para %s', (fileName, images) => {
     const picked = pickImageByName(fileName)
     expect(picked).toEqual(images)
@@ -96,11 +116,24 @@ describe('TutorialScreen helpers', () => {
     ['helpHome.png', 'Pantalla de inicio'],
     ['helpRegister.png', 'Pantalla de registro'],
     ['helpLogin.png', 'Pantalla de inicio de sesión'],
+    ['helpGame.png', 'Ventana de juego'],
     ['idiomaButton.png', 'Idioma'],
     ['loginBlank.png', 'Formulario vacío'],
     ['loginErrorBadUsernamePswd.png', 'Error de datos'],
     ['loginErrorServer.png', 'Error de servidor'],
     ['loginGood.png', 'Inicio correcto'],
+    ['gameNav.png', 'Barra superior del juego'],
+    ['gamePoints.png', 'Puntos acumulados'],
+    ['gameSize.png', 'Tamaño de la partida'],
+    ['gameDifficult.png', 'Dificultad de la partida'],
+    ['gameTemporizator.png', 'Temporizador del turno'],
+    ['gameInGame.png', 'Tablero de juego'],
+    ['gameViewMyProfile.png', 'Perfil del jugador'],
+    ['gameFriends.png', 'Amigos y salida'],
+    ['gameHistorial.png', 'Historial de partidas'],
+    ['gameEnded.png', 'Fin de partida'],
+    ['gameWin.png', 'Ventana de victoria'],
+    ['gameLose.png', 'Ventana de derrota'],
   ])('getHelpCaption traduce %s como %s', (imageName, expectedCaption) => {
     expect(getHelpCaption(imageName)).toBe(expectedCaption)
   })
@@ -137,7 +170,7 @@ describe('TutorialScreen', () => {
     expect(screen.getByRole('button', { name: /3\. ventana de inicio de sesión/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /4\. ventana de juego/i })).toBeInTheDocument()
 
-    expectedRenderedFilenames.forEach((fileName) => {
+    expectedHelpFilenames.forEach((fileName) => {
       expect(screen.getAllByAltText(fileName).length).toBeGreaterThan(0)
     })
   })
@@ -176,6 +209,11 @@ describe('TutorialScreen', () => {
       /4\.6 tablero y celdas/i,
       /4\.7 panel de información/i,
       /4\.8 perfil, amigos y salida/i,
+      /4\.9 historial de partidas/i,
+      /4\.10 fin de partida/i,
+      /4\.11 victoria/i,
+      /4\.12 derrota/i,
+      /4\.13 ajustes y ayuda/i,
     ]
 
     buttonsToClick.forEach((name) => {

@@ -14,7 +14,16 @@ export const getAuthHeaders = () => {
  * Se usa para que Rust identifique qué partida cargar.
  */
 export const getCurrentUser = (): string => {
-    return sessionStorage.getItem('username') || '';
+    const storedUsername = sessionStorage.getItem('username');
+    if (!storedUsername) return '';
+
+    const normalized = normalizeStorageValue(storedUsername, 64);
+    if (!normalized || !USERNAME_PATTERN.test(normalized)) {
+        sessionStorage.removeItem('username');
+        return '';
+    }
+
+    return normalized;
 };
 
 /**
@@ -47,25 +56,23 @@ export const clearSession = () => {
     clearGuestSession();
 };
 
-const sanitizeBrowserStorageValue = (value?: string | null, maxLength = 128) => {
-  const normalized = String(value ?? '')
-    .normalize('NFKC')
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/[^\p{L}\p{N}\s._-]/gu, '')
-    .trim();
+const USERNAME_PATTERN = /^[\p{L}\p{N}\s._-]{1,64}$/u;
+const STORAGE_VALUE_PATTERN = /^[\p{L}\p{N}\s._-]{1,128}$/u;
 
-  return normalized.slice(0, maxLength);
+const normalizeStorageValue = (value?: string | null, maxLength = 128) => {
+  const trimmed = String(value ?? '').normalize('NFKC').trim().slice(0, maxLength);
+  return trimmed;
 };
 
-const STORAGE_VALUE_PATTERN = /^[\p{L}\p{N}\s._-]{1,128}$/u;
+const isSafeStorageValue = (value: string, pattern: RegExp) => pattern.test(value);
 
 /**
  * Sustituye la sesión activa por la del usuario recién registrado.
  * Se usa tras crear una cuenta para evitar arrastrar el usuario anterior.
  */
 export const activateRegisteredSession = (username: string) => {
-    const name = sanitizeBrowserStorageValue(username, 64);
-    if (!name || !STORAGE_VALUE_PATTERN.test(name)) return false;
+    const name = normalizeStorageValue(username, 64);
+    if (!name || !USERNAME_PATTERN.test(name)) return false;
 
     clearSession();
     sessionStorage.setItem('username', name);
@@ -80,18 +87,18 @@ type PersistUserSessionOptions = {
 };
 
 const setOrClear = (key: string, value?: string | null, maxLength = 128) => {
-  const sanitized = sanitizeBrowserStorageValue(value, maxLength);
-  if (sanitized) {
-    localStorage.setItem(key, sanitized);
+  const normalized = normalizeStorageValue(value, maxLength);
+  if (normalized && isSafeStorageValue(normalized, STORAGE_VALUE_PATTERN)) {
+    localStorage.setItem(key, normalized);
   } else {
     localStorage.removeItem(key);
   }
 };
 
 export const persistUserSession = (username: string, options: PersistUserSessionOptions) => {
-  const name = sanitizeBrowserStorageValue(username, 64);
-  const friendCode = sanitizeBrowserStorageValue(options.friendCode, 32);
-  if (!name || !STORAGE_VALUE_PATTERN.test(name)) return false;
+  const name = normalizeStorageValue(username, 64);
+  const friendCode = normalizeStorageValue(options.friendCode, 32);
+  if (!name || !USERNAME_PATTERN.test(name)) return false;
   if (!friendCode || !STORAGE_VALUE_PATTERN.test(friendCode)) return false;
 
   localStorage.setItem('yovi_user', name);
