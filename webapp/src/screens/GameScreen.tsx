@@ -52,6 +52,7 @@ type GameScreenProps = Readonly<{
   sizeLabel: string | null;
   totalScore: number; // Nuevo prop para el puntaje total acumulado del usuario
   gameStarted?: boolean;
+  restartDisabled?: boolean;
   onCellClick: (index: number) => void; // Envia un movimiento al backend
   onEndGame: () => void; // Termina la partida actual
   onResetGame: () => void; // Reinicia partida
@@ -81,6 +82,7 @@ function GameScreen({
   sizeLabel,
   totalScore,
   gameStarted = false,
+  restartDisabled = false,
   onCellClick,
   onEndGame,
   onResetGame,
@@ -147,8 +149,8 @@ function GameScreen({
 
   // Nombre del Bot: Dinámico según lo que recibimos
   const botName = difficultyChoice
-    ? `Bot Player (${difficultyLabel})`
-    : 'Bot Player';
+    ? `${t('game.bot_player')} (${difficultyLabel})`
+    : t('game.bot_player');
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
   const safePlayerIcon = playerIcon?.trim() ? playerIcon : defaultAvatar;
@@ -157,6 +159,7 @@ function GameScreen({
   const victoryPointsLabel = getVictoryPointsLabel(difficultyChoice, boardDimension);
   const canSurrender = boardData !== null && winner === null && gameStarted;
   const canChangeGameSetup = !gameStarted || winner !== null;
+  const canRestart = !restartDisabled;
 
   useEffect(() => {
     if (gameStarted) {
@@ -195,86 +198,90 @@ function GameScreen({
       <nav className="game-navbar">
         <div className="nav-left-group">
           <img src={logoGameY} alt="GameY" className="nav-gamey-logo" />
-          <div className="nav-profile-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title={t('profile.title')}>
-              <img className="nav-btn-profile-img" src={safePlayerIcon} alt={t('profile.title')} />
-            </button>
-            <span className="nav-icon-caption nav-profile-caption">Ver perfil</span>
-          </div>
         </div>
 
         {/* --- BOTÓN DE PUNTOS CENTRAL --- */}
         <div className="nav-center-score">
+            <span className="score-caption">{t('game.my_points')}</span>
             <button className="score-badge-button" onClick={onScoreButtonClick}>
                 <span className="score-star">★</span>
                 <span className="score-text">{totalScore.toLocaleString()} XP</span>
             </button>
-            <span className="score-caption">{t('game.my_points')}</span>
         </div>
 
         <div className="nav-game-settings">
-          {/* MENÚ TAMAÑO */}
-          <div className="custom-dropdown-container">
-            <button 
-              className={`dropdown-trigger ${showSizeMenu ? 'active' : ''}`}
-              onClick={() => { setShowSizeMenu(!showSizeMenu); setShowDiffMenu(false); }}
-              disabled={!canChangeGameSetup}
-              aria-disabled={!canChangeGameSetup}
-            >
-              <span className="dropdown-trigger-text">
-                <span className="dropdown-trigger-label">{t('game.size')}:</span>
-                <span className="dropdown-trigger-value">{translatedSizeLabel}</span>
-              </span>
-              <span className="dropdown-trigger-arrow" aria-hidden="true">▾</span>
-            </button>
-            
-            {showSizeMenu && (
-              <div className="dropdown-floating-list">
-                {SIZE_OPTIONS.map((option) => (
-                  <button
-                    key={option} 
-                    type="button"
-                    className="dropdown-item"
-                    onClick={() => {
-                      onChangeSize(option);
-                      setShowSizeMenu(false);
-                    }}
-                  >
-                    {t(`game.${getSizeLabelKey(option)}`)}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="nav-setup-item">
+            <span className="nav-setup-label">{t('game.change_size')}</span>
+            {/* MENÚ TAMAÑO */}
+            <div className="custom-dropdown-container">
+              <button
+                className={`dropdown-trigger ${showSizeMenu ? 'active' : ''}`}
+                onClick={() => { setShowSizeMenu(!showSizeMenu); setShowDiffMenu(false); }}
+                disabled={!canChangeGameSetup}
+                aria-disabled={!canChangeGameSetup}
+              >
+                <span className="dropdown-trigger-arrow" aria-hidden="true">▾</span>
+                <span className="dropdown-trigger-text">
+                  <span className="dropdown-trigger-label">{t('game.size')}:</span>
+                  <span className="dropdown-trigger-value">{translatedSizeLabel}</span>
+                </span>
+              </button>
+
+              {showSizeMenu && (
+                <div className="dropdown-floating-list">
+                  {SIZE_OPTIONS.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      className="dropdown-item"
+                      onClick={() => {
+                        onChangeSize(option);
+                        setShowSizeMenu(false);
+                      }}
+                    >
+                      {t(`game.${getSizeLabelKey(option)}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* MENÚ DIFICULTAD */}
-          <div className="custom-dropdown-container">
-            <button 
-              className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
-              onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
-              disabled={!canChangeGameSetup}
-              aria-disabled={!canChangeGameSetup}
-            >
-              {t('game.difficulty')}: {difficultyLabel} ▾
-            </button>
-            
-            {showDiffMenu && (
-              <div className="dropdown-floating-list">
-                {difficultyOptions.map((diff) => (
-                  <button
-                    key={diff} 
-                    type="button"
-                    className="dropdown-item"
-                    onClick={() => {
-                      onChangeDifficulty(diff);
-                      setShowDiffMenu(false);
-                    }}
-                  >
-                    {t(`game.${getDifficultyLabelKey(diff)}`)}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="nav-setup-item">
+            <span className="nav-setup-label">{t('game.change_difficulty')}</span>
+            {/* MENÚ DIFICULTAD */}
+            <div className="custom-dropdown-container">
+              <button
+                className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
+                onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
+                disabled={!canChangeGameSetup}
+                aria-disabled={!canChangeGameSetup}
+              >
+                <span className="dropdown-trigger-arrow" aria-hidden="true">▾</span>
+                <span className="dropdown-trigger-text">
+                  <span className="dropdown-trigger-label">{t('game.difficulty')}:</span>
+                  <span className="dropdown-trigger-value">{difficultyLabel}</span>
+                </span>
+              </button>
+
+              {showDiffMenu && (
+                <div className="dropdown-floating-list">
+                  {difficultyOptions.map((diff) => (
+                    <button
+                      key={diff}
+                      type="button"
+                      className="dropdown-item"
+                      onClick={() => {
+                        onChangeDifficulty(diff);
+                        setShowDiffMenu(false);
+                      }}
+                    >
+                      {t(`game.${getDifficultyLabelKey(diff)}`)}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />
@@ -294,7 +301,13 @@ function GameScreen({
             <span className="nav-icon-caption">{t('game.surrender')}</span>
           </div>
           <div className="nav-icon-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn-with-restart" onClick={onResetGame} title={t('game.restart')}>
+            <button
+              className="nav-btn nav-btn-icon-frame nav-btn-with-restart"
+              onClick={onResetGame}
+              title={t('game.restart')}
+              disabled={!canRestart}
+              aria-disabled={!canRestart}
+            >
               <img className="nav-btn-reset-img" src={reiniciarPartidaImg} alt={t('game.restart')} />
               <span className="nav-btn-restart-hover" aria-hidden="true">
                 <Lottie animationData={restartJson} loop autoplay lottieRef={restartLottieRef} />
@@ -338,13 +351,20 @@ function GameScreen({
                 <Lottie animationData={settingsJson} loop autoplay lottieRef={settingsLottieRef} />
               </span>
             </button>
-            <span className="nav-icon-caption">{t('game.settings')}</span>
+            <span className="nav-icon-caption nav-icon-caption-settings">{t('game.settings')}</span>
           </div>
           <div className="nav-icon-action">
             <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title={t('game.friends_menu')}>
               <img className="nav-btn-friends-img" src={amigosImg} alt={t('game.friends_menu_short')} />
             </button>
             <span className="nav-icon-caption">{t('game.friends_menu_short')}</span>
+          </div>
+
+          <div className="nav-profile-action">
+            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title={t('profile.title')}>
+              <img className="nav-btn-profile-img" src={safePlayerIcon} alt={t('profile.title')} />
+            </button>
+            <span className="nav-icon-caption nav-profile-caption">{t('game.profile')}</span>
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />
@@ -453,10 +473,7 @@ function GameScreen({
           <br />
           - {t('game.objective_1')}
           <br />
-          - {t('game.objective_2')}
-          <br />
-          <br />
-          <strong className="guide-center-heading">{t('game.instructions_title')}</strong>
+          <strong className="guide-center-heading guide-instructions-heading">{t('game.instructions_title')}</strong>
           <br />
           - {t('game.instructions_1')}
           <br />

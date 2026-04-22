@@ -47,6 +47,12 @@ describe('RegisterForm', () => {
     expect(fallbackContainer.querySelector('.country-flag-fallback')).toBeInTheDocument()
   })
 
+  test('el campo apodo del registro limita a 15 caracteres', () => {
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
+
+    expect(screen.getByLabelText(/apodo/i)).toHaveAttribute('maxLength', '15')
+  })
+
   test('con datos incompletos no deja avanzar', async () => {
     const user = userEvent.setup()
     const onCreate = vi.fn()
@@ -265,6 +271,22 @@ describe('RegisterForm', () => {
     render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
 
     expect(screen.getByRole('button', { name: /volver/i })).toHaveClass('cancel-button')
+  })
+
+  test('muestra el enlace para ir a login y ejecuta onGoToLogin', async () => {
+    const user = userEvent.setup()
+    const onGoToLogin = vi.fn()
+
+    render(<RegisterScreen onBack={vi.fn()} onGoToLogin={onGoToLogin} onCreateAccount={vi.fn()} />)
+
+    const loginLink = screen.getByRole('link', { name: /ya tengo una cuenta, iniciar sesión/i })
+    expect(loginLink).toHaveClass('register-login-link')
+
+    await act(async () => {
+      await user.click(loginLink)
+    })
+
+    expect(onGoToLogin).toHaveBeenCalled()
   })
 
   test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {

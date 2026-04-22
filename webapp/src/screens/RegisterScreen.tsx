@@ -75,6 +75,7 @@ interface RegisterData {
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
+  readonly onGoToLogin?: () => void;
   readonly onOpenLanguage?: () => void;
   readonly onOpenSettings?: () => void;
   readonly onOpenTutorial?: () => void;
@@ -89,7 +90,7 @@ interface RegisterScreenProps {
 
 const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
 
-function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
+function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const { t } = useTranslation();
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
@@ -234,6 +235,7 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
                 type="text"
                 value={formData.nickname}
                 onChange={(e) => handleChange('nickname', e.target.value)}
+                maxLength={15}
                 required
               />
             </div>
@@ -371,14 +373,27 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
         </div>
 
         <div className="register-actions">
-        <button type="submit" className="submit-button" disabled={!formData.language.trim()}>
-          {t('register.submit')}
-        </button>
-
           <button type="button" className="submit-button cancel-button" onClick={onBack}>
             {t('common.back')}
           </button>
+
+          <button type="submit" className="submit-button" disabled={!formData.language.trim()}>
+            {t('register.submit')}
+          </button>
         </div>
+
+        {onGoToLogin && (
+          <a
+            href="#"
+            className="register-login-link"
+            onClick={(event) => {
+              event.preventDefault();
+              onGoToLogin();
+            }}
+            children={t('register.login_link')}
+          >
+          </a>
+        )}
       </form>
     </div>
   );

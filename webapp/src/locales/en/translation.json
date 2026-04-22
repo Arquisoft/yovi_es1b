@@ -35,6 +35,7 @@
     "username": "Username",
     "password": "Password",
     "submit": "Log in",
+    "register_link": "I don't have an account, create one.",
     "loading": "Logging in...",
     "error_empty": "Username and password cannot be blank.",
     "error_login": "Login error.",
@@ -50,6 +51,7 @@
     "language": "Language",
     "choose_icon": "Choose your icon",
     "submit": "Create account",
+    "login_link": "I already have an account, log in",
     "no_avatar": "No Avatar",
     "male": "Male",
     "female": "Female",
@@ -60,10 +62,11 @@
     "error_network": "Network error while creating account.",
     "no_icons": "Add icons in webapp/src/assets/icon to choose one."
   },
-  "game": {
+    "game": {
     "bot_player": "Bot Player",
     "size": "Size",
-    "change_size": "Change",
+    "change_size": "Change size",
+    "change_difficulty": "Change difficulty",
     "size_small": "Small",
     "size_medium": "Medium",
     "size_large": "Large",
@@ -83,7 +86,7 @@
     "view_history": "View history",
     "friends_menu": "Friends menu",
     "friends_menu_short": "Friends",
-    "profile": "View my profile",
+    "profile": "View profile",
     "exit": "Back to menu",
     "exit_alt": "Exit to menu",
     "load_board": "Load the board to start",
@@ -98,8 +101,7 @@
     "rival_name": "Rival name",
     "auto_move": "Automatic move...",
     "objective_title": "Objective",
-    "objective_1": "Touch all 3 walls with a connected group of your pieces",
-    "objective_2": "The first player to connect all 3 walls wins",
+    "objective_1": "The first player to touch all 3 walls with a connected group of their pieces wins the game",
     "instructions_title": "Instructions",
     "instructions_1": "Click an empty cell to place your piece before the timer runs out",
     "instructions_2": "Connect pieces in adjacent cells until your group touches all 3 walls",
@@ -133,7 +135,7 @@
     "select_size": "What board size do you want to play?"
   },
   "profile": {
-    "title": "View my profile",
+    "title": "View profile",
     "name": "Name",
     "nickname": "Nickname",
     "birth_date": "Date of birth",

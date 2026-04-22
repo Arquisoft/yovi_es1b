@@ -72,11 +72,13 @@
   right: 0;
   top: 50%;
   transform: translateY(-50%);
+  z-index: 6;
 }
 
 .header-action-btn {
   position: relative;
   overflow: hidden;
+  z-index: 6;
 }
 
 .home-screen > .welcome-title {
@@ -86,7 +88,7 @@
   gap: 0.2rem;
   position: relative;
   /* move the welcome block further down to increase gap from top */
-  margin-top: 1.8rem;
+  margin-top: 3.4rem;
   transform: translateY(0);
   margin-bottom: 0;
   z-index: 3;
@@ -140,7 +142,7 @@
 
 .home-screen > .choose-option h3 {
   /* slightly larger bottom margin so there's more gap before the first button */
-  margin: 0.2rem 0 0.6rem;
+  margin: 0.2rem 0 1rem;
   line-height: 1.1;
 }
 
@@ -356,6 +358,26 @@
   padding: 10px 14px;
 }
 
+.register-screen > .choose-option.login-panel .login-register-link {
+  margin-top: 0.4rem;
+  align-self: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #0ea5e9;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.register-screen > .choose-option.login-panel .login-register-link:hover,
+.register-screen > .choose-option.login-panel .login-register-link:focus-visible {
+  color: #0284c7;
+  transform: translateY(-1px);
+}
+
 .language-modal-box {
   width: min(26rem, 92vw);
 }
@@ -456,6 +478,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.register-right-zone {
+  margin-top: -0.2rem;
 }
 
 .register-screen > .choose-option h3 {
@@ -679,6 +705,26 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+}
+
+.register-login-link {
+  margin-top: 0.75rem;
+  align-self: center;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: #0ea5e9;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.register-login-link:hover,
+.register-login-link:focus-visible {
+  color: #0284c7;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 1100px) {

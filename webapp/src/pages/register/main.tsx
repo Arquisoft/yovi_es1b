@@ -41,14 +41,14 @@ const RegisterPage = () => {
       setIsVideoPaused={background.setIsVideoPaused}
       setMusicVolume={background.setMusicVolume}
       setShowSettings={background.setShowSettings}
-      settingsAriaLabel="Configuración de elementos de fondo"
-      settingsTitle="Configuración de elementos de fondo"
       showSettings={background.showSettings}
-      videoLabel="Video en movimiento"
       videoRef={background.videoRef}
     >
       <RegisterScreen
         onBack={handleBack}
+        onGoToLogin={() => {
+          window.location.href = '/login.html';
+        }}
         onOpenLanguage={() => setShowLanguageScreen(true)}
         onOpenSettings={() => background.setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}

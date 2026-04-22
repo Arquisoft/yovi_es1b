@@ -239,6 +239,22 @@ describe('LoginForm', () => {
     expect(screen.getByRole('button', { name: /volver/i })).toHaveClass('cancel-button')
   })
 
+  test('muestra el enlace para crear cuenta y ejecuta onRegister', async () => {
+    const user = userEvent.setup()
+    const onRegister = vi.fn()
+
+    render(<LoginScreen onBack={vi.fn()} onRegister={onRegister} onLogin={vi.fn()} />)
+
+    const registerLink = screen.getByRole('link', { name: /no tengo cuenta, crear una/i })
+    expect(registerLink).toHaveClass('login-register-link')
+
+    await act(async () => {
+      await user.click(registerLink)
+    })
+
+    expect(onRegister).toHaveBeenCalled()
+  })
+
   test('muestra y ejecuta los accesos de ajustes y ayuda', async () => {
     const user = userEvent.setup()
     const onSettings = vi.fn()

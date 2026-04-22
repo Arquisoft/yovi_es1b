@@ -16,7 +16,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     if let Err(e) = run_bot_server(3000).await {
+//!     if let Err(e) = run_bot_server(4000).await {
 //!         eprintln!("Server error: {}", e);
 //!     }
 //! }

@@ -26,8 +26,8 @@ const UserSchema = new mongoose.Schema({
   nickname: {
     type: String,
     required: false,
-    unique: true,
-    trim: true
+    trim: true,
+    maxlength: 15
   },
   iconName: {
     type: String,

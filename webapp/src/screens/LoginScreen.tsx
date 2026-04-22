@@ -26,6 +26,7 @@ interface LoginResponse {
 
 interface LoginScreenProps {
   readonly onBack: () => void; // Vuelve a pantalla anterior
+  readonly onRegister?: () => void;
   readonly onOpenLanguage?: () => void;
   readonly onOpenSettings?: () => void;
   readonly onOpenTutorial?: () => void;
@@ -63,7 +64,7 @@ const persistLoginSession = (username: string, token?: string) => {
   sessionStorage.setItem('username', username);
 };
 
-function LoginScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
+function LoginScreen({ onBack, onRegister, onOpenLanguage, onOpenSettings, onOpenTutorial, onLogin }: Readonly<LoginScreenProps>) {
     const {t} = useTranslation()
     const [formData, setFormData] = useState<LoginData>({
       username: '',
@@ -202,6 +203,18 @@ function LoginScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial, o
             <button type="button" className="submit-button cancel-button" onClick={onBack}> {/* No envia formulario */}
               {t('common.back')}
             </button>
+            {onRegister && (
+              <a
+                href="#"
+                className="login-register-link"
+                onClick={(event) => {
+                  event.preventDefault();
+                  onRegister();
+                }}
+              >
+                {t('login.register_link')}
+              </a>
+            )}
           </form>
         </div>
     );

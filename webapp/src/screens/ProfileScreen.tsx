@@ -357,10 +357,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               <input
                 id="profile-nickname"
                 className="form-input"
-                  type="text"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                />
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={15}
+              />
               </div>
             </div>
 

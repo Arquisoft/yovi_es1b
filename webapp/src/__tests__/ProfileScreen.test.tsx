@@ -102,6 +102,13 @@ describe('ProfileScreen', () => {
     expect(shouldShowNoIconsMessage([{ id: 'icon-1' }])).toBe(false)
   })
 
+  test('el campo apodo del perfil limita a 15 caracteres', () => {
+    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+
+    const nickInput = screen.getByLabelText(/apodo/i)
+    expect(nickInput).toHaveAttribute('maxLength', '15')
+  })
+
   test('no renderiza nada cuando esta cerrado', () => {
     render(<ProfileScreen isOpen={false} username="Alice" onClose={vi.fn()} />)
     expect(screen.queryByRole('dialog', { name: /ver mi perfil/i })).not.toBeInTheDocument()

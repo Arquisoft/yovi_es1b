@@ -30,10 +30,7 @@ const HomeApp = () => {
       setIsVideoPaused={background.setIsVideoPaused}
       setMusicVolume={background.setMusicVolume}
       setShowSettings={background.setShowSettings}
-      settingsAriaLabel="Configuración de elementos de fondo"
-      settingsTitle="Configuración de elementos de fondo"
       showSettings={background.showSettings}
-      videoLabel="Vídeo en movimiento"
       videoRef={background.videoRef}
     >
       <HomeScreen

@@ -6,8 +6,8 @@ import app from '../users-service.js'
 describe('POST /createuser', () => {
 
     beforeEach(() => {
-        // 1. Mock de findOne para que el bucle 'while' del friendCode termine y el nickname sea válido.
-        // Devolvemos 'null' para simular que NO existe ni el nickname ni el friendCode.
+        // 1. Mock de findOne para que el bucle 'while' del friendCode termine.
+        // Devolvemos 'null' para simular que no existe el username ni el friendCode.
         vi.spyOn(User, 'findOne').mockResolvedValue(null) 
         
         // 2. Mock para el guardado exitoso
@@ -46,22 +46,36 @@ describe('POST /createuser', () => {
         expect(res.body.error).toBe('Username, nickname, password, language and birthDate are required')
     })
 
-    it('devuelve error 409 si el nickname ya existe', async () => {
-        // Forzamos que findOne devuelva algo (el usuario existente)
-        vi.spyOn(User, 'findOne').mockResolvedValue({ nickname: 'testNick' })
+    it('devuelve error 409 si el username ya existe', async () => {
+        vi.spyOn(User, 'findOne').mockResolvedValue({ username: 'testUser' })
 
         const res = await request(app)
             .post('/createuser')
-            .send({ 
-                username: 'testUser', 
-                nickname: 'testNick',
+            .send({
+                username: 'testUser',
+                nickname: 'anotherNick',
                 password: 'testPass',
                 birthDate: '2000-01-01',
                 language: 'Spain'
             })
-        
+
         expect(res.status).toBe(409)
-        expect(res.body.error).toBe('Nickname already exists')
+        expect(res.body.error).toBe('Username already exists')
+    })
+
+    it('devuelve error 400 si el nickname supera 15 caracteres', async () => {
+        const res = await request(app)
+            .post('/createuser')
+            .send({
+                username: 'testUser',
+                nickname: 'abcdefghijklmnop',
+                password: 'testPass',
+                birthDate: '2000-01-01',
+                language: 'Spain'
+            })
+
+        expect(res.status).toBe(400)
+        expect(res.body.error).toBe('Nickname must be at most 15 characters')
     })
 
     it('devuelve error 400 si hay un error de base de datos al guardar', async () => {
