@@ -7,28 +7,53 @@ import {
 import {
   allHelpImages,
   getHelpCaption,
+  helpHomeImages,
+  helpLoginImages,
+  helpRegisterImages,
   homeImages,
-  loginEmptyImages,
-  loginErrorDataImages,
+  languageImages,
+  loginBlankImages,
+  loginErrorBadUsernamePswdImages,
   loginErrorServerImages,
   loginGoodImages,
   pickImageByName,
-  registerEmptyImages,
-  registerEmptySpaceImages,
-  registerErrorPswdImages,
+  registerBadImages,
+  registerBadPasswdImages,
+  registerBlankImages,
   registerGoodImages,
   settingsImages,
 } from '../screens/tutorialHelpers'
 
-const expectedFilenames = [
+const expectedHelpFilenames = [
+  'helpHome.png',
+  'helpRegister.png',
+  'helpLogin.png',
   'home.png',
-  'registerEmpty.png',
-  'registerEmptySpace.png',
-  'registerErrorPswd.png',
-  'registerGood.png',
+  'idiomaButton.png',
   'settings.png',
-  'loginEmpty.png',
-  'loginErrorData.png',
+  'registerBlank.png',
+  'registerBad.png',
+  'registerBadPasswd.png',
+  'registerGood.png',
+  'loginBlank.png',
+  'loginErrorBadUsernamePswd.png',
+  'loginErrorServer.png',
+  'loginGood.png',
+]
+
+const expectedRenderedFilenames = [
+  'helpHome.png',
+  'helpRegister.png',
+  'helpLogin.png',
+  'home.png',
+  'idiomaButton.png',
+  'settings.png',
+  'registerBlank.png',
+  'registerBad.png',
+  'registerBadPasswd.png',
+  'registerGood.png',
+  'loginBlank.png',
+  'loginErrorBadUsernamePswd.png',
   'loginErrorServer.png',
   'loginGood.png',
 ]
@@ -36,18 +61,22 @@ const expectedFilenames = [
 describe('TutorialScreen helpers', () => {
   test('allHelpImages incluye las capturas de ayuda esperadas', () => {
     const names = allHelpImages.map((image) => image.name)
-    expect(names).toEqual(expect.arrayContaining(expectedFilenames))
+    expect(names).toEqual(expect.arrayContaining(expectedHelpFilenames))
   })
 
   test.each([
+    ['helpHome.png', helpHomeImages],
+    ['helpRegister.png', helpRegisterImages],
+    ['helpLogin.png', helpLoginImages],
     ['home.png', homeImages],
-    ['registerEmpty.png', registerEmptyImages],
-    ['registerEmptySpace.png', registerEmptySpaceImages],
-    ['registerErrorPswd.png', registerErrorPswdImages],
-    ['registerGood.png', registerGoodImages],
+    ['idiomaButton.png', languageImages],
     ['settings.png', settingsImages],
-    ['loginEmpty.png', loginEmptyImages],
-    ['loginErrorData.png', loginErrorDataImages],
+    ['registerBlank.png', registerBlankImages],
+    ['registerBad.png', registerBadImages],
+    ['registerBadPasswd.png', registerBadPasswdImages],
+    ['registerGood.png', registerGoodImages],
+    ['loginBlank.png', loginBlankImages],
+    ['loginErrorBadUsernamePswd.png', loginErrorBadUsernamePswdImages],
     ['loginErrorServer.png', loginErrorServerImages],
     ['loginGood.png', loginGoodImages],
   ])('pickImageByName devuelve la captura correcta para %s', (fileName, images) => {
@@ -58,13 +87,20 @@ describe('TutorialScreen helpers', () => {
   })
 
   test.each([
-    ['registerEmptySpace.png', 'Campos vacíos'],
-    ['registerEmpty.png', 'Formulario vacío'],
-    ['registerErrorPswd.png', 'Error de contraseña'],
+    ['registerBad.png', 'Campos vacíos'],
+    ['registerBlank.png', 'Formulario vacío'],
+    ['registerBadPasswd.png', 'Error de contraseña'],
     ['registerGood.png', 'Formulario correcto'],
     ['settings.png', 'Ajustes'],
     ['home.png', 'Pantalla de inicio'],
-    ['loginErrorData.png', 'loginErrorData.png'],
+    ['helpHome.png', 'Pantalla de inicio'],
+    ['helpRegister.png', 'Pantalla de registro'],
+    ['helpLogin.png', 'Pantalla de inicio de sesión'],
+    ['idiomaButton.png', 'Idioma'],
+    ['loginBlank.png', 'Formulario vacío'],
+    ['loginErrorBadUsernamePswd.png', 'Error de datos'],
+    ['loginErrorServer.png', 'Error de servidor'],
+    ['loginGood.png', 'Inicio correcto'],
   ])('getHelpCaption traduce %s como %s', (imageName, expectedCaption) => {
     expect(getHelpCaption(imageName)).toBe(expectedCaption)
   })
@@ -101,7 +137,7 @@ describe('TutorialScreen', () => {
     expect(screen.getByRole('button', { name: /3\. ventana de inicio de sesión/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /4\. ventana de juego/i })).toBeInTheDocument()
 
-    expectedFilenames.forEach((fileName) => {
+    expectedRenderedFilenames.forEach((fileName) => {
       expect(screen.getAllByAltText(fileName).length).toBeGreaterThan(0)
     })
   })
@@ -148,9 +184,6 @@ describe('TutorialScreen', () => {
   test.each([
     ['settings.png', 'No se pudo cargar: Ajustes'],
     ['home.png', 'No se pudo cargar: Pantalla de inicio'],
-    ['registerEmptySpace.png', 'No se pudo cargar: Campos vacíos'],
-    ['registerErrorPswd.png', 'No se pudo cargar: Error de contraseña'],
-    ['loginErrorData.png', 'No se pudo cargar: loginErrorData.png'],
   ])('muestra caption de fallback para %s', (fileName, expectedCaption) => {
     render(<TutorialScreen isOpen onClose={vi.fn()} />)
 

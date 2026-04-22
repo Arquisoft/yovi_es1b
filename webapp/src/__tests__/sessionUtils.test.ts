@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import {
+  activateRegisteredSession,
   clearGuestSession,
   clearSession,
   enableGuestSession,
@@ -55,6 +56,28 @@ describe('sessionUtils', () => {
   test('clearSession no falla aunque no haya datos guardados', () => {
     expect(() => clearSession()).not.toThrow()
     expect(sessionStorage.length).toBe(0)
+  })
+
+  test('activateRegisteredSession sustituye la sesion por el usuario nuevo', () => {
+    sessionStorage.setItem('token', 'tok-viejo')
+    sessionStorage.setItem('username', 'usuario-viejo')
+    sessionStorage.setItem('yovi_guest', '1')
+
+    const result = activateRegisteredSession('  usuario-nuevo  ')
+
+    expect(result).toBe(true)
+    expect(sessionStorage.getItem('token')).toBeNull()
+    expect(sessionStorage.getItem('yovi_guest')).toBeNull()
+    expect(sessionStorage.getItem('username')).toBe('usuario-nuevo')
+  })
+
+  test('activateRegisteredSession no cambia la sesion si el nombre esta vacio', () => {
+    sessionStorage.setItem('token', 'tok')
+    sessionStorage.setItem('username', 'usuario-viejo')
+
+    expect(activateRegisteredSession('   ')).toBe(false)
+    expect(sessionStorage.getItem('token')).toBe('tok')
+    expect(sessionStorage.getItem('username')).toBe('usuario-viejo')
   })
 
   test('guest session helpers gestionan la marca de invitado', () => {

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, test, vi, beforeEach } from 'vitest'
 import FriendsScreen from '../screens/FriendsScreen'
@@ -26,8 +26,10 @@ describe('Friends & Social Zone', () => {
     // 1. Escribimos en el buscador
     const input = screen.getByPlaceholderText(/nombre del usuario/i)
     const btnSearch = screen.getByRole('button', { name: /buscar/i })
-    await user.type(input, 'Cyber')
-    await user.click(btnSearch)
+    await act(async () => {
+      await user.type(input, 'Cyber')
+      await user.click(btnSearch)
+    })
 
     // 3. Verificamos que aparece el resultado
     expect(await screen.findByText('Cyber')).toBeInTheDocument()
@@ -46,12 +48,16 @@ describe('Friends & Social Zone', () => {
     render(<FriendsScreen currentUser="Drus" onBack={vi.fn()} />)
 
     // Buscamos para que salga el botón
-    await user.click(screen.getByRole('button', { name: /buscar/i }))
+    await act(async () => {
+      await user.click(screen.getByRole('button', { name: /buscar/i }))
+    })
     const btnFollow = await screen.findByRole('button', { name: /seguir/i })
 
     // Mock para la acción de seguir
     ;(globalThis.fetch as any).mockResolvedValueOnce({ ok: true })
-    await user.click(btnFollow)
+    await act(async () => {
+      await user.click(btnFollow)
+    })
 
     // Verificamos que se envió la petición de follow
     expect(globalThis.fetch).toHaveBeenCalledWith(
@@ -66,8 +72,10 @@ describe('Friends & Social Zone', () => {
     ;(globalThis.fetch as any).mockRejectedValueOnce(new Error('network down'))
 
     render(<FriendsScreen currentUser="Drus" onBack={vi.fn()} />)
-    await user.type(screen.getByPlaceholderText(/nombre del usuario/i), 'Cyber')
-    await user.click(screen.getByRole('button', { name: /buscar/i }))
+    await act(async () => {
+      await user.type(screen.getByPlaceholderText(/nombre del usuario/i), 'Cyber')
+      await user.click(screen.getByRole('button', { name: /buscar/i }))
+    })
 
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error buscando usuarios:', expect.any(Error))
     expect(screen.getByText(/no se han encontrado usuarios/i)).toBeInTheDocument()

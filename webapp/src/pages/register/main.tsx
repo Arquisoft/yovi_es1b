@@ -6,7 +6,7 @@ import { LanguageModal } from '../../components/modals/LanguageModal';
 import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
 import RegisterScreen from '../../screens/RegisterScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
-import { persistUserSession } from '../../utils/sessionUtils';
+import { activateRegisteredSession, persistUserSession } from '../../utils/sessionUtils';
 
 import '../../css/App.css';
 import '../../css/Log.css';
@@ -24,7 +24,7 @@ const RegisterPage = () => {
     language?: string | null,
     nickname?: string | null
   ) => {
-    if (persistUserSession(playerName, { friendCode, icon, language, nickname })) {
+    if (persistUserSession(playerName, { friendCode, icon, language, nickname }) && activateRegisteredSession(playerName)) {
       window.location.href = '/game.html';
     }
   };

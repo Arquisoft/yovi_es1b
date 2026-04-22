@@ -2,14 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 import '../css/Tutorial.css';
 import {
   getHelpCaption,
+  helpHomeImages,
+  helpLoginImages,
+  helpRegisterImages,
   homeImages,
-  loginEmptyImages,
-  loginErrorDataImages,
   loginErrorServerImages,
+  loginBlankImages,
+  loginErrorBadUsernamePswdImages,
   loginGoodImages,
-  registerEmptyImages,
-  registerEmptySpaceImages,
-  registerErrorPswdImages,
+  languageImages,
+  registerBadImages,
+  registerBadPasswdImages,
+  registerBlankImages,
   registerGoodImages,
   settingsImages,
 } from './tutorialHelpers';
@@ -42,6 +46,8 @@ type TutorialSection = Readonly<{
   sectionId: string;
   introHeading?: string;
   introText?: string;
+  coverImages?: TutorialImage[];
+  coverEmptyMessage?: string;
   featureHeading?: string;
   features?: string[];
   importantHeading?: string;
@@ -118,6 +124,12 @@ const TutorialSectionBlock = ({ section }: { section: TutorialSection }) => {
 
       {section.introHeading ? <h5 className="tutorial-subtitle">{section.introHeading}</h5> : null}
       {section.introText ? <p>{section.introText}</p> : null}
+      {section.coverImages ? (
+        <HelpGallery
+          images={section.coverImages}
+          emptyMessage={section.coverEmptyMessage ?? ''}
+        />
+      ) : null}
 
       {section.featureHeading && section.features ? (
         <>
@@ -205,6 +217,8 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
       sectionId: 'help-home',
       introHeading: t('tutorial.subtitle_information'),
       introText: t('tutorial.home_info_paragraph'),
+      coverImages: helpHomeImages,
+      coverEmptyMessage: noCaptureMessage,
       featureHeading: t('tutorial.subtitle_features'),
       features: [
         t('tutorial.home_feature_1'),
@@ -230,7 +244,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s1_3'),
           title: t('tutorial.home_language_title'),
           description: t('tutorial.home_language_description'),
-          images: [],
+          images: languageImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-home-language',
         },
@@ -260,6 +274,8 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
       sectionId: 'help-register',
       introHeading: t('tutorial.subtitle_information'),
       introText: t('tutorial.register_fields_text'),
+      coverImages: helpRegisterImages,
+      coverEmptyMessage: noCaptureMessage,
       featureHeading: t('tutorial.subtitle_features'),
       features: [
         t('tutorial.register_feature_1'),
@@ -274,7 +290,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s2_1'),
           title: t('tutorial.caption_register_empty'),
           description: t('tutorial.register_empty_desc'),
-          images: registerEmptyImages,
+          images: registerBlankImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-register-empty',
         },
@@ -283,7 +299,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s2_2'),
           title: t('tutorial.caption_register_empty_space'),
           description: t('tutorial.register_empty_space_desc'),
-          images: registerEmptySpaceImages,
+          images: registerBadImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-register-empty-space',
         },
@@ -292,7 +308,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s2_3'),
           title: t('tutorial.caption_register_error_pswd'),
           description: t('tutorial.register_error_pswd_desc'),
-          images: registerErrorPswdImages,
+          images: registerBadPasswdImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-register-error',
         },
@@ -310,7 +326,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s2_5'),
           title: t('tutorial.s2_5_title'),
           description: t('tutorial.register_language_text'),
-          images: [],
+          images: languageImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-register-language',
         },
@@ -340,6 +356,8 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
       sectionId: 'help-login',
       introHeading: t('tutorial.subtitle_information'),
       introText: t('tutorial.login_what_text'),
+      coverImages: helpLoginImages,
+      coverEmptyMessage: noCaptureMessage,
       featureHeading: t('tutorial.subtitle_features'),
       features: [
         t('tutorial.login_feature_1'),
@@ -356,7 +374,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s3_1'),
           title: t('tutorial.caption_register_empty'),
           description: t('tutorial.login_empty_desc'),
-          images: loginEmptyImages,
+          images: loginBlankImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-login-empty',
         },
@@ -365,7 +383,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s3_2'),
           title: t('tutorial.s3_2_title'),
           description: t('tutorial.login_error_data_desc'),
-          images: loginErrorDataImages,
+          images: loginErrorBadUsernamePswdImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-login-error-data',
         },
@@ -392,7 +410,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s3_5'),
           title: t('tutorial.s3_5_title'),
           description: t('tutorial.login_language_text'),
-          images: [],
+          images: languageImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-login-language',
         },

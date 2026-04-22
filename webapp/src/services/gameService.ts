@@ -44,7 +44,7 @@ const createAuthenticatedInit = (init: RequestInit = {}): RequestInit => ({
 });
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
-  const res = await fetch(url, init);
+  const res = init ? await fetch(url, init) : await fetch(url);
   return res.json() as Promise<T>;
 };
 

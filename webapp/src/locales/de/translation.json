@@ -1,4 +1,4 @@
-{
+﻿{
   "common": {
     "back": "Zurück",
     "save": "Speichern",
@@ -265,7 +265,7 @@
     "register_security_text": "Füge keine sensiblen persönlichen Daten in öffentliche Felder ein.",
     "register_language": "Sprachschaltfläche",
     "register_language_text": "Mit dieser Schaltfläche kannst du die Sprache des Registrierungsbildschirms ändern, ohne ihn zu verlassen.",
-    "register_empty_desc": "Das Formular vor dem Ausfüllen.",
+    "register_empty_desc": "Das Formular, bevor du deine Kontodaten eingibst.",
     "register_empty_space_desc": "Die Warnung bei leeren Pflichtfeldern.",
     "register_error_pswd_desc": "Die Meldung bei ungültigem Passwort.",
     "register_good_desc": "Registrierung erfolgreich abgeschlossen.",
@@ -282,7 +282,7 @@
     "login_tip_2": "Markiertes Feld korrigieren und erneut versuchen.",
     "login_tip_3": "Falls es weiterhin nicht funktioniert, Verbindung prüfen.",
     "login_empty_desc": "Das Formular vor der Anmeldung.",
-    "login_error_data_desc": "Die Warnung bei falschen Anmeldedaten.",
+    "login_error_data_desc": "Die Warnung, wenn Benutzername oder Passwort nicht mit einem registrierten Konto übereinstimmen.",
     "login_error_server_desc": "Bei dieser Meldung kurz warten und erneut versuchen.",
     "login_good_desc": "Sitzung erfolgreich gestartet.",
     "game_title": "4. Spielbildschirm",
@@ -300,8 +300,8 @@
     "caption_load_failed": "Konnte nicht geladen werden",
     "no_capture_available": "Noch kein Screenshot verfugbar.",
     "s1_title": "Startbildschirm",
-    "s2_title": "Registrierung",
-    "s3_title": "Anmeldung",
+    "s2_title": "Registrierungsbildschirm",
+    "s3_title": "Anmeldebildschirm",
     "s1_1_title": "Einstellungen",
     "s1_2_title": "Referenz-Screenshot",
     "s1_3": "1.3 Sprache",
@@ -319,7 +319,7 @@
     "s3_4_title": "Erfolgreiche Anmeldung"
 
   ,
-  "window_home": "Start",
+  "window_home": "Startbildschirm",
     "subtitle_information": "Information",
     "subtitle_features": "Funktionen",
     "subtitle_important": "Wichtige Dinge",
@@ -337,14 +337,14 @@
     "home_settings_description": "Screenshot des Einstellungsmodals, in dem Präferenzen geändert werden können.",
     "home_help_title": "Hilfe",
     "home_help_description": "Screenshot des Hilfebereichs/Anleitungen und Schnellzugriffe.",
-  "window_register": "Registrieren",
+  "window_register": "Registrierungsbildschirm",
     "register_feature_1": "Ein neues Konto erstellen, indem Benutzername und Passwort angegeben werden.",
     "register_feature_2": "Feldvalidierung auf Client- und Serverseite.",
     "register_feature_3": "Klare Fehlermeldungen für ungültige Daten.",
     "register_settings_description": "Screenshot des Einstellungsbereichs aus Registrieren.",
     "register_help_title": "Hilfe",
     "register_help_description": "Screenshot der kontextuellen Hilfe von Registrieren.",
-  "window_login": "Anmelden",
+  "window_login": "Anmeldebildschirm",
     "login_feature_1": "Zugriff für registrierte Benutzer mittels Anmeldedaten.",
     "login_feature_2": "Fehlerbehandlung bei falschen Daten oder Serverproblemen.",
     "login_feature_3": "Hinweise zur Wiederherstellung oder Korrektur von Zugangsdaten.",
@@ -366,3 +366,4 @@
 
   }
 }
+

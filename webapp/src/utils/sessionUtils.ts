@@ -47,6 +47,19 @@ export const clearSession = () => {
     clearGuestSession();
 };
 
+/**
+ * Sustituye la sesión activa por la del usuario recién registrado.
+ * Se usa tras crear una cuenta para evitar arrastrar el usuario anterior.
+ */
+export const activateRegisteredSession = (username: string) => {
+    const name = username.trim();
+    if (!name) return false;
+
+    clearSession();
+    sessionStorage.setItem('username', name);
+    return true;
+};
+
 type PersistUserSessionOptions = {
   friendCode: string;
   icon?: string | null;

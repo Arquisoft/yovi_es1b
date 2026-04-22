@@ -1,5 +1,6 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { act, render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ReactNode } from 'react'
 
 const gameServiceMocks = {
@@ -18,6 +19,16 @@ const gameLogicMocks = {
 }
 
 let triggerTimeUp: (() => void) | null = null
+
+const renderGameApp = async (ui: Parameters<typeof render>[0]) => {
+  let result: ReturnType<typeof render> | undefined
+  await act(async () => {
+    result = render(ui)
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+  return result!
+}
 
 vi.mock('react-dom/client', () => ({
   default: {
@@ -154,6 +165,8 @@ vi.mock('../services/gameService', () => ({
 const loadGameMain = async () => import('../pages/game/main')
 
 describe('game main entrypoint', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn> | null = null
+
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
@@ -180,6 +193,12 @@ describe('game main entrypoint', () => {
     gameLogicMocks.resetGame.mockResolvedValue(null)
     gameLogicMocks.surrender.mockResolvedValue(undefined)
     triggerTimeUp = null
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore()
+    consoleErrorSpy = null
   })
 
   test('redirige al index cuando no hay usuario y no es invitado', async () => {
@@ -187,7 +206,7 @@ describe('game main entrypoint', () => {
     sessionStorage.removeItem('yovi_guest')
 
     const { GameApp } = await loadGameMain()
-    render(<GameApp />)
+    await renderGameApp(<GameApp />)
 
     await waitFor(() => {
       expect((globalThis.location as { href: string }).href).toBe('/index.html')
@@ -197,9 +216,10 @@ describe('game main entrypoint', () => {
   test('renderiza la partida y conecta callbacks principales', async () => {
     localStorage.setItem('yovi_user', 'alice')
     localStorage.setItem('yovi_user_icon', 'hombre1.png')
+    const user = userEvent.setup()
 
     const { GameAppContent } = await loadGameMain()
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />)
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />)
 
     await waitFor(() => {
       expect(gameServiceMocks.getDifficulties).toHaveBeenCalled()
@@ -207,21 +227,23 @@ describe('game main entrypoint', () => {
     })
 
     expect(localStorage.getItem('yovi_user_icon')).toBeTruthy()
-    triggerTimeUp?.()
+    await act(async () => {
+      triggerTimeUp?.()
+    })
     expect(gameLogicMocks.executeAutoMove).toHaveBeenCalled()
 
-    fireEvent.click(screen.getByRole('button', { name: /select-difficulty/i }))
-    fireEvent.click(screen.getByRole('button', { name: /select-size/i }))
-    fireEvent.click(screen.getByRole('button', { name: /reset/i }))
-    fireEvent.click(screen.getByRole('button', { name: /^end$/i }))
-    fireEvent.click(screen.getByRole('button', { name: /add-friend/i }))
-    fireEvent.click(screen.getByRole('button', { name: /trigger-public-profile/i }))
-    fireEvent.click(screen.getByRole('button', { name: /view-profile/i }))
-    fireEvent.click(screen.getByRole('button', { name: /settings/i }))
-    fireEvent.click(screen.getByRole('button', { name: /tutorial/i }))
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
-    fireEvent.click(screen.getByRole('button', { name: /cell/i }))
-    fireEvent.click(screen.getByRole('button', { name: /exit/i }))
+    await user.click(screen.getByRole('button', { name: /select-difficulty/i }))
+    await user.click(screen.getByRole('button', { name: /select-size/i }))
+    await user.click(screen.getByRole('button', { name: /reset/i }))
+    await user.click(screen.getByRole('button', { name: /^end$/i }))
+    await user.click(screen.getByRole('button', { name: /add-friend/i }))
+    await user.click(screen.getByRole('button', { name: /trigger-public-profile/i }))
+    await user.click(screen.getByRole('button', { name: /view-profile/i }))
+    await user.click(screen.getByRole('button', { name: /settings/i }))
+    await user.click(screen.getByRole('button', { name: /tutorial/i }))
+    await user.click(screen.getByRole('button', { name: /history/i }))
+    await user.click(screen.getByRole('button', { name: /cell/i }))
+    await user.click(screen.getByRole('button', { name: /exit/i }))
 
     expect(gameLogicMocks.executeHumanMove).toHaveBeenCalled()
     expect(gameLogicMocks.executeAutoMove).toHaveBeenCalled()
@@ -234,6 +256,7 @@ describe('game main entrypoint', () => {
 
   test('al ganar una jugada abre el modal de resultado', async () => {
     localStorage.setItem('yovi_user', 'alice')
+    const user = userEvent.setup()
 
     gameLogicMocks.executeHumanMove.mockResolvedValueOnce({
       responseFromRust: null,
@@ -242,9 +265,9 @@ describe('game main entrypoint', () => {
     })
 
     const { GameAppContent } = await loadGameMain()
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />)
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />)
 
-    fireEvent.click(screen.getByRole('button', { name: /cell/i }))
+    await user.click(screen.getByRole('button', { name: /cell/i }))
 
     await waitFor(() => {
       expect(gameLogicMocks.executeHumanMove).toHaveBeenCalled()
@@ -254,6 +277,7 @@ describe('game main entrypoint', () => {
 
   test('al pedir historial carga datos y abre el modal', async () => {
     localStorage.setItem('yovi_user', 'alice')
+    const user = userEvent.setup()
 
     gameServiceMocks.getHistory.mockResolvedValueOnce({
       data: [
@@ -271,9 +295,9 @@ describe('game main entrypoint', () => {
     })
 
     const { GameAppContent } = await loadGameMain()
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />)
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />)
 
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+    await user.click(screen.getByRole('button', { name: /history/i }))
 
     await waitFor(() => {
       expect(gameServiceMocks.getHistory).toHaveBeenCalledWith(1, null)
@@ -283,20 +307,22 @@ describe('game main entrypoint', () => {
 
   test('en modo invitado muestra el prompt de acceso', async () => {
     localStorage.setItem('yovi_user', 'alice')
+    const user = userEvent.setup()
 
     const { GameAppContent } = await loadGameMain()
-    render(<GameAppContent isGuestMode={true} storedUsername="alice" />)
+    await renderGameApp(<GameAppContent isGuestMode={true} storedUsername="alice" />)
 
-    fireEvent.click(screen.getByRole('button', { name: /add-friend/i }))
+    await user.click(screen.getByRole('button', { name: /add-friend/i }))
     expect(screen.getByTestId('guest-reason').textContent).toBe('amigos')
 
-    fireEvent.click(screen.getByRole('button', { name: /view-profile/i }))
+    await user.click(screen.getByRole('button', { name: /view-profile/i }))
     expect(screen.getByTestId('guest-reason').textContent).toBe('perfil')
 
-    fireEvent.click(screen.getByRole('button', { name: /history/i }))
+    await user.click(screen.getByRole('button', { name: /history/i }))
     expect(screen.getByTestId('guest-reason').textContent).toBe('historial')
 
-    fireEvent.click(screen.getByRole('button', { name: /go-login/i }))
+    await user.click(screen.getByRole('button', { name: /go-login/i }))
     expect((globalThis.location as { href: string }).href).toBe('/login.html')
   })
 })
+

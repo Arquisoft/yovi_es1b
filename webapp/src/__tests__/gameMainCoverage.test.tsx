@@ -1,6 +1,7 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import i18n from '../i18n';
 import { resolveBoardLabel, resolveHistoryLocale, resolveTurnTimeLimit } from '../pages/game/gameMainHelpers';
 
@@ -111,7 +112,19 @@ vi.mock('../services/gameService', () => ({
 
 const loadGameMain = async () => import('../pages/game/main');
 
+const renderGameApp = async (ui: Parameters<typeof render>[0]) => {
+  let result: ReturnType<typeof render> | undefined;
+  await act(async () => {
+    result = render(ui);
+    await Promise.resolve();
+    await Promise.resolve();
+  });
+  return result!;
+};
+
 describe('game main coverage', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn> | null = null;
+
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
@@ -140,11 +153,18 @@ describe('game main coverage', () => {
     coverageState.gameLogicMocks.surrender.mockResolvedValue(undefined);
     coverageState.gameLogicMocks.winner = null;
     coverageState.triggerTimeUp = null;
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+  });
+
+  afterEach(() => {
+    consoleErrorSpy?.mockRestore();
+    consoleErrorSpy = null;
   });
 
   test('pasa locale y boardLabel al mover ficha y actualiza la puntuacion al ganar', async () => {
     localStorage.setItem('yovi_user', 'alice');
     void i18n.changeLanguage('pt-BR');
+    const user = userEvent.setup();
 
     coverageState.gameLogicMocks.executeHumanMove.mockResolvedValueOnce({
       responseFromRust: null,
@@ -153,13 +173,13 @@ describe('game main coverage', () => {
     });
 
     const { GameAppContent } = await loadGameMain();
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />);
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />);
 
     await waitFor(() => {
       expect(coverageState.gameServiceMocks.getProfile).toHaveBeenCalled();
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /cell/i }));
+    await user.click(screen.getByRole('button', { name: /cell/i }));
 
     await waitFor(() => {
       expect(coverageState.gameLogicMocks.executeHumanMove).toHaveBeenCalledWith(
@@ -194,7 +214,7 @@ describe('game main coverage', () => {
     coverageState.gameServiceMocks.getProfile.mockResolvedValueOnce({ error: 'nope' });
 
     const { GameAppContent } = await loadGameMain();
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />);
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />);
 
     await waitFor(() => {
       expect(coverageState.gameServiceMocks.getProfile).toHaveBeenCalled();
@@ -209,7 +229,7 @@ describe('game main coverage', () => {
     });
 
     const { GameAppContent } = await loadGameMain();
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />);
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />);
 
     await waitFor(() => {
       expect(coverageState.gameServiceMocks.getProfile).toHaveBeenCalled();
@@ -220,27 +240,29 @@ describe('game main coverage', () => {
   test('si ya hay ganador no vuelve a mover ficha', async () => {
     localStorage.setItem('yovi_user', 'alice');
     coverageState.gameLogicMocks.winner = 1;
+    const user = userEvent.setup();
 
     const { GameAppContent } = await loadGameMain();
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />);
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />);
 
-    fireEvent.click(screen.getByRole('button', { name: /cell/i }));
+    await user.click(screen.getByRole('button', { name: /cell/i }));
 
     expect(coverageState.gameLogicMocks.executeHumanMove).not.toHaveBeenCalled();
   });
 
   test('una segunda pulsacion ya con partida empezada sigue permitiendo mover', async () => {
     localStorage.setItem('yovi_user', 'alice');
+    const user = userEvent.setup();
 
     const { GameAppContent } = await loadGameMain();
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />);
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />);
 
-    fireEvent.click(screen.getByRole('button', { name: /cell/i }));
+    await user.click(screen.getByRole('button', { name: /cell/i }));
     await waitFor(() => {
       expect(coverageState.gameLogicMocks.executeHumanMove).toHaveBeenCalledTimes(1);
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /cell/i }));
+    await user.click(screen.getByRole('button', { name: /cell/i }));
     await waitFor(() => {
       expect(coverageState.gameLogicMocks.executeHumanMove).toHaveBeenCalledTimes(2);
     });
@@ -254,9 +276,11 @@ describe('game main coverage', () => {
     });
 
     const { GameAppContent } = await loadGameMain();
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />);
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />);
 
-    coverageState.triggerTimeUp?.();
+    await act(async () => {
+      coverageState.triggerTimeUp?.();
+    });
 
     await waitFor(() => {
       expect(coverageState.gameLogicMocks.executeAutoMove).toHaveBeenCalled();
@@ -267,11 +291,12 @@ describe('game main coverage', () => {
   test('si el historial no trae paginacion usa los valores por defecto', async () => {
     localStorage.setItem('yovi_user', 'alice');
     coverageState.gameServiceMocks.getHistory.mockResolvedValueOnce({});
+    const user = userEvent.setup();
 
     const { GameAppContent } = await loadGameMain();
-    render(<GameAppContent isGuestMode={false} storedUsername="alice" />);
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />);
 
-    fireEvent.click(screen.getByRole('button', { name: /history/i }));
+    await user.click(screen.getByRole('button', { name: /history/i }));
 
     await waitFor(() => {
       expect(coverageState.gameServiceMocks.getHistory).toHaveBeenCalledWith(1, null);
@@ -279,3 +304,4 @@ describe('game main coverage', () => {
     });
   });
 });
+
