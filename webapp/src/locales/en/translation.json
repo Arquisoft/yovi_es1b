@@ -22,6 +22,12 @@
     "welcome_main": "Welcome to GameY",
     "welcome_kicker": "Strategy has no luck"
   },
+  "mode": {
+    "title": "Select game mode",
+    "subtitle": "Choose how you want to play this match",
+    "bot_duel": "Duel vs AI",
+    "multiplayer_duel": "Multiplayer Duel"
+  },
   "login": {
     "title": "Welcome back to GameY",
     "subtitle": "What was your name?",

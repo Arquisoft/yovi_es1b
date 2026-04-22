@@ -8,12 +8,14 @@ const User = require('./models/user');
 const Friendship = require('./models/friendship');
 
 const express = require('express');
+const http = require('node:http');
 const app = express();
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
 const fs = require('node:fs');
 const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
+const { createSocketGateway } = require('./socketHandler');
 
 const metricsMiddleware = promBundle({includeMethod: true});
 app.use(metricsMiddleware);
@@ -713,7 +715,10 @@ if (require.main === module) {
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 
-  app.listen(port, () => {
+  const server = http.createServer(app);
+  createSocketGateway(server, { gameyUrl: GAMEY_URL });
+
+  server.listen(port, () => {
     console.log(`User Service listening at http://localhost:${port}`)
   })
 }

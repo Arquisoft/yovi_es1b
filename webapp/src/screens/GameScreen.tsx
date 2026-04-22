@@ -14,6 +14,8 @@ import amigosImg from '../assets/buttons/agregar-usuario.png';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import { type DifficultyChoice, type SizeChoice, SIZE_OPTIONS } from '../types/game';
 import { useTranslation } from 'react-i18next';
+import { OpponentCard } from '../components/game/OpponentCard';
+import { OpponentState } from '../types/opponent';
 
 interface GameYData {
   size: number;
@@ -39,6 +41,9 @@ type GameScreenProps = Readonly<{
   displayName?: string;
   playerIcon?: string | null;
   botIcon?: string | null;
+  gameMode?: 'bot' | 'multiplayer' | null;
+  rivalName?: string | null;
+  rivalIcon?: string | null;
   difficultyChoice: DifficultyChoice | null;
   selectedBoardDimension: number | null;
   boardData: GameYData | null;
@@ -60,13 +65,17 @@ type GameScreenProps = Readonly<{
   onOpenSettings?: () => void; // Abre el panel de configuracion
   onOpenTutorial?: () => void; // Abre la pantalla de tutorial
   onScoreButtonClick?: () => void; // Nuevo callback para cuando se hace clic en el puntaje total acumulado
+  onGoToModeMenu?: () => void; // Vuelve al selector IA/Multijugador
 }>;
 
 function GameScreen({
   username,
   displayName,
   playerIcon,
-  botIcon,
+  // botIcon, // Ya no se utiliza; se usa OpponentCard para mostrar el rival
+  gameMode,
+  rivalName,
+  rivalIcon,
   difficultyChoice,
   selectedBoardDimension,
   boardData,
@@ -88,6 +97,7 @@ function GameScreen({
   onOpenSettings,
   onOpenTutorial,
   onScoreButtonClick,
+  onGoToModeMenu,
 }: GameScreenProps) {
   const { t } = useTranslation();
   const failedLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -99,6 +109,13 @@ function GameScreen({
   const settingsLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const [showSizeMenu, setShowSizeMenu] = useState(false);
   const [showDiffMenu, setShowDiffMenu] = useState(false);
+  const isBotMode = gameMode === 'bot';
+
+  useEffect(() => {
+    if (isBotMode) return;
+    setShowSizeMenu(false);
+    setShowDiffMenu(false);
+  }, [isBotMode]);
 
   useEffect(() => {
     failedLottieRef.current?.setSpeed(0.5);
@@ -146,7 +163,6 @@ function GameScreen({
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
   const safePlayerIcon = playerIcon?.trim() ? playerIcon : defaultAvatar;
-  const safeBotIcon = botIcon?.trim() ? botIcon : defaultAvatar;
   const playerLabel = displayName?.trim() ? displayName : username;
 
   const rawLayout = boardData?.layout ?? '';
@@ -201,7 +217,13 @@ function GameScreen({
           <div className="custom-dropdown-container">
             <button 
               className={`dropdown-trigger ${showSizeMenu ? 'active' : ''}`}
-              onClick={() => { setShowSizeMenu(!showSizeMenu); setShowDiffMenu(false); }}
+              onClick={() => {
+                if (!isBotMode) return;
+                setShowSizeMenu(!showSizeMenu);
+                setShowDiffMenu(false);
+              }}
+              disabled={!isBotMode}
+              title={!isBotMode ? 'Solo disponible en modo IA' : t('game.change_size')}
             >
               {t('game.change_size')} ▾
             </button>
@@ -229,7 +251,13 @@ function GameScreen({
           <div className="custom-dropdown-container">
             <button 
               className={`dropdown-trigger ${showDiffMenu ? 'active' : ''}`}
-              onClick={() => { setShowDiffMenu(!showDiffMenu); setShowSizeMenu(false); }}
+              onClick={() => {
+                if (!isBotMode) return;
+                setShowDiffMenu(!showDiffMenu);
+                setShowSizeMenu(false);
+              }}
+              disabled={!isBotMode}
+              title={!isBotMode ? 'Solo disponible en modo IA' : t('game.difficulty')}
             >
               {t('game.difficulty')}: {difficultyLabel} ▾
             </button>
@@ -318,6 +346,19 @@ function GameScreen({
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />
+          {onGoToModeMenu && (
+            <div className="nav-icon-action">
+              <button
+                className="nav-btn nav-btn-icon-frame nav-btn"
+                onClick={onGoToModeMenu}
+                title="Cambiar modo de juego"
+                aria-label="Cambiar modo de juego"
+              >
+                Modos
+              </button>
+              <span className="nav-icon-caption">Modos</span>
+            </div>
+          )}
           <div className="nav-icon-action">
             <button className="nav-btn danger nav-btn-icon-frame nav-btn-with-logout" onClick={onExit} title={t('game.exit')}>
               <img className="nav-btn-exit-img" src={salirMenuImg} alt={t('game.exit_alt')} />
@@ -394,16 +435,14 @@ function GameScreen({
               )}
             </div>
 
-            <div className="player-slot player-slot-right" aria-label={t('game.bot_player_slot')}>
-              <div className="player-info player-info-right">
-                <div className="player-header-row player-header-row-right">
-                  <p className="player-label player-label-red">{botName}</p>
-                  <div className="player-avatar-box">
-                    <img src={safeBotIcon} alt="Avatar del bot" className="player-avatar-image" />
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Componente del oponente */}
+            <OpponentCard
+              state={gameMode === 'multiplayer' ? OpponentState.CONNECTED : OpponentState.WAITING}
+              opponentName={rivalName || null}
+              opponentIcon={rivalIcon || null}
+              onInviteFriend={onAddFriend || (() => {})}
+              isOpponentTurn={false}
+            />
           </div>
 
         </div>

@@ -93,7 +93,7 @@ const LoginPage = () => {
       localStorage.removeItem('yovi_user_language')
     }
 
-    window.location.href = '/game.html'
+    window.location.replace('/gamemode.html')
   }
 
   const handleBack = () => {

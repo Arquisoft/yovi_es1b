@@ -13,6 +13,7 @@ import { SelectionModals } from '../../components/modals/SelectionModals';
 import { PublicProfileModal } from '../../components/modals/PublicProfileModal';
 import { ProfileScreen } from '../../screens/ProfileScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
+import { GameModeScreen } from '../../screens/GameModeScreen';
 import { PayPalStore } from '../../components/modals/PayPalStore';
 
 // Hooks, Servicios y Utils
@@ -32,9 +33,14 @@ import '../../css/Log.css';
 import '../../index.css';
 
 // Tipos
-import type { DifficultyChoice, SizeChoice, HistoryGameRecord } from '../../types/game';
+import type { DifficultyChoice, SizeChoice, HistoryGameRecord, GameYData } from '../../types/game';
+import type { ChallengePlayerEvent, GameMode, SyncBoardEvent } from '../../types/socketEvents';
 import { FriendsPanel } from '../../components/modals/FriendsPanel';
 import {useTranslation} from "react-i18next";
+import { BotStrategy } from '../../strategies/BotStrategy';
+import { MultiplayerStrategy } from '../../strategies/MultiplayerStrategy';
+import type { GameProvider } from '../../providers/GameProvider';
+import { getSocketClient } from '../../services/socketClient';
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -135,12 +141,23 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   }, []);
   const [finalScore, setFinalScore] = useState<number>(0); // Nuevo estado para el puntaje final de la partida
   const [totalScore, setTotalScore] = useState<number>(0); // Nuevo estado para el puntaje total acumulado del usuario
-  const [showStore, setShowStore] = useState(false);
-  // Si no hay usuario, redirigimos inmediatamente a la home
-  if (!username) {
-    window.location.href = '/index.html';
-    return null;
-  }
+   const [showStore, setShowStore] = useState(false);
+   const [gameMode, setGameMode] = useState<GameMode | null>(() => {
+     // Leer el modo de juego guardado en sessionStorage
+     const savedMode = sessionStorage.getItem('yovi_gamemode') as GameMode | null;
+     return savedMode || null;
+   });
+   const [inviteLoadingUser, setInviteLoadingUser] = useState<string | null>(null);
+   const [incomingChallenge, setIncomingChallenge] = useState<ChallengePlayerEvent | null>(null);
+   const [multiplayerBoard, setMultiplayerBoard] = useState<GameYData | null>(null);
+   const [multiplayerWinner, setMultiplayerWinner] = useState<number | null>(null);
+   const [multiplayerMatchId, setMultiplayerMatchId] = useState<string | null>(null);
+   const [multiplayerTurn, setMultiplayerTurn] = useState<string | null>(null);
+   const [socketConnection, setSocketConnection] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+   const [rivalName, setRivalName] = useState<string | null>(null);
+   const [rivalIcon, setRivalIcon] = useState<string | null>(null);
+   const providerRef = useRef<GameProvider | null>(null);
+   const multiplayerStrategyRef = useRef<MultiplayerStrategy | null>(null);
 
   // --- ESTADOS DE UI ---
   const [difficultyChoice, setDifficultyChoice] = useState<DifficultyChoice | null>('Fácil');
@@ -183,6 +200,116 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     stopTimer,
     setIsVisible: setTimerVisible,
   } = useGameTimer(handleTimeUp);
+
+  const handleSyncBoard = useCallback((payload: SyncBoardEvent) => {
+    if (payload.error) {
+      console.error('Socket sync error:', payload.error);
+      return;
+    }
+    if (payload.matchId) {
+      setMultiplayerMatchId(payload.matchId);
+      multiplayerStrategyRef.current?.setMatchId(payload.matchId);
+    }
+    if (payload.board) {
+      setMultiplayerBoard(payload.board);
+    }
+    if (payload.currentTurn) {
+      setMultiplayerTurn(payload.currentTurn);
+    }
+    if (typeof payload.winner === 'string') {
+      setMultiplayerWinner(payload.winner === username ? 0 : 1);
+      setShowResultModal(true);
+    }
+  }, [username]);
+
+  const handleIncomingChallenge = useCallback((payload: ChallengePlayerEvent) => {
+    if (payload.status === 'sent') return;
+    setIncomingChallenge(payload);
+  }, []);
+
+  useEffect(() => {
+    if (gameMode !== 'bot') return;
+    const socket = getSocketClient();
+    socket.on('challenge_player', handleIncomingChallenge);
+    return () => {
+      socket.off('challenge_player', handleIncomingChallenge);
+    };
+  }, [gameMode, handleIncomingChallenge]);
+
+   useEffect(() => {
+     if (!gameMode) return;
+
+     providerRef.current?.dispose();
+
+     if (gameMode === 'bot') {
+       setRivalName(null);
+       setRivalIcon(null);
+       const botProvider = new BotStrategy({
+         getBoard: () => boardData,
+         getDifficulty: () => String(difficultyChoice || 'Easy'),
+         executeHumanMove,
+         resetGame,
+         surrenderGame: surrender,
+         startTimer,
+         stopTimer,
+         onBoardUpdate: () => {},
+       });
+       providerRef.current = botProvider;
+       multiplayerStrategyRef.current = null;
+       void botProvider.initialize();
+       return;
+     }
+
+     // Reset rival info when entering multiplayer mode
+     setRivalName(null);
+     setRivalIcon(null);
+
+     const strategy = new MultiplayerStrategy({
+       username,
+       boardSize: getBoardDimensionFromSizeChoice(sizeChoice) || 6,
+       onSync: handleSyncBoard,
+       onChallenge: handleIncomingChallenge,
+       onOpponentDataFetched: (rivalInfo) => {
+         setRivalName(rivalInfo.name || null);
+         setRivalIcon(rivalInfo.icon || null);
+       },
+     });
+     providerRef.current = strategy;
+     multiplayerStrategyRef.current = strategy;
+     void strategy.initialize();
+
+     const socket = getSocketClient();
+     const onConnect = () => setSocketConnection('connected');
+     const onDisconnect = () => {
+       setSocketConnection('disconnected');
+       setRivalName(null);
+       setRivalIcon(null);
+     };
+     const onReconnectAttempt = () => setSocketConnection('connecting');
+     socket.on('connect', onConnect);
+     socket.on('disconnect', onDisconnect);
+     socket.io.on('reconnect_attempt', onReconnectAttempt);
+
+     return () => {
+       strategy.dispose();
+       socket.off('connect', onConnect);
+       socket.off('disconnect', onDisconnect);
+       socket.io.off('reconnect_attempt', onReconnectAttempt);
+     };
+   }, [
+     boardData,
+     difficultyChoice,
+     executeHumanMove,
+     gameMode,
+     handleIncomingChallenge,
+     handleSyncBoard,
+     resetGame,
+     sizeChoice,
+     startTimer,
+     stopTimer,
+     surrender,
+     username,
+   ]);
 
   const startNewGame = useCallback((size: number, difficulty: DifficultyChoice) => {
     stopTimer();
@@ -243,12 +370,14 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     gameService.getDifficulties()
       .then(setAvailableDifficulties)
       .catch((err) => console.error('Error API:', err));
+  }, [startNewGame]);
 
-    // 2. Iniciar la partida por defecto
+  useEffect(() => {
+    if (gameMode !== 'bot') return;
     queueMicrotask(() => {
       void startNewGame(6, 'Easy');
     });
-  }, [startNewGame]);
+  }, [gameMode, startNewGame]);
 
   useEffect(() => {
       let active = true;
@@ -275,7 +404,9 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
               const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
               setTotalScore(scoreReal);
 
-          } catch {}
+          } catch (error) {
+            console.error('Error sincronizando perfil:', error);
+          }
       };
       void syncProfileData();
       return () => { active = false; };
@@ -283,6 +414,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
 
   // --- MANEJADORES DE ACCIONES ---
   const handleAutoMove = useCallback(async () => {
+    if (gameMode !== 'bot') return;
     try {
       const data = await executeAutoMove(difficultyChoice!, startTimer);
       if (data && data.winner !== null) {
@@ -295,8 +427,10 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
 
         setShowResultModal(true);
       }
-    } catch {}
-  }, [difficultyChoice, executeAutoMove, startTimer]);
+    } catch (error) {
+      console.error('Error en movimiento automatico:', error);
+    }
+  }, [difficultyChoice, executeAutoMove, gameMode, startTimer]);
 
   useEffect(() => {
     handleAutoMoveRef.current = handleAutoMove;
@@ -304,19 +438,24 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
 
 
   const handleCellClick = async (index: number) => {
-    if (winner !== null) return;
+    if (gameMode === 'bot' && winner !== null) return;
+    if (gameMode === 'multiplayer' && multiplayerWinner !== null) return;
+    if (gameMode === 'multiplayer' && (socketConnection !== 'connected' || multiplayerTurn !== username)) return;
+
     try {
-      const data = await executeHumanMove(index, difficultyChoice!, stopTimer, startTimer);
+      const data = await providerRef.current?.onCellClick(index);
+      if (!data) return;
       if (data.winner !== null) {
         setTimerVisible(false);
         setFinalScore(data.score || 0);
-        // SUMA OPTIMISTA: Si ganamos (ID 0), sumamos al total de la barra
-        if (data.winner === 0) {
-            setTotalScore(prev => prev + (data.score || 0));
+        if (data.winner === 0 && gameMode === 'bot') {
+          setTotalScore(prev => prev + (data.score || 0));
         }
         setShowResultModal(true);
       }
-    } catch {}
+    } catch (error) {
+      console.error('Error en movimiento:', error);
+    }
   };
 
   const fetchHistory = async (page = 1, filter = historyFilter) => {
@@ -335,6 +474,66 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
   const openFriendsMenu = () => {
     setShowFriendsMenu(true);
   };
+
+  const handleSelectMode = (mode: GameMode) => {
+    if (mode === 'multiplayer' && isGuestMode) {
+      setGameMode('bot');
+      setSocketConnection('disconnected');
+      return;
+    }
+    setGameMode(mode);
+    if (mode === 'multiplayer') {
+      setSocketConnection('connecting');
+      stopTimer();
+      setTimerVisible(false);
+      setShowFriendsMenu(true);
+    } else {
+      setSocketConnection('disconnected');
+    }
+  };
+
+  const handleInviteFriend = (friendUsername: string) => {
+    if (gameMode !== 'multiplayer') return;
+    setInviteLoadingUser(friendUsername);
+    multiplayerStrategyRef.current?.challengePlayer(friendUsername);
+    window.setTimeout(() => setInviteLoadingUser(null), 800);
+  };
+
+  const handleAcceptChallenge = () => {
+    if (!incomingChallenge) return;
+    const socket = getSocketClient();
+
+    // Al aceptar una invitacion desde IA se abandona el progreso local actual.
+    stopTimer();
+    setTimerVisible(false);
+    setMultiplayerBoard(null);
+    setMultiplayerWinner(null);
+    setMultiplayerTurn(null);
+    setMultiplayerMatchId(null);
+    setSocketConnection('connecting');
+    setGameMode('multiplayer');
+    socket.emit('accept_challenge', { challengeId: incomingChallenge.challengeId });
+    setIncomingChallenge(null);
+  };
+
+  const handleRejectChallenge = () => {
+    setIncomingChallenge(null);
+  };
+
+  const handleGoToModeMenu = () => {
+    const canLoseProgress = gameMode === 'bot' && winner === null;
+    if (canLoseProgress) {
+      const confirmed = window.confirm('Si cambias de modo perderas el progreso actual de la partida IA. ¿Quieres continuar?');
+      if (!confirmed) return;
+    }
+    stopTimer();
+    setTimerVisible(false);
+    sessionStorage.removeItem('yovi_gamemode');
+    window.location.replace('/gamemode.html');
+  };
+
+  const activeBoardData = gameMode === 'multiplayer' ? multiplayerBoard : boardData;
+  const activeWinner = gameMode === 'multiplayer' ? multiplayerWinner : winner;
 
   const handleExit = async () => {
       stopTimer();
@@ -369,19 +568,23 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         displayName={displayName}
         playerIcon={playerIcon}
         botIcon={botIcon}
-        boardData={boardData}
-        winner={winner}
+        gameMode={gameMode}
+        rivalName={rivalName}
+        rivalIcon={rivalIcon}
+        boardData={activeBoardData}
+        winner={activeWinner}
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
         totalScore={totalScore}
         turnTimeLeft={turnTimeLeft}
-        timerVisible={timerVisible}
+        timerVisible={gameMode === 'bot' ? timerVisible : false}
         turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
         onCellClick={handleCellClick}
         onFetchHistory={() => void fetchHistory()}
         onExit={handleExit}
         onChangeDifficulty={(uiDiff: string) => {
+          if (gameMode !== 'bot') return;
           // 1. Mapa de traducción para el backend
           const backendMap: Record<string, string> = {
             'Fácil': 'facil',
@@ -392,24 +595,31 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
           const valueForBackend = backendMap[uiDiff] || 'facil';
 
           // 2. Guardamos el valor (puedes guardar el "bonito" para la UI)
-          setDifficultyChoice(uiDiff as any);
-          setPreviousDifficultyChoice(uiDiff as any);
+          const uiDiffChoice = uiDiff as DifficultyChoice;
+          setDifficultyChoice(uiDiffChoice);
+          setPreviousDifficultyChoice(uiDiffChoice);
           
           // 3. Llamamos al servicio con el valor que entiende el Backend
           const dimension = getBoardDimensionFromSizeChoice(sizeChoice) || 6;
-          startNewGame(dimension, valueForBackend as any);
+          startNewGame(dimension, valueForBackend as DifficultyChoice);
         }}
         onChangeSize={(newSize: SizeChoice) => {
           setPreviousSizeChoice(newSize);
           setSizeChoice(newSize);
+          if (gameMode !== 'bot') return;
           const dimension = getBoardDimensionFromSizeChoice(newSize) || 6;
           startNewGame(dimension, difficultyChoice || 'Easy');
         }}
-        onResetGame={() => startNewGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy')}
+        onResetGame={() => {
+          if (gameMode !== 'bot') return;
+          startNewGame(getBoardDimensionFromSizeChoice(sizeChoice) || 6, difficultyChoice || 'Easy');
+        }}
         onEndGame={async () => {
           stopTimer();
           setTimerVisible(false);
-          await surrender(difficultyChoice!);
+          if (gameMode === 'bot') {
+            await surrender(difficultyChoice!);
+          }
           setFinalScore(0);
           setShowResultModal(true);
         }}
@@ -420,7 +630,39 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         onScoreButtonClick={() => {
           setShowStore(true);
         }}
+        onGoToModeMenu={handleGoToModeMenu}
       />
+
+      {!gameMode && <GameModeScreen onSelectMode={handleSelectMode} />}
+
+      {gameMode === 'multiplayer' && (
+        <div className="match-info-floating" aria-live="polite">
+          <div className="match-info-box">
+            <strong className="match-info-title">Multijugador</strong>
+            <div className="match-info-line">Conexion: {socketConnection}</div>
+            <div className="match-info-line">Partida: {multiplayerMatchId || 'esperando rival'}</div>
+            <div className="match-info-line">Turno: {multiplayerTurn || '-'}</div>
+          </div>
+        </div>
+      )}
+
+      {incomingChallenge && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Invitacion de partida">
+          <div className="modal-box">
+            <h3>Invitacion de partida</h3>
+            <p>{incomingChallenge.challenger} te ha retado a una partida 1vs1.</p>
+            {gameMode === 'bot' && winner === null && (
+              <p style={{ marginTop: '0.5rem', fontWeight: 600, color: '#9f1239' }}>
+                Te estan invitando a una partida multijugador. Si aceptas, perderas el progreso de la partida actual contra la IA.
+              </p>
+            )}
+            <div className="modal-actions" style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+              <button type="button" className="submit-button" onClick={handleAcceptChallenge}>Aceptar</button>
+              <button type="button" className="submit-button" onClick={handleRejectChallenge}>Rechazar</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <PayPalStore
         isOpen={showStore}
@@ -462,7 +704,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
       {/* Modales de Resultados e Historial */}
       <ResultModal
         isOpen={showResultModal}
-        winner={winner}
+        winner={activeWinner}
         score={finalScore}
         onClose={() => setShowResultModal(false)}
       />
@@ -486,6 +728,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
           displayName={displayName}
           friendCode={friendCode}
           icon={playerIcon}
+          onInviteFriend={gameMode === 'multiplayer' ? handleInviteFriend : undefined}
+          inviteLoadingUser={inviteLoadingUser}
           // Captura el nombre del amigo y lo guarda en el estado local de main.tsx
           onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
       />

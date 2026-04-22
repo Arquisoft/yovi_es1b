@@ -20,10 +20,10 @@ const HomeApp = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
   useEffect(() => {
-    // Si ya hay usuario logeado, redigirir al juego.
-    if (localStorage.getItem('yovi_user')) {
-        window.location.href = '/game.html';
-    }
+    // Si ya hay usuario logeado, redirigir a selección de modo solo si no estamos ya allí.
+    if (!localStorage.getItem('yovi_user')) return
+    if (window.location.pathname === '/gamemode.html') return
+    window.location.replace('/gamemode.html')
   }, []);
 
   useEffect(() => {
@@ -92,7 +92,7 @@ const HomeApp = () => {
         username={username}
         onUsernameChange={setUsername}
         onStart={() => {
-          globalThis.location.href = '/game.html'
+          globalThis.location.href = '/gamemode.html'
         }}
         onGoToRegister={() => (globalThis.location.href = '/register.html')}
         onGoToLogin={() => (globalThis.location.href = '/login.html')}
@@ -139,5 +139,7 @@ const HomeApp = () => {
     </div>
   )
 }
+
+export default HomeApp
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<HomeApp />)

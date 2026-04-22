@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { gameService } from '../../services/gameService';
 
@@ -24,9 +24,11 @@ interface FriendsPanelProps {
   friendCode: string;
   icon?: string | null;
   onTriggerPublicProfile: (username: string) => void;
+  onInviteFriend?: (friendUsername: string) => void;
+  inviteLoadingUser?: string | null;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon,onTriggerPublicProfile }: FriendsPanelProps) => {
+export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon, onTriggerPublicProfile, onInviteFriend, inviteLoadingUser }: FriendsPanelProps) => {
   const { t } = useTranslation();
   const [friends, setFriends] = useState<Friend[]>([]);
   const [requests, setRequests] = useState<FriendRequest[]>([]);
@@ -35,7 +37,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
   const [showRequests, setShowRequests] = useState(false);
 
   // --- 1. FUNCIÓN DE CARGA CENTRALIZADA ---
-  const fetchSocialData = async (showLoader = false) => {
+  const fetchSocialData = useCallback(async (showLoader = false) => {
     if (!username) return;
     if (showLoader) setLoading(true);
 
@@ -53,7 +55,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     } finally {
       setLoading(false);
     }
-  };
+  }, [username]);
 
   // ---  EFECTO DE AUTO-REFRESCO (POLLING) ---
   useEffect(() => {
@@ -68,7 +70,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
 
       return () => clearInterval(interval); // Limpiamos al cerrar
     }
-  }, [isOpen, username]);
+  }, [fetchSocialData, isOpen, username]);
 
 
   useEffect(() => {
@@ -160,7 +162,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       } else {
         alert(t('friends.alert_not_found'));
       }
-    } catch (error) {
+    } catch {
       alert(t('friends.alert_search_error'));
     }
   };
@@ -272,7 +274,14 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
                   <div key={index} className="friend-item-row">
                     <div className={`status-dot ${friend.status}`}></div>
                     <span className="friend-name">{friend.name}</span>
-                    <button className="invite-btn">{t('friends.invite')}</button>
+                    <button
+                      className="invite-btn"
+                      type="button"
+                      onClick={() => onInviteFriend?.(friend.name)}
+                      disabled={Boolean(inviteLoadingUser && inviteLoadingUser === friend.name)}
+                    >
+                      {inviteLoadingUser && inviteLoadingUser === friend.name ? t('common.loading') : t('friends.invite')}
+                    </button>
                   </div>
                 ))
               ) : (

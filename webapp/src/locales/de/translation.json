@@ -22,6 +22,12 @@
     "welcome_main": "Willkommen bei GameY",
     "welcome_kicker": "Strategie hat kein Glück"
   },
+  "mode": {
+    "title": "Spielmodus wählen",
+    "subtitle": "Wähle, wie du diese Partie spielen möchtest",
+    "bot_duel": "Duell gegen KI",
+    "multiplayer_duel": "Mehrspieler-Duell"
+  },
   "login": {
     "title": "Willkommen zurück bei GameY",
     "subtitle": "Wie war dein Name?",

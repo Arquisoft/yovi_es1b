@@ -22,6 +22,12 @@
     "welcome_main": "Bienvenido a GameY",
     "welcome_kicker": "La estrategia no tiene suerte"
   },
+  "mode": {
+    "title": "Selecciona modo de juego",
+    "subtitle": "Elige como quieres jugar esta partida",
+    "bot_duel": "Duelo contra IA",
+    "multiplayer_duel": "Duelo Multijugador"
+  },
   "login": {
     "title": "Bienvenido de vuelta a GameY",
     "subtitle": "¿Cómo era tu nombre?",

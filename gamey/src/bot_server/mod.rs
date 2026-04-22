@@ -92,6 +92,20 @@ pub struct SurrenderRequest {
     board_size: i32,
 }
 
+#[derive(Deserialize)]
+pub struct PvpResetRequest {
+    pub match_id: String,
+    pub size: Option<u32>,
+    pub players: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct PvpMoveRequest {
+    pub match_id: String,
+    pub player: String,
+    pub index: u32,
+}
+
 #[derive(serde::Serialize)]
 pub struct UserStats {
     pub wins: i64,
@@ -165,6 +179,8 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/difficulties", axum::routing::get(listar_dificultades))
         .route("/surrender", axum::routing::post(rendirse))
         .route("/stats", axum::routing::get(obtener_estadisticas))
+        .route("/pvp/reset", axum::routing::post(reiniciar_juego_pvp))
+        .route("/pvp/move", axum::routing::post(realizar_movimiento_pvp))
         .route("/api/play", axum::routing::post(play::play))
         .with_state(state)
 }
@@ -559,3 +575,124 @@ pub async fn obtener_estadisticas(
         total_score: total_score,
     })
 }
+
+pub async fn reiniciar_juego_pvp(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<PvpResetRequest>,
+) -> impl IntoResponse {
+    if payload.players.len() != 2 {
+        return axum::Json(serde_json::json!({
+            "error": "Se requieren exactamente 2 jugadores"
+        }));
+    }
+
+    let size = payload.size.unwrap_or(6).clamp(3, 20);
+    let session = state.upsert_pvp_session(&payload.match_id, size, payload.players.clone());
+    let game = session.game.lock().await;
+    let yen_data: crate::YEN = (&*game).into();
+
+    axum::Json(serde_json::json!({
+        "board": yen_data,
+        "next_turn": payload.players.first().cloned().unwrap_or_default()
+    }))
+}
+
+pub async fn realizar_movimiento_pvp(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<PvpMoveRequest>,
+) -> impl IntoResponse {
+    let Some(session) = state.get_pvp_session(&payload.match_id) else {
+        return axum::Json(serde_json::json!({
+            "error": "Partida no encontrada"
+        }));
+    };
+
+    let players = session.players.lock().await.clone();
+    if players.len() != 2 {
+        return axum::Json(serde_json::json!({ "error": "Sesion invalida" }));
+    }
+
+    let maybe_player_index = players.iter().position(|p| p == &payload.player);
+    let Some(player_index) = maybe_player_index else {
+        return axum::Json(serde_json::json!({
+            "error": "Jugador no pertenece a la partida"
+        }));
+    };
+
+    let mut game = session.game.lock().await;
+
+    if let Some(next_player) = game.next_player() {
+        if next_player.id() != player_index as u32 {
+            return axum::Json(serde_json::json!({
+                "error": "No es el turno del jugador"
+            }));
+        }
+    }
+
+    let coords = crate::Coordinates::from_index(payload.index, game.board_size());
+    let movement = crate::Movement::Placement {
+        player: crate::PlayerId::new(player_index as u32),
+        coords,
+    };
+
+    if let Err(e) = game.add_move(movement) {
+        return axum::Json(serde_json::json!({
+            "error": format!("Movimiento invalido: {}", e)
+        }));
+    }
+
+    let winner_username = match game.status() {
+        crate::core::game::GameStatus::Finished { winner } => {
+            players.get(winner.id() as usize).cloned()
+        }
+        _ => None,
+    };
+
+    let next_turn_username = game
+        .next_player()
+        .and_then(|next| players.get(next.id() as usize).cloned());
+
+    if let Some(winner_name) = winner_username.clone() {
+        let loser_name = players
+            .iter()
+            .find(|player| player.as_str() != winner_name.as_str())
+            .cloned()
+            .unwrap_or_else(|| winner_name.clone());
+        let board_size = game.board_size();
+        let db = state.db.clone();
+
+        tokio::spawn(async move {
+            let collection = db.collection::<serde_json::Value>("partidas");
+            let now = Utc::now().to_rfc3339();
+            let win_record = serde_json::json!({
+                "player": winner_name.clone(),
+                "date": now,
+                "opponent": loser_name.clone(),
+                "board_size": board_size,
+                "difficulty": "Multiplayer",
+                "result": "Victoria",
+                "score": 150
+            });
+            let lose_record = serde_json::json!({
+                "player": loser_name,
+                "date": Utc::now().to_rfc3339(),
+                "opponent": winner_name,
+                "board_size": board_size,
+                "difficulty": "Multiplayer",
+                "result": "Derrota",
+                "score": 0
+            });
+            let _ = collection.insert_one(win_record).await;
+            let _ = collection.insert_one(lose_record).await;
+        });
+    }
+
+    let yen_data: crate::YEN = (&*game).into();
+
+    axum::Json(serde_json::json!({
+        "board": yen_data,
+        "winner": winner_username,
+        "next_turn": next_turn_username
+    }))
+}
+
