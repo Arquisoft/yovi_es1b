@@ -513,8 +513,8 @@ const normalizeDifficulty = (difficulty) =>
     .trim()
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\s+/g, '');
+    .replaceAll(/[\u0300-\u036f]/g, '')
+    .replaceAll(/\s+/g, '');
 
 const calculateVictoryScore = (difficulty, boardSize) => {
   const size = Number(boardSize);
@@ -592,7 +592,6 @@ app.post('/move', async (req, res) => {
         { username: username },
         { $inc: { totalScore: awardedScore } } // Suma el score actual al totalScore de la DB
       );
-      console.log(`Puntos guardados para ${username}: +${awardedScore}`);
     }
     
     // 3. Respuesta HTTP
@@ -728,7 +727,7 @@ app.get('/history', async (req, res) => {
     const paginatedData = await rustResponse.json();
     
     // DEBUG: Mira tu terminal de Node para ver si llegan datos
-    console.log(`Historial para ${username}: (Pag ${page}):`, paginatedData.data);
+    console.log('Historial de partidas consultado correctamente.');
 
     // 5. Enviamos el array directo al Frontend
     res.json(paginatedData); 

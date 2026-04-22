@@ -383,16 +383,13 @@ function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, o
         </div>
 
         {onGoToLogin && (
-          <a
-            href="#"
+          <button
+            type="button"
             className="register-login-link"
-            onClick={(event) => {
-              event.preventDefault();
-              onGoToLogin();
-            }}
-            children={t('register.login_link')}
+            onClick={onGoToLogin}
           >
-          </a>
+            {t('register.login_link')}
+          </button>
         )}
       </form>
     </div>

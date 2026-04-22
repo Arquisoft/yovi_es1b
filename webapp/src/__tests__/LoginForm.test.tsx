@@ -245,7 +245,7 @@ describe('LoginForm', () => {
 
     render(<LoginScreen onBack={vi.fn()} onRegister={onRegister} onLogin={vi.fn()} />)
 
-    const registerLink = screen.getByRole('link', { name: /no tengo cuenta, crear una/i })
+    const registerLink = screen.getByRole('button', { name: /no tengo cuenta, crear una/i })
     expect(registerLink).toHaveClass('login-register-link')
 
     await act(async () => {

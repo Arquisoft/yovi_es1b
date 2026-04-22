@@ -204,16 +204,13 @@ function LoginScreen({ onBack, onRegister, onOpenLanguage, onOpenSettings, onOpe
               {t('common.back')}
             </button>
             {onRegister && (
-              <a
-                href="#"
+              <button
+                type="button"
                 className="login-register-link"
-                onClick={(event) => {
-                  event.preventDefault();
-                  onRegister();
-                }}
+                onClick={onRegister}
               >
                 {t('login.register_link')}
-              </a>
+              </button>
             )}
           </form>
         </div>

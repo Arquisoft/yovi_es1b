@@ -1334,8 +1334,8 @@ body {
 .dropdown-trigger-arrow {
   font-size: 0.78rem;
   line-height: 1;
-  flex-shrink: 0;
   flex: 0 0 auto;
+  flex-shrink: 0;
   text-align: left;
 }
 

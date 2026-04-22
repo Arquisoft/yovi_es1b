@@ -47,13 +47,25 @@ export const clearSession = () => {
     clearGuestSession();
 };
 
+const sanitizeBrowserStorageValue = (value?: string | null, maxLength = 128) => {
+  const normalized = String(value ?? '')
+    .normalize('NFKC')
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/[^\p{L}\p{N}\s._-]/gu, '')
+    .trim();
+
+  return normalized.slice(0, maxLength);
+};
+
+const STORAGE_VALUE_PATTERN = /^[\p{L}\p{N}\s._-]{1,128}$/u;
+
 /**
  * Sustituye la sesión activa por la del usuario recién registrado.
  * Se usa tras crear una cuenta para evitar arrastrar el usuario anterior.
  */
 export const activateRegisteredSession = (username: string) => {
-    const name = username.trim();
-    if (!name) return false;
+    const name = sanitizeBrowserStorageValue(username, 64);
+    if (!name || !STORAGE_VALUE_PATTERN.test(name)) return false;
 
     clearSession();
     sessionStorage.setItem('username', name);
@@ -67,22 +79,25 @@ type PersistUserSessionOptions = {
   nickname?: string | null;
 };
 
-const setOrClear = (key: string, value?: string | null) => {
-  if (typeof value === 'string' && value.trim()) {
-    localStorage.setItem(key, value.trim());
+const setOrClear = (key: string, value?: string | null, maxLength = 128) => {
+  const sanitized = sanitizeBrowserStorageValue(value, maxLength);
+  if (sanitized) {
+    localStorage.setItem(key, sanitized);
   } else {
     localStorage.removeItem(key);
   }
 };
 
 export const persistUserSession = (username: string, options: PersistUserSessionOptions) => {
-  const name = username.trim();
-  if (!name) return false;
+  const name = sanitizeBrowserStorageValue(username, 64);
+  const friendCode = sanitizeBrowserStorageValue(options.friendCode, 32);
+  if (!name || !STORAGE_VALUE_PATTERN.test(name)) return false;
+  if (!friendCode || !STORAGE_VALUE_PATTERN.test(friendCode)) return false;
 
   localStorage.setItem('yovi_user', name);
-  localStorage.setItem('yovi_friend_code', options.friendCode);
-  setOrClear('yovi_user_icon', options.icon);
-  setOrClear('yovi_user_language', options.language);
-  setOrClear('yovi_user_nickname', options.nickname);
+  localStorage.setItem('yovi_friend_code', friendCode);
+  setOrClear('yovi_user_icon', options.icon, 128);
+  setOrClear('yovi_user_language', options.language, 32);
+  setOrClear('yovi_user_nickname', options.nickname, 64);
   return true;
 };

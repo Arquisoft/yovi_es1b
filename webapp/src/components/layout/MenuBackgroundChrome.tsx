@@ -41,7 +41,7 @@ export const MenuBackgroundChrome = ({
       {children}
 
       {showSettings && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={settingsText}>
+        <dialog className="modal-backdrop" open aria-modal="true" aria-label={settingsText}>
           <div className="modal-box">
             <h3>{settingsText}</h3>
             <div className="form-group">
@@ -69,7 +69,7 @@ export const MenuBackgroundChrome = ({
               {t('common.close')}
             </button>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
   );

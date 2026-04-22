@@ -35,13 +35,46 @@ type UserProfileResponse = {
   username?: string;
 };
 
-const createAuthenticatedInit = (init: RequestInit = {}): RequestInit => ({
-  ...init,
-  headers: {
-    ...getAuthHeaders(),
-    ...(init.headers ?? {}),
-  },
-});
+const createAuthenticatedInit = (init?: RequestInit): RequestInit => {
+  const mergedInit: RequestInit = { ...(init ?? {}) };
+  mergedInit.headers = mergeHeaders(init);
+  return mergedInit;
+};
+
+const USERNAME_PATTERN = /^[\p{L}\p{N} _.-]{1,64}$/u;
+
+const getRequiredUsername = (username?: string | null) => {
+  const resolvedUsername = typeof username === 'string' ? username : getCurrentUser();
+  const trimmedUsername = resolvedUsername.trim();
+  if (!trimmedUsername || !USERNAME_PATTERN.test(trimmedUsername)) {
+    throw new Error('Missing username');
+  }
+
+  return trimmedUsername;
+};
+
+const getSafeUsernamePathSegment = (username?: string | null) => encodeURIComponent(getRequiredUsername(username));
+
+const getSafeUsernameQuery = (username?: string | null) => getSafeUsernamePathSegment(username);
+
+const mergeHeaders = (init?: RequestInit): HeadersInit => {
+  const headers: Record<string, string> = { ...getAuthHeaders() };
+  const incomingHeaders = init?.headers;
+
+  if (incomingHeaders instanceof Headers) {
+    incomingHeaders.forEach((value, key) => {
+      headers[key] = value;
+    });
+  } else if (Array.isArray(incomingHeaders)) {
+    for (const [key, value] of incomingHeaders) {
+      headers[key] = value;
+    }
+  } else if (incomingHeaders) {
+    Object.assign(headers, incomingHeaders);
+  }
+
+  return headers;
+};
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const res = init ? await fetch(url, init) : await fetch(url);
@@ -56,11 +89,12 @@ export const gameService = {
 
   // Realizar un movimiento
   async makeMove(cellIndex: number,  difficulty: string, boardSize?: number, context?: GameHistoryContext): Promise<MoveResponse> {
+    const username = getRequiredUsername();
     return fetchJson<MoveResponse>(`${API_BASE_URL}/move`, createAuthenticatedInit({
       method: 'POST',
       body: JSON.stringify({ 
         cellIndex, 
-        username: getCurrentUser(), 
+        username, 
         difficulty, 
         boardSize,
         ...context,
@@ -70,24 +104,26 @@ export const gameService = {
 
   // Reiniciar tablero
   async resetBoard(size: number | null, difficulty: string): Promise<GameYData> {
+    const username = getRequiredUsername();
     const data = await fetchJson<GameYData & { responseFromRust?: GameYData }>(`${API_BASE_URL}/reset`, createAuthenticatedInit({
       method: 'POST',
-      body: JSON.stringify({ size, difficulty, username: getCurrentUser() }),
+      body: JSON.stringify({ size, difficulty, username }),
     }));
     return data.responseFromRust ?? data;
   },
 
   // Rendirse
   async surrender( difficulty: string, boardSize?: number, context?: GameHistoryContext) {
+    const username = getRequiredUsername();
     return fetch(`${API_BASE_URL}/surrender`, createAuthenticatedInit({
       method: 'POST',
-      body: JSON.stringify({ username: getCurrentUser(), difficulty, boardSize, ...context }),
+      body: JSON.stringify({ username, difficulty, boardSize, ...context }),
     }));
   },
 
   // Historial
   async getHistory( page: number, filter?: string | null): Promise<HistoryResponse> {
-    let url = `${API_BASE_URL}/history?username=${getCurrentUser()}&page=${page}&limit=5`;
+    let url = `${API_BASE_URL}/history?username=${getSafeUsernameQuery()}&page=${page}&limit=5`;
     const normalizedFilter = getHistoryFilterKey(filter);
     if (normalizedFilter) url += `&result=${encodeURIComponent(normalizedFilter)}`;
     return fetchJson<HistoryResponse>(url);
@@ -96,7 +132,7 @@ export const gameService = {
   async getFriends(): Promise<{ name: string, status: string }[]> {
     try {
       // Usamos encodeURIComponent por seguridad si el nombre tiene espacios o caracteres especiales
-      const url = `${API_BASE_URL}/friends?username=${encodeURIComponent( getCurrentUser())}`;
+      const url = `${API_BASE_URL}/friends?username=${getSafeUsernameQuery()}`;
       
       const res = await fetch(url, createAuthenticatedInit({ method: 'GET' }));
 
@@ -114,32 +150,33 @@ export const gameService = {
   },
 
   async addFriend( friendName: string) {
+    const username = getRequiredUsername();
     return fetchJson(`${API_BASE_URL}/friends/add`, createAuthenticatedInit({
       method: 'POST',
-      body: JSON.stringify({ username: getCurrentUser(), friendName }),
+      body: JSON.stringify({ username, friendName }),
     }));
   },
 
   async getProfile(username?: string): Promise<UserProfileResponse> {
     // Si pasan un username (ej. un amigo), usamos ese.
     // Si NO pasan nada, usamos el de la sesión activa.
-    const targetUser = username || getCurrentUser();
+    const targetUser = getRequiredUsername(username);
 
-    return fetchJson<UserProfileResponse>(`${API_BASE_URL}/users/profile/${targetUser}`, createAuthenticatedInit({ method: 'GET' }));
+    return fetchJson<UserProfileResponse>(`${API_BASE_URL}/users/profile/${encodeURIComponent(targetUser)}`, createAuthenticatedInit({ method: 'GET' }));
   },
 
   async updateProfile(
 
     payload: { birthDate?: string | null; language?: string; iconName?: string; nickname?: string }
   ): Promise<UserProfileResponse> {
-    return fetchJson<UserProfileResponse>(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}`, createAuthenticatedInit({
+    return fetchJson<UserProfileResponse>(`${API_BASE_URL}/users/profile/${getSafeUsernamePathSegment()}`, createAuthenticatedInit({
       method: 'PATCH',
       body: JSON.stringify(payload),
     }));
   },
 
   async changePassword( currentPassword: string, newPassword: string): Promise<UserProfileResponse> {
-    return fetchJson<UserProfileResponse>(`${API_BASE_URL}/users/profile/${encodeURIComponent(getCurrentUser())}/change-password`, createAuthenticatedInit({
+    return fetchJson<UserProfileResponse>(`${API_BASE_URL}/users/profile/${getSafeUsernamePathSegment()}/change-password`, createAuthenticatedInit({
       method: 'POST',
       body: JSON.stringify({ currentPassword, newPassword }),
     }));
@@ -148,7 +185,8 @@ export const gameService = {
   // 1. Buscar usuario específicamente por su Friend Code (#ABC123)
   async searchUserByCode(code: string) {
     // Le añadimos el # nosotros para que el buscador del back sepa que es un ID
-    const url = `${API_BASE_URL}/users/search?query=${encodeURIComponent('#' + code)}`;
+    const safeCode = String(code || '').trim();
+    const url = `${API_BASE_URL}/users/search?query=${encodeURIComponent(`#${safeCode}`)}`;
     const res = await fetch(url);
     
     if (!res.ok) throw new Error('Error en la búsqueda');
@@ -160,11 +198,13 @@ export const gameService = {
 
   // 2. Seguir/Añadir amigo (Ajustado a tu endpoint /users/follow)
   async followUser( targetUsername: string) {
+    const username = getRequiredUsername();
+    const safeTargetUsername = String(targetUsername || '').trim();
     const res = await fetch(`${API_BASE_URL}/users/follow`, createAuthenticatedInit({
       method: 'POST',
       body: JSON.stringify({ 
-        follower: getCurrentUser(),
-        following: targetUsername 
+        follower: username,
+        following: safeTargetUsername 
       }),
     }));
 
@@ -191,7 +231,7 @@ export const gameService = {
   },
 
   async getPendingRequests() {
-    const res = await fetch(`${API_BASE_URL}/friends/requests?username=${encodeURIComponent(getCurrentUser())}`, createAuthenticatedInit({ method: 'GET' }));
+    const res = await fetch(`${API_BASE_URL}/friends/requests?username=${getSafeUsernameQuery()}`, createAuthenticatedInit({ method: 'GET' }));
     if (!res.ok) throw new Error('No se pudieron obtener las solicitudes');
     return res.json();
   },
@@ -202,7 +242,9 @@ export const gameService = {
    * @returns el perfil público del usuario con estadísticas de juego
    */
   async getPublicProfile(targetUsername: string, myUsername: string) {
-    const response = await fetch(`${API_BASE_URL}/users/public-profile/${targetUsername}?requester=${myUsername}`, createAuthenticatedInit({ method: 'GET' }));
+    const safeTarget = encodeURIComponent(String(targetUsername || '').trim());
+    const safeRequester = encodeURIComponent(String(myUsername || '').trim());
+    const response = await fetch(`${API_BASE_URL}/users/public-profile/${safeTarget}?requester=${safeRequester}`, createAuthenticatedInit({ method: 'GET' }));
     if (!response.ok) throw new Error('No se pudo obtener el perfil público');
     return await response.json();
   },
@@ -214,19 +256,22 @@ export const gameService = {
    * @returns 
    */
   async cancelFriendRequest(follower: string, following: string) {
+    const safeFollower = String(follower || '').trim();
+    const safeFollowing = String(following || '').trim();
     const response = await fetch(`${API_BASE_URL}/friends/cancel`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ follower, following })
+      body: JSON.stringify({ follower: safeFollower, following: safeFollowing })
     });
     return await response.json();
   },
 
   async addXP(amount: number) {
+    const username = getRequiredUsername();
     return fetchJson(`${API_BASE_URL}/users/purchase-xp`, createAuthenticatedInit({
       method: 'POST',
       body: JSON.stringify({ 
-        username: getCurrentUser(), 
+        username, 
         amount 
       }),
     }));

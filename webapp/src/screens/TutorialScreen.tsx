@@ -35,6 +35,7 @@ type TutorialSubsection = Readonly<{
   menuLabel: string;
   title: string;
   description: string;
+  captureNote?: string;
   images: TutorialImage[];
   emptyMessage: string;
   sectionId: string;
@@ -112,6 +113,7 @@ const HelpSubsectionBlock = ({ subsection }: { subsection: TutorialSubsection })
         {subsection.index}. {displayTitle}
       </h5>
       <p>{subsection.description}</p>
+      {subsection.captureNote ? <p className="tutorial-capture-note">{subsection.captureNote}</p> : null}
       <HelpGallery images={subsection.images} emptyMessage={subsection.emptyMessage} />
     </section>
   );
@@ -218,8 +220,6 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
       sectionId: 'help-home',
       introHeading: t('tutorial.subtitle_information'),
       introText: t('tutorial.home_info_paragraph'),
-      coverImages: helpHomeImages,
-      coverEmptyMessage: noCaptureMessage,
       featureHeading: t('tutorial.subtitle_features'),
       features: [
         t('tutorial.home_feature_1'),
@@ -263,7 +263,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s1_4'),
           title: t('tutorial.home_help_title'),
           description: t('tutorial.home_help_description'),
-          images: [],
+          images: helpHomeImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-home-help',
         },
@@ -275,8 +275,6 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
       sectionId: 'help-register',
       introHeading: t('tutorial.subtitle_information'),
       introText: t('tutorial.register_fields_text'),
-      coverImages: helpRegisterImages,
-      coverEmptyMessage: noCaptureMessage,
       featureHeading: t('tutorial.subtitle_features'),
       features: [
         t('tutorial.register_feature_1'),
@@ -345,7 +343,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s2_7'),
           title: t('tutorial.register_help_title'),
           description: t('tutorial.register_help_description'),
-          images: [],
+          images: helpRegisterImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-register-help',
         },
@@ -357,8 +355,6 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
       sectionId: 'help-login',
       introHeading: t('tutorial.subtitle_information'),
       introText: t('tutorial.login_what_text'),
-      coverImages: helpLoginImages,
-      coverEmptyMessage: noCaptureMessage,
       featureHeading: t('tutorial.subtitle_features'),
       features: [
         t('tutorial.login_feature_1'),
@@ -429,7 +425,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s3_7'),
           title: t('tutorial.login_help_title'),
           description: t('tutorial.login_help_description'),
-          images: [],
+          images: helpLoginImages,
           emptyMessage: noCaptureMessage,
           sectionId: 'help-login-help',
         },
@@ -461,6 +457,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_1'),
           title: t('tutorial.s4_1'),
           description: t('tutorial.s4_1_desc'),
+          captureNote: t('tutorial.game_capture_1'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-1',
@@ -470,6 +467,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_2'),
           title: t('tutorial.s4_2'),
           description: t('tutorial.s4_2_desc'),
+          captureNote: t('tutorial.game_capture_2'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-2',
@@ -479,6 +477,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_3'),
           title: t('tutorial.s4_3'),
           description: t('tutorial.s4_3_desc'),
+          captureNote: t('tutorial.game_capture_3'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-3',
@@ -488,6 +487,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_4'),
           title: t('tutorial.s4_4'),
           description: t('tutorial.s4_4_desc'),
+          captureNote: t('tutorial.game_capture_4'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-4',
@@ -497,6 +497,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_5'),
           title: t('tutorial.s4_5'),
           description: t('tutorial.s4_5_desc'),
+          captureNote: t('tutorial.game_capture_5'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-5',
@@ -506,6 +507,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_6'),
           title: t('tutorial.s4_6'),
           description: t('tutorial.s4_6_desc'),
+          captureNote: t('tutorial.game_capture_6'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-6',
@@ -515,6 +517,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_7'),
           title: t('tutorial.s4_7'),
           description: t('tutorial.s4_7_desc'),
+          captureNote: t('tutorial.game_capture_7'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-7',
@@ -524,6 +527,7 @@ export const TutorialScreen = ({ isOpen, onClose }: TutorialScreenProps) => {
           menuLabel: t('tutorial.s4_8'),
           title: t('tutorial.s4_8'),
           description: t('tutorial.s4_8_desc'),
+          captureNote: t('tutorial.game_capture_8'),
           images: [],
           emptyMessage: noCaptureMessage,
           sectionId: 'help-game-8',

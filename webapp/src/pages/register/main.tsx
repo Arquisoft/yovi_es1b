@@ -25,12 +25,12 @@ const RegisterPage = () => {
     nickname?: string | null
   ) => {
     if (persistUserSession(playerName, { friendCode, icon, language, nickname }) && activateRegisteredSession(playerName)) {
-      window.location.href = '/game.html';
+      globalThis.location.href = '/game.html';
     }
   };
 
   const handleBack = () => {
-    window.location.href = '/index.html';
+    globalThis.location.href = '/index.html';
   };
 
   return (
@@ -47,7 +47,7 @@ const RegisterPage = () => {
       <RegisterScreen
         onBack={handleBack}
         onGoToLogin={() => {
-          window.location.href = '/login.html';
+          globalThis.location.href = '/login.html';
         }}
         onOpenLanguage={() => setShowLanguageScreen(true)}
         onOpenSettings={() => background.setShowSettings(true)}

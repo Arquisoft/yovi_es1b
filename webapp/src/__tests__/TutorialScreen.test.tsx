@@ -168,10 +168,14 @@ describe('TutorialScreen', () => {
       /3\.6 ajustes/i,
       /3\.7 ayuda/i,
       /4\. ventana de juego/i,
-      /4\.1 interacción con una celda/i,
-      /4\.2 temporizador por turno/i,
-      /4\.3 panel de información/i,
-      /4\.4 guía rápida del bot/i,
+      /4\.1 barra superior/i,
+      /4\.2 tamaño de partida/i,
+      /4\.3 dificultad/i,
+      /4\.4 puntos acumulados/i,
+      /4\.5 temporizador por turno/i,
+      /4\.6 tablero y celdas/i,
+      /4\.7 panel de información/i,
+      /4\.8 perfil, amigos y salida/i,
     ]
 
     buttonsToClick.forEach((name) => {

@@ -1,4 +1,7 @@
-﻿const SIZE_LABEL_KEY_MAP: Record<string, 'size_small' | 'size_medium' | 'size_large'> = {
+type SizeLabelKey = 'size_small' | 'size_medium' | 'size_large';
+type DifficultyLabelKey = 'easy' | 'medium' | 'hard';
+
+const SIZE_LABEL_KEY_MAP: Record<string, SizeLabelKey> = {
   Pequeño: 'size_small',
   Pequeña: 'size_small',
   Pequeno: 'size_small',
@@ -15,7 +18,7 @@
   Gross: 'size_large',
 };
 
-const DIFFICULTY_LABEL_KEY_MAP: Record<string, 'easy' | 'medium' | 'hard'> = {
+const DIFFICULTY_LABEL_KEY_MAP: Record<string, DifficultyLabelKey> = {
   Fácil: 'easy',
   Facil: 'easy',
   Easy: 'easy',
@@ -30,18 +33,18 @@ const DIFFICULTY_LABEL_KEY_MAP: Record<string, 'easy' | 'medium' | 'hard'> = {
   Schwer: 'hard',
 };
 
-const getSizeLabelKey = (choice: string | null | undefined): 'size_small' | 'size_medium' | 'size_large' => {
+const getSizeLabelKey = (choice: string | null | undefined): SizeLabelKey => {
   const normalizedChoice = choice?.trim() ?? '';
   return SIZE_LABEL_KEY_MAP[normalizedChoice] ?? 'size_large';
 };
 
-const getSizeLabelKeyFromDimension = (dimension: number | null | undefined): 'size_small' | 'size_medium' | 'size_large' => {
+const getSizeLabelKeyFromDimension = (dimension: number | null | undefined): SizeLabelKey => {
   if (dimension === 6) return 'size_small';
   if (dimension === 9) return 'size_medium';
   return 'size_large';
 };
 
-const getDifficultyLabelKey = (choice: string | null | undefined): 'easy' | 'medium' | 'hard' => {
+const getDifficultyLabelKey = (choice: string | null | undefined): DifficultyLabelKey => {
   const normalizedChoice = choice?.trim() ?? '';
   return DIFFICULTY_LABEL_KEY_MAP[normalizedChoice] ?? 'easy';
 };
@@ -124,4 +127,3 @@ export {
   getHistoryResultDisplayLabel,
   getHistoryFilterKey,
 };
-

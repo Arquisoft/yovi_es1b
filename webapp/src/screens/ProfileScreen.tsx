@@ -27,17 +27,22 @@ type AvatarIcon = {
   name: string;
 };
 
+function getLanguageToken(value: string) {
+  switch (value) {
+    case 'Spain':
+      return 'espana';
+    case 'English':
+      return 'reino-unido';
+    case 'German':
+      return 'alemania';
+    default:
+      return 'portugal';
+  }
+}
+
 const countryOptions = languageOptions.map((option) => ({
   ...option,
-  icon: option.icon || getLanguageIcon(
-    option.value === 'Spain'
-      ? 'espana'
-      : option.value === 'English'
-        ? 'reino-unido'
-        : option.value === 'German'
-          ? 'alemania'
-          : 'portugal'
-  ),
+  icon: option.icon || getLanguageIcon(getLanguageToken(option.value)),
 }));
 
 const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
@@ -206,12 +211,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         } else {
           localStorage.removeItem('yovi_user_language');
         }
-        const resolvedIconName =
-          typeof data.iconName === 'string'
-            ? data.iconName
-            : typeof data.icon === 'string'
-              ? data.icon
-              : 'SinAvatar.png';
+        const resolvedIconName = (() => {
+          if (typeof data.iconName === 'string' && data.iconName) return data.iconName;
+          if (typeof data.icon === 'string' && data.icon) return data.icon;
+          return 'SinAvatar.png';
+        })();
         setIconName(resolvedIconName || 'SinAvatar.png');
       } catch (error) {
         if (active) setErrorMessage(t('profile.error_load'));
