@@ -122,14 +122,15 @@ const TutorialSectionBlock = ({ section }: { section: TutorialSection }) => {
     <section className="tutorial-section" id={section.sectionId}>
       <h4>{section.title}</h4>
 
-      {section.introHeading ? <h5 className="tutorial-subtitle">{section.introHeading}</h5> : null}
-      {section.introText ? <p>{section.introText}</p> : null}
       {section.coverImages ? (
         <HelpGallery
           images={section.coverImages}
           emptyMessage={section.coverEmptyMessage ?? ''}
         />
       ) : null}
+
+      {section.introHeading ? <h5 className="tutorial-subtitle">{section.introHeading}</h5> : null}
+      {section.introText ? <p>{section.introText}</p> : null}
 
       {section.featureHeading && section.features ? (
         <>
