@@ -95,6 +95,26 @@
   z-index: 2000;
 }
 
+.modal-backdrop-button {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: default;
+  z-index: 1;
+}
+
+.modal-shell {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+
 .modal-box {
   width: min(92vw, 24rem);
   background: rgba(255, 255, 255, 0.96);

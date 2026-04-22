@@ -36,9 +36,9 @@ type UserProfileResponse = {
 };
 
 const createAuthenticatedInit = (init?: RequestInit): RequestInit => {
-  const mergedInit: RequestInit = { ...(init ?? {}) };
-  mergedInit.headers = mergeHeaders(init);
-  return mergedInit;
+  const headers = mergeHeaders(init);
+  if (!init) return { headers };
+  return { ...init, headers };
 };
 
 const USERNAME_PATTERN = /^[\p{L}\p{N} _.-]{1,64}$/u;

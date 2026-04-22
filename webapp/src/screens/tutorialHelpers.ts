@@ -13,44 +13,45 @@ export const allHelpImages = Object.entries(helpImageModules).map(([path, src]) 
 export const pickImageByName = (fileName: string) =>
   allHelpImages.filter((image) => image.name.toLowerCase() === fileName.toLowerCase());
 
+type CaptionRule = Readonly<{
+  match: string[];
+  caption: string;
+}>;
+
+const helpCaptionRules: CaptionRule[] = [
+  { match: ['registerbadpasswd', 'registererrorpswd'], caption: 'tutorial.caption_register_error_pswd' },
+  { match: ['registerbad'], caption: 'tutorial.caption_register_empty_space' },
+  { match: ['registerblank', 'registerempty'], caption: 'tutorial.caption_register_empty' },
+  { match: ['registergood'], caption: 'tutorial.caption_register_good' },
+  { match: ['settings'], caption: 'tutorial.caption_settings' },
+  { match: ['idioma', 'language'], caption: 'tutorial.caption_language' },
+  { match: ['helphome'], caption: 'tutorial.window_home' },
+  { match: ['helpregister'], caption: 'tutorial.window_register' },
+  { match: ['helplogin'], caption: 'tutorial.window_login' },
+  { match: ['helpgame'], caption: 'tutorial.window_game' },
+  { match: ['home'], caption: 'tutorial.caption_home' },
+  { match: ['loginerrorbadusernamepswd', 'loginerrordata'], caption: 'tutorial.caption_login_error_data' },
+  { match: ['loginerrorserver'], caption: 'tutorial.caption_login_error_server' },
+  { match: ['logingood'], caption: 'tutorial.caption_login_good' },
+  { match: ['loginblank'], caption: 'tutorial.caption_login_empty' },
+  { match: ['gamenav'], caption: 'tutorial.caption_game_nav' },
+  { match: ['gamepoints'], caption: 'tutorial.caption_game_points' },
+  { match: ['gamesize'], caption: 'tutorial.caption_game_size' },
+  { match: ['gamedifficult'], caption: 'tutorial.caption_game_difficulty' },
+  { match: ['gametemporizator'], caption: 'tutorial.caption_game_timer' },
+  { match: ['gameingame'], caption: 'tutorial.caption_game_board' },
+  { match: ['gameviewmyprofile'], caption: 'tutorial.caption_game_profile' },
+  { match: ['gamefriends'], caption: 'tutorial.caption_game_friends' },
+  { match: ['gamehistorial'], caption: 'tutorial.caption_game_history' },
+  { match: ['gameended'], caption: 'tutorial.caption_game_ended' },
+  { match: ['gamewin'], caption: 'tutorial.caption_game_win' },
+  { match: ['gamelose'], caption: 'tutorial.caption_game_lose' },
+];
+
 export const getHelpCaption = (imageName: string) => {
   const normalized = imageName.toLowerCase();
-
-  if (normalized.includes('registerbadpasswd') || normalized.includes('registererrorpswd')) {
-    return i18n.t('tutorial.caption_register_error_pswd');
-  }
-  if (normalized.includes('registerbad')) return i18n.t('tutorial.caption_register_empty_space');
-  if (normalized.includes('registerblank') || normalized.includes('registerempty')) {
-    return i18n.t('tutorial.caption_register_empty');
-  }
-  if (normalized.includes('registergood')) return i18n.t('tutorial.caption_register_good');
-  if (normalized.includes('settings')) return i18n.t('tutorial.caption_settings');
-  if (normalized.includes('idioma') || normalized.includes('language')) return i18n.t('tutorial.caption_language');
-  if (normalized.includes('helphome')) return i18n.t('tutorial.window_home');
-  if (normalized.includes('helpregister')) return i18n.t('tutorial.window_register');
-  if (normalized.includes('helplogin')) return i18n.t('tutorial.window_login');
-  if (normalized.includes('helpgame')) return i18n.t('tutorial.window_game');
-  if (normalized.includes('home')) return i18n.t('tutorial.caption_home');
-  if (normalized.includes('loginerrorbadusernamepswd') || normalized.includes('loginerrordata')) {
-    return i18n.t('tutorial.caption_login_error_data');
-  }
-  if (normalized.includes('loginerrorserver')) return i18n.t('tutorial.caption_login_error_server');
-  if (normalized.includes('logingood')) return i18n.t('tutorial.caption_login_good');
-  if (normalized.includes('loginblank')) return i18n.t('tutorial.caption_login_empty');
-  if (normalized.includes('gamenav')) return i18n.t('tutorial.caption_game_nav');
-  if (normalized.includes('gamepoints')) return i18n.t('tutorial.caption_game_points');
-  if (normalized.includes('gamesize')) return i18n.t('tutorial.caption_game_size');
-  if (normalized.includes('gamedifficult')) return i18n.t('tutorial.caption_game_difficulty');
-  if (normalized.includes('gametemporizator')) return i18n.t('tutorial.caption_game_timer');
-  if (normalized.includes('gameingame')) return i18n.t('tutorial.caption_game_board');
-  if (normalized.includes('gameviewmyprofile')) return i18n.t('tutorial.caption_game_profile');
-  if (normalized.includes('gamefriends')) return i18n.t('tutorial.caption_game_friends');
-  if (normalized.includes('gamehistorial')) return i18n.t('tutorial.caption_game_history');
-  if (normalized.includes('gameended')) return i18n.t('tutorial.caption_game_ended');
-  if (normalized.includes('gamewin')) return i18n.t('tutorial.caption_game_win');
-  if (normalized.includes('gamelose')) return i18n.t('tutorial.caption_game_lose');
-
-  return imageName;
+  const matchedRule = helpCaptionRules.find((rule) => rule.match.some((fragment) => normalized.includes(fragment)));
+  return matchedRule ? i18n.t(matchedRule.caption) : imageName;
 };
 
 export const homeImages = pickImageByName('home.png');
