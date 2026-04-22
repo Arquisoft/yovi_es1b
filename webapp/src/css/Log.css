@@ -38,11 +38,11 @@
 }
 
 .auth-logo-left {
-  width: 15rem;
+  width: 9.5rem;
   margin: 0;
   position: absolute;
-  left: -3rem;
-  top: 42%;
+  left: -1.2rem;
+  top: 48%;
   transform: translateY(-50%);
 }
 
@@ -253,7 +253,7 @@
   }
 
   .gamey-logo-large {
-    width: min(58vw, 15.5rem);
+    width: min(42vw, 10.5rem);
     margin: 0.35rem 0 0.2rem;
   }
 

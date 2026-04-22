@@ -1,13 +1,7 @@
 import { useCallback, useState } from 'react';
-import { gameService } from '../services/gameService';
+import { gameService, type MoveResponse } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
 import type { GameYData } from '../types/game';
-
-type MoveResponse = {
-  responseFromRust?: GameYData;
-  winner: number | null;
-  score: number;
-};
 
 type GameHistoryContext = Readonly<{
   boardLabel?: string | null;

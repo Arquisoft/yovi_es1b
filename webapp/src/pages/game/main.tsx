@@ -256,10 +256,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
       setIsVideoPaused={background.setIsVideoPaused}
       setMusicVolume={background.setMusicVolume}
       setShowSettings={background.setShowSettings}
-      settingsAriaLabel="Configuración de elementos de fondo"
-      settingsTitle="Configuración de elementos de fondo"
       showSettings={background.showSettings}
-      videoLabel="Video en movimiento"
       videoRef={background.videoRef}
     >
       <GameScreen
