@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <title>YoVi - Proyecto de Arquitectura</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/theme/dracula.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/monokai.min.css">
+    <style>
+        .reveal .slides section img { background: none; border: none; box-shadow: none; }
+        .success { color: #50fa7b; }
+        .danger { color: #ff5555; }
+        .warning { color: #f1fa8c; }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <section data-background-gradient="linear-gradient(to bottom, #282a36, #44475a)">
+                <h1>YOVI <span class="success">v2.0</span></h1>
+                <p>Arquitectura de Software Segura y Escalable</p>
+                <div style="font-size: 0.5em; margin-top: 100px;">
+                    Presione 'F' para pantalla completa
+                </div>
+            </section>
+
+            <section>
+                <h2>La Estructura</h2>
+                <p>Microservicios, Docker y un "Portero" Seguro</p>
+                <ul style="font-size: 0.8em;">
+                    <li class="fragment">Frontend: Vite + React</li>
+                    <li class="fragment">Backend: Node.js & Rust</li>
+                    <li class="fragment">Orquestación: Docker Compose</li>
+                    <li class="fragment">Seguridad: <span class="success">Nginx Reverse Proxy</span></li>
+                </ul>
+            </section>
+
+            <section>
+                <section>
+                    <h2>El Desafío: <span class="danger">HTTPS</span></h2>
+                    <p>¿Por qué complicarse la vida?</p>
+                </section>
+                <section>
+                    <h3>Problema: Mixed Content</h3>
+                    <p>El navegador bloqueaba las llamadas al backend por no ser seguras.</p>
+                    <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNHJndXp6bmR6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6Z3R6JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/26n6WywJyh39n1pBu/giphy.gif" width="300">
+                </section>
+                <section>
+                    <h3>Solución: La Trilogía del SSL</h3>
+                    <ol>
+                        <li class="fragment"><b>mkcert:</b> Generación de CA local.</li>
+                        <li class="fragment"><b>Node.js:</b> Implementación de <code>https.createServer</code>.</li>
+                        <li class="fragment"><b>Docker:</b> Inyección de volúmenes para certificados.</li>
+                    </ol>
+                </section>
+            </section>
+
+            <section>
+                <h2>Calidad de Código</h2>
+                <p>Nuestra pelea contra el <span class="warning">40%</span> de SonarCloud</p>
+                <pre><code class="hljs javascript" data-trim>
+// El "truco" que salvó el análisis
+sonar.exclusions=**/*.png, **/*.mp3, **/assets/**
+                </code></pre>
+                <p class="fragment" style="font-size: 0.7em;">
+                    Resultado: <span class="success">Quality Gate PASSED</span> <br>
+                    Análisis de Taint resuelto con optimización de memoria (4GB RAM).
+                </p>
+            </section>
+
+            <section data-background="#50fa7b" style="color: #282a36;">
+                <h2>¿Preguntas?</h2>
+                <p>Todo el código está securizado y testeado.</p>
+                <p><b>¡Gracias por vuestra atención!</b></p>
+            </section>
+
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/reveal.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.5.0/plugin/highlight/highlight.min.js"></script>
+    <script>
+        Reveal.initialize({
+            hash: true,
+            plugins: [ RevealHighlight ],
+            transition: 'convex' // none/fade/slide/convex/concave/zoom
+        });
+    </script>
+</body>
+</html>
