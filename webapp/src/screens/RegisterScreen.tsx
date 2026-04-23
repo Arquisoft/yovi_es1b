@@ -56,6 +56,31 @@ const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().incl
 
 export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
+export const getTodayInputDate = (referenceDate = new Date()): string => {
+  const year = referenceDate.getFullYear().toString().padStart(4, '0');
+  const month = (referenceDate.getMonth() + 1).toString().padStart(2, '0');
+  const day = referenceDate.getDate().toString().padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+export const normalizeBirthDateInput = (value: string): string => {
+  if (!value) return '';
+
+  const [year, month = '', day = ''] = value.split('-');
+  const normalizedYear = year.slice(0, 4);
+  const normalizedMonth = month ? '-' + month : '';
+  const normalizedDay = day ? '-' + day : '';
+
+  return normalizedYear + normalizedMonth + normalizedDay;
+};
+
+export const isBirthDateInFuture = (value: string, referenceDate = new Date()): boolean => {
+  if (!value) return false;
+
+  return value > getTodayInputDate(referenceDate);
+};
+
 export const renderCountryOptionIcon = (icon: string | null, value: string) => {
   if (icon) {
     return <img src={icon} alt={value} className="country-flag-icon" />;
@@ -92,6 +117,7 @@ const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
 
 function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const { t } = useTranslation();
+  const maxBirthDate = getTodayInputDate();
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -106,6 +132,17 @@ function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, o
   const [selectedIconName, setSelectedIconName] = useState<string>('SinAvatar.png');
 
   const handleChange = (field: keyof RegisterData, value: string) => {
+    if (field === 'birthDate') {
+      const normalizedValue = normalizeBirthDateInput(value);
+
+      if (isBirthDateInFuture(normalizedValue, new Date())) {
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, birthDate: normalizedValue }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -114,6 +151,10 @@ function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, o
 
     if (!formData.name.trim() || !formData.nickname.trim() || !formData.password.trim() || !formData.confirmPassword.trim() || !formData.birthDate) {
       setFormError(t('register.error_empty'));
+      return;
+    }
+    if (isBirthDateInFuture(formData.birthDate, new Date())) {
+      setFormError(t('register.error_birth_date_future'));
       return;
     }
     if (!formData.language.trim()) {
@@ -248,6 +289,7 @@ function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, o
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => handleChange('birthDate', e.target.value)}
+                max={maxBirthDate}
                 required
               />
             </div>

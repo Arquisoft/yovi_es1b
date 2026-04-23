@@ -60,6 +60,7 @@
     "error_password_mismatch": "Password confirmation does not match.",
     "error_create": "Error creating account.",
     "error_network": "Network error while creating account.",
+    "error_birth_date_future": "Date of birth cannot be later than today.",
     "no_icons": "Add icons in webapp/src/assets/icon to choose one."
   },
     "game": {

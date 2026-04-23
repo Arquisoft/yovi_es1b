@@ -1,6 +1,13 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import RegisterScreen, { getLanguageIcon, renderCountryOptionIcon, shouldShowNoIconsMessage } from '../screens/RegisterScreen'
+import RegisterScreen, {
+  getLanguageIcon,
+  getTodayInputDate,
+  normalizeBirthDateInput,
+  isBirthDateInFuture,
+  renderCountryOptionIcon,
+  shouldShowNoIconsMessage,
+} from '../screens/RegisterScreen'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 
@@ -45,6 +52,20 @@ describe('RegisterForm', () => {
 
     const { container: fallbackContainer } = render(renderCountryOptionIcon(null, 'Spain'))
     expect(fallbackContainer.querySelector('.country-flag-fallback')).toBeInTheDocument()
+  })
+
+  test('normalizeBirthDateInput recorta un año de mas de 4 digitos', () => {
+    expect(normalizeBirthDateInput('123456-12-31')).toBe('1234-12-31')
+    expect(normalizeBirthDateInput('2000-01-01')).toBe('2000-01-01')
+  })
+
+  test('getTodayInputDate devuelve una fecha en formato yyyy-mm-dd', () => {
+    expect(getTodayInputDate(new Date(2024, 4, 6))).toBe('2024-05-06')
+  })
+
+  test('isBirthDateInFuture detecta fechas posteriores al dia de referencia', () => {
+    expect(isBirthDateInFuture('2024-05-07', new Date(2024, 4, 6))).toBe(true)
+    expect(isBirthDateInFuture('2024-05-06', new Date(2024, 4, 6))).toBe(false)
   })
 
   test('el campo apodo del registro limita a 15 caracteres', () => {
@@ -127,6 +148,12 @@ describe('RegisterForm', () => {
     expect(await screen.findByText(/debes seleccionar un idioma/i)).toBeInTheDocument()
     expect(global.fetch).not.toHaveBeenCalled()
     expect(onCreate).not.toHaveBeenCalled()
+  })
+
+  test('el campo de fecha de nacimiento limita la seleccion hasta hoy', () => {
+    render(<RegisterScreen onBack={vi.fn()} onCreateAccount={vi.fn()} />)
+
+    expect(screen.getByLabelText(/fecha de nacimiento/i)).toHaveAttribute('max', getTodayInputDate())
   })
 
   test('si el backend rechaza muestra el mensaje de error', async () => {

@@ -97,7 +97,7 @@ describe('sessionUtils', () => {
 
   test('persistUserSession guarda y limpia los campos opcionales', () => {
     const result = persistUserSession('  ana  ', {
-      friendCode: 'FRIEND-1',
+      friendCode: '#FRIEND-1',
       icon: 'avatar.png',
       language: 'es',
       nickname: '',
@@ -109,6 +109,15 @@ describe('sessionUtils', () => {
     expect(localStorage.getItem('yovi_user_icon')).toBe('avatar.png')
     expect(localStorage.getItem('yovi_user_language')).toBe('es')
     expect(localStorage.getItem('yovi_user_nickname')).toBeNull()
+  })
+
+  test('persistUserSession acepta friendCode con almohadilla inicial', () => {
+    const result = persistUserSession('ana', {
+      friendCode: '#ABC123',
+    })
+
+    expect(result).toBe(true)
+    expect(localStorage.getItem('yovi_friend_code')).toBe('ABC123')
   })
 
   test('persistUserSession no guarda nada si el nombre está vacío', () => {

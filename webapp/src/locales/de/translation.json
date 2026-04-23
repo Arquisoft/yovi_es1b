@@ -60,6 +60,7 @@
     "error_password_mismatch": "Passwortbestätigung stimmt nicht überein.",
     "error_create": "Fehler beim Erstellen des Kontos.",
     "error_network": "Netzwerkfehler beim Erstellen des Kontos.",
+    "error_birth_date_future": "Das Geburtsdatum darf nicht in der Zukunft liegen.",
     "no_icons": "Füge Symbole in webapp/src/assets/icon hinzu."
   },
   "game": {

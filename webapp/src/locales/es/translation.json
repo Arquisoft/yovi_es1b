@@ -60,6 +60,7 @@
                      "error_password_mismatch":  "La confirmación de Contraseña no coincide.",
                      "error_create":  "Error al crear la cuenta.",
                      "error_network":  "Error de red al crear la cuenta.",
+                     "error_birth_date_future":  "La fecha de nacimiento no puede ser posterior a la de hoy.",
                      "no_icons":  "Añade iconos en `webapp/src/assets/icon` para poder elegir uno."
                  },
     "game":  {
@@ -325,11 +326,7 @@
                      "s1_2_title":  "Captura de referencia",
                      "s1_3_title":  "Botón de idioma",
                      "s2_5_title":  "Botón de idioma",
-                     "s2_6":  "2.6 Ajustes",
-                     "s2_7":  "2.7 Ayuda",
                      "s3_5_title":  "Botón de idioma",
-                     "s3_6":  "3.6 Ajustes",
-                     "s3_7":  "3.7 Ayuda",
                      "s3_2_title":  "Error de datos",
                      "s3_3_title":  "Error de servidor",
                      "s3_4_title":  "Inicio correcto",

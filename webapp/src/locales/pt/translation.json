@@ -60,6 +60,7 @@
     "error_password_mismatch": "A confirmação da palavra-passe não coincide.",
     "error_create": "Erro ao criar a conta.",
     "error_network": "Erro de rede ao criar a conta.",
+    "error_birth_date_future": "A data de nascimento não pode ser posterior ao dia de hoje.",
     "no_icons": "Adiciona ícones em webapp/src/assets/icon para poder escolher um."
   },
   "game": {

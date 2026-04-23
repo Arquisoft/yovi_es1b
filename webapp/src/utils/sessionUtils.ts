@@ -97,7 +97,7 @@ const setOrClear = (key: string, value?: string | null, maxLength = 128) => {
 
 export const persistUserSession = (username: string, options: PersistUserSessionOptions) => {
   const name = normalizeStorageValue(username, 64);
-  const friendCode = normalizeStorageValue(options.friendCode, 32);
+  const friendCode = normalizeStorageValue(options.friendCode, 32).replace(/^#/, '');
   if (!name || !USERNAME_PATTERN.test(name)) return false;
   if (!friendCode || !STORAGE_VALUE_PATTERN.test(friendCode)) return false;
 
