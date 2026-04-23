@@ -152,6 +152,9 @@ const createSocketGateway = (httpServer, { gameyUrl }) => {
           targetSocket?.join(roomId);
         });
 
+        // Aseguramos que el socket que acaba de aceptar se una a la sala
+        socket.join(roomId);
+
         io.to(roomId).emit('sync_board', {
           matchId,
           roomId,
@@ -183,27 +186,33 @@ const createSocketGateway = (httpServer, { gameyUrl }) => {
     });
 
     socket.on('game_move', async (payload = {}) => {
+      console.log(`📡 [socketHandler] GAME_MOVE RECIBIDO de ${username}:`, payload);
       const matchId = String(payload.matchId || '').trim();
       const cellIndex = Number(payload.cellIndex);
       const matchState = matches.get(matchId);
 
       if (!matchState || matchState.status !== 'active') {
+        console.warn(`⚠️ [socketHandler] GAME_MOVE RECHAZADO: Partida inactiva`, { matchId });
         socket.emit('sync_board', { error: 'Partida no activa o inexistente' });
         return;
       }
       if (!Number.isInteger(cellIndex) || cellIndex < 0) {
+        console.warn(`⚠️ [socketHandler] GAME_MOVE RECHAZADO: Índice inválido`, { cellIndex });
         socket.emit('sync_board', { error: 'Movimiento invalido' });
         return;
       }
       if (!matchState.players.includes(username)) {
+        console.warn(`⚠️ [socketHandler] GAME_MOVE RECHAZADO: Jugador no pertenece`, { username, players: matchState.players });
         socket.emit('sync_board', { error: 'No perteneces a esta partida' });
         return;
       }
       if (matchState.currentTurn !== username) {
+        console.warn(`⚠️ [socketHandler] GAME_MOVE RECHAZADO: Turno incorrecto`, { currentTurn: matchState.currentTurn, username });
         socket.emit('sync_board', { error: 'No es tu turno' });
         return;
       }
 
+      console.log(`✅ [socketHandler] GAME_MOVE ACEPTADO. Enviando a Rust...`);
       try {
         const rustResponse = await fetch(`${gameyUrl}/pvp/move`, {
           method: 'POST',

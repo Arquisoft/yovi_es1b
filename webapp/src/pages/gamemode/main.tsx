@@ -77,7 +77,16 @@ export const GameModePage = () => {
       <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop />
 
       <div className="menu-content">
-        <GameModeScreen onSelectMode={handleSelectMode} />
+        <GameModeScreen 
+          onSelectMode={handleSelectMode} 
+          onLogout={() => {
+            localStorage.removeItem('yovi_user')
+            localStorage.removeItem('yovi_friend_code')
+            localStorage.removeItem('yovi_user_icon')
+            localStorage.removeItem('yovi_user_nickname')
+            window.location.href = '/index.html'
+          }}
+        />
       </div>
     </div>
   )

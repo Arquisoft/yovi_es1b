@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import failedJson from '../assets/buttons/Failed.json';
 import logoutJson from '../assets/buttons/Logout.json';
 import historyJson from '../assets/buttons/History.json';
@@ -48,6 +48,7 @@ type GameScreenProps = Readonly<{
   selectedBoardDimension: number | null;
   boardData: GameYData | null;
   winner: number | null;
+  multiplayerTurn?: string | null;
   turnTimeLeft: number | null;
   turnTimeLimit: number | null;
   timerVisible: boolean;
@@ -72,7 +73,7 @@ function GameScreen({
   username,
   displayName,
   playerIcon,
-  // botIcon, // Ya no se utiliza; se usa OpponentCard para mostrar el rival
+  botIcon,
   gameMode,
   rivalName,
   rivalIcon,
@@ -80,6 +81,7 @@ function GameScreen({
   selectedBoardDimension,
   boardData,
   winner,
+  multiplayerTurn,
   turnTimeLeft,
   turnTimeLimit,
   timerVisible,
@@ -437,11 +439,11 @@ function GameScreen({
 
             {/* Componente del oponente */}
             <OpponentCard
-              state={gameMode === 'multiplayer' ? OpponentState.CONNECTED : OpponentState.WAITING}
-              opponentName={rivalName || null}
-              opponentIcon={rivalIcon || null}
+              state={isBotMode ? OpponentState.CONNECTED : (rivalName ? OpponentState.CONNECTED : OpponentState.WAITING)}
+              opponentName={isBotMode ? botName : (rivalName || null)}
+              opponentIcon={isBotMode ? (botIcon || null) : (rivalIcon || null)}
               onInviteFriend={onAddFriend || (() => {})}
-              isOpponentTurn={false}
+              isOpponentTurn={gameMode === 'multiplayer' ? (multiplayerTurn !== null && multiplayerTurn !== username) : false}
             />
           </div>
 

@@ -28,13 +28,26 @@ export class MultiplayerStrategy implements GameProvider {
   private matchId: string | null = null;
   private rivalInfo: RivalInfo | null = null;
   private opponentUsername: string | null = null;
+  private handleSyncBoard: (payload: SyncBoardEvent) => void;
 
   constructor(deps: MultiplayerStrategyDeps) {
     this.deps = deps;
+    this.handleSyncBoard = (payload: SyncBoardEvent) => {
+      if (payload.players && payload.players.length === 2) {
+        const opponent = payload.players.find(p => p !== this.deps.username);
+        if (opponent && this.opponentUsername !== opponent) {
+          this.opponentUsername = opponent;
+          this.fetchOpponentData(opponent).catch(err => {
+            console.warn(`No se pudieron obtener datos del oponente:`, err);
+          });
+        }
+      }
+      this.deps.onSync(payload);
+    };
   }
 
   async initialize() {
-    this.socket.on('sync_board', this.deps.onSync);
+    this.socket.on('sync_board', this.handleSyncBoard);
     this.socket.on('challenge_player', this.deps.onChallenge);
   }
 
@@ -58,6 +71,7 @@ export class MultiplayerStrategy implements GameProvider {
   }
 
   setMatchId(matchId: string) {
+    if (this.matchId === matchId) return;
     this.matchId = matchId;
     this.socket.emit('join_match', { matchId });
 
@@ -123,7 +137,7 @@ export class MultiplayerStrategy implements GameProvider {
   }
 
   dispose() {
-    this.socket.off('sync_board', this.deps.onSync);
+    this.socket.off('sync_board', this.handleSyncBoard);
     this.socket.off('challenge_player', this.deps.onChallenge);
     this.rivalInfo = null;
     this.opponentUsername = null;

@@ -236,6 +236,16 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     };
   }, [gameMode, handleIncomingChallenge]);
 
+   const boardDataRef = useRef(boardData);
+   useEffect(() => {
+     boardDataRef.current = boardData;
+   }, [boardData]);
+
+   const difficultyChoiceRef = useRef(difficultyChoice);
+   useEffect(() => {
+     difficultyChoiceRef.current = difficultyChoice;
+   }, [difficultyChoice]);
+
    useEffect(() => {
      if (!gameMode) return;
 
@@ -245,8 +255,8 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
        setRivalName(null);
        setRivalIcon(null);
        const botProvider = new BotStrategy({
-         getBoard: () => boardData,
-         getDifficulty: () => String(difficultyChoice || 'Easy'),
+         getBoard: () => boardDataRef.current,
+         getDifficulty: () => String(difficultyChoiceRef.current || 'Easy'),
          executeHumanMove,
          resetGame,
          surrenderGame: surrender,
@@ -279,6 +289,9 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
      void strategy.initialize();
 
      const socket = getSocketClient();
+     if (socket.connected) {
+       setSocketConnection('connected');
+     }
      const onConnect = () => setSocketConnection('connected');
      const onDisconnect = () => {
        setSocketConnection('disconnected');
@@ -297,8 +310,6 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
        socket.io.off('reconnect_attempt', onReconnectAttempt);
      };
    }, [
-     boardData,
-     difficultyChoice,
      executeHumanMove,
      gameMode,
      handleIncomingChallenge,
@@ -438,11 +449,16 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
 
 
   const handleCellClick = async (index: number) => {
+    console.log("🛠️ [handleCellClick] INTENTO DE CLICK:", { index, gameMode, socketConnection, multiplayerTurn, username, winner, multiplayerWinner });
     if (gameMode === 'bot' && winner !== null) return;
     if (gameMode === 'multiplayer' && multiplayerWinner !== null) return;
-    if (gameMode === 'multiplayer' && (socketConnection !== 'connected' || multiplayerTurn !== username)) return;
+    if (gameMode === 'multiplayer' && multiplayerTurn !== username) {
+      console.warn("🚫 [handleCellClick] BLOQUEADO POR CLIENTE (Turno incorrecto):", { multiplayerTurn, username });
+      return;
+    }
 
     try {
+      console.log("✅ [handleCellClick] ENVIANDO MOVIMIENTO A PROVIDER");
       const data = await providerRef.current?.onCellClick(index);
       if (!data) return;
       if (data.winner !== null) {
@@ -573,6 +589,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         rivalIcon={rivalIcon}
         boardData={activeBoardData}
         winner={activeWinner}
+        multiplayerTurn={multiplayerTurn}
         difficultyChoice={difficultyChoice}
         selectedBoardDimension={getBoardDimensionFromSizeChoice(sizeChoice)}
         sizeLabel={sizeChoice}
@@ -633,7 +650,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
         onGoToModeMenu={handleGoToModeMenu}
       />
 
-      {!gameMode && <GameModeScreen onSelectMode={handleSelectMode} />}
+      {!gameMode && <GameModeScreen onSelectMode={handleSelectMode} onLogout={handleExit} />}
 
       {gameMode === 'multiplayer' && (
         <div className="match-info-floating" aria-live="polite">

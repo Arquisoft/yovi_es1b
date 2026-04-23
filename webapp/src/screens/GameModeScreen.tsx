@@ -3,9 +3,10 @@ import type { GameMode } from '../types/socketEvents';
 
 type GameModeScreenProps = {
   onSelectMode: (mode: GameMode) => void;
+  onLogout?: () => void;
 };
 
-export const GameModeScreen = ({ onSelectMode }: GameModeScreenProps) => {
+export const GameModeScreen = ({ onSelectMode, onLogout }: GameModeScreenProps) => {
   const { t } = useTranslation();
 
   return (
@@ -20,6 +21,11 @@ export const GameModeScreen = ({ onSelectMode }: GameModeScreenProps) => {
           <button type="button" className="submit-button" onClick={() => onSelectMode('multiplayer')}>
             {t('mode.multiplayer_duel')}
           </button>
+          {onLogout && (
+            <button type="button" className="submit-button" style={{ backgroundColor: '#dc2626' }} onClick={onLogout}>
+              {t('game.exit') || 'Cerrar sesión'}
+            </button>
+          )}
         </div>
       </div>
     </div>
