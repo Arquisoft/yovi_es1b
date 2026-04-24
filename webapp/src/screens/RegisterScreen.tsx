@@ -4,6 +4,7 @@ import settingsImg from '../assets/buttons/configuracion.png';
 import languageImg from '../assets/language/idioma.png';
 import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
 import { clearGuestSession } from '../utils/sessionUtils';
+import { languageOptions } from '../utils/languageUtils';
 import {useTranslation} from "react-i18next";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
@@ -17,12 +18,21 @@ export const getLanguageIcon = (token: string): string | null => {
   return entry ? entry[1] : null;
 };
 
-const countryOptions = [
-  { value: 'Spain', icon: getLanguageIcon('espana') },
-  { value: 'English', icon: getLanguageIcon('reino-unido') },
-  { value: 'German', icon: getLanguageIcon('alemania') },
-  { value: 'Portuguese', icon: getLanguageIcon('portugal') },
-];
+const getLanguageToken = (value: string) => {
+  if (value === 'Spain') return 'espana';
+  if (value === 'English') return 'reino-unido';
+  if (value === 'German') return 'alemania';
+  return 'portugal';
+};
+
+const countryOptions = languageOptions.map((option) => {
+  const languageToken = getLanguageToken(option.value);
+
+  return {
+    ...option,
+    icon: option.icon || getLanguageIcon(languageToken),
+  };
+});
 
 const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -46,6 +56,39 @@ const femaleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().incl
 
 export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
 
+export const getTodayInputDate = (referenceDate = new Date()): string => {
+  const year = referenceDate.getFullYear().toString().padStart(4, '0');
+  const month = (referenceDate.getMonth() + 1).toString().padStart(2, '0');
+  const day = referenceDate.getDate().toString().padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
+
+export const normalizeBirthDateInput = (value: string): string => {
+  if (!value) return '';
+
+  const [year, month = '', day = ''] = value.split('-');
+  const normalizedYear = year.slice(0, 4);
+  const normalizedMonth = month ? '-' + month : '';
+  const normalizedDay = day ? '-' + day : '';
+
+  return normalizedYear + normalizedMonth + normalizedDay;
+};
+
+export const isBirthDateInFuture = (value: string, referenceDate = new Date()): boolean => {
+  if (!value) return false;
+
+  return value > getTodayInputDate(referenceDate);
+};
+
+export const renderCountryOptionIcon = (icon: string | null, value: string) => {
+  if (icon) {
+    return <img src={icon} alt={value} className="country-flag-icon" />;
+  }
+
+  return <span className="country-flag-fallback" aria-hidden="true" />;
+};
+
 interface RegisterData {
   name: string;
   nickname: string;
@@ -57,6 +100,7 @@ interface RegisterData {
 
 interface RegisterScreenProps {
   readonly onBack: () => void;
+  readonly onGoToLogin?: () => void;
   readonly onOpenLanguage?: () => void;
   readonly onOpenSettings?: () => void;
   readonly onOpenTutorial?: () => void;
@@ -71,8 +115,9 @@ interface RegisterScreenProps {
 
 const REGISTER_SERVER_ERROR_MESSAGE = `${SERVER_ERROR_MESSAGE} Error de red.`;
 
-function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
+function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, onOpenTutorial, onCreateAccount }: Readonly<RegisterScreenProps>) {
   const { t } = useTranslation();
+  const maxBirthDate = getTodayInputDate();
   const [formData, setFormData] = useState<RegisterData>({
     name: '',
     nickname: '',
@@ -87,6 +132,17 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
   const [selectedIconName, setSelectedIconName] = useState<string>('SinAvatar.png');
 
   const handleChange = (field: keyof RegisterData, value: string) => {
+    if (field === 'birthDate') {
+      const normalizedValue = normalizeBirthDateInput(value);
+
+      if (isBirthDateInFuture(normalizedValue, new Date())) {
+        return;
+      }
+
+      setFormData((prev) => ({ ...prev, birthDate: normalizedValue }));
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -95,6 +151,10 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
 
     if (!formData.name.trim() || !formData.nickname.trim() || !formData.password.trim() || !formData.confirmPassword.trim() || !formData.birthDate) {
       setFormError(t('register.error_empty'));
+      return;
+    }
+    if (isBirthDateInFuture(formData.birthDate, new Date())) {
+      setFormError(t('register.error_birth_date_future'));
       return;
     }
     if (!formData.language.trim()) {
@@ -150,7 +210,7 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
     <div className="register-screen">
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log">{t('register.title')}</h2>
+        <h2 className="title-log" style={{ marginTop: '2.5rem', position: 'relative', zIndex: 3 }}>{t('register.title')}</h2>
         {(onOpenLanguage || onOpenSettings || onOpenTutorial) && (
           <div className="header-action-group">
             {onOpenLanguage && (
@@ -216,6 +276,7 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
                 type="text"
                 value={formData.nickname}
                 onChange={(e) => handleChange('nickname', e.target.value)}
+                maxLength={15}
                 required
               />
             </div>
@@ -228,6 +289,7 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
                 type="date"
                 value={formData.birthDate}
                 onChange={(e) => handleChange('birthDate', e.target.value)}
+                max={maxBirthDate}
                 required
               />
             </div>
@@ -266,12 +328,8 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
                   return (
                     <label key={option.value} className="country-checkbox-item">
                       <span className="country-checkbox-left">
-                        {option.icon ? (
-                          <img src={option.icon} alt={option.value} className="country-flag-icon" />
-                        ) : (
-                          <span className="country-flag-fallback" aria-hidden="true" />
-                        )}
-                        <span>{option.value}</span>
+                        {renderCountryOptionIcon(option.icon, t(option.labelKey))}
+                        <span>{t(option.labelKey)}</span>
                       </span>
                       <input
                         type="checkbox"
@@ -357,14 +415,24 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
         </div>
 
         <div className="register-actions">
-        <button type="submit" className="submit-button" disabled={!formData.language.trim()}>
-          {t('register.submit')}
-        </button>
-
           <button type="button" className="submit-button cancel-button" onClick={onBack}>
             {t('common.back')}
           </button>
+
+          <button type="submit" className="submit-button" disabled={!formData.language.trim()}>
+            {t('register.submit')}
+          </button>
         </div>
+
+        {onGoToLogin && (
+          <button
+            type="button"
+            className="register-login-link"
+            onClick={onGoToLogin}
+          >
+            {t('register.login_link')}
+          </button>
+        )}
       </form>
     </div>
   );

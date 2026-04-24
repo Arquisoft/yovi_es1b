@@ -25,9 +25,6 @@ services:
     image: ghcr.io/arquisoft/yovi_es1b-webapp:latest
     ports:
       - "80:80"
-      - "443:443"
-    volumes:
-      - ./certs:/etc/nginx/certs:ro
     depends_on:
       - users
       - gamey

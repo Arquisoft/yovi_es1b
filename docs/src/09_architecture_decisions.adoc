@@ -1,384 +1,485 @@
-﻿ifndef::imagesdir[:imagesdir: ../images]
+ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-design-decisions]]
 == Decisiones de Arquitectura
 
-Esta sección documenta las decisiones arquitectónicas de mayor impacto, coste, riesgo o alcance.
-Para evitar redundancia con la visión general, se complementa la sección 4 (solución) y se profundiza aquí en el porqué de cada elección.
+Esta sección complementa la estrategia de solución descrita en la sección 4.
+Aquí no repetimos la arquitectura de alto nivel, sino que dejamos constancia de las decisiones que más condicionan el sistema y de por qué se tomaron.
 
-=== Criterios y formato usados
-
-Las decisiones se han registrado con un formato ADR ligero:
+Usamos un formato ADR ligero, con cinco partes:
 
 * Contexto
 * Alternativas consideradas
 * Decisión
-* Rationale (por qué se elige)
-* Consecuencias (beneficios y desventajas)
+* Rationale
+* Consecuencias
 
-Criterios de evaluación aplicados en cada decisión:
+Los criterios que han guiado estas decisiones son los que más pesan en un proyecto de este tipo:
 
-* Riesgo técnico y operativo
-* Coste de implementación y mantenimiento
-* Escalabilidad y rendimiento
-* Seguridad
-* Velocidad de entrega
+* Separación de responsabilidades
+* Mantenibilidad y facilidad de cambio
+* Rendimiento en la parte interactiva
+* Seguridad de credenciales y sesión
+* Reproducibilidad de despliegue
+* Observabilidad y capacidad de diagnóstico
 
-=== Resumen de decisiones (priorizadas)
+=== Resumen de decisiones
 
 [cols="1,2,1,3" options="header"]
 |===
 |ID|Decisión|Prioridad|Motivo principal
-|AD-01|Arquitectura de microservicios (`webapp`, `users`, `gamey`)|Alta|Separación de responsabilidades y despliegue independiente
-|AD-02|Stack poliglota: Rust + Node/TS + React/TS|Alta|Rendimiento en motor y velocidad en capa web
-|AD-03|MongoDB como persistencia principal|Alta|Modelo flexible para usuarios/partidas
-|AD-04|`users` como BFF/Gateway|Alta|Simplificar frontend y centralizar integración
-|AD-05|Autenticación con `bcryptjs` + JWT|Alta|Seguridad básica de credenciales y sesiones sin estado
-|AD-06|Sesiones de juego en memoria (`DashMap`)|Media|Baja latencia para estado vivo
-|AD-07|Persistencia de partidas en MongoDB desde `gamey`|Media|Histórico y estadísticas
-|AD-08|Observabilidad con Prometheus/Grafana|Media|Operación y diagnóstico
-|AD-09|OpenAPI/Swagger en `users` y `gamey`|Media|Contrato visible y menos fricción de integración
-|AD-10|Docker Compose para desarrollo|Media|Entorno reproducible
-|AD-11|Política CORS permisiva en desarrollo|Baja|Agilidad durante integración
-|AD-12|Sin LLMs en la versión actual|Baja|Reducir complejidad y dependencias
+|AD-01|Descomposición en `webapp`, `users` y `gamey`|Alta|Aislar interfaz, identidad y motor de juego
+|AD-02|Stack poliglota: React/TypeScript, Node.js/TypeScript y Rust|Alta|Elegir la tecnología adecuada para cada responsabilidad
+|AD-03|Frontend multipágina con Vite|Alta|Separar flujos de entrada y simplificar el arranque por pantalla
+|AD-04|`users` como punto público de integración|Alta|Centralizar autenticación, perfil y parte de la comunicación con `gamey`
+|AD-05|MongoDB con ownership por servicio|Alta|Evitar una base de datos compartida y permitir evolución independiente
+|AD-06|Autenticación con `bcryptjs` + JWT|Alta|Proteger credenciales sin estado de servidor
+|AD-07|Gestión social en `users`|Media|Friend code, amistad, solicitudes y perfil público
+|AD-08|Estado vivo de partida en memoria y histórico persistido|Alta|Baja latencia en juego y trazabilidad posterior
+|AD-09|Comunicación HTTP/JSON entre capas|Alta|Integración simple y depurable entre frontend, `users` y `gamey`
+|AD-10|PayPal con SDK oficial|Media|Delegar el pago y evitar manejar tarjetas directamente
+|AD-11|Internacionalización con `i18next`|Media|Interfaz multilingüe mantenible
+|AD-12|Docker Compose, Nginx y `mkcert`|Alta|Despliegue reproducible y entorno local cercano a producción
+|AD-13|OpenAPI/Swagger|Media|Contrato visible para integración y pruebas manuales
+|AD-14|Observabilidad con Prometheus y Grafana|Media|Métricas y diagnóstico operativo
+|AD-15|Calidad automatizada con tests y SonarCloud|Media|Detectar regresiones y deuda técnica
+|AD-16|CORS permisivo en desarrollo|Baja|Reducir fricción durante la integración
+|AD-17|No incorporar LLMs en la versión actual|Baja|Evitar complejidad y dependencias no necesarias
+|AD-18|Documentación estructurada con arc42|Baja|Mantener una guía técnica homogénea y evaluable
 |===
 
-=== AD-01. Arquitectura de microservicios
+=== AD-01. Descomposición en `webapp`, `users` y `gamey`
 ==== Contexto
-Queremos separar responsabilidades (UI, gestión de usuarios y motor del juego) y facilitar despliegues independientes.
+La solución tiene tres dominios claramente distintos: la interfaz de usuario, la gestión de cuenta/relación social y el motor de juego. Cada uno evoluciona con ritmos diferentes y tiene necesidades técnicas diferentes.
 
 ==== Alternativas consideradas
-* Monolito único.
-* Microservicios ligeros.
+* Un monolito clásico con toda la lógica mezclada.
+* Un monolito modular.
+* Microservicios ligeros por responsabilidad.
 
 ==== Decisión
-Adoptar microservicios ligeros: `webapp`, `users` y `gamey` (Rust), con comunicación HTTP/REST y orquestación con `docker-compose` en desarrollo.
+Dividir el sistema en tres bloques: `webapp`, `users` y `gamey`.
 
 ==== Rationale
-El desacoplamiento permite evolucionar y desplegar cada componente sin bloquear al resto, y encaja con el reparto de trabajo del equipo.
+Separar estos dominios reduce el acoplamiento y permite que cada parte se diseñe con prioridades distintas. La interfaz necesita rapidez de iteración; `users` necesita reglas de autenticación, perfil y social; `gamey` necesita rendimiento, concurrencia y estado de partida. Mezclarlos en una única base técnica habría dificultado el mantenimiento y habría hecho más difícil justificar cambios de alcance distinto.
 
 ==== Consecuencias
 .Beneficios:
-. Despliegue y escalado independientes por componente.
-. Claridad de responsabilidades y menor acoplamiento lógico.
+. Cada bloque puede evolucionar y desplegarse con menor impacto sobre el resto.
+. Se aclaran mejor las fronteras funcionales.
+. El equipo puede trabajar en paralelo sobre piezas independientes.
 
 .Desventajas:
-. Mayor complejidad en integración, testing e implementación CI/CD.
-. Latencia de red entre servicios y necesidad de gestionar configuración distribuida.
+. Aparecen llamadas de red entre servicios.
+. La integración, la observabilidad y las pruebas end-to-end son más exigentes que en un monolito.
 
-=== AD-02. Stack tecnológico (Rust + Node/TS + React/TS)
+=== AD-02. Stack poliglota: React/TypeScript, Node.js/TypeScript y Rust
 ==== Contexto
-Necesitamos alto rendimiento para el motor de juego y desarrollo rápido para APIs y frontend.
+No todas las partes del sistema tienen los mismos requisitos. La UI debe ser rápida de construir y mantener; la capa de integración debe ser flexible; el motor de juego necesita rendimiento y seguridad de memoria.
 
 ==== Alternativas consideradas
-* Todo el sistema en JavaScript/TypeScript.
-* Todo el sistema en Rust.
-* Stack poliglota por responsabilidad.
+* Hacer todo en JavaScript/TypeScript.
+* Hacer todo en Rust.
+* Usar un stack poliglota por dominios.
 
 ==== Decisión
-Usar Rust en `gamey`, Node.js/TypeScript en `users` y React + TypeScript (Vite) en frontend.
+Usar React + TypeScript + Vite en la `webapp`, Node.js + TypeScript en `users` y Rust en `gamey`.
 
 ==== Rationale
-Se optimiza rendimiento donde más importa (lógica de juego) y se mantiene velocidad de iteración en UI y APIs.
+Esta combinación permite elegir la herramienta más adecuada para cada responsabilidad. React y TypeScript son muy cómodos para construir interfaces reutilizables y tipadas. Node.js encaja bien para exponer APIs REST y coordinar integración. Rust aporta concurrencia y rendimiento en la parte de juego, donde los ciclos de cálculo y la gestión del estado son más sensibles.
 
 ==== Consecuencias
 .Beneficios:
-. Alto rendimiento y seguridad de memoria en el motor.
-. Desarrollo rápido y ecosistema maduro para web.
+. Buen equilibrio entre velocidad de desarrollo y rendimiento.
+. Mayor claridad al asignar responsabilidades técnicas.
+. El motor de juego queda protegido por un lenguaje con fuertes garantías de memoria.
 
 .Desventajas:
-. Curva de aprendizaje y complejidad operativa por stack poliglota.
-. Mayor complejidad de build/CI.
+. Aumenta la complejidad operativa del proyecto.
+. Requiere más atención a build, CI y despliegue por usar más de una tecnología base.
 
-=== AD-03. Base de datos MongoDB
+=== AD-03. Frontend multipágina con Vite
 ==== Contexto
-Se requiere persistencia de usuarios y partidas con evolución de esquema ágil.
+El frontend no es una experiencia continua única, sino varios flujos bien diferenciados: inicio, login, registro y juego. Cada uno tiene contexto visual y funcional propio.
 
 ==== Alternativas consideradas
-* PostgreSQL.
-* MongoDB.
+* Una SPA única con un router central.
+* Páginas separadas con entradas independientes.
 
 ==== Decisión
-Usar MongoDB como base de datos principal. `users` accede con Mongoose y `gamey` persiste partidas.
+Construir la `webapp` como aplicación multipágina con entradas separadas para `index.html`, `login.html`, `register.html` y `game.html`.
 
 ==== Rationale
-El esquema flexible reduce fricción durante iteraciones de producto y simplifica integración con Node.js.
+Este enfoque encaja mejor con el recorrido real del usuario y con la organización del código. Cada flujo arranca en su propia página y carga solo lo que necesita. Así se evita un árbol de navegación excesivamente centralizado y se simplifica el razonamiento sobre el estado de cada pantalla. Además, Vite soporta muy bien múltiples puntos de entrada.
 
 ==== Consecuencias
 .Beneficios:
-. Flexibilidad para evolucionar el modelo de datos.
-. Integración sencilla con Node.js y despliegue con Docker.
+. Arranque claro por flujo.
+. Menor complejidad de routing.
+. Mejor aislamiento entre pantallas con objetivos distintos.
 
 .Desventajas:
-. Menor soporte natural para relaciones/consultas transaccionales complejas.
-. Riesgo de rendimiento si faltan índices adecuados.
+. Hay navegación completa entre páginas.
+. El estado compartido entre flujos debe persistirse explícitamente cuando interesa.
 
-=== AD-04. Frontend con React + TypeScript + Vite
+=== AD-04. `users` como punto público de integración
 ==== Contexto
-Necesitamos una SPA con navegación por pantallas y UI interactiva.
+El frontend no debería conocer toda la topología interna del backend. Necesita una base URL estable para autenticación, perfil, relaciones sociales y acciones auxiliares del juego.
 
 ==== Alternativas consideradas
-* React.
-* Vue.
-* Frontend tradicional sin SPA.
+* El frontend llamando directamente a todos los servicios.
+* Un API gateway dedicado.
+* `users` como punto público de integración.
 
 ==== Decisión
-Usar React + TypeScript con Vite.
+Hacer que `users` actúe como capa pública de integración. La `webapp` se comunica principalmente con `users`, y este servicio reenvía a `gamey` aquello que pertenece al motor de juego.
 
 ==== Rationale
-Alinea velocidad de desarrollo, tipado estático y tooling maduro.
+Centralizar el acceso simplifica el frontend y reduce duplicación de lógica de autenticación, cabeceras y CORS. Además, el dominio de usuario ya concentra identidad, perfil, amigos y compras de XP, por lo que es natural que sea también el punto de entrada para el resto de operaciones visibles para el cliente.
 
 ==== Consecuencias
 .Beneficios:
-. Componentes reutilizables y tipados.
-. Buen rendimiento en desarrollo/build con Vite.
+. El frontend solo necesita conocer una URL pública principal.
+. Se unifican autenticación, perfil, relaciones sociales y parte de la integración con juego.
+. La política de acceso y CORS se controla en un único sitio.
 
 .Desventajas:
-. Dependencia de tooling y configuración asociada.
+. `users` se convierte en un componente crítico.
+. Si este servicio cae, gran parte de la experiencia pública se ve afectada.
 
-=== AD-05. `users` como BFF/Gateway
+=== AD-05. MongoDB con ownership por servicio
 ==== Contexto
-El frontend necesita un único punto de entrada para autenticación, gestión de usuario y operaciones de juego.
+Los datos de usuarios, amigos, credenciales, perfil, historial y resultados de juego tienen ciclos de vida distintos. No todos deben compartir el mismo esquema ni la misma cadencia de cambio.
 
 ==== Alternativas consideradas
-* Frontend llamando directamente a múltiples servicios.
-* BFF que centraliza llamadas.
+* Una base de datos compartida para todo el sistema.
+* Una base de datos relacional única.
+* Bases de datos y responsabilidades separadas por servicio.
 
 ==== Decisión
-Centralizar acceso en `users` como BFF. Reenvía operaciones de juego a `gamey` mediante `GAMEY_SERVICE_URL`.
+Usar MongoDB con responsabilidad separada por servicio. `users` y `gamey` gestionan sus propios datos y sus propias colecciones, cada uno con su URI de conexión.
 
 ==== Rationale
-Reduce complejidad del cliente y centraliza reglas de integración.
+Este modelo evita el anti-patrón de base compartida, que suele introducir acoplamiento fuerte entre equipos y servicios. MongoDB, además, encaja bien con el tipo de documentos manejados en la aplicación: perfiles, amistades, partidas y estadísticas.
 
 ==== Consecuencias
 .Beneficios:
-. Una sola base URL para frontend.
-. Control centralizado de CORS y autenticación.
+. Evolución independiente del esquema.
+. Menor dependencia entre dominios.
+. Integración cómoda con el stack Node.js y con el motor de juego.
 
 .Desventajas:
-. `users` se vuelve punto crítico y potencial cuello de botella.
+. Menor facilidad para consultas relacionales complejas.
+. Hay que vigilar índices, validación y consistencia por servicio.
 
-=== AD-06. Seguridad y autenticación
+=== AD-06. Autenticación con `bcryptjs` + JWT
 ==== Contexto
-Las credenciales deben almacenarse de forma segura y las rutas sensibles deben autenticarse.
+Las credenciales no pueden almacenarse en claro y el sistema debe autenticar peticiones sin depender de una sesión de servidor tradicional.
 
 ==== Alternativas consideradas
-* Credenciales en claro y sin token.
-* Hash de contraseña + token JWT.
+* Credenciales en texto plano.
+* Sesiones servidor-side.
+* Hash de contraseña + JWT.
 
 ==== Decisión
-Hashear contraseñas con `bcryptjs` y emitir JWT en login. Token en `sessionStorage` y envío por `Authorization: Bearer <token>`.
+Hashear contraseñas con `bcryptjs`, emitir JWT al iniciar sesión y enviarlo en la cabecera `Authorization: Bearer ...`. En la `webapp`, el token se guarda en `sessionStorage`.
 
 ==== Rationale
-Es un nivel de seguridad base adecuado para el alcance actual con bajo coste de implementación.
+JWT permite una autenticación sin estado en servidor, lo que simplifica escalado y reduce dependencia de una sesión central. `bcryptjs` protege la contraseña en reposo y el uso de `sessionStorage` hace que el token desaparezca al cerrar el navegador, algo coherente con el nivel de persistencia que se quería para la sesión activa.
 
 ==== Consecuencias
 .Beneficios:
-. Contraseñas no se almacenan en texto plano.
-. JWT sin estado facilita escalado horizontal del servicio de autenticación.
+. Las contraseñas no se almacenan en claro.
+. La autenticación es simple de transportar entre peticiones.
+. El frontend controla de forma clara la sesión activa.
 
 .Desventajas:
-. Requiere aplicar `authMiddleware` de forma consistente en todas las rutas protegidas.
-. El token en `sessionStorage` se pierde al cerrar navegador (trade-off aceptado).
+. Hay que aplicar middleware de autorización de forma consistente.
+. La pérdida del token al cerrar el navegador es intencionada, pero obliga a reautenticarse.
 
-=== AD-07. Sesiones de juego en memoria (`gamey`)
+=== AD-07. Gestión social en `users`
 ==== Contexto
-Cada jugador debe mantener estado independiente con baja latencia.
+La parte social del proyecto no se limita a una lista de nombres. Se necesitan códigos de amigo, solicitudes pendientes, aceptación/rechazo y perfil público con relación entre usuarios.
 
 ==== Alternativas consideradas
-* Guardar estado vivo en base de datos.
-* Guardar estado vivo en memoria del servicio.
+* Relación social basada solo en username.
+* Integrar la lógica social en el motor de juego.
+* Gestionar relaciones en el servicio de usuarios.
 
 ==== Decisión
-Usar `DashMap<username, UserSession>` con `tokio::Mutex` para sesión por usuario.
+Gestionar amigos, friend code, solicitudes y perfil público dentro de `users`, usando el modelo `Friendship` y el `friendCode` como mecanismo de descubrimiento.
 
 ==== Rationale
-Minimiza latencia en el bucle principal del juego y simplifica lógica inicial.
+Esta decisión mantiene el dominio social donde realmente pertenece: junto a identidad, perfil y credenciales. El friend code permite compartir identidad sin exponer directamente el username, y el flujo de solicitudes se adapta bien a una persistencia documental simple.
 
 ==== Consecuencias
 .Beneficios:
-. Aislamiento por usuario y concurrencia segura.
-. Alto rendimiento en acceso al estado de partida.
+. Descubrimiento de usuarios mediante código fácil de comunicar.
+. Flujo natural de solicitud, aceptación, rechazo y cancelación.
+. El perfil público puede mostrar relación social y estadísticas sin mezclar dominios.
 
 .Desventajas:
-. Estado volátil (se pierde ante reinicio).
-. Escalado horizontal más complejo.
+. El modelo social requiere consultas adicionales.
+. Hay que coordinar bien la información entre amistad y perfil público.
 
-=== AD-08. Persistencia de partidas y estadísticas
+=== AD-08. Estado vivo en memoria y histórico persistido
 ==== Contexto
-Necesitamos histórico de partidas para perfiles, métricas y futuras funcionalidades.
+La partida necesita baja latencia mientras el usuario juega, pero también hace falta conservar resultados para perfil, historial y métricas.
 
 ==== Alternativas consideradas
-* No persistir historial.
-* Persistir solo eventos agregados.
-* Persistir partidas completas.
+* Guardar todo en base de datos en tiempo real.
+* Mantener todo solo en memoria.
+* Usar memoria para la sesión activa y persistir solo lo terminado.
 
 ==== Decisión
-Persistir partidas en MongoDB desde `gamey` (`gamey_db.partidas`) con campos `player`, `date`, `opponent`, `board_size`, `difficulty`, `result`.
+Mantener el estado activo del juego en memoria dentro de `gamey` y persistir las partidas finalizadas en MongoDB.
 
 ==== Rationale
-Permite historial útil desde primeras versiones y soporte a estadísticas sin rediseño completo.
+El estado vivo debe ser inmediato para responder a cada movimiento, mientras que el histórico puede almacenarse de forma asíncrona o al cierre de la partida. Esta separación permite optimizar el bucle de juego sin renunciar al análisis posterior. En la práctica, el histórico se guarda con los datos necesarios para consultas de perfil y paginación de partidas.
 
 ==== Consecuencias
 .Beneficios:
-. Trazabilidad de resultados.
-. Base para rankings y analítica.
+. Mejor latencia en la interacción de juego.
+. Persistencia útil para historial, estadísticas y futuras extensiones.
+. El backend de juego conserva una sesión clara por usuario.
 
 .Desventajas:
-. Mayor carga de escritura.
-. Necesidad de índices y control de consistencia en fallos parciales.
+. El estado vivo es volátil si el servicio se reinicia.
+. Hay que aceptar un cierto grado de eventualidad entre la partida jugada y su persistencia.
 
-=== AD-09. Observabilidad
+=== AD-09. Comunicación HTTP/JSON entre capas
 ==== Contexto
-Se requiere visibilidad mínima de disponibilidad y latencia.
+Los servicios están escritos en tecnologías distintas, pero deben intercambiar datos de forma simple y legible. El frontend, además, necesita una API fácil de depurar.
 
 ==== Alternativas consideradas
-* Solo logs.
-* Métricas + dashboards.
+* gRPC u otro protocolo binario.
+* Mensajería asíncrona como cola principal.
+* HTTP/JSON como capa común.
 
 ==== Decisión
-Exponer métricas en `users` con `express-prom-bundle` y usar Prometheus/Grafana (`users/monitoring`).
+Usar HTTP/JSON como protocolo principal de comunicación entre `webapp`, `users` y `gamey`.
 
 ==== Rationale
-Aporta capacidad de diagnóstico operativo con coste asumible.
+HTTP/JSON encaja con el ecosistema del proyecto, es fácil de observar con herramientas de desarrollo y hace más sencilla la integración entre frontend y backend. El código de la `webapp` usa `fetch`, y los servicios internos traducen y reenvían peticiones según corresponda.
 
 ==== Consecuencias
 .Beneficios:
-. Métricas accionables para alertas y troubleshooting.
+. Integración sencilla y comprensible.
+. Depuración más rápida.
+. Menor coste cognitivo para el equipo.
 
 .Desventajas:
-. Infraestructura adicional a desplegar y mantener.
+. Más dependencia de la red que en una integración en proceso.
+. Requiere cuidar contratos y validación de payloads.
 
-=== AD-10. Documentación de APIs (OpenAPI/Swagger)
+=== AD-10. Integración con PayPal mediante el SDK oficial
 ==== Contexto
-El equipo necesita un contrato de API claro y navegable.
+La tienda de XP necesitaba una integración de pago sin asumir la responsabilidad de tratar con tarjetas o datos bancarios.
 
 ==== Alternativas consideradas
-* Documentación manual en README.
-* OpenAPI publicada por cada servicio.
+* Implementar un pago propio.
+* No incorporar tienda.
+* Usar el SDK oficial de PayPal.
 
 ==== Decisión
-Publicar OpenAPI/Swagger en ambos servicios:
-
-* `users`: `openapi.yaml` en `/api-docs`.
-* `gamey`: generación con `utoipa` y UI en `/swagger-ui`.
+Integrar PayPal con `@paypal/react-paypal-js`, usando `PayPalScriptProvider`, `PayPalButtons`, creación de orden y captura del pago.
 
 ==== Rationale
-Mejora integración, pruebas manuales y mantenibilidad del contrato.
+La lógica de pago se delega a un proveedor especializado, lo que simplifica el proyecto y reduce el riesgo de seguridad. En la `webapp`, la tienda se presenta como modal independiente y, tras la captura de la orden, se acreditan los XP mediante el backend.
 
 ==== Consecuencias
 .Beneficios:
-. Contrato visible para frontend y backend.
-. Reduce ambigüedad y retrabajo.
+. No se gestionan datos bancarios directamente.
+. La experiencia de pago se apoya en un estándar conocido.
+. La lógica de tienda queda desacoplada del tablero.
 
 .Desventajas:
-. Requiere disciplina para mantener contrato y código sincronizados.
+. Dependencia de un proveedor externo y de su SDK.
+. En un entorno productivo, la acreditación de XP debería verificarse de forma más robusta en servidor antes de considerarse definitiva.
 
-=== AD-11. Docker / Docker Compose
+=== AD-11. Internacionalización con `i18next`
 ==== Contexto
-Necesitamos reproducibilidad entre entornos de desarrollo.
+La interfaz no debe quedar ligada a un único idioma. Además, parte de la información del usuario también condiciona la experiencia lingüística.
 
 ==== Alternativas consideradas
-* Ejecución local nativa sin contenedores.
-* Contenerización con Docker Compose.
+* Textos fijos en componentes.
+* Internacionalización centralizada.
 
 ==== Decisión
-Usar Docker y `docker-compose` para servicios en desarrollo.
+Usar `i18next` y `react-i18next` para gestionar la interfaz multilingüe, persistiendo el idioma en las preferencias del usuario.
 
 ==== Rationale
-Reduce diferencias entre equipos y simplifica onboarding.
+Centralizar las traducciones simplifica mantenimiento y reduce el coste de introducir o corregir textos. El idioma puede cambiarse dinámicamente desde la interfaz, y la preferencia se guarda tanto en perfil como en almacenamiento local para mantener coherencia entre sesiones.
 
 ==== Consecuencias
 .Beneficios:
-. Entornos consistentes y repetibles.
-. Arranque local más simple del sistema completo.
+. Interfaz preparada para varios idiomas.
+. Mantenimiento más limpio de textos.
+. Mejor accesibilidad y localización.
 
 .Desventajas:
-. Mayor consumo de recursos locales.
+. Hay que mantener sincronizadas las claves de traducción.
+. Aumenta el trabajo de revisión de textos al crecer la aplicación.
 
-=== AD-12. Política CORS
+=== AD-12. Docker Compose, Nginx y `mkcert`
 ==== Contexto
-Frontend y backend se sirven en host/puertos distintos durante desarrollo.
+La solución debe poder arrancar igual en varios entornos y reducir al mínimo el típico problema de diferencias entre máquinas.
 
 ==== Alternativas consideradas
-* CORS estricto por origen conocido.
-* CORS abierto en desarrollo.
+* Ejecución nativa sin contenedores.
+* Contenerización completa con Docker.
+* Contenerización con orquestación simple mediante Docker Compose.
 
 ==== Decisión
-Permitir CORS amplio en `users` (incluyendo `Authorization` y métodos `GET, POST, PATCH, OPTIONS`) en entorno de desarrollo.
+Usar Docker y Docker Compose para levantar `users`, `webapp`, `gamey` y los servicios de observabilidad. La `webapp` se construye en multi-stage y se sirve con Nginx, mientras que los certificados locales se generan con `mkcert` cuando se necesita HTTPS en entorno de desarrollo.
 
 ==== Rationale
-Prioriza velocidad de integración en fase temprana.
+Docker hace el despliegue reproducible y reduce la variabilidad entre entornos. Nginx es una forma simple y robusta de servir la MPA a partir de sus distintos entry points HTML; el `try_files` que aparece en la configuración actúa solo como respaldo genérico para rutas no resueltas como archivo estático, no como un fallback SPA. `mkcert` permite probar un entorno seguro sin depender de certificados públicos.
 
 ==== Consecuencias
 .Beneficios:
-. Menor fricción durante desarrollo.
+. Portabilidad y arranque homogéneo.
+. Menor fricción en el onboarding.
+. Entorno de pruebas más realista.
 
 .Desventajas:
-. Configuración demasiado permisiva para producción (debe endurecerse).
+. Más configuración inicial.
+. Mayor consumo de recursos que una ejecución nativa aislada.
 
-=== AD-13. Sin integración de LLMs (estado actual)
+=== AD-13. OpenAPI y Swagger
 ==== Contexto
-Se evaluó la IA generativa, pero no es requisito actual del producto.
+El equipo necesita conocer con claridad los contratos HTTP, tanto para integrar frontend y backend como para revisar manualmente endpoints.
 
 ==== Alternativas consideradas
-* Integrar LLM para bots/comportamientos.
-* Mantener bots heurísticos propios.
+* Documentación manual únicamente en texto.
+* Contrato explícito en OpenAPI/Swagger.
 
 ==== Decisión
-No integrar LLMs por ahora; mantener bots heurísticos en `gamey`.
+Publicar documentación de APIs con OpenAPI/Swagger en los servicios que exponen endpoints HTTP.
 
 ==== Rationale
-Reduce coste, complejidad operativa y dependencias externas para la versión actual.
+La documentación navegable reduce ambigüedad y facilita comprobar qué parámetros espera cada ruta y qué devuelve. También ayuda a que nuevas personas entiendan el sistema sin tener que inspeccionar todo el código.
 
 ==== Consecuencias
 .Beneficios:
-. Arquitectura más simple y predecible.
+. Contrato visible y consultable.
+. Mejor soporte para pruebas manuales e integración.
 
 .Desventajas:
-. Menor sofisticación potencial de comportamiento frente a soluciones basadas en modelos.
+. Hay que mantener la documentación sincronizada con el código.
 
-=== AD-14. Plantilla de documentación (arc42)
+=== AD-14. Observabilidad con Prometheus y Grafana
 ==== Contexto
-Necesitamos una estructura común para documentar arquitectura de forma trazable.
+Un sistema distribuido necesita algo más que logs: conviene saber qué pasa con latencia, disponibilidad y comportamiento de los servicios.
 
 ==== Alternativas consideradas
-* Documentación ad-hoc por archivos sueltos.
-* Plantilla estructurada estandarizada.
+* Depender solo de logs.
+* Añadir métricas y dashboards.
 
 ==== Decisión
-Adoptar arc42 como estructura principal de documentación (`docs/`).
+Instrumentar observabilidad con Prometheus y Grafana, junto con métricas expuestas por `users`.
 
 ==== Rationale
-Facilita lectura por nuevos miembros y evaluación externa.
+Las métricas permiten detectar cuellos de botella y tener una lectura más objetiva de la salud del sistema. En un proyecto con más de un servicio, esto aporta mucho valor por un coste razonable.
 
 ==== Consecuencias
 .Beneficios:
-. Estructura reconocible y completa.
+. Diagnóstico más rápido.
+. Posibilidad de crear paneles e indicadores.
 
 .Desventajas:
-. Sobrecoste de mantenimiento documental continuo.
+. Infraestructura adicional que desplegar y mantener.
 
-=== AD-15. CI / Calidad
+=== AD-15. Calidad automatizada con tests y SonarCloud
 ==== Contexto
-Necesitamos detectar regresiones y mantener calidad de código de forma continua.
+La solución tiene bastante lógica repartida entre frontend, backend y motor de juego. Eso hace necesario detectar regresiones de forma temprana.
 
 ==== Alternativas consideradas
-* Validación manual local.
-* Pipeline automatizado con pruebas y análisis estático.
+* Revisar cambios solo de forma manual.
+* Automatizar tests y análisis estático.
 
 ==== Decisión
-Usar linting, tests automatizados (Vitest en JS/TS) y análisis Sonar (`sonar-project.properties`).
+Usar tests automatizados en las distintas partes del sistema y análisis de calidad con SonarCloud.
 
 ==== Rationale
-Reduce defectos tempranos y mejora mantenibilidad.
+Los tests protegen las rutas críticas y la lógica de negocio, y el análisis estático ayuda a vigilar deuda técnica, cobertura y posibles vulnerabilidades. En una arquitectura distribuida, esta capa de calidad es especialmente importante.
 
 ==== Consecuencias
 .Beneficios:
-. Detección temprana de errores y deuda técnica.
+. Menos regresiones.
+. Mayor confianza al cambiar código.
+. Mejor base para evolución futura.
 
 .Desventajas:
-. Tiempo extra en pipelines y mantenimiento de reglas.
+. Requiere mantenimiento continuo de suites y reglas.
+. Aumenta el tiempo de validación en integración continua.
+
+=== AD-16. Política CORS permisiva en desarrollo
+==== Contexto
+Durante el desarrollo, frontend y backend no se sirven necesariamente desde el mismo origen.
+
+==== Alternativas consideradas
+* CORS restrictivo desde el principio.
+* CORS amplio en entorno de desarrollo.
+
+==== Decisión
+Permitir CORS amplio en `users` durante desarrollo, incluyendo `Authorization` y los métodos necesarios para las operaciones del proyecto.
+
+==== Rationale
+La prioridad en esta fase es integrar con rapidez y evitar bloqueos innecesarios mientras se iteran pantallas y servicios.
+
+==== Consecuencias
+.Beneficios:
+. Menos fricción en pruebas locales.
+. Integración más rápida entre frontend y backend.
+
+.Desventajas:
+. No es una política adecuada para producción y debe endurecerse si el despliegue cambia de contexto.
+
+=== AD-17. No incorporar LLMs en la versión actual
+==== Contexto
+Se valoró la IA generativa como posible ampliación, pero no forma parte del alcance actual ni resuelve ningún requisito obligatorio del sistema.
+
+==== Alternativas consideradas
+* Integrar LLMs para bots o asistencia.
+* Mantener el comportamiento actual, más simple y controlado.
+
+==== Decisión
+No incorporar LLMs en esta versión.
+
+==== Rationale
+Se evita añadir complejidad operativa, coste y dependencias externas cuando el sistema ya cubre sus objetivos funcionales con una lógica más predecible.
+
+==== Consecuencias
+.Beneficios:
+. Arquitectura más simple.
+. Menor riesgo operativo.
+. Menos dependencia de servicios externos.
+
+.Desventajas:
+. Menor sofisticación potencial en comportamientos asistidos por IA.
+
+=== AD-18. Documentación estructurada con arc42
+==== Contexto
+La documentación debe ser útil tanto para el equipo como para una evaluación externa. Para ello conviene una estructura homogénea.
+
+==== Alternativas consideradas
+* Documentación dispersa en archivos sin patrón común.
+* Plantilla estructurada común.
+
+==== Decisión
+Usar arc42 como estructura principal de documentación del proyecto.
+
+==== Rationale
+arc42 facilita entender la solución de forma progresiva: contexto, alcance, decisiones, runtime, despliegue y calidad. Eso hace la documentación más mantenible y más fácil de presentar.
+
+==== Consecuencias
+.Beneficios:
+. Orden y trazabilidad.
+. Mejor legibilidad para terceros.
+
+.Desventajas:
+. Exige disciplina para mantener la documentación actualizada.
 
 ifdef::arc42help[]
 [role="arc42help"]

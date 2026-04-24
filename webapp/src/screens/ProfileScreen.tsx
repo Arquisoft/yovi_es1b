@@ -3,6 +3,8 @@ import { gameService } from '../services/gameService';
 import defaultAvatar from '../assets/icon/SinAvatar.png';
 import i18n from '../i18n';
 import { useTranslation } from 'react-i18next';
+import { languageOptions } from '../utils/languageUtils';
+import { ModalDialog } from '../components/common/ModalDialog';
 
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -14,12 +16,35 @@ export const getLanguageIcon = (token: string): string | null => {
   return entry ? entry[1] : null;
 };
 
-const countryOptions = [
-  { value: 'Spain', icon: getLanguageIcon('espana') },
-  { value: 'English', icon: getLanguageIcon('reino-unido') },
-  { value: 'German', icon: getLanguageIcon('alemania') },
-  { value: 'Portuguese', icon: getLanguageIcon('portugal') },
-];
+export const getLanguageIconDisplayState = (icon: string | null) => ({
+  src: icon || '',
+  iconDisplay: icon ? 'block' : 'none',
+  fallbackDisplay: icon ? 'none' : 'block',
+});
+
+type AvatarIcon = {
+  id: string;
+  src: string;
+  name: string;
+};
+
+function getLanguageToken(value: string) {
+  switch (value) {
+    case 'Spain':
+      return 'espana';
+    case 'English':
+      return 'reino-unido';
+    case 'German':
+      return 'alemania';
+    default:
+      return 'portugal';
+  }
+}
+
+const countryOptions = languageOptions.map((option) => ({
+  ...option,
+  icon: option.icon || getLanguageIcon(getLanguageToken(option.value)),
+}));
 
 const iconModules = import.meta.glob('../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
@@ -38,6 +63,72 @@ const availableIcons = Object.entries(iconModules)
   });
 
 export const shouldShowNoIconsMessage = (icons: Array<{ id: string }>): boolean => icons.length === 0;
+
+const renderIconGrid = (
+  icons: AvatarIcon[],
+  avatarDraft: string,
+  setAvatarDraft: (value: string) => void,
+) => (
+  <div className="icon-row-grid">
+    {icons.map((icon) => {
+      const isSelected = avatarDraft === icon.name;
+      return (
+        <button
+          key={icon.id}
+          type="button"
+          className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
+          onClick={() => setAvatarDraft(icon.name)}
+          title={icon.name}
+          aria-label={`Elegir ${icon.name}`}
+          aria-pressed={isSelected}
+        >
+          <img src={icon.src} alt={icon.name} className="icon-option-img" />
+        </button>
+      );
+    })}
+  </div>
+);
+
+export const renderAvatarIconPicker = (
+  icons: AvatarIcon[],
+  avatarDraft: string,
+  setAvatarDraft: (value: string) => void,
+  noAvatar: AvatarIcon | undefined,
+  male: AvatarIcon[],
+  female: AvatarIcon[],
+) => {
+  if (shouldShowNoIconsMessage(icons)) {
+    return <small className="error-message">Anade iconos en `webapp/src/assets/icon` para poder elegir uno.</small>;
+  }
+
+  return (
+    <>
+      {noAvatar && (
+        <>
+          <div className="icon-row-label">Sin Avatar</div>
+          <div className="icon-row-grid icon-row-grid-single">
+            <button
+              type="button"
+              className={`icon-option ${avatarDraft === noAvatar.name ? 'icon-option-selected' : ''}`}
+              onClick={() => setAvatarDraft(noAvatar.name)}
+              title="Sin Avatar"
+              aria-label="Elegir Sin Avatar"
+              aria-pressed={avatarDraft === noAvatar.name}
+            >
+              <img src={noAvatar.src} alt="Sin Avatar" className="icon-option-img" />
+            </button>
+          </div>
+        </>
+      )}
+
+      <div className="icon-row-label">Hombre</div>
+      {renderIconGrid(male, avatarDraft, setAvatarDraft)}
+
+      <div className="icon-row-label">Mujer</div>
+      {renderIconGrid(female, avatarDraft, setAvatarDraft)}
+    </>
+  );
+};
 
 const noAvatarIcon = availableIcons.find((icon) => icon.name.toLowerCase().includes('sinavatar'));
 const maleIcons = availableIcons.filter((icon) => icon.name.toLowerCase().includes('hombre')).slice(0, 4);
@@ -112,12 +203,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         } else {
           localStorage.removeItem('yovi_user_language');
         }
-        const resolvedIconName =
-          typeof data.iconName === 'string'
-            ? data.iconName
-            : typeof data.icon === 'string'
-              ? data.icon
-              : 'SinAvatar.png';
+        const resolvedIconName = (() => {
+          if (typeof data.iconName === 'string' && data.iconName) return data.iconName;
+          if (typeof data.icon === 'string' && data.icon) return data.icon;
+          return 'SinAvatar.png';
+        })();
         setIconName(resolvedIconName || 'SinAvatar.png');
       } catch (error) {
         if (active) setErrorMessage(t('profile.error_load'));
@@ -235,7 +325,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
   };
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Ver mi perfil">
+    <ModalDialog className="modal-backdrop" ariaLabel="Ver mi perfil">
       <div className="modal-box profile-modal">
         <h3 className="profile-title">{t('profile.title')}</h3>
 
@@ -263,10 +353,11 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               <input
                 id="profile-nickname"
                 className="form-input"
-                  type="text"
-                  value={nickname}
-                  onChange={(e) => setNickname(e.target.value)}
-                />
+                type="text"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+                maxLength={15}
+              />
               </div>
             </div>
 
@@ -286,21 +377,22 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
                 {countryOptions.map((option) => {
                   const checked = language === option.value;
+                  const displayState = getLanguageIconDisplayState(option.icon);
                   return (
                     <label key={option.value} className="country-checkbox-item">
                       <span className="country-checkbox-left">
                         <img
-                          src={option.icon || ''}
-                          alt={option.value}
+                          src={displayState.src}
+                          alt={t(option.labelKey)}
                           className="country-flag-icon"
-                          style={{ display: option.icon ? 'block' : 'none' }}
+                          style={{ display: displayState.iconDisplay }}
                         />
                         <span
                           className="country-flag-fallback"
                           aria-hidden="true"
-                          style={{ display: option.icon ? 'none' : 'block' }}
+                          style={{ display: displayState.fallbackDisplay }}
                         />
-                        <span>{option.value}</span>
+                        <span>{t(option.labelKey)}</span>
                       </span>
                       <input
                         type="checkbox"
@@ -371,74 +463,12 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
         </div>
       </div>
       {showAvatarEditor && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label="Seleccionar avatar">
+        <ModalDialog className="modal-backdrop" ariaLabel="Seleccionar avatar">
           <div className="modal-box profile-avatar-modal">
             <h3>{t('profile.select_avatar')}</h3>
             {avatarError && <small className="error-message">{avatarError}</small>}
             <div className="icon-picker-box" role="group" aria-label="Selector de iconos">
-              {shouldShowNoIconsMessage(availableIcons) ? (
-                <small className="error-message">{t('profile.no_icons')}</small>
-              ) : (
-                <>
-                  {noAvatarIcon && (
-                    <>
-                      <div className="icon-row-label">{t('profile.no_avatar')}</div>
-                      <div className="icon-row-grid icon-row-grid-single">
-                        <button
-                          type="button"
-                          className={`icon-option ${avatarDraft === noAvatarIcon.name ? 'icon-option-selected' : ''}`}
-                          onClick={() => setAvatarDraft(noAvatarIcon.name)}
-                          title={t('profile.no_avatar')}
-                          aria-label={t('profile.choose_no_avatar')}
-                          aria-pressed={avatarDraft === noAvatarIcon.name}
-                        >
-                          <img src={noAvatarIcon.src} alt={t('profile.no_avatar')} className="icon-option-img" />
-                        </button>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="icon-row-label">{t('profile.male')}</div>
-                  <div className="icon-row-grid">
-                    {maleIcons.map((icon) => {
-                      const isSelected = avatarDraft === icon.name;
-                      return (
-                        <button
-                          key={icon.id}
-                          type="button"
-                          className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-                          onClick={() => setAvatarDraft(icon.name)}
-                          title={icon.name}
-                          aria-label={`Elegir ${icon.name}`}
-                          aria-pressed={isSelected}
-                        >
-                          <img src={icon.src} alt={icon.name} className="icon-option-img" />
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <div className="icon-row-label">{t('profile.female')}</div>
-                  <div className="icon-row-grid">
-                    {femaleIcons.map((icon) => {
-                      const isSelected = avatarDraft === icon.name;
-                      return (
-                        <button
-                          key={icon.id}
-                          type="button"
-                          className={`icon-option ${isSelected ? 'icon-option-selected' : ''}`}
-                          onClick={() => setAvatarDraft(icon.name)}
-                          title={icon.name}
-                          aria-label={`Elegir ${icon.name}`}
-                          aria-pressed={isSelected}
-                        >
-                          <img src={icon.src} alt={icon.name} className="icon-option-img" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              {renderAvatarIconPicker(availableIcons, avatarDraft, setAvatarDraft, noAvatarIcon, maleIcons, femaleIcons)}
             </div>
             <div className="profile-avatar-editor-actions">
               <button type="button" className="submit-button" onClick={applyAvatarSelection}>
@@ -449,8 +479,8 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               </button>
             </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
-    </div>
+    </ModalDialog>
   );
 };

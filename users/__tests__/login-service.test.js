@@ -15,7 +15,7 @@ describe('POST /login', () => {
         const hashedPassword = await bcrypt.hash('testPass', 10)
 
         // cuando vaya a buscar el usuario, directamente se simula que lo encuentra
-        vi.spyOn(User, 'findOne').mockResolvedValue({
+        const findOneSpy = vi.spyOn(User, 'findOne').mockResolvedValue({
             username: 'testUser',
             password: hashedPassword,
         })
@@ -29,6 +29,7 @@ describe('POST /login', () => {
 
         expect(res.status).toBe(200)
         expect(res.body.message).toBe('Welcome back, testUser!')
+        expect(findOneSpy).toHaveBeenCalledWith({ username: 'testUser' })
     })
 
     it('devuelve error 401 si la contraseña es incorrecta', async () => {
@@ -36,7 +37,7 @@ describe('POST /login', () => {
         const hashedPassword = await bcrypt.hash('testPass', 10)
 
         // cuando vaya a buscar el usuario, directamente se simula que lo encuentra
-        vi.spyOn(User, 'findOne').mockResolvedValue({
+        const findOneSpy = vi.spyOn(User, 'findOne').mockResolvedValue({
             username: 'testUser',
             password: hashedPassword,
         })
@@ -50,5 +51,6 @@ describe('POST /login', () => {
 
         expect(res.status).toBe(401)
         expect(res.body.error).toBe('Usuario o contraseña incorrecta')
+        expect(findOneSpy).toHaveBeenCalledWith({ username: 'testUser' })
     })
 })

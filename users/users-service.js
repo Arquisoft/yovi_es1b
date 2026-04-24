@@ -31,9 +31,10 @@ const { customAlphabet } = require('nanoid');
 // Alfabeto sin letras confusas (evitamos O, 0, I, l)
 const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
+const MAX_NICKNAME_LENGTH = 15;
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://gamey:4000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://localhost:4000';
 
 
 // HTTPS
@@ -110,14 +111,16 @@ app.post('/createuser', async (req, res) => {
     if (!username || !password || !language || !birthDate || !nickname) {
       return res.status(400).json({ error: "Username, nickname, password, language and birthDate are required" });
     }
+    if (nickname.length > MAX_NICKNAME_LENGTH) {
+      return res.status(400).json({ error: `Nickname must be at most ${MAX_NICKNAME_LENGTH} characters` });
+    }
     if (Number.isNaN(birthDate.getTime())) {
       return res.status(400).json({ error: "birthDate is invalid" });
     }
-    const existingNickname = await User.findOne({ nickname });
-    if (existingNickname) {
-      return res.status(409).json({ error: "Nickname already exists" });
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(409).json({ error: "Username already exists" });
     }
-
     let friendCode;
     let isUnique = false;
     while (!isUnique) {
@@ -162,10 +165,8 @@ app.post('/login', async (req, res) => {
 
   try {
 
-    const loginValue = String(username || '').trim(); // Usuario o nickname.
-    const user =
-      (await User.findOne({ nickname: loginValue })) ||
-      (await User.findOne({ username: loginValue }));
+    const loginValue = String(username || '').trim();
+    const user = await User.findOne({ username: loginValue });
 
     if (!user) {
       return res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -309,6 +310,9 @@ app.patch('/users/profile/:username', async (req, res) => {
       if (!nickname) {
         return res.status(400).json({ error: 'Nickname no puede estar vacio' });
       }
+      if (nickname.length > MAX_NICKNAME_LENGTH) {
+        return res.status(400).json({ error: `Nickname no puede tener mas de ${MAX_NICKNAME_LENGTH} caracteres` });
+      }
       const existingNickname = await User.findOne({ nickname });
       if (existingNickname && String(existingNickname._id) !== String(user._id)) {
         return res.status(409).json({ error: 'Nickname ya existe' });
@@ -323,7 +327,7 @@ app.patch('/users/profile/:username', async (req, res) => {
     if (birthDateRaw !== undefined) {
       const parsedDate = birthDateRaw ? new Date(String(birthDateRaw)) : null;
       if (birthDateRaw && Number.isNaN(parsedDate?.getTime?.())) {
-        return res.status(400).json({ error: 'Fecha de nacimiento invalida' });
+        return res.status(400).json({ error: 'Fecha de nacimiento inválida' });
       }
       user.birthDate = parsedDate;
     }
@@ -504,6 +508,31 @@ app.get('/users/public-profile/:username', async (req, res) => {
   }
 })
 
+const normalizeDifficulty = (difficulty) =>
+  String(difficulty || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replaceAll(/[\u0300-\u036f]/g, '')
+    .replaceAll(/\s+/g, '');
+
+const calculateVictoryScore = (difficulty, boardSize) => {
+  const size = Number(boardSize);
+  if (!Number.isFinite(size) || size <= 0) return 0;
+
+  const normalizedDifficulty = normalizeDifficulty(difficulty);
+  if (!normalizedDifficulty || normalizedDifficulty === 'sinseleccionar') return 0;
+
+  let multiplier = 1;
+  if (normalizedDifficulty === 'medio' || normalizedDifficulty === 'medium') {
+    multiplier = 2;
+  } else if (normalizedDifficulty === 'dificil' || normalizedDifficulty === 'hard') {
+    multiplier = 3;
+  }
+
+  return Math.round(100 * multiplier * (size / 6));
+};
+
 /**
  * Endpoint para cancelar una solicitud de amistad pendiente
  */
@@ -548,24 +577,28 @@ app.post('/move', async (req, res) => {
     }
 
     const newBoard = await rustResponse.json();
+    const fallbackScore = calculateVictoryScore(difficulty, boardSize);
+    const finalScore = typeof newBoard.score === 'number' && newBoard.score > 0
+      ? newBoard.score
+      : fallbackScore;
 
     // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
-    if (newBoard.winner === 0 && newBoard.score > 0) {
+    if (newBoard.winner === 0 && finalScore > 0) {
       const User = require('./models/user'); // Asegúrate de tener acceso al modelo
+      const awardedScore = finalScore;
       
       // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
       await User.findOneAndUpdate(
         { username: username },
-        { $inc: { totalScore: newBoard.score || 0} } // Suma el score actual al totalScore de la DB
+        { $inc: { totalScore: awardedScore } } // Suma el score actual al totalScore de la DB
       );
-      console.log(`Puntos guardados para ${username}: +${newBoard.score}`);
     }
     
     // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
       winner: newBoard.winner,
-      score: newBoard.score // Nuevo campo para el puntaje de la partida
+      score: newBoard.score || finalScore // Nuevo campo para el puntaje de la partida
     });
   }
   catch (e) {
@@ -694,7 +727,7 @@ app.get('/history', async (req, res) => {
     const paginatedData = await rustResponse.json();
     
     // DEBUG: Mira tu terminal de Node para ver si llegan datos
-    console.log(`Historial para ${username}: (Pag ${page}):`, paginatedData.data);
+    console.log('Historial de partidas consultado correctamente.');
 
     // 5. Enviamos el array directo al Frontend
     res.json(paginatedData); 

@@ -1,13 +1,7 @@
 import { useCallback, useState } from 'react';
-import { gameService } from '../services/gameService';
+import { gameService, type MoveResponse } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
 import type { GameYData } from '../types/game';
-
-type MoveResponse = {
-  responseFromRust?: GameYData;
-  winner: number | null;
-  score: number;
-};
 
 type GameHistoryContext = Readonly<{
   boardLabel?: string | null;
@@ -46,7 +40,9 @@ export const useGameLogic = () => {
     historyContext?: GameHistoryContext,
   ) => {
     stopTimer();
-    const data = await gameService.makeMove(index, difficulty, boardData?.size, historyContext);
+    const data = historyContext
+      ? await gameService.makeMove(index, difficulty, boardData?.size, historyContext)
+      : await gameService.makeMove(index, difficulty, boardData?.size);
     const result = updateBoardState(data, index);
 
     if (result.winner === null) {
@@ -72,7 +68,9 @@ export const useGameLogic = () => {
     window.crypto.getRandomValues(array);
     const randomIndex = emptyCells[array[0] % emptyCells.length];
 
-    const data = await gameService.makeMove(randomIndex, difficulty, boardData?.size, historyContext);
+    const data = historyContext
+      ? await gameService.makeMove(randomIndex, difficulty, boardData?.size, historyContext)
+      : await gameService.makeMove(randomIndex, difficulty, boardData?.size);
     const result = updateBoardState(data, randomIndex);
 
     if (result.winner === null) {
@@ -93,7 +91,11 @@ export const useGameLogic = () => {
     difficulty: string,
     historyContext?: GameHistoryContext,
   ) => {
-    await gameService.surrender(difficulty, boardData?.size, historyContext);
+    if (historyContext) {
+      await gameService.surrender(difficulty, boardData?.size, historyContext);
+    } else {
+      await gameService.surrender(difficulty, boardData?.size);
+    }
     setWinner(1);
   }, [boardData?.size]);
 

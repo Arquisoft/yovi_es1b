@@ -1,6 +1,8 @@
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 import ReactDOM from 'react-dom';
+import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ModalDialog } from '../common/ModalDialog';
 
 interface PayPalStoreProps {
   isOpen: boolean;
@@ -10,6 +12,7 @@ interface PayPalStoreProps {
 
 export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) => {
   const { t } = useTranslation();
+  const dialogRef = useRef<HTMLDialogElement>(null);
   if (!isOpen) return null;
 
   const paypalOptions = {
@@ -19,10 +22,10 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
     };
 
   return ReactDOM.createPortal(
-    <div className="modal-backdrop payment-overlay" onClick={onClose}>
-      <div className="payment-card" onClick={(e) => e.stopPropagation()}>
-        <button className="payment-close" onClick={onClose}>&times;</button>
-        
+    <ModalDialog ref={dialogRef} className="payment-overlay" ariaLabel={t('store.title')} onClose={onClose}>
+      <div className="payment-card">
+        <button type="button" className="payment-close" aria-label={t('common.close')} onClick={onClose}>&times;</button>
+
         <h2 className="payment-title">{t('store.title')}</h2>
         <p className="payment-subtitle">{t('store.subtitle')}</p>
 
@@ -39,7 +42,7 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
                   intent: "CAPTURE",
                   purchase_units: [
                     {
-                      description:  t('store.order_description'),
+                      description: t('store.order_description'),
                       amount: {
                         currency_code: "EUR",
                         value: "1.00",
@@ -49,12 +52,12 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
                 });
               }}
               onApprove={async (_data, actions) => {
-                return actions.order?.capture().then((details) => {
-                  const payerName = details.payer?.name?.given_name ?? "Usuario";
-                  console.log("Pago exitoso de:", payerName);
-                  onSuccess(1000);
-                  onClose();
-                });
+                if (!actions.order) return;
+
+                const captureDetails = await actions.order.capture();
+                console.log("Pago exitoso:", captureDetails?.id ?? "sin id");
+                onSuccess(1000);
+                onClose();
               }}
               onError={(err) => {
                 console.error("Error en PayPal:", err);
@@ -65,7 +68,7 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
         </div>
         <p className="payment-footer">{t('store.footer')}</p>
       </div>
-    </div>,
+    </ModalDialog>,
     document.body
   );
 };

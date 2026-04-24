@@ -1,6 +1,11 @@
 import { useTranslation } from 'react-i18next';
 import type { HistoryGameRecord } from '../../types/game';
-import { getDifficultyLabelKey, getHistoryResultKey, getSizeLabelKeyFromDimension } from '../../utils/gameLabelUtils';
+import {
+  getDifficultyLabelKey,
+  getHistoryResultDisplayLabel,
+  getHistoryResultKey,
+  getSizeLabelKeyFromDimension,
+} from '../../utils/gameLabelUtils';
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -67,10 +72,7 @@ export const HistoryModal = ({
                   const sizeLabel = game.board_label || t(`game.${getSizeLabelKeyFromDimension(game.board_size)}`);
                   const difficultyLabel = t(`game.${getDifficultyLabelKey(game.difficulty)}`);
                   const resultKey = getHistoryResultKey(game.result_label || game.result);
-                  const rawResultLabel = game.result_label?.trim() || '';
-                  const resultLabel = rawResultLabel && !['you_win', 'you_lose', 'win', 'loss'].includes(rawResultLabel)
-                    ? rawResultLabel
-                    : t(`game.${resultKey}`);
+                  const resultLabel = getHistoryResultDisplayLabel(game.result_label || game.result);
 
                   return (
                     <tr key={game._id?.$oid || index}>

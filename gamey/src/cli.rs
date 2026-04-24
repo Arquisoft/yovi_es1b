@@ -39,7 +39,7 @@ pub struct CliArgs {
     pub bot: String,
 
     /// Port to run the server on (only used with --mode=server)
-    #[arg(short, long, default_value_t = 3000)]
+    #[arg(short, long, default_value_t = 4000)]
     pub port: u16,
 }
 
