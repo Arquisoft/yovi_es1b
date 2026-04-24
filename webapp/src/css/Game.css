@@ -1423,3 +1423,30 @@ body {
     font-size: 0.9rem;
   }
 }
+
+/* Modificamos los estilos de los botones de modo de dificultad y tamaño */
+.dropdown-trigger {
+  background: rgba(255, 255, 255, 0.15); /* Igual que nav-btn */
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dropdown-trigger:hover:not(:disabled) {
+  background: #bc84ee; /* Morado suave al pasar el ratón, igual que nav-btn */
+  transform: translateY(-2px);
+  border-color: white;
+}
+
+.dropdown-trigger:disabled {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
+  cursor: not-allowed;
+  box-shadow: none;
+}
