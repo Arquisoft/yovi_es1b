@@ -169,7 +169,8 @@ jobs:
           command: |
             wget https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/master/docker-compose.yml -O docker-compose.yml
 
-            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" > .env
+            echo "MONGODB_URI_USERS=${{ secrets.MONGODB_URI_USERS }}" > .env
+            echo "MONGODB_URI_GAMEY=${{ secrets.MONGODB_URI_GAMEY }}" >> .env
 
             docker compose down
             docker compose up -d --pull always
