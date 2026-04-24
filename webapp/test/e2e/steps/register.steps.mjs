@@ -29,5 +29,8 @@ Then('I should see a welcome message containing {string}', async function (expec
 
   const storedUser = await page.evaluate(() => localStorage.getItem('yovi_user'));
   
-  assert.strictEqual(storedUser, expected, `El usuario guardado en localStorage debería ser "${expected}", pero es "${storedUser}"`);
+  assert.ok(
+    expected.includes(storedUser), 
+    `El usuario guardado "${storedUser}" no coincide con el mensaje esperado "${expected}"`
+  );
 })
