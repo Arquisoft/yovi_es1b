@@ -109,7 +109,6 @@ app.use(express.json());
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
 app.post('/createuser', async (req, res) => {
-  console.log("📥 Petición de registro recibida:", req.body);
   // para evitar inyecciones de codigo, convertimos a string lo que recibimos del cliente
   const username = String(req.body.username || "");
   const nickname = String(req.body.nickname || "").trim();
@@ -121,14 +120,16 @@ app.post('/createuser', async (req, res) => {
     if (!username || !password || !language || !birthDate || !nickname) {
       return res.status(400).json({ error: "Username, nickname, password, language and birthDate are required" });
     }
+    if (nickname.length > MAX_NICKNAME_LENGTH) {
+      return res.status(400).json({ error: `Nickname must be at most ${MAX_NICKNAME_LENGTH} characters` });
+    }
     if (Number.isNaN(birthDate.getTime())) {
       return res.status(400).json({ error: "birthDate is invalid" });
     }
-    const existingNickname = await User.findOne({ nickname });
-    if (existingNickname) {
-      return res.status(409).json({ error: "Nickname already exists" });
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(409).json({ error: "Username already exists" });
     }
-
     let friendCode;
     let isUnique = false;
     while (!isUnique) {
@@ -155,39 +156,15 @@ app.post('/createuser', async (req, res) => {
     // Save the new user to the database
     await newUser.save();
 
-    console.log(`✅ Usuario ${username} creado con éxito.`);
+    res.json({ 
+      message: `Hello ${username}! Your account has been created!`,
+      friendCode: `#${friendCode}`,
+      nickname
+    })
 
-    let boardData = null;
-        try {
-            const rustRes = await fetch(`${GAMEY_URL}/reset`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                signal: AbortSignal.timeout(3000),
-                body: JSON.stringify({ size: 5, difficulty: "easy", player: username })
-            });
-            if (rustRes.ok) {
-                boardData = await rustRes.json();
-                console.log("✅ Tablero recibido de Rust correctamente.");
-            }
-        } catch (e) {
-            console.error("⚠️ Falló aviso a Rust, pero seguimos:", e.message);
-        }
-
-        // 4. RESPUESTA ÚNICA AL NAVEGADOR (Punto final)
-        console.log(`🚀 Enviando respuesta exitosa para ${username}`);
-        return res.status(201).json({ 
-            message: `Hello ${username}! Your account has been created!`,
-            friendCode: `#${newUser.friendCode}`,
-            nickname: newUser.nickname,
-            board: boardData 
-        });
-
-    } catch (err) {
-        console.error("🔥 Error real en /createuser:", err.message);
-        if (!res.headersSent) {
-            return res.status(400).json({ error: "User already exists or database error" });
-        }
-    }
+  } catch (err) {
+    res.status(400).json({ error: "User already exists or database error" });
+  }
 });
 
 
@@ -655,43 +632,28 @@ app.post('/reset', async (req, res) => {
   // CORRECCIÓN: Añadimos username a la extracción del body
   const { size, difficulty, username } = req.body;
 
-  let boardFromRust = null;
-
   try {
     const requestedSize = Number(size);
     const safeSize = Number.isFinite(requestedSize) && requestedSize >= 3 && requestedSize <= 20
         ? Math.floor(requestedSize)
         : 5;
 
-    try {
-      const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        // Ponemos un timeout corto para que el test no espere 10 segundos
-        signal: AbortSignal.timeout(3000), 
-        body: JSON.stringify({
-          size: safeSize,
-          difficulty: difficulty,
-          player: username
-        }),
-      });
+    const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        size: safeSize,
+        difficulty: difficulty,
+        player: username //
+      }),
+    });
 
-      if (rustResponse.ok) {
-        boardFromRust = await rustResponse.json();
-        console.log("✅ Tablero recibido de Rust correctamente.");
-      } else {
-        console.warn(`⚠️ Rust respondió con error ${rustResponse.status}, usando fallback.`);
-      }
-    } catch (fetchError) {
-      // Si Rust falla, solo avisamos por consola pero NO mandamos un 500
-      console.error("❌ Error de red con Rust (Gamey):", fetchError.message);
+    if (!rustResponse.ok) {
+      throw new Error(`Rust error: ${rustResponse.status}`);
     }
 
-    res.status(200).json({ 
-      responseFromRust: boardFromRust,
-      fallback: !boardFromRust 
-    });
-    
+    const newBoard = await rustResponse.json();
+    res.json({ responseFromRust: newBoard });
   } catch (e) {
     console.error("Fallo en reset:", e.message);
     res.status(500).json({ error: 'Error communicating with Rust server. ' + e.message });
