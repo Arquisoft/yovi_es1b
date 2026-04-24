@@ -82,7 +82,7 @@ Bloques de Construcción de Contenidos::
 |*Usuario*
 |Usuario de la aplicación que interactúa con ella a través del navegador web.
 |*Webapp*
-|Interfaz gráfica SPA (Single Page Application) construida con React, Vite y TypeScript.
+Interfaz gráfica SPA (Single Page Application) construida con React, Vite y TypeScript.
 Gestiona las pantallas de inicio, registro, login y partida. Renderiza el tablero
 triangular en formato YEN, controla el temporizador de turno (con límites de 60s/30s/15s
 según dificultad Easy/Medium/Hard) y se comunica con el backend mediante llamadas REST.
