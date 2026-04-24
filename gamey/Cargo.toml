@@ -38,7 +38,8 @@ thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tokio = { version = "1.0", features = ["full"] }
-
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+rustls = { version = "0.23", features = ["aws-lc-rs"] }
 utoipa = { version = "5.3", features = ["axum_extras"] }
 utoipa-swagger-ui = { version = "9.0", default-features = false, features = ["axum", "vendored"] }
 tower-http = { version = "0.5", features = ["cors"] }

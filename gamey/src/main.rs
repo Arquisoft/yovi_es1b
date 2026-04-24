@@ -29,6 +29,10 @@ use tracing_subscriber::prelude::*;
 /// depending on the selected mode.
 #[tokio::main]
 async fn main() {
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .expect("Fallo al instalar el proveedor de criptografía");
+
     tracing_subscriber::registry().init();
     let args = CliArgs::parse();
 

@@ -1,7 +1,7 @@
 import { Given, When, Then } from '@cucumber/cucumber'
 import assert from 'assert'
 
-const API_URL = 'http://localhost:3000';
+const API_URL = 'https://localhost:3000';
 
 Given('the login page is open', async function () {
   const page = this.page;
@@ -24,7 +24,7 @@ Given('the login page is open', async function () {
   }, API_URL);
 
   // 2. Vamos a la página de login
-  await page.goto('http://localhost:5173/login.html'); 
+  await page.goto('https://localhost:5173/login.html'); 
 });
 
 When('I login with {string} and {string}', async function (username, password) {

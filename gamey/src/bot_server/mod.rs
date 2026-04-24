@@ -48,6 +48,9 @@ use crate::bot::ybot_registry::YBotRegistry;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
 
+use std::net::SocketAddr;
+use axum_server::tls_rustls::RustlsConfig;
+
 
 // This helps Rust to understand the JSON that receive from Node
 #[derive(Deserialize, utoipa::ToSchema)]
@@ -234,19 +237,28 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let state = AppState::new(bots, db);
     let app = create_router(state);
 
-    let addr = format!("0.0.0.0:{}", port);
-    let listener =
-        tokio::net::TcpListener::bind(&addr)
-            .await
-            .map_err(|e| GameYError::ServerError {
-                message: format!("Failed to bind to {}: {}", addr, e),
-            })?;
+    let addr: SocketAddr = format!("0.0.0.0:{}", port)
+        .parse()
+        .map_err(|_| GameYError::ServerError {
+            message: format!("Invalid address: 0.0.0.0:{}", port),
+        })?;
 
-    println!("Server mode: Listening on http://{}", addr);
-    axum::serve(listener, app)
+    let config = RustlsConfig::from_pem_file(
+        "../certs/cert.pem", 
+        "../certs/key.pem"
+    )
+    .await
+    .map_err(|e| GameYError::ServerError {
+        message: format!("Error cargando certificados SSL en cers/: {}", e),
+    })?;
+
+    println!("Server mode: Listening on https://{}", addr);
+
+    axum_server::bind_rustls(addr, config)
+        .serve(app.into_make_service())
         .await
         .map_err(|e| GameYError::ServerError {
-            message: format!("Server error: {}", e),
+            message: format!("Server error (HTTPS): {}", e),
         })?;
 
     Ok(())
