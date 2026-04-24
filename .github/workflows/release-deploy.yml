@@ -57,6 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-node, test-rust]
     continue-on-error: true
+    env:
+      # NUEVO
+      MONGODB_URI_USERS: mongodb://localhost:27017/users_test
+      MONGODB_URI_GAMEY: mongodb://localhost:27017/gamey_test
     # nuevo
     services:
       mongodb:
@@ -84,10 +88,6 @@ jobs:
           cd webapp
           npm run test:e2e:install-browsers
       - name: Run E2E tests (start servers and run cucumber)
-        env:
-          # NUEVO
-          MONGODB_URI_USERS: mongodb://localhost:27017/users_test
-          MONGODB_URI_GAMEY: mongodb://localhost:27017/gamey_test
         run: |
           cd webapp
           npm run test:e2e
