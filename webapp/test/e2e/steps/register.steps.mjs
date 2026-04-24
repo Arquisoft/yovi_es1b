@@ -12,7 +12,13 @@ When('I enter {string} as the username and submit', async function (username) {
   if (!page) throw new Error('Page not initialized')
 
   await page.fill('#register-name', username)
-  await page.click('.submit-button')
+  await page.fill('#register-nickname', username + '_nick')
+  await page.fill('#register-birth-date', '1990-01-01')
+  await page.fill('#register-password', 'password123')
+  await page.fill('#register-confirm-password', 'password123')
+
+  await page.click('input[aria-label="Seleccionar Spain"]')
+  await page.click('button[type="submit"].submit-button')
 })
 
 Then('I should see a welcome message containing {string}', async function (expected) {
