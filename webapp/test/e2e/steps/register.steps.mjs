@@ -27,6 +27,7 @@ Then('I should see a welcome message containing {string}', async function (expec
 
   await page.waitForURL('**/game.html', { timeout: 10000 })
 
-  const bodyText = await page.innerText('body')
-  assert.ok(bodyText.includes(expected), `No se encontró "${expected}" en la página del juego`)
+  const storedUser = await page.evaluate(() => localStorage.getItem('yovi_user'));
+  
+  assert.strictEqual(storedUser, expected, `El usuario guardado en localStorage debería ser "${expected}", pero es "${storedUser}"`);
 })
