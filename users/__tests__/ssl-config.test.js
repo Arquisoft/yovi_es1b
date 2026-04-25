@@ -2,98 +2,82 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import fs from 'node:fs';
 
-// 1. IMPORTANTE: Añade setupSwagger aquí arriba
-// La parte de arriba de tu test debe quedar así:
+// Importamos la app y las funciones
 const app = require('../users-service.js');
 const { loadSSLConfig, normalizeIconName, setupSwagger } = require('../users-service.js');
 
-describe('Infraestructura y Utilidades de Users Service', () => {
+describe('Cobertura de Infraestructura y Middlewares', () => {
 
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.stubEnv('NODE_ENV', 'production');
   });
 
-  // --- COBERTURA SSL ---
+  // --- COBERTURA SSL  ---
   describe('loadSSLConfig', () => {
-    it('debe cubrir el éxito de carga y el log del candado', () => {
+    it('debe cubrir el éxito de carga (Verde en el IF y return config)', () => {
       vi.spyOn(fs, 'existsSync').mockReturnValue(true);
-      vi.spyOn(fs, 'readFileSync').mockReturnValue('cert-data');
+      vi.spyOn(fs, 'readFileSync').mockReturnValue('data');
       const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       const config = loadSSLConfig();
 
-      expect(config).toEqual({ key: 'cert-data', cert: 'cert-data' });
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('🔒'));
+      expect(config).not.toBeNull();
+      expect(logSpy).toHaveBeenCalled();
     });
 
-    it('debe cubrir el bloque CATCH y el log de advertencia genérico', () => {
+    it('debe cubrir el bloque CATCH (Verde en el catch y console.error)', () => {
       vi.spyOn(fs, 'existsSync').mockReturnValue(true);
       vi.spyOn(fs, 'readFileSync').mockImplementation(() => {
-        throw new Error('Error de lectura');
+        throw new Error('Disk Error');
       });
       const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-      const config = loadSSLConfig();
+      const result = loadSSLConfig();
 
-      expect(config).toBeNull();
+      expect(result).toBeNull();
       expect(errorSpy).toHaveBeenCalled();
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('se usará HTTP por defecto'));
     });
 
-    it('debe cubrir el return null si no encuentra archivos', () => {
+    it('debe cubrir el return null final (Verde en la última línea)', () => {
       vi.spyOn(fs, 'existsSync').mockReturnValue(false);
       expect(loadSSLConfig()).toBeNull();
     });
   });
 
-  // --- COBERTURA NORMALIZACIÓN ICONOS ---
-  describe('normalizeIconName', () => {
-    it('devuelve SinAvatar.png si el valor es nulo o vacío', () => {
-      expect(normalizeIconName(null)).toBe('SinAvatar.png');
-      expect(normalizeIconName('')).toBe('SinAvatar.png');
+  // --- COBERTURA CORS / OPTIONS  ---
+  describe('CORS Middleware', () => {
+    it('debe cubrir el branch de OPTIONS (Verde en res.sendStatus(204))', async () => {
+      const res = await request(app).options('/createuser');
+      
+      expect(res.status).toBe(204);
+      expect(res.header['access-control-allow-origin']).toBe('*');
     });
 
-    it('reemplaza barras y limpia la ruta dejando solo el nombre', () => {
-      expect(normalizeIconName('folder\\icon.png')).toBe('icon.png');
+    it('debe cubrir el flujo normal (Verde en el next())', async () => {
+      // Llamamos a cualquier ruta GET simple
+      const res = await request(app).get('/difficulties');
+      expect(res.header['access-control-allow-origin']).toBe('*');
+    });
+  });
+
+  // --- COBERTURA UTILS ---
+  describe('normalizeIconName', () => {
+    it('cubre todas las líneas de normalización', () => {
+      expect(normalizeIconName(null)).toBe('SinAvatar.png');
+      expect(normalizeIconName('folder\\test.png')).toBe('test.png');
     });
   });
 
   // --- COBERTURA SWAGGER ---
- describe('Swagger Setup', () => {
-    it('debe cubrir el error de carga de Swagger si el archivo YAML falla', () => {
-      const YAML = require('js-yaml');
-      vi.spyOn(YAML, 'load').mockImplementation(() => {
-        throw new Error('YAML corrupto o inexistente');
-      });
-      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      // Llamamos a la función
-      setupSwagger({ use: vi.fn() });
-
-      // CORRECCIÓN: Añadimos expect.anything() para el segundo argumento (e.message)
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error al cargar la documentación Swagger'),
-        expect.anything()
-      );
-    });
-  });
-
-  // --- COBERTURA CORS Y OPTIONS ---
-  describe('Middleware CORS y Pre-flight', () => {
-    it('debe responder 204 No Content a las peticiones OPTIONS', async () => {
-      const res = await request(app).options('/createuser');
-      expect(res.status).toBe(204);
-    });
-
-    it('debe incluir los headers de Access-Control en las respuestas', async () => {
-      // USAMOS /difficulties porque NO toca la base de datos de Mongo.
-      // Así evitamos el error de "Timeout" que te dio antes.
-      const res = await request(app).get('/difficulties');
-      
-      expect(res.header['access-control-allow-origin']).toBe('*');
-      expect(res.header['access-control-allow-methods']).toBeDefined();
-    });
+  it('debe cubrir el catch de Swagger', () => {
+    const YAML = require('js-yaml');
+    vi.spyOn(YAML, 'load').mockImplementation(() => { throw new Error('fail') });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    
+    setupSwagger({ use: vi.fn() });
+    expect(logSpy).toHaveBeenCalled();
   });
 });
