@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { beforeEach, afterEach, describe, expect, test, vi } from 'vitest'
 import '@testing-library/jest-dom'
 import {
   findIconSrcByName,
@@ -27,10 +27,39 @@ describe('ProfileScreen', () => {
     updateProfile: ReturnType<typeof vi.fn>
     changePassword: ReturnType<typeof vi.fn>
   }
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn> | null = null
+  let stderrSpy: ReturnType<typeof vi.spyOn> | null = null
+
+  const renderProfileScreen = async (ui: Parameters<typeof render>[0]) => {
+    let result: ReturnType<typeof render> | undefined
+    await act(async () => {
+      result = render(ui)
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    return result!
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
     localStorage.clear()
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation(((chunk: string | Uint8Array) => {
+      const text = typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8')
+      if (text.includes('not wrapped in act')) return true
+      return true
+    }) as typeof process.stderr.write)
+  })
+
+  afterEach(async () => {
+    consoleErrorSpy?.mockRestore()
+    consoleErrorSpy = null
+    stderrSpy?.mockRestore()
+    stderrSpy = null
+    const i18n = (await import('../i18n')).default
+    await act(async () => {
+      await i18n.changeLanguage('es')
+    })
   })
 
   test('getLanguageIcon cubre casos encontrado y no encontrado', () => {
@@ -97,8 +126,15 @@ describe('ProfileScreen', () => {
     expect(shouldShowNoIconsMessage([{ id: 'icon-1' }])).toBe(false)
   })
 
-  test('no renderiza nada cuando esta cerrado', () => {
-    render(<ProfileScreen isOpen={false} username="Alice" onClose={vi.fn()} />)
+  test('el campo apodo del perfil limita a 15 caracteres', async () => {
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+
+    const nickInput = screen.getByLabelText(/apodo/i)
+    expect(nickInput).toHaveAttribute('maxLength', '15')
+  })
+
+  test('no renderiza nada cuando esta cerrado', async () => {
+    await renderProfileScreen(<ProfileScreen isOpen={false} username="Alice" onClose={vi.fn()} />)
     expect(screen.queryByRole('dialog', { name: /ver mi perfil/i })).not.toBeInTheDocument()
   })
 
@@ -111,7 +147,7 @@ describe('ProfileScreen', () => {
       iconName: 'hombre1.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
 
     expect(await screen.findByDisplayValue('Alice')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Ali')).toBeInTheDocument()
@@ -124,7 +160,7 @@ describe('ProfileScreen', () => {
       error: 'Perfil no disponible',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
 
     expect(await screen.findByText(/perfil no disponible/i)).toBeInTheDocument()
   })
@@ -132,7 +168,7 @@ describe('ProfileScreen', () => {
   test('muestra error generico cuando getProfile falla por excepcion', async () => {
     mockedService.getProfile.mockRejectedValueOnce(new Error('network down'))
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
 
     expect(await screen.findByText(/no se pudo cargar el perfil/i)).toBeInTheDocument()
   })
@@ -145,7 +181,7 @@ describe('ProfileScreen', () => {
 
     mockedService.getProfile.mockReturnValueOnce(profilePromise)
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
 
     const saveButton = screen.getByRole('button', { name: /guardando/i })
     expect(saveButton).toBeDisabled()
@@ -174,7 +210,7 @@ describe('ProfileScreen', () => {
 
     mockedService.getProfile.mockReturnValueOnce(profilePromise)
 
-    const { unmount } = render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    const { unmount } = await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     unmount()
 
     await act(async () => {
@@ -206,7 +242,7 @@ describe('ProfileScreen', () => {
       icon: 'hombre2.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
 
     const nameInput = (await screen.findByLabelText(/nombre/i)) as HTMLInputElement
     const nickInput = screen.getByLabelText(/apodo/i) as HTMLInputElement
@@ -233,7 +269,7 @@ describe('ProfileScreen', () => {
       iconName: 'SinAvatar.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
 
     const nameInput = (await screen.findByLabelText(/nombre/i)) as HTMLInputElement
     const nickInput = screen.getByLabelText(/apodo/i) as HTMLInputElement
@@ -253,7 +289,7 @@ describe('ProfileScreen', () => {
       language: 'English',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     const avatar = screen.getByAltText(/avatar seleccionado/i) as HTMLImageElement
@@ -261,6 +297,7 @@ describe('ProfileScreen', () => {
   })
 
   test('selector de idioma cubre onChange al marcar y desmarcar', async () => {
+    const user = userEvent.setup()
     mockedService.getProfile.mockResolvedValueOnce({
       username: 'Alice',
       nickname: 'Ali',
@@ -269,16 +306,16 @@ describe('ProfileScreen', () => {
       iconName: 'SinAvatar.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     const englishCheckbox = screen.getByRole('checkbox', { name: /seleccionar english/i }) as HTMLInputElement
     expect(englishCheckbox.checked).toBe(false)
 
-    fireEvent.change(englishCheckbox, { target: { checked: true } })
+    await user.click(englishCheckbox)
     expect(englishCheckbox.checked).toBe(true)
 
-    fireEvent.change(englishCheckbox, { target: { checked: false } })
+    await user.click(englishCheckbox)
     expect(englishCheckbox.checked).toBe(false)
   })
 
@@ -300,7 +337,7 @@ describe('ProfileScreen', () => {
       message: 'Perfil actualizado correctamente',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} onIconUpdated={onIconUpdated} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} onIconUpdated={onIconUpdated} />)
 
     // 1. Esperamos a que carguen los datos (el nickname por ejemplo)
     const nickInput = await screen.findByLabelText(/apodo/i)
@@ -342,7 +379,7 @@ describe('ProfileScreen', () => {
       iconName: 'SinAvatar.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /cambiar Contraseña/i }))
@@ -365,7 +402,7 @@ describe('ProfileScreen', () => {
       iconName: 'SinAvatar.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /cambiar Contraseña/i }))
@@ -386,7 +423,7 @@ describe('ProfileScreen', () => {
     })
     mockedService.changePassword.mockRejectedValueOnce(new Error('network down'))
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /cambiar Contraseña/i }))
@@ -418,7 +455,7 @@ describe('ProfileScreen', () => {
       message: 'Perfil actualizado correctamente',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /modificar avatar/i }))
@@ -456,7 +493,7 @@ describe('ProfileScreen', () => {
       iconName: 'SinAvatar.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /modificar avatar/i }))
@@ -483,7 +520,7 @@ describe('ProfileScreen', () => {
       iconName: 'SinAvatar.png',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /modificar avatar/i }))
@@ -510,7 +547,7 @@ describe('ProfileScreen', () => {
       error: 'No se pudo guardar',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /guardar perfil/i }))
@@ -529,7 +566,7 @@ describe('ProfileScreen', () => {
     })
     mockedService.updateProfile.mockRejectedValueOnce(new Error('network down'))
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     await user.click(screen.getByRole('button', { name: /guardar perfil/i }))
@@ -553,7 +590,7 @@ describe('ProfileScreen', () => {
       message: 'Perfil actualizado correctamente',
     })
 
-    render(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
+    await renderProfileScreen(<ProfileScreen isOpen username="Alice" onClose={vi.fn()} />)
     await screen.findByDisplayValue('Alice')
 
     const dateInput = screen.getByLabelText(/fecha de nacimiento/i)
@@ -579,3 +616,4 @@ describe('ProfileScreen', () => {
     expect(screen.getByText(/perfil actualizado correctamente/i)).toBeInTheDocument()
   })
 })
+

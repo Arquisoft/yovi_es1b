@@ -741,6 +741,138 @@ async fn test_history_endpoint_filters_correctly() {
 */
 
 #[tokio::test]
+async fn test_listar_dificultades_endpoint_returns_available_difficulties() {
+    let app = test_app().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/difficulties")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let difficulties: Vec<String> = serde_json::from_slice(&body).unwrap();
+
+    assert!(!difficulties.is_empty());
+}
+
+#[tokio::test]
+async fn test_reset_endpoint_resets_board_and_optional_difficulty() {
+    let app = test_app().await;
+
+    let payload = serde_json::json!({
+        "size": 4,
+        "player": "Alice"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/reset")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let yen: YEN = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(yen.size(), 4);
+}
+
+#[tokio::test]
+async fn test_history_endpoint_returns_paginated_data() {
+    let uri_env = std::env::var("MONGODB_URI")
+        .unwrap_or_else(|_| "NO DEFINIDA (usando default localhost)".to_string());
+    println!("DEBUG: Intentando conectar a MongoDB con URI: {}", uri_env);
+
+    let app = test_app().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("GET")
+                .uri("/history?username=Drus&page=1&limit=5&result=Victoria")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json.get("data").is_some());
+    assert!(json.get("page").is_some());
+    assert!(json.get("total_pages").is_some());
+}
+
+#[tokio::test]
+async fn test_execute_move_endpoint_saves_victory_history() {
+    let app = test_app().await;
+
+    let reset_payload = serde_json::json!({
+        "size": 1,
+        "difficulty": "Easy",
+        "player": "Alice"
+    });
+
+    let reset_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/reset")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&reset_payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(reset_response.status(), StatusCode::OK);
+
+    let move_payload = serde_json::json!({
+        "index": 0,
+        "player": "Alice"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/execute-move")
+                .header("content-type", "application/json")
+                .body(Body::from(serde_json::to_string(&move_payload).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json.get("winner").is_some());
+    assert!(json.get("board").is_some());
+}
+
+#[tokio::test]
 async fn test_surrender_endpoint_saves_defeat() {
     let app = test_app().await;
 
@@ -816,12 +948,12 @@ async fn test_play_on_completely_full_board() {
 
     // Verificamos que el servidor detecta que no puede jugar y devuelve error
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let error: ErrorResponse = serde_json::from_slice(&body).expect("Expected an ErrorResponse for a full board");
-    
+    let error: ErrorResponse =
+        serde_json::from_slice(&body).expect("Expected an ErrorResponse for a full board");
+
     // El mensaje exacto dependerá de vuestra implementación, pero debe dar error
     assert!(!error.message.is_empty());
 }
-
 
 #[tokio::test]
 async fn test_play_size_layout_mismatch() {
@@ -848,7 +980,9 @@ async fn test_play_size_layout_mismatch() {
     // El servidor debe escupir un error y no intentar parsearlo (evitando un panic)
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let error: ErrorResponse = serde_json::from_slice(&body).unwrap();
-    
-    assert!(error.message.contains("Invalid") || error.message.contains("size"), 
-            "El mensaje de error debería indicar la discrepancia de tamaños");
+
+    assert!(
+        error.message.contains("Invalid") || error.message.contains("size"),
+        "El mensaje de error debería indicar la discrepancia de tamaños"
+    );
 }

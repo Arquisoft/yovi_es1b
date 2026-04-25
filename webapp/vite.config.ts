@@ -1,12 +1,12 @@
-import { defineConfig } from 'vitest/config'
-import react from '@vitejs/plugin-react'
-import { resolve } from 'path'
+import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'node:path';
 
 export default defineConfig({
-  // Plugings necesarios para react
+  // Plugins necesarios para React
   plugins: [react()],
 
-  // Configuración  multi-pagina (MPA)
+  // Configuración multi-página (MPA)
   build: {
     rollupOptions: {
       input: {
@@ -18,11 +18,11 @@ export default defineConfig({
     },
   },
 
-  // Configuracion de Vitest
+  // Configuración de Vitest
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: ['./src/__tests__/setup.ts'],
+    setupFiles: ['./src/__tests__/i18n-test.ts', './src/__tests__/setup.ts'],
     testTimeout: 20000,
     coverage: {
       exclude: [
@@ -33,6 +33,7 @@ export default defineConfig({
         '**/*.spec.tsx',
       ],
       reporter: ['text', 'lcov'],
+      reportsDirectory: './coverage',
     },
   },
-})
+});

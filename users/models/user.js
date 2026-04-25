@@ -26,13 +26,18 @@ const UserSchema = new mongoose.Schema({
   nickname: {
     type: String,
     required: false,
-    unique: true,
-    trim: true
+    trim: true,
+    maxlength: 15
   },
   iconName: {
     type: String,
     required: false,
     default: 'SinAvatar.png'
+  },
+  totalScore: {
+    type: Number,
+    required: false,
+    default: 0
   },
   createdAt: { 
     type: Date, 

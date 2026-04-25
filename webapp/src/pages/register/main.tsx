@@ -1,17 +1,21 @@
-import React, { useState } from 'react'
-import ReactDOM from 'react-dom/client'
-import { MenuBackgroundChrome } from '../../components/layout/MenuBackgroundChrome'
-import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia'
-import RegisterScreen from '../../screens/RegisterScreen'
-import { TutorialScreen } from '../../screens/TutorialScreen'
-import { persistUserSession } from '../../utils/sessionUtils'
-import '../../css/App.css'
-import '../../css/Log.css'
-import '../../index.css'
+import { StrictMode, useState } from 'react';
+import ReactDOM from 'react-dom/client';
+
+import { MenuBackgroundChrome } from '../../components/layout/MenuBackgroundChrome';
+import { LanguageModal } from '../../components/modals/LanguageModal';
+import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
+import RegisterScreen from '../../screens/RegisterScreen';
+import { TutorialScreen } from '../../screens/TutorialScreen';
+import { activateRegisteredSession, persistUserSession } from '../../utils/sessionUtils';
+
+import '../../css/App.css';
+import '../../css/Log.css';
+import '../../index.css';
 
 const RegisterPage = () => {
-  const [showTutorialScreen, setShowTutorialScreen] = useState(false)
-  const background = useMenuBackgroundMedia()
+  const [showLanguageScreen, setShowLanguageScreen] = useState(false);
+  const [showTutorialScreen, setShowTutorialScreen] = useState(false);
+  const background = useMenuBackgroundMedia();
 
   const handleRegisterSuccess = (
     playerName: string,
@@ -20,14 +24,14 @@ const RegisterPage = () => {
     language?: string | null,
     nickname?: string | null
   ) => {
-    if (persistUserSession(playerName, { friendCode, icon, language, nickname })) {
-      window.location.href = '/game.html'
+    if (persistUserSession(playerName, { friendCode, icon, language, nickname }) && activateRegisteredSession(playerName)) {
+      globalThis.location.href = '/game.html';
     }
-  }
+  };
 
   const handleBack = () => {
-    window.location.href = '/index.html'
-  }
+    globalThis.location.href = '/index.html';
+  };
 
   return (
     <MenuBackgroundChrome
@@ -37,29 +41,32 @@ const RegisterPage = () => {
       setIsVideoPaused={background.setIsVideoPaused}
       setMusicVolume={background.setMusicVolume}
       setShowSettings={background.setShowSettings}
-      settingsAriaLabel="Configuración de elementos de fondo"
-      settingsTitle="Configuración de elementos de fondo"
       showSettings={background.showSettings}
-      videoLabel="Video en movimiento"
       videoRef={background.videoRef}
     >
       <RegisterScreen
         onBack={handleBack}
+        onGoToLogin={() => {
+          globalThis.location.href = '/login.html';
+        }}
+        onOpenLanguage={() => setShowLanguageScreen(true)}
         onOpenSettings={() => background.setShowSettings(true)}
         onOpenTutorial={() => setShowTutorialScreen(true)}
         onCreateAccount={handleRegisterSuccess}
       />
+
+      <LanguageModal isOpen={showLanguageScreen} onClose={() => setShowLanguageScreen(false)} />
 
       <TutorialScreen
         isOpen={showTutorialScreen}
         onClose={() => setShowTutorialScreen(false)}
       />
     </MenuBackgroundChrome>
-  )
-}
+  );
+};
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+  <StrictMode>
     <RegisterPage />
-  </React.StrictMode>
-)
+  </StrictMode>
+);

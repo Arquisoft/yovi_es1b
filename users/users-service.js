@@ -1,7 +1,10 @@
 // Node.js Server
 
+const https = require('node:https');
+const fs = require('node:fs');
+
 const mongoose = require('mongoose');
-const path = require('path');
+const path = require('node:path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
@@ -11,7 +14,6 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
-const fs = require('node:fs');
 const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
 
@@ -29,9 +31,38 @@ const { customAlphabet } = require('nanoid');
 // Alfabeto sin letras confusas (evitamos O, 0, I, l)
 const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
+const MAX_NICKNAME_LENGTH = 15;
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://gamey:4000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://localhost:4000';
+
+
+// HTTPS
+let sslOptions = null;
+
+// Solo intentamos cargar certificados si NO estamos en un entorno de test
+if (process.env.NODE_ENV !== 'test') {
+  try {
+    const keyPath = fs.existsSync('/certs/key.pem') 
+      ? '/certs/key.pem' 
+      : path.join(__dirname, '../certs/key.pem');
+
+    const certPath = fs.existsSync('/certs/cert.pem') 
+      ? '/certs/cert.pem' 
+      : path.join(__dirname, '../certs/cert.pem');
+
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+      sslOptions = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+      };
+      console.log("🔒 Certificados SSL cargados correctamente.");
+    }
+  } catch (err) {
+    console.warn("No se pudieron cargar los certificados SSL, se usará HTTP. " + err.message );
+  }
+}
+
 
 const normalizeIconName = (rawValue) => {
   const value = String(rawValue || '').trim();
@@ -80,14 +111,16 @@ app.post('/createuser', async (req, res) => {
     if (!username || !password || !language || !birthDate || !nickname) {
       return res.status(400).json({ error: "Username, nickname, password, language and birthDate are required" });
     }
+    if (nickname.length > MAX_NICKNAME_LENGTH) {
+      return res.status(400).json({ error: `Nickname must be at most ${MAX_NICKNAME_LENGTH} characters` });
+    }
     if (Number.isNaN(birthDate.getTime())) {
       return res.status(400).json({ error: "birthDate is invalid" });
     }
-    const existingNickname = await User.findOne({ nickname });
-    if (existingNickname) {
-      return res.status(409).json({ error: "Nickname already exists" });
+    const existingUsername = await User.findOne({ username });
+    if (existingUsername) {
+      return res.status(409).json({ error: "Username already exists" });
     }
-
     let friendCode;
     let isUnique = false;
     while (!isUnique) {
@@ -132,10 +165,8 @@ app.post('/login', async (req, res) => {
 
   try {
 
-    const loginValue = String(username || '').trim(); // Usuario o nickname.
-    const user =
-      (await User.findOne({ nickname: loginValue })) ||
-      (await User.findOne({ username: loginValue }));
+    const loginValue = String(username || '').trim();
+    const user = await User.findOne({ username: loginValue });
 
     if (!user) {
       return res.status(401).json({ error: "Usuario o contraseña incorrecta" });
@@ -165,7 +196,7 @@ app.post('/login', async (req, res) => {
     }
       
   } catch (err) {
-    res.status(500).json({ error: "Error del servidor" });
+    res.status(500).json({ error: "Error del servidor. " + err.message });
   }
 })
 
@@ -217,7 +248,7 @@ app.post('/users/follow', async (req, res) => {
 
     res.json({ message: 'Solicitud enviada correctamente' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al enviar solicitud' });
+    res.status(500).json({ error: 'Error al enviar solicitud. ' + err.message });
   }
 });
 
@@ -240,6 +271,7 @@ app.get('/users/profile/:username', async (req, res) => {
       birthDate: user.birthDate,
       language: user.language,
       iconName: user.iconName,
+      totalScore: user.totalScore || 0,
       // Usamos el tamaño del array directamente si no vas a popular
       followingCount: user.following?.length || 0,
       followersCount: user.followers?.length || 0
@@ -278,6 +310,9 @@ app.patch('/users/profile/:username', async (req, res) => {
       if (!nickname) {
         return res.status(400).json({ error: 'Nickname no puede estar vacio' });
       }
+      if (nickname.length > MAX_NICKNAME_LENGTH) {
+        return res.status(400).json({ error: `Nickname no puede tener mas de ${MAX_NICKNAME_LENGTH} caracteres` });
+      }
       const existingNickname = await User.findOne({ nickname });
       if (existingNickname && String(existingNickname._id) !== String(user._id)) {
         return res.status(409).json({ error: 'Nickname ya existe' });
@@ -292,7 +327,7 @@ app.patch('/users/profile/:username', async (req, res) => {
     if (birthDateRaw !== undefined) {
       const parsedDate = birthDateRaw ? new Date(String(birthDateRaw)) : null;
       if (birthDateRaw && Number.isNaN(parsedDate?.getTime?.())) {
-        return res.status(400).json({ error: 'Fecha de nacimiento invalida' });
+        return res.status(400).json({ error: 'Fecha de nacimiento inválida' });
       }
       user.birthDate = parsedDate;
     }
@@ -308,7 +343,7 @@ app.patch('/users/profile/:username', async (req, res) => {
       iconName: user.iconName
     });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    return res.status(500).json({ error: 'Error del servidor. ' + err.message });
   }
 });
 
@@ -346,7 +381,7 @@ app.post('/users/profile/:username/change-password', async (req, res) => {
 
     return res.json({ message: 'contraseña actualizada correctamente' });
   } catch (err) {
-    return res.status(500).json({ error: 'Error del servidor' });
+    return res.status(500).json({ error: 'Error del servidor. ' + err.message });
   }
 });
 
@@ -367,7 +402,7 @@ app.get('/friends', async (req, res) => {
 
     res.json(friendsList);
   } catch (err) {
-    res.status(500).json({ error: 'Error fetching friends' });
+    res.status(500).json({ error: 'Error fetching friends. ' + err.message });
   }
 });
 
@@ -388,7 +423,7 @@ app.get('/friends/requests', async (req, res) => {
     
     res.json(requests);
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener solicitudes' });
+    res.status(500).json({ error: 'Error al obtener solicitudes. ' + err.message });
   }
 });
 
@@ -408,7 +443,7 @@ app.post('/friends/respond', async (req, res) => {
 
     res.json({ message: '¡Ahora sois amigos!', friendship });
   } catch (err) {
-    res.status(500).json({ error: 'Error al responder solicitud' });
+    res.status(500).json({ error: 'Error al responder solicitud. ' + err.message });
   }
 });
 
@@ -451,7 +486,8 @@ app.get('/users/public-profile/:username', async (req, res) => {
         gameStats = {
           wins: rustStats.wins,
           losses: rustStats.losses,
-          totalGames: rustStats.total // Transformamos "total" en "totalGames"
+          totalGames: rustStats.total, // Transformamos "total" en "totalGames"
+          totalScore: rustStats.total_score // Nuevo campo para puntos totales
         };
       }
     }catch (e) {
@@ -468,9 +504,34 @@ app.get('/users/public-profile/:username', async (req, res) => {
     });
 
   } catch (err) {
-    res.status(500).json({ error: 'Error del servidor' });
+    res.status(500).json({ error: 'Error del servidor. ' + err.message });
   }
 })
+
+const normalizeDifficulty = (difficulty) =>
+  String(difficulty || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replaceAll(/[\u0300-\u036f]/g, '')
+    .replaceAll(/\s+/g, '');
+
+const calculateVictoryScore = (difficulty, boardSize) => {
+  const size = Number(boardSize);
+  if (!Number.isFinite(size) || size <= 0) return 0;
+
+  const normalizedDifficulty = normalizeDifficulty(difficulty);
+  if (!normalizedDifficulty || normalizedDifficulty === 'sinseleccionar') return 0;
+
+  let multiplier = 1;
+  if (normalizedDifficulty === 'medio' || normalizedDifficulty === 'medium') {
+    multiplier = 2;
+  } else if (normalizedDifficulty === 'dificil' || normalizedDifficulty === 'hard') {
+    multiplier = 3;
+  }
+
+  return Math.round(100 * multiplier * (size / 6));
+};
 
 /**
  * Endpoint para cancelar una solicitud de amistad pendiente
@@ -485,13 +546,13 @@ app.post('/friends/cancel', async (req, res) => {
     });
     res.json({ message: 'Solicitud cancelada' });
   } catch (err) {
-    res.status(500).json({ error: 'Error al cancelar la solicitud' });
+    res.status(500).json({ error: 'Error al cancelar la solicitud. ' + err.message });
   }
 });
 
 // Executes a move in the game
 app.post('/move', async (req, res) => {
-  const { cellIndex, username} = req.body; // NEW: Recibir difficulty
+  const { cellIndex, username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
     // 1. Integración: Llamada al servicio de Rust
@@ -501,6 +562,11 @@ app.post('/move', async (req, res) => {
       body: JSON.stringify({
          index: cellIndex,
          player: username,
+         difficulty,
+         board_size: boardSize,
+         board_label: boardLabel,
+         locale,
+         result_label: resultLabel,
       })
     });
 
@@ -511,22 +577,39 @@ app.post('/move', async (req, res) => {
     }
 
     const newBoard = await rustResponse.json();
+    const fallbackScore = calculateVictoryScore(difficulty, boardSize);
+    const finalScore = typeof newBoard.score === 'number' && newBoard.score > 0
+      ? newBoard.score
+      : fallbackScore;
+
+    // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
+    if (newBoard.winner === 0 && finalScore > 0) {
+      const User = require('./models/user'); // Asegúrate de tener acceso al modelo
+      const awardedScore = finalScore;
+      
+      // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
+      await User.findOneAndUpdate(
+        { username: username },
+        { $inc: { totalScore: awardedScore } } // Suma el score actual al totalScore de la DB
+      );
+    }
     
     // 3. Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
-      winner: newBoard.winner
+      winner: newBoard.winner,
+      score: newBoard.score || finalScore // Nuevo campo para el puntaje de la partida
     });
   }
   catch (e) {
     console.error(e);
-    res.status(500).json({error: 'Error communicating with Rust server'});
+    res.status(500).json({error: 'Error communicating with Rust server. ' + e.message});
   }
 });
 
 // NEW: Endpoint para registrar una rendición (derrota)
 app.post('/surrender', async (req, res) => {
-  const { username, difficulty, boardSize } = req.body;
+  const { username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
     // 1. Integración: Llamada al servicio de Rust (GameY)
@@ -536,7 +619,10 @@ app.post('/surrender', async (req, res) => {
       body: JSON.stringify({
         player: username,       // Rust espera "player"
         difficulty: difficulty,
-        board_size: boardSize   // Rust espera "board_size"
+        board_size: boardSize,   // Rust espera "board_size"
+        board_label: boardLabel,
+        locale,
+        result_label: resultLabel,
       })
     });
 
@@ -557,7 +643,7 @@ app.post('/surrender', async (req, res) => {
 
   } catch (e) {
     console.error("Error de conexión con Rust en surrender:", e);
-    res.status(500).json({ error: 'Error communicating with Rust server' });
+    res.status(500).json({ error: 'Error communicating with Rust server. ' + e.message });
   }
 });
 
@@ -591,7 +677,7 @@ app.post('/reset', async (req, res) => {
     res.json({ responseFromRust: newBoard });
   } catch (e) {
     console.error("Fallo en reset:", e.message);
-    res.status(500).json({ error: 'Error communicating with Rust server' });
+    res.status(500).json({ error: 'Error communicating with Rust server. ' + e.message });
   }
 });
 
@@ -641,7 +727,7 @@ app.get('/history', async (req, res) => {
     const paginatedData = await rustResponse.json();
     
     // DEBUG: Mira tu terminal de Node para ver si llegan datos
-    console.log(`Historial para ${username}: (Pag ${page}):`, paginatedData.data);
+    console.log('Historial de partidas consultado correctamente.');
 
     // 5. Enviamos el array directo al Frontend
     res.json(paginatedData); 
@@ -652,16 +738,42 @@ app.get('/history', async (req, res) => {
   }
 });
 
+/**
+ * Endpoint para comprar puntos de experiencia (XP) y acreditarlos al usuario
+ */
+app.post('/users/purchase-xp', async (req, res) => {
+  const { username, amount } = req.body;
+  try {
+    const updatedUser = await User.findOneAndUpdate(
+      { username },
+      { $inc: { totalScore: amount } }, // Sumamos los puntos comprados
+      { new: true }
+    );
+    res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
+  } catch (e) {
+    res.status(500).json({ error: "No se pudo procesar la compra. " + e.message });
+  }
+});
+
 
 if (require.main === module) {
 
-  mongoose.connect(process.env.MONGODB_URI)
+  mongoose.connect(process.env.MONGODB_URI_USERS)
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 
-  app.listen(port, () => {
-    console.log(`User Service listening at http://localhost:${port}`)
-  })
+  // https
+  if (sslOptions) {
+    // Si tenemos certs, levantamos HTTPS
+    https.createServer(sslOptions, app).listen(port, () => {
+      console.log(`User Service (HTTPS) listening at https://localhost:${port}`);
+    });
+  } else {
+    // Si no (como en CI o tests), levantamos HTTP normal
+    app.listen(port, () => {
+      console.log(`User Service (HTTP) listening at http://localhost:${port}`);
+    });
+  }
 }
 
 module.exports = app

@@ -1,21 +1,19 @@
-import type { ReactNode, RefObject } from 'react'
-import backgroundMusic from '../../assets/background_music.mp3'
-import menuVideo from '../../assets/background_video.mp4'
+import type { ReactNode, RefObject } from 'react';
+import { useTranslation } from 'react-i18next';
+import backgroundMusic from '../../assets/background_music.mp3';
+import menuVideo from '../../assets/background_video.mp4';
 
 type MenuBackgroundChromeProps = {
-  audioRef: RefObject<HTMLAudioElement>
-  children?: ReactNode
-  isVideoPaused: boolean
-  musicVolume: number
-  setIsVideoPaused: (value: boolean) => void
-  setMusicVolume: (value: number) => void
-  setShowSettings: (value: boolean) => void
-  settingsAriaLabel: string
-  settingsTitle: string
-  showSettings: boolean
-  videoLabel: string
-  videoRef: RefObject<HTMLVideoElement>
-}
+  audioRef: RefObject<HTMLAudioElement>;
+  children?: ReactNode;
+  isVideoPaused: boolean;
+  musicVolume: number;
+  setIsVideoPaused: (value: boolean) => void;
+  setMusicVolume: (value: number) => void;
+  setShowSettings: (value: boolean) => void;
+  showSettings: boolean;
+  videoRef: RefObject<HTMLVideoElement>;
+};
 
 export const MenuBackgroundChrome = ({
   audioRef,
@@ -25,15 +23,16 @@ export const MenuBackgroundChrome = ({
   setIsVideoPaused,
   setMusicVolume,
   setShowSettings,
-  settingsAriaLabel,
-  settingsTitle,
   showSettings,
-  videoLabel,
   videoRef,
 }: MenuBackgroundChromeProps) => {
+  const { t } = useTranslation();
+  const settingsText = t('game.settings_title');
+  const videoText = t('game.video_moving');
+
   return (
     <div className="App">
-      <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline aria-label={videoLabel}>
+      <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline aria-label={videoText}>
         <source src={menuVideo} type="video/mp4" />
       </video>
       <div className="menu-video-overlay" />
@@ -42,11 +41,11 @@ export const MenuBackgroundChrome = ({
       {children}
 
       {showSettings && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={settingsAriaLabel}>
+        <dialog className="modal-backdrop" open aria-modal="true" aria-label={settingsText}>
           <div className="modal-box">
-            <h3>{settingsTitle}</h3>
+            <h3>{settingsText}</h3>
             <div className="form-group">
-              <label htmlFor="music-volume">Volumen de la música</label>
+              <label htmlFor="music-volume">{t('game.music_volume')}</label>
               <input
                 id="music-volume"
                 className="form-input"
@@ -58,7 +57,7 @@ export const MenuBackgroundChrome = ({
               />
             </div>
             <div className="form-group">
-              <label htmlFor="video-static">{videoLabel}</label>
+              <label htmlFor="video-static">{videoText}</label>
               <input
                 id="video-static"
                 type="checkbox"
@@ -67,11 +66,11 @@ export const MenuBackgroundChrome = ({
               />
             </div>
             <button type="button" className="submit-button settings-close-button" onClick={() => setShowSettings(false)}>
-              Cerrar
+              {t('common.close')}
             </button>
           </div>
-        </div>
+        </dialog>
       )}
     </div>
-  )
-}
+  );
+};

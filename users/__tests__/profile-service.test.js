@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
+﻿import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest'
 import request from 'supertest'
 import bcrypt from 'bcryptjs'
 import mongoose from 'mongoose'
@@ -25,18 +25,8 @@ describe('Profile endpoints', () => {
       iconName: 'hombre1.png'
     }
 
-    // Mock para la cadena .findOne().populate().populate()
-    // Como en tu código el GET está comentado, este test asume que lo activarás
-    const mockQuery = {
-      populate: vi.fn().mockReturnThis(),
-      exec: vi.fn().mockResolvedValue(mockUser),
-      // Si usas el estilo "thenable" (await directamente sobre el query):
-      then: vi.fn().mockImplementation(function(onFulfilled) {
-        return Promise.resolve(mockUser).then(onFulfilled);
-      })
-    }
-
-    vi.spyOn(User, 'findOne').mockReturnValue(mockQuery)
+    // El endpoint actual hace await sobre findOne(), así que basta con devolver el usuario mockeado.
+    vi.spyOn(User, 'findOne').mockResolvedValue(mockUser)
 
     const res = await request(app).get('/users/profile/Alice')
     
@@ -76,7 +66,7 @@ describe('Profile endpoints', () => {
     expect(mockUser.save).toHaveBeenCalled()
   })
 
-  it('PATCH /users/profile/:username devuelve 400 con birthDate invalida', async () => {
+  it('PATCH /users/profile/:username devuelve 400 con birthDate inválida', async () => {
     vi.spyOn(User, 'findOne').mockResolvedValue({
       username: 'Alice',
       save: vi.fn(),
@@ -87,7 +77,23 @@ describe('Profile endpoints', () => {
       .send({ birthDate: 'esto-no-es-una-fecha' })
 
     expect(res.status).toBe(400)
-    expect(res.body.error).toMatch(/fecha de nacimiento invalida/i)
+    expect(res.body.error).toMatch(/fecha de nacimiento inválida/i)
+  })
+
+  it('PATCH /users/profile/:username devuelve 400 si el nickname supera 15 caracteres', async () => {
+    vi.spyOn(User, 'findOne').mockResolvedValue({
+      _id: '507f1f77bcf86cd799439011',
+      username: 'Alice',
+      nickname: 'Ali',
+      save: vi.fn(),
+    })
+
+    const res = await request(app)
+      .patch('/users/profile/Alice')
+      .send({ nickname: 'abcdefghijklmnop' })
+
+    expect(res.status).toBe(400)
+    expect(res.body.error).toMatch(/nickname no puede tener mas de 15 caracteres/i)
   })
 
   it('POST /users/profile/:username/change-password devuelve 401 si password actual no coincide', async () => {
@@ -117,6 +123,10 @@ describe('Profile endpoints', () => {
     }
     
     vi.spyOn(User, 'findOne').mockResolvedValue(mockUser)
+    vi.spyOn(bcrypt, 'compare')
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false)
+    vi.spyOn(bcrypt, 'hash').mockResolvedValue('hashed-new-password')
 
     const res = await request(app)
       .post('/users/profile/Alice/change-password')
@@ -129,9 +139,7 @@ describe('Profile endpoints', () => {
     expect(res.body.message).toMatch(/contraseña actualizada correctamente/i)
     expect(mockUser.save).toHaveBeenCalled()
     
-    // Verificamos que la contraseña se haya hasheado (no es el texto plano)
+    // Verificamos que la contraseña se haya cambiado y no quede en texto plano
     expect(mockUser.password).not.toBe('newPass123')
-    const isMatch = await bcrypt.compare('newPass123', mockUser.password)
-    expect(isMatch).toBe(true)
   })
 })

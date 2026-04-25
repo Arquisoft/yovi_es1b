@@ -1,5 +1,9 @@
-﻿import logoGameY from '../assets/Logo_GameY.png';
+import '../i18n.ts';
+import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
+import languageImg from '../assets/language/idioma.png';
+import { useTranslation } from 'react-i18next'
+import { ActionIconButton } from '../components/common/ActionIconButton';
 
 interface HomeScreenProps {
   readonly username: string;
@@ -7,6 +11,7 @@ interface HomeScreenProps {
   readonly onStart: () => void; // Inicia una partida directa
   readonly onGoToRegister: () => void; // Navega a pantalla de registro
   readonly onGoToLogin: () => void; // Navega a pantalla de login
+  readonly onOpenLanguage?: () => void;
   readonly onOpenSettings?: () => void;
   readonly onOpenTutorial?: () => void;
 }
@@ -19,21 +24,22 @@ interface HomeActionsProps {
 
 // Subcomponente para aislar las acciones de acceso (invitado / registro / login)
 function HomeActions({ onStart, onGoToRegister, onGoToLogin }: HomeActionsProps) {
+  const { t } = useTranslation();
+  const accessButtons = [
+    { key: 'login', label: t('home.login'), onClick: onGoToLogin, className: 'submit-button home-auth-button' },
+    { key: 'register', label: t('home.register'), onClick: onGoToRegister, className: 'submit-button home-auth-button' },
+    { key: 'guest', label: t('home.guest'), onClick: onStart, className: 'submit-button home-guest-button' },
+  ] as const;
+
   return (
     <div className="choose-option menu-content">
-      <h3>Seleccione una forma de acceso</h3>
+      <h3>{t('home.select_register')}</h3>
 
-      <button type="button" className="submit-button home-auth-button" onClick={onGoToLogin}>
-        Iniciar sesion
-      </button>
-
-      <button type="button" className="submit-button home-auth-button" onClick={onGoToRegister}>
-        Registrarse
-      </button>
-
-      <button type="button" className="submit-button home-guest-button" onClick={onStart}>
-        Entrar como invitado
-      </button>
+      {accessButtons.map((button) => (
+        <button key={button.key} type="button" className={button.className} onClick={button.onClick}>
+          {button.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -43,16 +49,18 @@ function HomeScreen({
   onStart,
   onGoToRegister,
   onGoToLogin,
+  onOpenLanguage,
   onOpenSettings,
   onOpenTutorial,
 }: HomeScreenProps) {
+  const { t } = useTranslation();
   return (
     <div className="home-screen">
       <h2 className="welcome-title">
         <span className="welcome-main">
-          Bienvenido a <span className="welcome-brand">GameY</span>
+          {t('home.welcome_main')}
         </span>
-        <span className="welcome-kicker">La estrategia no tiene suerte</span>
+        <span className="welcome-kicker">{t('home.welcome_kicker')}</span>
       </h2>
       <img src={logoGameY} alt="GameY" className="gamey-logo-large" />
       {/* Bloque con botones para ir a registro/login */}
@@ -61,29 +69,38 @@ function HomeScreen({
         onGoToRegister={onGoToRegister}
         onGoToLogin={onGoToLogin}
       />
-      {(onOpenSettings || onOpenTutorial) && (
+
+      {(onOpenLanguage || onOpenSettings || onOpenTutorial) && (
         <div className="home-action-group">
+          {onOpenLanguage && (
+            <ActionIconButton
+              className="header-settings-btn header-action-btn"
+              onClick={onOpenLanguage}
+              title={t('common.language')}
+              ariaLabel={t('common.language_aria')}
+            >
+              <img src={languageImg} alt="" className="floating-action-icon" />
+            </ActionIconButton>
+          )}
           {onOpenSettings && (
-            <button
-              type="button"
-              className="home-settings-below home-action-btn"
+            <ActionIconButton
+              className="header-settings-btn header-action-btn"
               onClick={onOpenSettings}
-              title="Configuracion"
-              aria-label="Configuracion de elementos de fondo"
+              title={t('common.settings')}
+              ariaLabel={t('common.settings_aria')}
             >
               <img src={settingsImg} alt="" className="floating-action-icon" />
-            </button>
+            </ActionIconButton>
           )}
           {onOpenTutorial && (
-            <button
-              type="button"
-              className="home-settings-below home-action-btn"
+            <ActionIconButton
+              className="header-settings-btn header-action-btn"
               onClick={onOpenTutorial}
-              title="Ayuda"
-              aria-label="Abrir ayuda"
+              title={t('common.help')}
+              ariaLabel={t('common.help_aria')}
             >
               <span className="help-icon-glyph" aria-hidden="true">?</span>
-            </button>
+            </ActionIconButton>
           )}
         </div>
       )}

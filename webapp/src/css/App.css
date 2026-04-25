@@ -95,6 +95,26 @@
   z-index: 2000;
 }
 
+.modal-backdrop-button {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  cursor: default;
+  z-index: 1;
+}
+
+.modal-shell {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+
 .modal-box {
   width: min(92vw, 24rem);
   background: rgba(255, 255, 255, 0.96);
@@ -598,7 +618,7 @@
 /* Apodo (nickname) grande y blanco */
 .profile-nickname {
     font-size: 1.8rem;
-    color: #535353;
+    color: #dcfd8b; /* Amarillo neón */
     margin: 0;
     letter-spacing: 1px;
 }
@@ -632,7 +652,7 @@
 
 /* Números de estadísticas en neón */
 .stat-num {
-    color: black; /* Amarillo neón */
+    color: #dcfd8b; /* Amarillo neón */
 
     font-size: 1.4rem;
     font-weight: 700;
@@ -734,7 +754,7 @@
 /* Botón para ti mismo */
 .profile-add-btn.disabled {
     background: transparent;
-    color: #444;
-    border: 1px dashed #444;
+    color: #dcfd8b;
+    border: 1px dashed #dcfd8b;
     cursor: default;
 }

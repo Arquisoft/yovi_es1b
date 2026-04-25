@@ -29,6 +29,7 @@ const GamePageMock = () => {
         difficultyChoice="facil"
         selectedBoardDimension={6}
         sizeLabel="6x6"
+        totalScore={1250}
         turnTimeLeft={10}
         turnTimeLimit={20}
         timerVisible={true}
@@ -40,6 +41,7 @@ const GamePageMock = () => {
         onChangeSize={vi.fn()}
         onFetchHistory={() => setShowHistory(true)}
         onAddFriend={vi.fn()}
+        onScoreButtonClick={vi.fn()}
       />
       <HistoryModal 
         isOpen={showHistory} 

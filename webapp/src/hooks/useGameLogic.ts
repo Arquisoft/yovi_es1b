@@ -1,12 +1,13 @@
 import { useCallback, useState } from 'react';
-import { gameService } from '../services/gameService';
+import { gameService, type MoveResponse } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
 import type { GameYData } from '../types/game';
 
-type MoveResponse = {
-  responseFromRust?: GameYData;
-  winner: number | null;
-};
+type GameHistoryContext = Readonly<{
+  boardLabel?: string | null;
+  locale?: string | null;
+  resultLabel?: string | null;
+}>;
 
 export const useGameLogic = () => {
   const [boardData, setBoardData] = useState<GameYData | null>(null);
@@ -31,10 +32,17 @@ export const useGameLogic = () => {
   }, []);
 
   // Movimiento del Jugador
-  const executeHumanMove = useCallback(async (index: number, difficulty: string, stopTimer: () => void, startTimer: (d: string) => void) => {
+  const executeHumanMove = useCallback(async (
+    index: number,
+    difficulty: string,
+    stopTimer: () => void,
+    startTimer: (d: string) => void,
+    historyContext?: GameHistoryContext,
+  ) => {
     stopTimer();
-    // ELIMINADO: username ya no se envía como argumento aquí
-    const data = await gameService.makeMove(index, difficulty, boardData?.size);
+    const data = historyContext
+      ? await gameService.makeMove(index, difficulty, boardData?.size, historyContext)
+      : await gameService.makeMove(index, difficulty, boardData?.size);
     const result = updateBoardState(data, index);
 
     if (result.winner === null) {
@@ -44,7 +52,11 @@ export const useGameLogic = () => {
   }, [boardData?.size, updateBoardState]);
 
   // Movimiento Automático (Bot/Tiempo agotado)
-  const executeAutoMove = useCallback(async (difficulty: string, startTimer: (d: string) => void) => {
+  const executeAutoMove = useCallback(async (
+    difficulty: string,
+    startTimer: (d: string) => void,
+    historyContext?: GameHistoryContext,
+  ) => {
     if (!boardData || winner !== null) return;
 
     const flat = boardData.layout.replaceAll('/', '');
@@ -56,8 +68,9 @@ export const useGameLogic = () => {
     window.crypto.getRandomValues(array);
     const randomIndex = emptyCells[array[0] % emptyCells.length];
 
-    // ELIMINADO: username ya no se envía como argumento aquí
-    const data = await gameService.makeMove(randomIndex, difficulty, boardData?.size);
+    const data = historyContext
+      ? await gameService.makeMove(randomIndex, difficulty, boardData?.size, historyContext)
+      : await gameService.makeMove(randomIndex, difficulty, boardData?.size);
     const result = updateBoardState(data, randomIndex);
 
     if (result.winner === null) {
@@ -68,16 +81,21 @@ export const useGameLogic = () => {
 
   const resetGame = useCallback(async (dimension: number, difficulty: string, stopTimer?: () => void) => {
     stopTimer?.();
-    // ELIMINADO: username ya no se envía como argumento aquí
     const board = await gameService.resetBoard(dimension, difficulty);
     setBoardData(board);
     setWinner(null);
     return board;
   }, []);
 
-  const surrender = useCallback(async (difficulty: string) => {
-    // ELIMINADO: username ya no se envía como argumento aquí
-    await gameService.surrender(difficulty, boardData?.size);
+  const surrender = useCallback(async (
+    difficulty: string,
+    historyContext?: GameHistoryContext,
+  ) => {
+    if (historyContext) {
+      await gameService.surrender(difficulty, boardData?.size, historyContext);
+    } else {
+      await gameService.surrender(difficulty, boardData?.size);
+    }
     setWinner(1);
   }, [boardData?.size]);
 

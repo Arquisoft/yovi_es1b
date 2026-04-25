@@ -13,36 +13,44 @@ jobs:
         image: mongo:latest
         ports:
           - 27017:27017
-       
+
         options: >-
           --health-cmd "mongosh --eval 'db.runCommand({ping:1})'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
     steps:
-    - uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - uses: dtolnay/rust-toolchain@stable
-      with:
-        toolchain: stable
-        components: rustfmt, clippy
-    - uses: actions/setup-node@v4
-      with:
-        node-version: 22
-    - run: npm --prefix users ci
-    - run: npm --prefix webapp ci
-    - run: npm --prefix users run test:coverage
-    - run: npm --prefix webapp run test:coverage
-    - name: Install cargo-llvm-cov
-      run: cargo install cargo-llvm-cov --locked
-    - name: Generate gamey code coverage
-      run: cd gamey && cargo llvm-cov --lcov --output-path lcov.info
-    - name: Normalize Rust coverage paths
-      run: |
-        sed -i "s|SF:${GITHUB_WORKSPACE}/|SF:|g" gamey/lcov.info
-        grep '^SF:' gamey/lcov.info | head
-    - name: Analyze with SonarQube
-      uses: SonarSource/sonarqube-scan-action@master
-      env:
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          components: rustfmt, clippy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm --prefix users ci
+      - run: npm --prefix webapp ci
+      - run: npm --prefix users run test:coverage
+      - run: npm --prefix webapp run test:coverage
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov --locked
+      - name: Create dummy certs for Rust tests
+        run: |
+          mkdir -p certs
+          openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 1 -nodes -subj "/CN=localhost"
+      - name: Generate gamey code coverage
+        # 2. ENV: Para que el test de historial use el Mongo del runner
+        env:
+          MONGODB_URI: mongodb://localhost:27017/gamey_test
+        run: cd gamey && cargo llvm-cov --lcov --output-path lcov.info
+      - name: Normalize Rust coverage paths
+        run: |
+          sed -i "s|SF:${GITHUB_WORKSPACE}/|SF:|g" gamey/lcov.info
+          grep '^SF:' gamey/lcov.info | head
+      - name: Analyze with SonarQube
+        uses: SonarSource/sonarqube-scan-action@master
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_SCANNER_OPTS: "-Xmx4096m"
