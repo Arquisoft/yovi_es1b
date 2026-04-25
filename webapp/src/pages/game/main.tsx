@@ -161,35 +161,41 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     let active = true;
 
     const syncProfileData = async () => {
-      try {
-        const profile = await gameService.getProfile();
-        if (!active || profile?.error) return;
+  try {
+    const profile = await gameService.getProfile();
+    
+    if (!active || !profile || profile.error) return;
 
-        const resolvedIcon = resolveIconFromAssets(
-          typeof profile?.iconName === 'string' ? profile.iconName : profile?.icon,
-          iconModules
-        );
-        if (resolvedIcon) {
-          setPlayerIcon(resolvedIcon);
-          localStorage.setItem('yovi_user_icon', resolvedIcon);
-        }
+    const rawIcon = typeof profile.iconName === 'string' ? profile.iconName : (profile.icon || '');
+    const safeIconName = String(rawIcon).replace(/[^a-zA-Z0-9._-]/g, '');
 
-        const languageToI18n: Record<string, string> = {
-          Spain: 'es',
-          English: 'en',
-          German: 'de',
-          Portuguese: 'pt',
-        };
-        if (profile?.language) {
-          i18n.changeLanguage(languageToI18n[profile.language] ?? 'es');
-        }
+    const resolvedIcon = resolveIconFromAssets(safeIconName, iconModules);
 
-        const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
-        setTotalScore(scoreReal);
-      } catch {
-        // Mantenemos el estado local si falla la petición.
-      }
+    if (resolvedIcon) {
+      setPlayerIcon(resolvedIcon);
+      localStorage.setItem('yovi_user_icon', resolvedIcon);
+    }
+
+    const languageToI18n: Record<string, string> = {
+      Spain: 'es',
+      English: 'en',
+      German: 'de',
+      Portuguese: 'pt',
     };
+
+    if (profile.language) {
+      const langCode = languageToI18n[profile.language] ?? 'es';
+      i18n.changeLanguage(langCode);
+    }
+
+    const scoreReal = profile.totalScore ?? profile.stats?.totalScore ?? 0;
+    setTotalScore(Number(scoreReal));
+
+  } catch (err) {
+  
+    console.error("Error sincronizando los datos del perfil del usuario.");
+  }
+};
 
     syncProfileData();
     return () => {
