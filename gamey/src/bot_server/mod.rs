@@ -47,6 +47,9 @@ use crate::bot::blocker_bot::BlockerBot;
 use crate::bot::ybot_registry::YBotRegistry;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
+use axum_server::tls_rustls::RustlsConfig;
+use std::net::SocketAddr;
+use std::path::PathBuf;
 
 
 // This helps Rust to understand the JSON that receive from Node
@@ -191,6 +194,8 @@ pub fn create_default_state() -> AppState {
 /// - The TCP port cannot be bound (e.g., port already in use, permission denied)
 /// - The server encounters an error while running
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+    
     // Leer y validar la URI de MongoDB desde variables de entorno.
     let uri = std::env::var("MONGODB_URI")
         .map_err(|_| GameYError::ServerError {
@@ -234,16 +239,23 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let state = AppState::new(bots, db);
     let app = create_router(state);
 
-    let addr = format!("0.0.0.0:{}", port);
-    let listener =
-        tokio::net::TcpListener::bind(&addr)
-            .await
-            .map_err(|e| GameYError::ServerError {
-                message: format!("Failed to bind to {}: {}", addr, e),
-            })?;
+    let cert_path = std::env::var("CERT_PATH").unwrap_or_else(|_| "../certs/cert.pem".to_string());
+    let key_path = std::env::var("KEY_PATH").unwrap_or_else(|_| "../certs/key.pem".to_string());
 
-    println!("Server mode: Listening on http://{}", addr);
-    axum::serve(listener, app)
+    let config = RustlsConfig::from_pem_file(
+        PathBuf::from(&cert_path),
+        PathBuf::from(&key_path),
+    )
+    .await
+    .map_err(|e| GameYError::ServerError {
+        message: format!("Error cargando certificados SSL ({} o {}): {}", cert_path, key_path, e),
+    })?;
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    println!("Server mode: Listening on https://{}", addr);
+
+    axum_server::bind_rustls(addr, config)
+        .serve(app.into_make_service())
         .await
         .map_err(|e| GameYError::ServerError {
             message: format!("Server error: {}", e),

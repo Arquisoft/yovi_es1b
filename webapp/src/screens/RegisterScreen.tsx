@@ -6,7 +6,7 @@ import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErro
 import { clearGuestSession } from '../utils/sessionUtils';
 import {useTranslation} from "react-i18next";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
   import: 'default',
@@ -110,6 +110,7 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
     setPasswordError(null);
 
     try {
+      console.log("DEBUG: Iniciando fetch a:", `${API_BASE_URL}/createuser`);
       const response = await fetch(`${API_BASE_URL}/createuser`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,7 +123,7 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
           iconName: selectedIconName,
         }),
       });
-
+      console.log("DEBUG: Respuesta recibida. Status:", response.status);
       const data = await response.json();
 
       if (response.ok) {
@@ -141,7 +142,8 @@ function RegisterScreen({ onBack, onOpenLanguage, onOpenSettings, onOpenTutorial
             : data.error || 'Error al crear la cuenta.'
         );
       }
-    } catch {
+    } catch (error) {
+      console.error("DEBUG: Error capturado en el catch del fetch:", error);
       setFormError(REGISTER_SERVER_ERROR_MESSAGE);
     }
   };
