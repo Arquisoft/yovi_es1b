@@ -91,12 +91,17 @@ const normalizeIconName = (rawValue) => {
   return parts[parts.length - 1] || 'SinAvatar.png';
 };
 
-try {
-  const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-} catch (e) {
-  console.log(e);
-}
+const setupSwagger = (app) => {
+  try {
+    const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8'));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  } catch (e) {
+    console.log("⚠️ Error al cargar la documentación Swagger:", e.message);
+  }
+};
+
+// Ejecución inmediata para el funcionamiento normal del servidor
+setupSwagger(app);
 
 // CORS --> The server accepts requests from any origin (*)
 app.use((req, res, next) => {
@@ -817,5 +822,7 @@ if (require.main === module) {
 // En lugar de module.exports = { app, loadSSLConfig };
 // Hacemos esto para no romper los tests existentes:
 
-module.exports = app; // La exportación principal sigue siendo la app
-module.exports.loadSSLConfig = loadSSLConfig; // Añadimos la función como propiedad
+module.exports = app;
+module.exports.loadSSLConfig = loadSSLConfig;
+module.exports.normalizeIconName = normalizeIconName;
+module.exports.setupSwagger = setupSwagger; 
