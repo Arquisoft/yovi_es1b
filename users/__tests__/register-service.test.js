@@ -97,4 +97,29 @@ describe('POST /createuser', () => {
         expect(res.status).toBe(400)
         expect(res.body.error).toBe('User already exists or database error')
     })
+
+    it('devuelve error 400 si la fecha de nacimiento no es válida (NaN)', async () => {
+    const res = await request(app)
+        .post('/createuser')
+        .send({
+            username: 'userFechaFail',
+            nickname: 'nick',
+            password: 'pass',
+            birthDate: 'esto-no-es-una-fecha', // Provoca el fallo
+            language: 'Spain'
+        });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('birthDate is invalid');
+    });
+
+    it('responde con 204 a una petición OPTIONS', async () => {
+    const res = await request(app)
+        .options('/createuser');
+
+    expect(res.status).toBe(204);   
+    });
+
+
+    
 })

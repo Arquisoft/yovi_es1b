@@ -142,4 +142,40 @@ describe('Profile endpoints', () => {
     // Verificamos que la contraseña se haya cambiado y no quede en texto plano
     expect(mockUser.password).not.toBe('newPass123')
   })
+
+
+  it('devuelve error 409 si el nickname ya está en uso por otro usuario', async () => {
+    // 1. Datos basados en tu captura de MongoDB
+    const idDiego = '69cfc57863b4e59b1d9fc9d';
+    const idNahiara = '69cf9958e6c33e348c3f772c';
+    const nicknameDeNahiara = 'nahi';
+
+    // 2. Mocks estratégicos
+    const findOneSpy = vi.spyOn(User, 'findOne');
+
+    // Primera llamada: El servicio busca a "diego" para saber quién es
+    findOneSpy.mockResolvedValueOnce({ 
+        _id: idDiego, 
+        username: 'diego', 
+        nickname: 'abeijon' 
+    });
+
+    // Segunda llamada: El servicio busca si alguien ya tiene el nickname 'nahi'
+    // Devolvemos a "Nahiara", que tiene un ID distinto al de Diego
+    findOneSpy.mockResolvedValueOnce({ 
+        _id: idNahiara, 
+        nickname: nicknameDeNahiara 
+    });
+
+    // 3. Ejecución contra la RUTA REAL (PATCH)
+    const res = await request(app)
+        .patch('/users/profile/diego') // Ruta corregida
+        .send({ 
+            nickname: nicknameDeNahiara 
+        });
+
+    // 4. Verificaciones
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('Nickname ya existe');
+});
 })
