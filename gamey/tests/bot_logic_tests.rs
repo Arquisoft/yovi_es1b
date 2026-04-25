@@ -146,8 +146,7 @@ fn test_pro_bot_prioritizes_critical_defense_due_to_formula() {
     let coords = bot.choose_move(&board).expect("ProBot devolvió None");
     let move_idx = coords.to_index(size);
     
-    // El test anterior nos chivó que tu fórmula BFS elige matemáticamente el índice 6.
-    // Ahora que lo sabemos, lo fijamos como el comportamiento esperado y determinista de tu IA.
+   
     assert_eq!(
         move_idx, 6,
         "Pro_Bot cambió su heurística esperada. Eligió {} en lugar de 6", move_idx

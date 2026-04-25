@@ -129,13 +129,13 @@ pub struct ApiDoc;
 pub struct ResetRequest {
     pub size: Option<u32>,
     pub difficulty: Option<String>,
-    pub player: Option<String>, // <--- AñADE ESTA LíNEA
+    pub player: Option<String>, 
 }
 
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct GameRecord {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<String>)] // <-- Esta lí­nea soluciona el error de ObjectId
+    #[schema(value_type = Option<String>)]
     pub id: Option<mongodb::bson::oid::ObjectId>,
     pub date: String,
     pub opponent: String,
@@ -186,12 +186,12 @@ fn normalize_history_document(record: &mut serde_json::Value) {
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
 
-        // 1. Ponemos Swagger al principio para que nada lo intercepte
+       
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
                 .url("/api-docs/openapi.json", ApiDoc::openapi()),
         )
-        // 2. El resto de tus rutas
+       
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento))
         .route("/history", axum::routing::get(obtener_historial))
@@ -315,7 +315,7 @@ pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
 ) -> impl IntoResponse {
-    // 1. Obtener la sesión del usuario (Corregido de ax_state a state)
+    // 1. Obtener la sesión del usuario 
     let session = state.get_or_create_session(&payload.player).await;
 
     // Bloqueamos la sesión privada (Añadidos tipos explí­citos para ayudar al compilador)
@@ -412,7 +412,7 @@ pub async fn reiniciar_juego(
 
     if let Some(diff_str) = payload.difficulty {
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
-            // Actualizamos la dificultad DENTRO de la sesión
+            // Actualizamos la dificultad dentro de la sesión
             let mut current_diff = session.current_difficulty.lock().await;
             *current_diff = diff;
 
@@ -448,13 +448,12 @@ pub async fn obtener_historial(
 ) -> impl IntoResponse {
     let collection = state.db.collection::<serde_json::Value>("partidas");
 
-    // 1. Configuración de la paginación (arreglado el tipado)
+    // 1. Configuración de la paginación 
     let page = params.page.unwrap_or(1).max(1); 
     let limit = params.limit.unwrap_or(10).clamp(1, 100); 
     let skip_value = (page - 1) * (limit as u64);
 
-    // 2. Construir un úNICO filtro dinámico
-    // CRíTICO: Asegúrate de si tu campo en Mongo se llama "player" o "username". Aquí­ asumo "player".
+    // 2. Construir un  filtro dinámico
     let mut filter = doc! { "player": &params.username };
 
     // Añadimos el filtro de resultado si el frontend lo enví­a
@@ -462,7 +461,7 @@ pub async fn obtener_historial(
         filter.insert("result", res);
     }
 
-    // 3. Contar el total de documentos UNA SOLA VEZ, usando el filtro final
+    // 3. Contar el total de documentos usando el filtro final
         let total_documents = match collection.count_documents(filter.clone()).await {        Ok(count) => count,
         Err(e) => {
             eprintln!("Error al contar documentos en BBDD: {}", e);
@@ -493,7 +492,6 @@ pub async fn obtener_historial(
     };
 
     // 6. Recoger los resultados del cursor
-    // Recuerda que esto necesita importar: use futures::stream::StreamExt;
     let mut partidas = Vec::new();
     while let Some(Ok(mut doc)) = cursor.next().await {
         normalize_history_document(&mut doc);
