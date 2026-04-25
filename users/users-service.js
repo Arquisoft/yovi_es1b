@@ -629,10 +629,14 @@ app.post('/surrender', async (req, res) => {
 
     //  Control de errores de la respuesta de Rust
     if (!rustResponse.ok) {
-      const text = await rustResponse.text();
-      console.error("Error desde Rust en surrender:", text);
-      return res.status(rustResponse.status).send(text);
-    }
+    const text = await rustResponse.text();
+    const safeLog = text.replace(/[\n\r]/g, '_');
+    console.error("Error desde Rust en surrender:", safeLog);
+    
+    return res.status(rustResponse.status).json({ 
+        error: "No se pudo procesar la rendición en este momento." 
+    });
+}
 
     const data = await rustResponse.json();
 
@@ -743,15 +747,30 @@ app.get('/history', async (req, res) => {
  */
 app.post('/users/purchase-xp', async (req, res) => {
   const { username, amount } = req.body;
+
   try {
+    const safeUsername = String(username || '').trim();
+    const safeAmount = Number(amount);
+
+    if (isNaN(safeAmount)) {
+      return res.status(400).json({ error: "Cantidad no válida" });
+    }
+
     const updatedUser = await User.findOneAndUpdate(
-      { username },
-      { $inc: { totalScore: amount } }, // Sumamos los puntos comprados
+      { username: safeUsername }, 
+      { $inc: { totalScore: safeAmount } },
       { new: true }
     );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
     res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
+
   } catch (e) {
-    res.status(500).json({ error: "No se pudo procesar la compra. " + e.message });
+    console.error("Error en purchase-xp:", e);
+    res.status(500).json({ error: "No se pudo procesar la compra." });
   }
 });
 
