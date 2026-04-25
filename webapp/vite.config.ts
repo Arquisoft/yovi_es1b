@@ -1,10 +1,23 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
+import fs from 'node:fs';
 
 export default defineConfig({
   // Plugins necesarios para React
   plugins: [react()],
+
+  // Configuración del Servidor HTTPS
+  server: {
+    port: 5173,
+    https: {
+      // Usamos resolve para asegurar que encuentre la carpeta /certs en la raíz
+      key: fs.readFileSync(resolve(__dirname, '../certs/key.pem')),
+      cert: fs.readFileSync(resolve(__dirname, '../certs/cert.pem')),
+    },
+    // Opcional: para que no haya problemas de CORS en local
+    cors: true,
+  },
 
   // Configuración multi-página (MPA)
   build: {
