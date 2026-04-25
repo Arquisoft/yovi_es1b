@@ -771,8 +771,8 @@ app.post('/users/purchase-xp', async (req, res) => {
     const safeUsername = String(username || '').trim();
     const safeAmount = Number(amount);
 
-    if (isNaN(safeAmount)) {
-      return res.status(400).json({ error: "Cantidad no válida" });
+   if (Number.isNaN(safeAmount)) {
+    return res.status(400).json({ error: "Cantidad no válida" });
     }
 
     const updatedUser = await User.findOneAndUpdate(
@@ -814,4 +814,8 @@ if (require.main === module) {
   }
 }
 
-module.exports = app
+// En lugar de module.exports = { app, loadSSLConfig };
+// Hacemos esto para no romper los tests existentes:
+
+module.exports = app; // La exportación principal sigue siendo la app
+module.exports.loadSSLConfig = loadSSLConfig; // Añadimos la función como propiedad
