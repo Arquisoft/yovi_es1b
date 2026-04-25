@@ -10,8 +10,9 @@ services:
     volumes:
       - ./certs:/certs:ro
     environment:
-      - MONGODB_URI=${MONGODB_URI_USERS}
+      - MONGODB_URI_USERS=${MONGODB_URI_USERS}
       - GAMEY_SERVICE_URL=https://gamey:3000
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
     networks:
       - monitor-net
 
@@ -25,6 +26,9 @@ services:
     image: ghcr.io/arquisoft/yovi_es1b-webapp:latest
     ports:
       - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
     depends_on:
       - users
       - gamey
@@ -32,7 +36,9 @@ services:
       - monitor-net
 
   gamey:
-    build: ./gamey
+    build:
+      context: .
+      dockerfile: gamey/Dockerfile
     container_name: gamey
     image: ghcr.io/arquisoft/yovi_es1b-gamey:latest
     ports:

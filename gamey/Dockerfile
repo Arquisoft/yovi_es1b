@@ -1,12 +1,12 @@
 # Use a Rust base image for compilation
-FROM rust:latest AS builder
+FROM rust:bookworm AS builder
 
 WORKDIR /app/gamey
 
 # Copy Cargo.toml and Cargo.lock
-COPY benches ./benches
-COPY Cargo.toml Cargo.lock ./
-COPY src/ ./src/
+COPY gamey/benches ./benches
+COPY gamey/Cargo.toml gamey/Cargo.lock ./
+COPY gamey/src/ ./src/
 
 # Build the application
 RUN cargo build --release
@@ -14,10 +14,14 @@ RUN cargo build --release
 # Use a minimal image for the final stage
 FROM debian:bookworm-slim
 
-WORKDIR /app/gamey
+WORKDIR /gamey
+
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/gamey/target/release/gamey .
+
+COPY certs /certs
 
 # Expose the port gamey will listen on
 EXPOSE 4000
