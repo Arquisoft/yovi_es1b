@@ -189,8 +189,9 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+  padding-top: 2.55rem;
   justify-self: center;
-  align-self: center;
+  align-self: start;
   grid-column: 2;
   width: fit-content;
 }
@@ -314,6 +315,14 @@ body {
   margin-top: -0.15rem;
 }
 
+.bot-guide-box .guide-center-heading {
+  margin-bottom: 0.1rem;
+}
+
+.bot-guide-box .guide-instructions-heading {
+  margin-top: 0.6rem;
+}
+
 .match-info-box {
   display: inline-block;
   width: fit-content;
@@ -335,7 +344,7 @@ body {
 .match-info-floating {
   position: fixed;
   right: 2.5rem;
-  top: 12.5rem;
+  top: 15.8rem;
   z-index: 3;
 }
 
@@ -367,7 +376,7 @@ body {
 .bot-guide-floating {
   position: fixed;
   right: 2.5rem;
-  top: 21.75rem;
+  top: 25.1rem;
   z-index: 3;
   display: flex;
   flex-direction: column;
@@ -389,6 +398,7 @@ body {
 
   .game-main-content {
     order: 1;
+    padding-top: 1.1rem;
   }
 
   .board-area {
@@ -427,7 +437,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 15px 40px;
+  padding: 15px 28px 15px 18px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px); /* Efecto cristalizado */
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
@@ -436,25 +446,25 @@ body {
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
-.nav-user-info h2 {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 300;
-}
-
-.nav-user-info {
-  margin-left: 0.5rem;
+.nav-left-group {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .nav-gamey-logo {
-  height: 4rem;
+  height: 4.15rem;
   width: auto;
   display: block;
   filter: drop-shadow(0 0.3rem 0.8rem rgba(0, 0, 0, 0.35));
+}
+
+.nav-profile-action {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.18rem;
 }
 
 .nav-center-title {
@@ -465,11 +475,6 @@ body {
   letter-spacing: 0.02em;
   text-align: center;
   flex: 0 1 auto;
-}
-
-.nav-user-info span {
-  color: #dcfd8b; /* Color verde lima destacado */
-  font-weight: bold;
 }
 
 .nav-mode-title {
@@ -485,6 +490,22 @@ body {
   display: flex;
   gap: 15px;
   align-items: center;
+}
+
+.nav-setup-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nav-setup-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #f7fbff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .nav-icon-action {
@@ -503,6 +524,17 @@ body {
   font-weight: 700;
   color: #f7fbff;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
+.nav-icon-caption-settings {
+  width: 4.4rem;
+  margin-left: -0.2rem;
+}
+
+.nav-profile-caption {
+  width: auto;
+  min-width: 4.6rem;
+  font-size: 0.72rem;
 }
 
 .nav-icon-caption-exit {
@@ -892,6 +924,23 @@ body {
   display: inline-flex;
 }
 
+.nav-btn-with-restart:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  filter: grayscale(0.95);
+  box-shadow: none;
+}
+
+.nav-btn-with-restart:disabled:hover .nav-btn-reset-img,
+.nav-btn-with-restart:disabled:focus-visible .nav-btn-reset-img {
+  visibility: visible;
+}
+
+.nav-btn-with-restart:disabled:hover .nav-btn-restart-hover,
+.nav-btn-with-restart:disabled:focus-visible .nav-btn-restart-hover {
+  display: none;
+}
+
 .nav-btn-with-difficulty {
   position: relative;
   overflow: visible;
@@ -1003,7 +1052,11 @@ body {
 }
 
 .profile-avatar-change-btn {
-  width: 100%;
+  width: auto;
+  align-self: center;
+  padding: 0.68rem 0.95rem;
+  font-size: 0.95rem;
+  min-width: 10.5rem;
 }
 
 .profile-avatar-editor {
@@ -1238,8 +1291,8 @@ body {
   display: inline-flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  justify-content: flex-start;
+  gap: 0.5rem;
   line-height: 1.05;
   white-space: nowrap;
 }
@@ -1247,10 +1300,12 @@ body {
 .dropdown-trigger-text {
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 0.3rem;
   min-width: 0;
   font-size: 0.9rem;
   font-weight: 800;
+  text-align: left;
 }
 
 .dropdown-trigger-legacy-text {
@@ -1279,7 +1334,9 @@ body {
 .dropdown-trigger-arrow {
   font-size: 0.78rem;
   line-height: 1;
+  flex: 0 0 auto;
   flex-shrink: 0;
+  text-align: left;
 }
 
 .dropdown-trigger:hover, .dropdown-trigger.active {
@@ -1351,8 +1408,10 @@ body {
 
 .nav-center-score {
   display: flex;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+  gap: 0.45rem;
   flex: 1; /* Esto ayuda a que se mantenga en el centro si el nav es flex */
 }
 
@@ -1402,6 +1461,14 @@ body {
   text-shadow: 0 0 8px rgba(220, 253, 139, 0.5);
 }
 
+.score-caption {
+  color: #f7fbff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+}
+
 /* Animación sutil para la estrella */
 @keyframes star-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
@@ -1430,33 +1497,38 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
+  padding: 1rem;
   background: rgba(0, 0, 0, 0.85); /* Oscurece el fondo del juego */
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow-y: auto;
   z-index: 9999; /* Asegura que esté por encima de TODO el tablero */
   backdrop-filter: blur(5px); /* Desenfoca el tablero detrás */
 }
 
 /* La tarjeta blanca/oscura de la tienda */
 .payment-card {
-  background: #1a1a1a; /* Fondo sólido para que no se vea el tablero detrás */
+  background: #f6f3e8; /* Fondo claro para que el texto de PayPal sea legible */
   border: 2px solid #ffd700; /* Borde dorado */
   border-radius: 15px;
-  padding: 40px;
-  width: 400px;
-  max-width: 90%;
+  padding: 3rem 1.5rem 1.5rem;
+  width: min(400px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  box-sizing: border-box;
   text-align: center;
   position: relative;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   display: flex;
   flex-direction: column;
   gap: 20px;
+  color: #1f1f1f;
 }
 
 /* Título de la tienda */
 .payment-title {
-  color: #ffd700;
+  color: #8a6a00;
   font-family: 'Orbitron', sans-serif;
   font-size: 1.8rem;
   margin: 0;
@@ -1464,21 +1536,21 @@ body {
 
 /* Subtítulo */
 .payment-subtitle {
-  color: #ffffff;
+  color: #333333;
   font-size: 0.9rem;
   opacity: 0.8;
 }
 
 /* Caja del producto (1000 XP - 1€) */
 .payment-item-detail {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.75);
   border-radius: 10px;
   padding: 15px;
-  border: 1px solid #333;
+  border: 1px solid #d6d1c1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: white;
+  color: #1f1f1f;
   margin-bottom: 10px;
 }
 
@@ -1491,14 +1563,16 @@ body {
 /* Botón de cerrar (X) */
 .payment-close {
   position: absolute;
-  top: 15px;
-  right: 15px;
+  top: 0.75rem;
+  right: 0.75rem;
   background: none;
   border: none;
-  color: white;
+  color: #1f1f1f;
   font-size: 1.5rem;
+  line-height: 1;
+  padding: 0;
   cursor: pointer;
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
 .payment-close:hover {
@@ -1509,10 +1583,15 @@ body {
 .paypal-button-container {
   width: 100%;
   margin-top: 10px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #ddd7c3;
+  border-radius: 12px;
+  padding: 12px;
+  box-sizing: border-box;
 }
 
 .payment-footer {
   font-size: 0.75rem;
-  color: #666;
+  color: #555;
   margin-top: 10px;
 }

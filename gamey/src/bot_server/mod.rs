@@ -16,7 +16,7 @@
 //!
 //! #[tokio::main]
 //! async fn main() {
-//!     if let Err(e) = run_bot_server(3000).await {
+//!     if let Err(e) = run_bot_server(4000).await {
 //!         eprintln!("Server error: {}", e);
 //!     }
 //! }
@@ -59,7 +59,7 @@ pub struct MoveRequest {
     pub player: String,
 }
 
-// Para obtener el historial de partidas de un usuario específico.
+// Para obtener el historial de partidas de un usuario especí­fico.
 //añadida la paginación con page y limit opcionales.
 #[derive(Deserialize)]
 pub struct HistoryQuery {
@@ -70,7 +70,7 @@ pub struct HistoryQuery {
 }
 
 /**
- * Estructura para recibir la consulta de estadísticas de un usuario específico.
+ * Estructura para recibir la consulta de estadí­sticas de un usuario especí­fico.
  */
 #[derive(Deserialize)]
 pub struct StatsQuery {
@@ -87,7 +87,7 @@ pub struct PaginatedHistoryResponse {
     pub total_pages: u64,
 }
 
-// Estructura para recibir la rendición
+// Estructura para recibir la Rendición
 #[derive(Deserialize)]
 pub struct SurrenderRequest {
     player: String,
@@ -100,7 +100,6 @@ pub struct UserStats {
     pub wins: i64,
     pub losses: i64,
     pub total: i64,
-    pub total_score: i64,
 }
 
 use utoipa::OpenApi;
@@ -126,26 +125,61 @@ pub struct ApiDoc;
  *
  * #[derive(Deserialize)] --> Convierte el JSON recibido a esta estructura de Rust
  *
- * pub size: usize -->  Tamaño del tablero
+ * pub size: usize -->  tamaño del tablero
  *
  */
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct ResetRequest {
     pub size: Option<u32>,
     pub difficulty: Option<String>,
-    pub player: Option<String>, // <--- AÑADE ESTA LÍNEA
+    pub player: Option<String>, // <--- AñADE ESTA LíNEA
 }
 
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct GameRecord {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
-    #[schema(value_type = Option<String>)] // <-- Esta línea soluciona el error de ObjectId
+    #[schema(value_type = Option<String>)] // <-- Esta lí­nea soluciona el error de ObjectId
     pub id: Option<mongodb::bson::oid::ObjectId>,
     pub date: String,
     pub opponent: String,
     pub board_size: u32,
     pub difficulty: String,
     pub result: String,
+}
+
+fn normalize_history_result(raw: &str) -> &'static str {
+    let stripped: String = raw
+        .trim()
+        .chars()
+        .filter(|ch| ch.is_ascii_alphanumeric())
+        .map(|ch| ch.to_ascii_lowercase())
+        .collect();
+
+    match stripped.as_str() {
+        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "duhastgewonnen" | "ganhaste" => "Victoria",
+        "derrota" | "defeat" | "loss" | "lost" | "perdido" | "youlose" | "duhastverloren" | "perdeste" => "Derrota",
+        "hasganado" => "Victoria",
+        "hasperdido" => "Derrota",
+        _ => "Derrota",
+    }
+}
+
+fn normalize_history_document(record: &mut serde_json::Value) {
+    if let Some(obj) = record.as_object_mut() {
+        if let Some(result) = obj.get("result").and_then(|value| value.as_str()) {
+            obj.insert(
+                "result".to_string(),
+                serde_json::Value::String(normalize_history_result(result).to_string()),
+            );
+        }
+
+        if let Some(result_label) = obj.get("result_label").and_then(|value| value.as_str()) {
+            obj.insert(
+                "result_label".to_string(),
+                serde_json::Value::String(normalize_history_result(result_label).to_string()),
+            );
+        }
+    }
 }
 
 // Routes
@@ -197,26 +231,11 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let _ = rustls::crypto::ring::default_provider().install_default();
     
     // Leer y validar la URI de MongoDB desde variables de entorno.
-    let uri = std::env::var("MONGODB_URI")
-        .map_err(|_| GameYError::ServerError {
+    let uri = validate_mongodb_uri(
+        &std::env::var("MONGODB_URI").map_err(|_| GameYError::ServerError {
             message: "La variable MONGODB_URI no esta configurada. Usa una URI completa, por ejemplo: mongodb://localhost:27017/gamey_db".to_string(),
-        })?;
-    let uri = uri.trim().to_string();
-
-    if uri.is_empty() {
-        return Err(GameYError::ServerError {
-            message: "La variable MONGODB_URI esta vacia. Debe incluir esquema (mongodb:// o mongodb+srv://).".to_string(),
-        });
-    }
-
-    if !uri.starts_with("mongodb://") && !uri.starts_with("mongodb+srv://") {
-        return Err(GameYError::ServerError {
-            message: format!(
-                "MONGODB_URI invalida: falta el esquema. Valor recibido: '{}'. Formato esperado: mongodb://... o mongodb+srv://...",
-                uri
-            ),
-        });
-    }
+        })?,
+    )?;
 
     // Conectar a la BBDD
     let client = mongodb::Client::with_uri_str(&uri)
@@ -264,6 +283,27 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     Ok(())
 }
 
+fn validate_mongodb_uri(raw_uri: &str) -> Result<String, GameYError> {
+    let uri = raw_uri.trim().to_string();
+
+    if uri.is_empty() {
+        return Err(GameYError::ServerError {
+            message: "La variable MONGODB_URI esta vacia. Debe incluir esquema (mongodb:// o mongodb+srv://).".to_string(),
+        });
+    }
+
+    if !uri.starts_with("mongodb://") && !uri.starts_with("mongodb+srv://") {
+        return Err(GameYError::ServerError {
+            message: format!(
+                "MONGODB_URI invalida: falta el esquema. Valor recibido: '{}'. Formato esperado: mongodb://... o mongodb+srv://...",
+                uri
+            ),
+        });
+    }
+
+    Ok(uri)
+}
+
 /// Health check endpoint handler.
 ///
 /// Returns "OK" to indicate the server is running.
@@ -290,7 +330,7 @@ pub async fn realizar_movimiento(
     // 1. Obtener la sesión del usuario (Corregido de ax_state a state)
     let session = state.get_or_create_session(&payload.player).await;
 
-    // Bloqueamos la sesión privada (Añadidos tipos explícitos para ayudar al compilador)
+    // Bloqueamos la sesión privada (Añadidos tipos explí­citos para ayudar al compilador)
     let mut game = session.game.lock().await;
     let current_difficulty_guard = session.current_difficulty.lock().await;
     let active_bot_name = session.active_bot.lock().await.clone();
@@ -328,33 +368,11 @@ pub async fn realizar_movimiento(
         _ => None,
     };
 
-    let mut final_score = 0;
-
     if winner_id.is_some() {
         let db = state.db.clone();
         let final_bot_name = active_bot_name.clone();
         let final_difficulty = current_difficulty_guard.to_string();
-        let b_size = game.board_size();
         let player_name = payload.player.clone();
-
-        // logica de puntuación
-
-        let diff_mult = match final_difficulty.as_str() {
-            "Medium" => 2.0,
-            "Hard" => 3.0,
-            _ => 1.0, // Easy o cualquier otro valor no reconocido
-        };
-
-        let size_mult = (b_size as f32) / 6.0;
-
-        // Calcular score total
-        final_score = if winner_id == Some(0) {
-            (100.0 * diff_mult * size_mult) as i32
-        } else {
-            0 // derrota
-        };
-
-        let record_score = final_score;
 
         tokio::spawn(async move {
             let collection = db.collection::<serde_json::Value>("partidas");
@@ -364,8 +382,7 @@ pub async fn realizar_movimiento(
                 "opponent": final_bot_name,
                 "board_size": b_size,
                 "difficulty": final_difficulty,
-                "result": if winner_id == Some(0) { "Victoria" } else { "Derrota" },
-                "score": record_score
+                "result": normalize_history_result(if winner_id == Some(0) { "Victoria" } else { "Derrota" })
             });
             let _ = collection.insert_one(record).await;
         });
@@ -374,8 +391,7 @@ pub async fn realizar_movimiento(
     let yen_data: crate::YEN = (&*game).into();
     axum::Json(serde_json::json!({
         "board": yen_data,
-        "winner": winner_id,
-        "score": final_score
+        "winner": winner_id
     }))
 }
 
@@ -449,11 +465,11 @@ pub async fn obtener_historial(
     let limit = params.limit.unwrap_or(10).clamp(1, 100); 
     let skip_value = (page - 1) * (limit as u64);
 
-    // 2. Construir un ÚNICO filtro dinámico
-    // CRÍTICO: Asegúrate de si tu campo en Mongo se llama "player" o "username". Aquí asumo "player".
+    // 2. Construir un úNICO filtro dinámico
+    // CRíTICO: Asegúrate de si tu campo en Mongo se llama "player" o "username". Aquí­ asumo "player".
     let mut filter = doc! { "player": &params.username };
 
-    // Añadimos el filtro de resultado si el frontend lo envía
+    // Añadimos el filtro de resultado si el frontend lo enví­a
     if let Some(res) = &params.result {
         filter.insert("result", res);
     }
@@ -491,7 +507,8 @@ pub async fn obtener_historial(
     // 6. Recoger los resultados del cursor
     // Recuerda que esto necesita importar: use futures::stream::StreamExt;
     let mut partidas = Vec::new();
-    while let Some(Ok(doc)) = cursor.next().await {
+    while let Some(Ok(mut doc)) = cursor.next().await {
+        normalize_history_document(&mut doc);
         partidas.push(doc);
     }
 
@@ -538,20 +555,6 @@ pub async fn obtener_estadisticas(
 ) -> impl axum::response::IntoResponse {
     let collection = state.db.collection::<serde_json::Value>("partidas");
 
-    // Obtener puntuacion
-    let filter = doc! { "player": &params.username };
-    let mut cursor = collection.find(filter).await.unwrap();
-    let mut total_score = 0i64;
-
-    while let Some(Ok(doc)) = cursor.next().await {
-        // CAMBIO AQUÍ: Usamos as_i64() en lugar de as_i32()
-        let s = doc.get("score")
-            .and_then(|v| v.as_i64()) 
-            .unwrap_or(0);
-        
-        total_score += s;
-    }
-
     // Contar victorias
     let wins_filter = doc! { "player": &params.username, "result": "Victoria" };
     let wins = collection.count_documents(wins_filter).await.unwrap_or(0);
@@ -568,6 +571,82 @@ pub async fn obtener_estadisticas(
         wins: wins as i64,
         losses: losses as i64,
         total: (wins + losses) as i64,
-        total_score: total_score,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{normalize_history_document, normalize_history_result, validate_mongodb_uri, run_bot_server};
+
+    #[test]
+    fn normalize_history_result_maps_common_win_variants() {
+        assert_eq!(normalize_history_result("Has ganado"), "Victoria");
+        assert_eq!(normalize_history_result("Victory"), "Victoria");
+        assert_eq!(normalize_history_result("ganhaste"), "Victoria");
+    }
+
+    #[test]
+    fn normalize_history_result_maps_common_loss_variants() {
+        assert_eq!(normalize_history_result("Has perdido"), "Derrota");
+        assert_eq!(normalize_history_result("loss"), "Derrota");
+        assert_eq!(normalize_history_result("Du hast verloren"), "Derrota");
+    }
+
+    #[test]
+    fn normalize_history_document_updates_result_fields() {
+        let mut record = serde_json::json!({
+            "result": "Has ganado",
+            "result_label": "Has perdido",
+        });
+
+        normalize_history_document(&mut record);
+
+        assert_eq!(record["result"], "Victoria");
+        assert_eq!(record["result_label"], "Derrota");
+    }
+
+    #[test]
+    fn validate_mongodb_uri_rejects_empty_and_missing_scheme() {
+        let empty_err = validate_mongodb_uri("   ").unwrap_err();
+        assert!(empty_err.to_string().contains("esta vacia"));
+
+        let scheme_err = validate_mongodb_uri("localhost:27017/gamey_db").unwrap_err();
+        assert!(scheme_err.to_string().contains("falta el esquema"));
+    }
+
+    #[test]
+    fn validate_mongodb_uri_accepts_valid_uri() {
+        let uri = validate_mongodb_uri(" mongodb://localhost:27017/gamey_db ").unwrap();
+        assert_eq!(uri, "mongodb://localhost:27017/gamey_db");
+    }
+
+    #[tokio::test]
+    async fn run_bot_server_reports_bind_error_when_port_is_busy() {
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let _keep_alive = listener;
+
+        let original_uri = std::env::var("MONGODB_URI").ok();
+        unsafe {
+            std::env::set_var("MONGODB_URI", "mongodb://localhost:27017/gamey_db");
+        }
+
+        let result = tokio::time::timeout(std::time::Duration::from_secs(5), run_bot_server(port))
+            .await
+            .expect("run_bot_server should not hang when bind fails");
+
+        if let Some(value) = original_uri {
+            unsafe {
+                std::env::set_var("MONGODB_URI", value);
+            }
+        } else {
+            unsafe {
+                std::env::remove_var("MONGODB_URI");
+            }
+        }
+
+        let err = result.unwrap_err();
+        assert!(err.to_string().contains("Failed to bind"));
+    }
+}
+

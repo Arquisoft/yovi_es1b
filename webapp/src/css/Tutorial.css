@@ -115,6 +115,12 @@
   padding-right: 0.15rem;
 }
 
+.tutorial-sidebar-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+}
+
 .tutorial-sidebar-title {
   margin: 0 0 0.15rem 0;
   color: #111827;
@@ -213,6 +219,17 @@
 .tutorial-section p {
   margin: 0;
   color: #111827;
+}
+
+.tutorial-important-text {
+  white-space: pre-line;
+}
+
+.tutorial-capture-note {
+  margin-top: 0.05rem;
+  color: #4b5563;
+  font-size: 0.86rem;
+  font-style: italic;
 }
 
 .tutorial-list {

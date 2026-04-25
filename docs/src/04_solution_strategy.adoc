@@ -3,39 +3,103 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-solution-strategy]]
 == Estrategia de Solución
 
-=== **Introducción**
-El proyecto **yovi_es1b** ha sido diseñado empleando una **arquitectura modular y distribuida**, en el que tenemos diferenciado la UI o **interfaz de usuario**, la **lógica de negocio** y el **motor del juego**, además de una **aplicación web**. Esta separación, va a permitir un **desarrollo incremental**, facilitando **mantenimiento** y **escalabilidad** del sistema. Las decisiones se han tomado teniendo en cuenta los **objetivos de calidad** que se mencionarán más adelante.
+El proyecto **yovi_es1b** se ha resuelto como un sistema distribuido ligero, con separación clara entre la experiencia de usuario, la gestión de cuentas y el motor del juego. La idea principal no era solo "tener una web", sino construir una arquitectura que permitiera evolucionar cada parte por separado, probarla de forma independiente y desplegarla sin arrastrar al resto del sistema.
 
-=== **Decisiones arquitectónicas claves**
-.**Descomposición de alto nivel**
-- **Webapp**: Aplicación **frontend**
-- **Users Service**: Servicio **backend** para gestión de usuarios
-- **GameY**: **Motor de juego** y servicio de bots implementado en Rust
-Esta separación de responsabilidades reduce el acoplamiento, mejora mantenibilidad, y permite escalar o sustituir componentes sin que genere problemas en otras partes del sistema.
+Esta estrategia se apoya en cuatro principios:
 
-.**Decisiones tecnológicas**
-- **Frontend**: **React** + **Vite** + **TypeScript**. Utilizados ya que son un buen soporte de herramientas y permite interfaces interactivas y fáciles de mantener
-- **Backend**: **Node.js** + **Express**. Son simples y útiles para APIs **REST** sencillas
-- **Motor de juego**: **Rust** + **Cargo**. Buen rendimiento, muy seguro y una buena gestión de concurrencia. Estas son características importantes para un motor de juego.
-- **Uso de contenedores**: **Docker** y **Docker Compose**. Simplifican instalación, ejecución y pruebas del sistema
+* **Separación de responsabilidades**: la `webapp` se encarga de la interacción con el usuario, `users` centraliza identidad, perfil y operaciones de integración, y `gamey` concentra la lógica del juego.
+* **Elección tecnológica por responsabilidad**: React/TypeScript para la interfaz, Node.js/TypeScript para la capa de integración y Rust para el motor de juego.
+* **Persistencia desacoplada**: cada servicio persiste los datos que le corresponden, evitando una base de datos compartida como punto único de acoplamiento.
+* **Despliegue reproducible**: Docker, Docker Compose, Nginx y certificados locales con `mkcert` permiten levantar el sistema de forma consistente en desarrollo, pruebas y demostración.
 
-.**Decisiones relacionadas con atributos de calidad**
-- **Mantenibilidad**: Empleamos código separado en módulos, separación de responsabilidades y uso de pruebas automáticas
-- **Escalabilidad**: Nuestros servicios se pueden ir actualizando y mejorando de forma independiente
-- **Portabilidad**: El uso de **Docker**, nos permite ejecutar el sistema en varios entornos
-- **Calidad del código**: **SonarCloud** y **CodeScene** ayudan a mantener el código limpio, seguro y fácil de mantener, asegurando que sigan estándares de calidad. Son herramientas que se utilizan para vigilar el código de forma automática mientras se desarrolla.
+[cols="1,2,3" options="header"]
+|===
+|Eje | Decisión | Motivo principal
+|Descomposición | `webapp` / `users` / `gamey` | Separar experiencia de usuario, integración y motor de juego
+|Frontend | React + TypeScript + Vite, organizado por páginas | Componentes reutilizables, tipado y arranque claro por flujo
+|Backend de integración | Node.js + Express + Mongoose | APIs REST sencillas, validación y rápida evolución
+|Motor de juego | Rust + Tokio + Axum | Rendimiento, seguridad de memoria y concurrencia
+|Datos | MongoDB con responsabilidad por servicio | Esquema flexible y menor acoplamiento entre dominios
+|Autenticación | `bcryptjs` + JWT | Seguridad base sin sesiones en servidor
+|Integraciones | i18next, OpenAPI/Swagger, PayPal | Usabilidad, contrato visible y valor añadido
+|Despliegue | Docker Compose + Nginx + `mkcert` | Reproducibilidad y HTTPS local
+|Calidad | Tests, SonarCloud, Prometheus/Grafana | Detección temprana de errores y observabilidad
+|===
 
-.**Decisiones organizativas**
-- Utilizamos **GitHub** como flujo de trabajo, que nos permite integrar de forma continua los nuevos cambios que hemos realizado y un despliegue automático
-- El desarrollo del proyecto es de forma incremental, trabajando desde la misma base y desde la cual, partimos cada uno con la parte que se nos sea asignada
-- La asignación se realiza distribuyendo el trabajo en componentes, y cada grupo formado internamente, se encarga del componente que se le asigne
-- Empleamos **arc42**, junto a **AsciiDoc** y **PlantUML** para que la documentación se genere de forma automátrica, incluyendo diagramas. Así el código y la documentación se mantienen sincronizadas, y el despliegue automático de GitHub Pages, facilita la disponibilidad y portabilidad de la documentación
+=== Descomposición principal
 
+La aplicación se divide en tres bloques principales:
 
+* **`webapp`**: interfaz pública construida con React y TypeScript. Está organizada como una aplicación multipágina con entradas separadas para inicio, login, registro y juego, lo que hace que cada flujo tenga su propio arranque y su propio contexto visual.
+* **`users`**: servicio Node.js/Express que actúa como punto de entrada público para autenticación, perfil, relaciones sociales y parte de la integración con el motor de juego.
+* **`gamey`**: servicio Rust que implementa el motor de juego, los bots y la persistencia del histórico de partidas.
+
+Esta separación se eligió porque los tres bloques tienen ritmos de cambio muy distintos. La interfaz cambia mucho en experiencia de usuario, el servicio de usuarios cambia en reglas de negocio y autenticación, y el motor de juego necesita rendimiento y aislamiento del estado. Mantenerlos juntos habría aumentado el acoplamiento y habría hecho más difícil evolucionarlos.
+
+=== Estrategia tecnológica
+
+La elección del stack no fue arbitraria. En el frontend se usa **React + TypeScript + Vite** porque facilita construir pantallas reutilizables, tipadas y rápidas de desarrollar. Además, el uso de varias entradas HTML hace que cada pantalla arranque de forma independiente, algo que encaja bien con los flujos reales del proyecto: home, login, registro y juego.
+
+En la capa de integración se usa **Node.js + Express** porque resulta ágil para exponer APIs REST, recibir peticiones JSON, validar datos y coordinar llamadas con otros servicios. Sobre esa base se apoya **Mongoose**, que aporta una estructura clara al trabajo con MongoDB sin perder la flexibilidad del modelo documental.
+
+El motor de juego está implementado en **Rust** porque la parte más sensible del sistema es la que calcula el estado de partida, los movimientos y la lógica de bots. Rust aporta rendimiento, seguridad de memoria y una gestión de concurrencia mucho más robusta que otras opciones más dinámicas.
+
+=== Estrategia de datos
+
+La persistencia se apoya en **MongoDB** y sigue una lógica de separación por servicio. `users` guarda la información de usuarios, perfiles, amigos, solicitudes y credenciales hasheadas. `gamey` almacena el histórico de partidas y estadísticas de juego. De esta manera se evita el anti-patrón de una base de datos compartida donde todos los servicios escriben y leen indiscriminadamente.
+
+La consecuencia práctica es muy importante:
+
+* El esquema de usuario puede evolucionar sin afectar al motor de juego.
+* El histórico de partidas puede crecer y optimizarse sin tocar el login.
+* Las relaciones sociales y el perfil público se gestionan en el dominio de usuarios.
+* Las estadísticas y el histórico de partidas pertenecen al dominio de juego.
+
+Además, los datos de la sesión activa se guardan de forma diferente según su naturaleza. El token JWT se conserva en `sessionStorage` porque debe desaparecer al cerrar el navegador, mientras que preferencias como idioma, avatar o nick se guardan en `localStorage` porque forman parte de la personalización persistente del usuario.
+
+=== Estrategia de comunicación e integración
+
+La comunicación entre servicios se realiza mediante **HTTP/JSON**. El frontend no llama directamente a todo, sino que trabaja con un punto de entrada público claro. `users` concentra la mayor parte de las operaciones visibles para el cliente y reenvía al motor de juego aquello que pertenece a `gamey`.
+
+Esta estrategia simplifica bastante el cliente porque:
+
+* solo necesita conocer una base URL pública principal;
+* la autenticación se centraliza;
+* la política CORS se controla en un solo sitio;
+* y la integración con `gamey` queda encapsulada detrás del servicio de usuarios.
+
+Además, la aplicación incorpora integración con terceros cuando aporta valor real. El caso más claro es **PayPal**, usado para la compra de XP, y el soporte multilenguaje con **i18next**, que permite cambiar la interfaz sin reescribir componentes.
+
+=== Estrategia de despliegue
+
+El despliegue está pensado para ser repetible y predecible. Cada componente se empaqueta en su propio contenedor Docker y el conjunto se coordina con **Docker Compose**. Esto permite levantar la aplicación completa en un entorno homogéneo y reduce el clásico problema de "en mi máquina funciona".
+
+La `webapp` se construye como una imagen multi-stage y en producción se sirve con **Nginx** a partir de los distintos entry points HTML de la MPA (`index.html`, `login.html`, `register.html` y `game.html`), mientras que en desarrollo se ejecuta con Vite. El `try_files` de Nginx actúa solo como respaldo genérico para rutas no resueltas como archivo estático, no como mecanismo principal de navegación. El servicio `users` puede arrancar en HTTPS si existen certificados locales, generados con `mkcert`, lo que nos acerca bastante al comportamiento de un entorno real sin complicar demasiado la puesta en marcha.
+
+La ventaja de esta decisión es que el sistema queda listo tanto para desarrollo local como para despliegues de evaluación o demostración, con las dependencias ya encapsuladas en sus contenedores.
+
+=== Estrategia de calidad
+
+La calidad no se ha dejado como una tarea final, sino que forma parte de la estrategia desde el principio. Se usan pruebas automatizadas con **Vitest** en la parte JavaScript/TypeScript y pruebas en Rust para `gamey`. Además, el proyecto se analiza con **SonarCloud** para detectar bugs, vulnerabilidades y deuda técnica.
+
+Como apoyo operativo, el servicio `users` expone métricas para **Prometheus** y **Grafana**, lo que facilita la observabilidad del sistema. Esto es especialmente útil en un proyecto distribuido, donde no basta con que el código compile: también hay que poder diagnosticar qué está pasando en ejecución.
+
+=== Estrategia organizativa
+
+La documentación sigue **arc42**, porque da una estructura común a todo el sistema y facilita que una persona nueva pueda entender la arquitectura sin perderse. El desarrollo se ha hecho de forma incremental y con trabajo repartido por componentes, lo que ha permitido avanzar en paralelo sin mezclar responsabilidades.
+
+En resumen, la estrategia de solución se basa en una combinación de:
+
+* desacoplamiento entre servicios,
+* elección tecnológica según el problema,
+* persistencia separada,
+* despliegue reproducible,
+* y calidad automatizada desde el inicio.
+
+Esto no elimina la complejidad, pero la reparte mejor y hace que el sistema sea más mantenible, más explicable y más fácil de evolucionar.
 
 ifdef::arc42help[]
 [role="arc42help"]
-
 ****
 .Contents
 A short summary and explanation of the fundamental decisions and solution strategies, that shape system architecture. It includes

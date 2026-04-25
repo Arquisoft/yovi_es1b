@@ -14,7 +14,16 @@ export const getAuthHeaders = () => {
  * Se usa para que Rust identifique qué partida cargar.
  */
 export const getCurrentUser = (): string => {
-    return sessionStorage.getItem('username') || '';
+    const storedUsername = sessionStorage.getItem('username');
+    if (!storedUsername) return '';
+
+    const normalized = normalizeStorageValue(storedUsername, 64);
+    if (!normalized || !USERNAME_PATTERN.test(normalized)) {
+        sessionStorage.removeItem('username');
+        return '';
+    }
+
+    return normalized;
 };
 
 /**
@@ -45,4 +54,57 @@ export const clearSession = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('username');
     clearGuestSession();
+};
+
+const USERNAME_PATTERN = /^[\p{L}\p{N}\s._-]{1,64}$/u;
+const STORAGE_VALUE_PATTERN = /^[\p{L}\p{N}\s._-]{1,128}$/u;
+
+const normalizeStorageValue = (value?: string | null, maxLength = 128) => {
+  const trimmed = String(value ?? '').normalize('NFKC').trim().slice(0, maxLength);
+  return trimmed;
+};
+
+const isSafeStorageValue = (value: string, pattern: RegExp) => pattern.test(value);
+
+/**
+ * Sustituye la sesión activa por la del usuario recién registrado.
+ * Se usa tras crear una cuenta para evitar arrastrar el usuario anterior.
+ */
+export const activateRegisteredSession = (username: string) => {
+    const name = normalizeStorageValue(username, 64);
+    if (!name || !USERNAME_PATTERN.test(name)) return false;
+
+    clearSession();
+    sessionStorage.setItem('username', name);
+    return true;
+};
+
+type PersistUserSessionOptions = {
+  friendCode: string;
+  icon?: string | null;
+  language?: string | null;
+  nickname?: string | null;
+};
+
+const setOrClear = (key: string, value?: string | null, maxLength = 128) => {
+  const normalized = normalizeStorageValue(value, maxLength);
+  if (normalized && isSafeStorageValue(normalized, STORAGE_VALUE_PATTERN)) {
+    localStorage.setItem(key, normalized);
+  } else {
+    localStorage.removeItem(key);
+  }
+};
+
+export const persistUserSession = (username: string, options: PersistUserSessionOptions) => {
+  const name = normalizeStorageValue(username, 64);
+  const friendCode = normalizeStorageValue(options.friendCode, 32).replace(/^#/, '');
+  if (!name || !USERNAME_PATTERN.test(name)) return false;
+  if (!friendCode || !STORAGE_VALUE_PATTERN.test(friendCode)) return false;
+
+  localStorage.setItem('yovi_user', name);
+  localStorage.setItem('yovi_friend_code', friendCode);
+  setOrClear('yovi_user_icon', options.icon, 128);
+  setOrClear('yovi_user_language', options.language, 32);
+  setOrClear('yovi_user_nickname', options.nickname, 64);
+  return true;
 };
