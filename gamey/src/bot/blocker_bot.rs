@@ -103,7 +103,7 @@ impl YBot for BlockerBot {
         let mut best_candidate = None;
         let mut max_score = i32::MIN;
 
-        // CRÍTICO: Convertimos el HashSet a un Vec y lo ORDENAMOS.
+        // Importante: Convertimos el HashSet a un Vec y lo ORDENAMOS.
         // Esto elimina la aleatoriedad de Rust y hace que el bot sea 100% determinista.
         // En caso de empate técnico de puntuación, siempre preferirá el índice más bajo.
         let mut deterministic_candidates: Vec<Coordinates> = candidates.into_iter().collect();
@@ -123,7 +123,7 @@ impl YBot for BlockerBot {
             }
         }
 
-        // If no valid candidate found after filtering, pick a random available cell
+        //SI no se ha encontrado ningún candidato válido, elegimos una celda disponible cualquiera.
         if best_candidate.is_none() {
              if !available_cells.is_empty() {
                  let idx = available_cells[0];
@@ -146,7 +146,7 @@ fn evaluate_block(
 ) -> i32 {
     let mut score = 0;
 
-    // Factor 1: Interrupción de conectividad local.
+   
     // Sumamos puntos por cada ficha del oponente adyacente a este candidato.
     // Bloquear una celda que toca muchas fichas enemigas
     let neighbors = board.get_neighbors(&candidate);
@@ -156,10 +156,10 @@ fn evaluate_block(
         }
     }
 
-    // Factor 2: Bloqueo estratégico basado en los lados del tablero.
+    // Bloqueo estratégico basado en los lados del tablero.
     let candidate_regions = board.get_cell_regions(candidate);
 
-    // Iteramos sobre los lados que al oponente LE FALTAN.
+    // Iteramos sobre los lados que al oponente le faltan para ganar.
     for &side in missing_sides {
         // Si el candidato toca directamente un lado que le falta al oponente, es un bloqueo crítico.
         if (candidate_regions & side) != 0 {
@@ -184,7 +184,7 @@ fn evaluate_block(
         score += dist_bonus;
     }
 
-    // Factor 3: Alejarse de los lados ya conseguidos.
+    // Alejarse de los lados ya conseguidos.
     // La estrategia pide "tapar la celda que esté más lejana a la pared o paredes ya cumplidas".
     // Esto evita desperdiciar bloqueos en zonas donde el oponente ya ha tenido éxito.
 

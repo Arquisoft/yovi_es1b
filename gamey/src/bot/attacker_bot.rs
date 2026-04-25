@@ -13,7 +13,7 @@ impl YBot for AttackerBot {
         let opponent_id = bot_utils::get_opponent_id(my_id);
         let size = board.board_size();
 
-        // 1. Prioridades de simulación (Victoria/Bloqueo)
+        // Prioridades de simulación (Victoria/Bloqueo)
         for id in [my_id, opponent_id] {
             for &idx in board.available_cells() {
                 let coords = Coordinates::from_index(idx, size);
@@ -26,7 +26,7 @@ impl YBot for AttackerBot {
             }
         }
 
-        // 2. Cálculo de distancias (Usa la utilidad común)
+       //Cálculo de distancias
         let my_dists = bot_utils::calculate_all_distances(board, my_id, 100);
         let opp_dists = bot_utils::calculate_all_distances(board, opponent_id, 100);
         

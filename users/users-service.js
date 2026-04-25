@@ -83,7 +83,6 @@ try {
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
-  // MODIFICA ESTA LÍNEA PARA INCLUIR Authorization
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.sendStatus(204);
@@ -208,7 +207,7 @@ app.get('/users/search', async (req, res) => {
 
     // Si la búsqueda empieza por #, buscamos coincidencia exacta por friendCode
     if (query.startsWith('#')) {
-      // Quitamos el # para buscar en la base de datos (donde se guarda como "ABC123")
+      // Quitamos el # para buscar en la base de datos 
       const cleanCode = query.substring(1).toUpperCase();
       searchCriteria = { friendCode: cleanCode };
     } else {
@@ -252,14 +251,12 @@ app.post('/users/follow', async (req, res) => {
   }
 });
 
-// En users-service.js (alrededor de la línea 170)
+// En users-service.js
 app.get('/users/profile/:username', async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
     const user = await User.findOne({ username });
-    // Si decides usar populate, asegúrate de que el modelo esté bien definido,
-    // si da error 500, comenta las líneas de populate.
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -272,7 +269,6 @@ app.get('/users/profile/:username', async (req, res) => {
       language: user.language,
       iconName: user.iconName,
       totalScore: user.totalScore || 0,
-      // Usamos el tamaño del array directamente si no vas a popular
       followingCount: user.following?.length || 0,
       followersCount: user.followers?.length || 0
     });
@@ -555,7 +551,7 @@ app.post('/move', async (req, res) => {
   const { cellIndex, username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
-    // 1. Integración: Llamada al servicio de Rust
+    //  Integración: Llamada al servicio de Rust
     const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
@@ -584,7 +580,7 @@ app.post('/move', async (req, res) => {
 
     // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
     if (newBoard.winner === 0 && finalScore > 0) {
-      const User = require('./models/user'); // Asegúrate de tener acceso al modelo
+      const User = require('./models/user'); 
       const awardedScore = finalScore;
       
       // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
@@ -594,7 +590,7 @@ app.post('/move', async (req, res) => {
       );
     }
     
-    // 3. Respuesta HTTP
+    //  Respuesta HTTP
     res.json({ 
       responseFromRust: newBoard.board,
       winner: newBoard.winner,
@@ -607,12 +603,12 @@ app.post('/move', async (req, res) => {
   }
 });
 
-// NEW: Endpoint para registrar una rendición (derrota)
+//  Endpoint para registrar una rendición (derrota)
 app.post('/surrender', async (req, res) => {
   const { username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
-    // 1. Integración: Llamada al servicio de Rust (GameY)
+    //  Integración: Llamada al servicio de Rust (GameY)
     const rustResponse = await fetch(`${GAMEY_URL}/surrender`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -626,7 +622,7 @@ app.post('/surrender', async (req, res) => {
       })
     });
 
-    // 2. Control de errores de la respuesta de Rust
+    //  Control de errores de la respuesta de Rust
     if (!rustResponse.ok) {
       const text = await rustResponse.text();
       console.error("Error desde Rust en surrender:", text);
@@ -635,7 +631,7 @@ app.post('/surrender', async (req, res) => {
 
     const data = await rustResponse.json();
 
-    // 3. Respuesta al Frontend
+    //  Respuesta al Frontend
     res.json({ 
       message: "Rendición registrada correctamente",
       details: data 
@@ -650,7 +646,7 @@ app.post('/surrender', async (req, res) => {
 
 // Resets the game board WITHOUT affecting stats
 app.post('/reset', async (req, res) => {
-  // CORRECCIÓN: Añadimos username a la extracción del body
+  //  Añadimos username a la extracción del body
   const { size, difficulty, username } = req.body;
 
   try {
@@ -681,7 +677,7 @@ app.post('/reset', async (req, res) => {
   }
 });
 
-// New
+
 // Get available difficulties
 app.get('/difficulties', async (req, res) => {
   try {
@@ -726,7 +722,6 @@ app.get('/history', async (req, res) => {
     
     const paginatedData = await rustResponse.json();
     
-    // DEBUG: Mira tu terminal de Node para ver si llegan datos
     console.log('Historial de partidas consultado correctamente.');
 
     // 5. Enviamos el array directo al Frontend
