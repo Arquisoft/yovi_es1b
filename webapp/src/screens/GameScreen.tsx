@@ -5,7 +5,6 @@ import historyJson from '../assets/buttons/History.json';
 import restartJson from '../assets/buttons/Restart.json';
 import settingsJson from '../assets/buttons/setting.json';
 import settingsImg from '../assets/buttons/configuracion.png';
-import logoGameY from '../assets/Logo_GameY.png';
 import botonRojo from '../assets/buttons/BotonRojo.png';
 import historialImg from '../assets/buttons/Historial.jpg';
 import reiniciarPartidaImg from '../assets/buttons/ReiniciarPartida.jpg';
@@ -196,9 +195,15 @@ function GameScreen({
       
 
       <nav className="game-navbar">
-        <div className="nav-left-group">
-          <img src={logoGameY} alt="GameY" className="nav-gamey-logo" />
+
+        <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title={t('game.profile')}>
+          <img className="nav-btn-profile-img" src={safePlayerIcon} alt={t('game.profile')} />
+        </button>
+
+        <div className="nav-user-info">
+          <h2>{t('game.player')}: <span>{username}</span></h2>
         </div>
+        
 
         {/* --- BOTÓN DE PUNTOS CENTRAL --- */}
         <div className="nav-center-score">
@@ -211,7 +216,6 @@ function GameScreen({
 
         <div className="nav-game-settings">
           <div className="nav-setup-item">
-            <span className="nav-setup-label">{t('game.change_size')}</span>
             {/* MENÚ TAMAÑO */}
             <div className="custom-dropdown-container">
               <button
@@ -248,7 +252,6 @@ function GameScreen({
           </div>
 
           <div className="nav-setup-item">
-            <span className="nav-setup-label">{t('game.change_difficulty')}</span>
             {/* MENÚ DIFICULTAD */}
             <div className="custom-dropdown-container">
               <button
@@ -358,13 +361,6 @@ function GameScreen({
               <img className="nav-btn-friends-img" src={amigosImg} alt={t('game.friends_menu_short')} />
             </button>
             <span className="nav-icon-caption">{t('game.friends_menu_short')}</span>
-          </div>
-
-          <div className="nav-profile-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onViewProfile} title={t('profile.title')}>
-              <img className="nav-btn-profile-img" src={safePlayerIcon} alt={t('profile.title')} />
-            </button>
-            <span className="nav-icon-caption nav-profile-caption">{t('game.profile')}</span>
           </div>
 
           <div className="nav-btn-spacer" aria-hidden="true" />

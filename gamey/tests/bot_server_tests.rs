@@ -794,6 +794,10 @@ async fn test_reset_endpoint_resets_board_and_optional_difficulty() {
 
 #[tokio::test]
 async fn test_history_endpoint_returns_paginated_data() {
+    let uri_env = std::env::var("MONGODB_URI")
+        .unwrap_or_else(|_| "NO DEFINIDA (usando default localhost)".to_string());
+    println!("DEBUG: Intentando conectar a MongoDB con URI: {}", uri_env);
+
     let app = test_app().await;
 
     let response = app
@@ -944,12 +948,12 @@ async fn test_play_on_completely_full_board() {
 
     // Verificamos que el servidor detecta que no puede jugar y devuelve error
     let body = response.into_body().collect().await.unwrap().to_bytes();
-    let error: ErrorResponse = serde_json::from_slice(&body).expect("Expected an ErrorResponse for a full board");
-    
+    let error: ErrorResponse =
+        serde_json::from_slice(&body).expect("Expected an ErrorResponse for a full board");
+
     // El mensaje exacto dependerá de vuestra implementación, pero debe dar error
     assert!(!error.message.is_empty());
 }
-
 
 #[tokio::test]
 async fn test_play_size_layout_mismatch() {
@@ -976,7 +980,9 @@ async fn test_play_size_layout_mismatch() {
     // El servidor debe escupir un error y no intentar parsearlo (evitando un panic)
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let error: ErrorResponse = serde_json::from_slice(&body).unwrap();
-    
-    assert!(error.message.contains("Invalid") || error.message.contains("size"), 
-            "El mensaje de error debería indicar la discrepancia de tamaños");
+
+    assert!(
+        error.message.contains("Invalid") || error.message.contains("size"),
+        "El mensaje de error debería indicar la discrepancia de tamaños"
+    );
 }

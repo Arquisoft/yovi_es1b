@@ -618,7 +618,7 @@
 /* Apodo (nickname) grande y blanco */
 .profile-nickname {
     font-size: 1.8rem;
-    color: #535353;
+    color: #dcfd8b; /* Amarillo neón */
     margin: 0;
     letter-spacing: 1px;
 }
@@ -652,7 +652,7 @@
 
 /* Números de estadísticas en neón */
 .stat-num {
-    color: black; /* Amarillo neón */
+    color: #dcfd8b; /* Amarillo neón */
 
     font-size: 1.4rem;
     font-weight: 700;
@@ -754,7 +754,7 @@
 /* Botón para ti mismo */
 .profile-add-btn.disabled {
     background: transparent;
-    color: #444;
-    border: 1px dashed #444;
+    color: #dcfd8b;
+    border: 1px dashed #dcfd8b;
     cursor: default;
 }
