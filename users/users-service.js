@@ -566,16 +566,15 @@ app.post('/move', async (req, res) => {
       })
     });
 
-    if (!rustResponse.ok) {
-      const text = await rustResponse.text();
-      
-      console.error("Error técnico desde Rust:", text);
-      
-      
-      return res.status(500).json({ 
-        error: "Hubo un problema al procesar la partida. Por favor, inténtalo de nuevo." 
-      });
-  }
+   if (!rustResponse.ok) {
+    const text = await rustResponse.text();
+    
+    const safeText = text.replace(/[\n\r]/g, '_');
+    
+    console.error("Error técnico desde Rust: " + safeText);
+    
+    return res.status(500).json({ error: "Error en la comunicación con el juego" });
+}
 
     const newBoard = await rustResponse.json();
     const fallbackScore = calculateVictoryScore(difficulty, boardSize);
