@@ -88,9 +88,23 @@ const mergeHeaders = (init?: RequestInit): HeadersInit => {
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const res = init ? await fetch(url, init) : await fetch(url);
-  return res.json() as Promise<T>;
-};
 
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => 'No hay detalle del error');
+    // Mantenemos la limpieza de logs que aplicamos antes para evitar inyecciones
+    console.error(`Error en fetch a ${url}: ${res.status} - ${errorText.replace(/[\n\r]/g, '_')}`);
+    throw new Error(`Error en la petición: ${res.status}`);
+  }
+
+  const contentType = res.headers.get('content-type');
+
+  // CAMBIO CRÍTICO: Usamos el optional chaining aquí
+  if (!contentType?.includes('application/json')) {
+    throw new Error('La respuesta no es un JSON válido');
+  }
+
+  return res.json() as Promise<T>; 
+};
 export const gameService = {
   // Obtener dificultades
   async getDifficulties(): Promise<string[]> {

@@ -3,15 +3,23 @@ import request from 'supertest'
 import app from '../users-service.js'
 
 // Mock global fetch para no llamar a Rust
+// Mock global fetch para no llamar a Rust
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
 
 const mockRustResponse = (data, ok = true) =>
     Promise.resolve({
         ok,
-        json: () => Promise.resolve(data),
-        text: () => Promise.resolve(JSON.stringify(data)),
         status: ok ? 200 : 500,
+        json: () => Promise.resolve(data),
+        text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
+        // SOLUCIÓN: Añadimos el objeto headers para que res.headers.get() no falle
+        headers: {
+            get: (name) => {
+                if (name.toLowerCase() === 'content-type') return 'application/json';
+                return null;
+            }
+        }
     })
 
 describe('Game endpoints (proxy a Rust)', () => {
