@@ -37,11 +37,18 @@ const MAX_NICKNAME_LENGTH = 15;
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://localhost:4000';
 
 
-// HTTPS
-let sslOptions = null;
 
-// Solo intentamos cargar certificados si NO estamos en un entorno de test
-if (process.env.NODE_ENV !== 'test') {
+  /**
+ * Intenta cargar la configuración SSL desde rutas predefinidas.
+ * Se extrae a una función para permitir pruebas unitarias y aislamiento.
+ */
+const loadSSLConfig = () => {
+  // En entorno de test, por defecto devolvemos null para no interferir 
+  // con el servidor de pruebas a menos que lo forcemos manualmente.
+  if (process.env.NODE_ENV === 'test' && !process.env.FORCE_SSL_TEST) {
+    return null;
+  }
+
   try {
     const keyPath = fs.existsSync('/certs/key.pem') 
       ? '/certs/key.pem' 
@@ -52,16 +59,28 @@ if (process.env.NODE_ENV !== 'test') {
       : path.join(__dirname, '../certs/cert.pem');
 
     if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-      sslOptions = {
+      const config = {
         key: fs.readFileSync(keyPath),
         cert: fs.readFileSync(certPath)
       };
       console.log("🔒 Certificados SSL cargados correctamente.");
+      return config;
     }
   } catch (err) {
-    console.warn("No se pudieron cargar los certificados SSL, se usará HTTP. " + err.message );
+    // SEGURIDAD: Logueamos el error completo internamente para debug
+    console.error("Error técnico al cargar SSL:", err);
+    // Pero al log de advertencia enviamos un mensaje genérico sin 'err.message'
+    console.warn("No se pudieron cargar los certificados SSL, se usará HTTP por defecto.");
   }
-}
+  return null;
+};
+
+// Inicializamos la variable usando la función
+const sslOptions = loadSSLConfig();
+
+// IMPORTANTE: Exporta la función al final del archivo para que el test pueda verla
+// (Usa module.exports o export dependiendo de tu sistema de módulos)
+module.exports = { app, loadSSLConfig };
 
 
 const normalizeIconName = (rawValue) => {
@@ -72,12 +91,17 @@ const normalizeIconName = (rawValue) => {
   return parts[parts.length - 1] || 'SinAvatar.png';
 };
 
-try {
-  const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-} catch (e) {
-  console.log(e);
-}
+const setupSwagger = (app) => {
+  try {
+    const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8'));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  } catch (e) {
+    console.log("⚠️ Error al cargar la documentación Swagger:", e.message);
+  }
+};
+
+// Ejecución inmediata para el funcionamiento normal del servidor
+setupSwagger(app);
 
 // CORS --> The server accepts requests from any origin (*)
 app.use((req, res, next) => {
@@ -629,10 +653,14 @@ app.post('/surrender', async (req, res) => {
 
     //  Control de errores de la respuesta de Rust
     if (!rustResponse.ok) {
-      const text = await rustResponse.text();
-      console.error("Error desde Rust en surrender:", text);
-      return res.status(rustResponse.status).send(text);
-    }
+    const text = await rustResponse.text();
+    const safeLog = text.replace(/[\n\r]/g, '_');
+    console.error("Error desde Rust en surrender:", safeLog);
+    
+    return res.status(rustResponse.status).json({ 
+        error: "No se pudo procesar la rendición en este momento." 
+    });
+}
 
     const data = await rustResponse.json();
 
@@ -743,15 +771,30 @@ app.get('/history', async (req, res) => {
  */
 app.post('/users/purchase-xp', async (req, res) => {
   const { username, amount } = req.body;
+
   try {
+    const safeUsername = String(username || '').trim();
+    const safeAmount = Number(amount);
+
+   if (Number.isNaN(safeAmount)) {
+    return res.status(400).json({ error: "Cantidad no válida" });
+    }
+
     const updatedUser = await User.findOneAndUpdate(
-      { username },
-      { $inc: { totalScore: amount } }, // Sumamos los puntos comprados
+      { username: safeUsername }, 
+      { $inc: { totalScore: safeAmount } },
       { new: true }
     );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
     res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
+
   } catch (e) {
-    res.status(500).json({ error: "No se pudo procesar la compra. " + e.message });
+    console.error("Error en purchase-xp:", e);
+    res.status(500).json({ error: "No se pudo procesar la compra." });
   }
 });
 
@@ -776,4 +819,10 @@ if (require.main === module) {
   }
 }
 
-module.exports = app
+// En lugar de module.exports = { app, loadSSLConfig };
+// Hacemos esto para no romper los tests existentes:
+
+module.exports = app;
+module.exports.loadSSLConfig = loadSSLConfig;
+module.exports.normalizeIconName = normalizeIconName;
+module.exports.setupSwagger = setupSwagger; 
