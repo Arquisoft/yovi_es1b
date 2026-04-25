@@ -4,9 +4,11 @@ import bcrypt from 'bcryptjs'
 import mongoose from 'mongoose'
 import User from '../models/user.js'
 import app from '../users-service.js'
+import { generateTestToken, withAuthToken } from './test-utils.js'
 
 describe('Profile endpoints', () => {
-  
+  const token = generateTestToken()
+
   beforeEach(() => {
     // Evitamos bloqueos de Mongoose por falta de conexión real
     mongoose.set('bufferCommands', false)
@@ -28,8 +30,8 @@ describe('Profile endpoints', () => {
     // El endpoint actual hace await sobre findOne(), así que basta con devolver el usuario mockeado.
     vi.spyOn(User, 'findOne').mockResolvedValue(mockUser)
 
-    const res = await request(app).get('/users/profile/Alice')
-    
+    const res = await withAuthToken(request(app).get('/users/profile/Alice'), token)
+
     expect(res.status).toBe(200)
     expect(res.body.username).toBe('Alice')
     // Comprobamos que contenga la fecha sin importar el formato ISO completo
@@ -50,13 +52,13 @@ describe('Profile endpoints', () => {
     // Primera llamada: busca al usuario para editarlo
     vi.spyOn(User, 'findOne').mockResolvedValue(mockUser)
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .patch('/users/profile/Alice')
       .send({
         language: 'United Kingdom',
         iconName: 'new-icon.png',
         birthDate: '2001-02-03',
-      })
+      }), token)
 
     expect(res.status).toBe(200)
     expect(mockUser.language).toBe('United Kingdom')
@@ -72,9 +74,9 @@ describe('Profile endpoints', () => {
       save: vi.fn(),
     })
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .patch('/users/profile/Alice')
-      .send({ birthDate: 'esto-no-es-una-fecha' })
+      .send({ birthDate: 'esto-no-es-una-fecha' }), token)
 
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/fecha de nacimiento inválida/i)
@@ -103,12 +105,12 @@ describe('Profile endpoints', () => {
       password: hashed,
     })
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .post('/users/profile/Alice/change-password')
       .send({ 
         currentPassword: 'wrongPass', 
         newPassword: 'newPass123' 
-      })
+      }), token)
 
     expect(res.status).toBe(401)
     expect(res.body.error).toMatch(/la contraseña actual no es correcta/i)
@@ -128,12 +130,12 @@ describe('Profile endpoints', () => {
       .mockResolvedValueOnce(false)
     vi.spyOn(bcrypt, 'hash').mockResolvedValue('hashed-new-password')
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .post('/users/profile/Alice/change-password')
       .send({ 
         currentPassword: 'realPass123', 
         newPassword: 'newPass123' 
-      })
+      }), token)
 
     expect(res.status).toBe(200)
     expect(res.body.message).toMatch(/contraseña actualizada correctamente/i)

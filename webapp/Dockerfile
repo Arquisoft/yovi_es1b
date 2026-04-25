@@ -9,9 +9,9 @@ RUN npm ci --silent
 # Copy sources
 COPY . .
 
-# Accept build-time API url (defaults to localhost:3000)
-ARG VITE_API_URL="http://localhost:3000"
-ARG VITE_GAMEY_URL="http://localhost:4000"
+# Accept build-time public URLs. Empty values make the app infer the host at runtime.
+ARG VITE_API_URL=""
+ARG VITE_GAMEY_URL=""
 
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_GAMEY_URL=$VITE_GAMEY_URL

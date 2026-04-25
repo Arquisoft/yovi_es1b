@@ -25,7 +25,7 @@ const LoginPage = () => {
     language?: string | null
   ) => {
     if (persistUserSession(playerName, { friendCode, icon, nickname, language })) {
-      globalThis.location.href = '/game.html';
+      globalThis.location.href = '/gamemode.html';
     }
   };
 

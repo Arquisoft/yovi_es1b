@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   users:
     build: ./users
@@ -7,11 +5,10 @@ services:
     image: ghcr.io/arquisoft/yovi_es1b-users:latest
     ports:
       - "3000:3000"
-    volumes:
-      - ./certs:/certs:ro
     environment:
       - MONGODB_URI=${MONGODB_URI_USERS}
       - GAMEY_SERVICE_URL=http://gamey:3000
+      - JWT_SECRET=${JWT_SECRET:-clave_secreta_segura_docker}
     networks:
       - monitor-net
 
@@ -19,8 +16,8 @@ services:
     build:
       context: ./webapp
       args:
-        - VITE_API_URL=${PUBLIC_API_URL}
-        - VITE_GAMEY_URL=http://localhost:4000
+        - VITE_API_URL=${PUBLIC_API_URL:-}
+        - VITE_GAMEY_URL=${PUBLIC_GAMEY_URL:-}
     container_name: webapp
     image: ghcr.io/arquisoft/yovi_es1b-webapp:latest
     ports:
