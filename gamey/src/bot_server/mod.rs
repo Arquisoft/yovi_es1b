@@ -646,7 +646,12 @@ mod tests {
         }
 
         let err = result.unwrap_err();
-        assert!(err.to_string().contains("Failed to bind"));
+        let err_msg = err.to_string();
+        assert!(
+            err_msg.contains("Failed to bind") || 
+            err_msg.contains("Address already in use"),
+            "Se esperaba un error de puerto ocupado, pero se obtuvo: {}", err_msg
+        );
     }
 }
 
