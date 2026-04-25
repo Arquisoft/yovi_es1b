@@ -566,11 +566,15 @@ app.post('/move', async (req, res) => {
       })
     });
 
-    if (!rustResponse.ok) {
-       const text = await rustResponse.text();
-       console.error("Error desde Rust:", text);
-       return res.status(500).send(text);
-    }
+   if (!rustResponse.ok) {
+    const text = await rustResponse.text();
+    
+    const safeText = text.replace(/[\n\r]/g, '_');
+    
+    console.error("Error técnico desde Rust: " + safeText);
+    
+    return res.status(500).json({ error: "Error en la comunicación con el juego" });
+}
 
     const newBoard = await rustResponse.json();
     const fallbackScore = calculateVictoryScore(difficulty, boardSize);
@@ -580,15 +584,16 @@ app.post('/move', async (req, res) => {
 
     // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
     if (newBoard.winner === 0 && finalScore > 0) {
-      const User = require('./models/user'); 
-      const awardedScore = finalScore;
-      
-      // Buscamos al usuario y usamos $inc para sumar los puntos atómicamente
-      await User.findOneAndUpdate(
-        { username: username },
-        { $inc: { totalScore: awardedScore } } // Suma el score actual al totalScore de la DB
-      );
-    }
+    // 2. SANITIZACIÓN: Aseguramos que es un string y un número
+    const safeUsername = String(username || '').trim();
+    const awardedScore = Number(finalScore);
+    
+    // 3. OPERACIÓN SEGURA
+    await User.findOneAndUpdate(
+        { username: safeUsername }, // Filtro protegido contra objetos/inyecciones
+        { $inc: { totalScore: awardedScore } }
+    );
+}
     
     //  Respuesta HTTP
     res.json({ 
