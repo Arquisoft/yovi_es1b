@@ -212,7 +212,7 @@ const createSocketGateway = (httpServer, { gameyUrl }) => {
     socket.on('leave_match', (payload = {}) => {
       const matchId = String(payload.matchId || '').trim();
       const matchState = matches.get(matchId);
-      if (!matchState || !matchState.players.includes(username)) return;
+      if (!matchState?.players.includes(username)) return;
       closeActiveMatchForUser('left');
     });
 
@@ -222,7 +222,7 @@ const createSocketGateway = (httpServer, { gameyUrl }) => {
       const cellIndex = Number(payload.cellIndex);
       const matchState = matches.get(matchId);
 
-      if (!matchState || matchState.status !== 'active') {
+      if (!matchState?.status !== 'active') {
         console.warn(`⚠️ [socketHandler] GAME_MOVE RECHAZADO: Partida inactiva`, { matchId });
         socket.emit('sync_board', { error: 'Partida no activa o inexistente' });
         return;

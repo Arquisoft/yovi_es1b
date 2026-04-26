@@ -13,7 +13,7 @@ const authMiddleware = (req, res, next) => {
 
     // LOG DE PRECISIÓN
     const cookieToken = req.cookies?.token;
-    const safePath = req.path.replace(/[^\w/\-.]/g, '');
+    const safePath = req.path.replaceAll(/[^\w/\-.]/g, '');
     console.log(`[CHECK] Ruta: ${safePath} | Cookie: ${cookieToken ? 'SÍ' : 'NO'} | Header: ${bearerToken ? 'SÍ' : 'NO'}`);
 
     
@@ -28,6 +28,7 @@ const authMiddleware = (req, res, next) => {
         req.user = decoded; // Contendrá { username, nickname, etc }
         next();
     } catch (err) {
+        console.warn('[authMiddleware] Token inválido o expirado:', err.message);
         res.status(401).json({ error: 'Token inválido o expirado.' });
     }
 };
