@@ -6,7 +6,6 @@ import i18n from '../../i18n';
 import { GameModeScreen } from '../../screens/GameModeScreen';
 import { gameService } from '../../services/gameService';
 import type { GameMode } from '../../types/socketEvents';
-import { normalizeSupportedLanguage } from '../../utils/languageUtils';
 
 import '../../css/App.css';
 import '../../css/Log.css';
@@ -37,7 +36,17 @@ export const GameModePage = () => {
     gameService.getProfile()
       .then((profile) => {
         if (!active || profile?.error) return;
-        const safeLanguage = normalizeSupportedLanguage(profile.language);
+        const safeLanguage = (() => {
+          switch (profile.language) {
+            case 'Spain':
+            case 'English':
+            case 'German':
+            case 'Portuguese':
+              return profile.language;
+            default:
+              return 'Spain';
+          }
+        })();
         localStorage.setItem('yovi_user_language', safeLanguage);
         applyLanguage(safeLanguage);
       })

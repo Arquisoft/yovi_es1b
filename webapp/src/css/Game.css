@@ -1821,14 +1821,14 @@ body {
 }
 
 .payment-item-detail {
-  background: rgba(37, 99, 235, 0.08);
+  background: #ffffff;
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
   font-weight: bold;
   font-size: 1.2rem;
-  color: #0f172a;
-  border: 1px dashed rgba(15, 23, 42, 0.38);
+  color: #020617;
+  border: 1px dashed rgba(2, 6, 23, 0.28);
 }
 
 .paypal-button-container {

@@ -81,12 +81,6 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
   return match ? match[1] : iconValue;
 };
 
-const sanitizeStoredIcon = (icon: string | null | undefined): string | null => {
-  const iconValue = String(icon || '').trim();
-  if (!iconValue) return null;
-  return iconValue.replace(/[^a-zA-Z0-9._\-/:?=&%+#]/g, '');
-};
-
 const GameApp = () => {
   useEffect(() => {
     const storedLang = localStorage.getItem('yovi_user_language') || 'es';
@@ -281,10 +275,6 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
 
                 if (resolvedIcon) {
                     setPlayerIcon(resolvedIcon);
-                    const safeStoredIcon = sanitizeStoredIcon(safeIconName);
-                    if (safeStoredIcon) {
-                        localStorage.setItem('yovi_user_icon', safeStoredIcon);
-                    }
                 }
 
                 const languageToI18n: Record<string, string> = {
