@@ -18,15 +18,9 @@ export function GuestAccessModal({ reason, onClose, onGoLogin, onGoRegister }: R
       open
       className="modal-backdrop"
       aria-label={t('guest.restricted_aria')}
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onClose();
-        }
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Escape') {
-          onClose();
-        }
+      onCancel={(event) => {
+        event.preventDefault();
+        onClose();
       }}
     >
       <div className="modal-box">

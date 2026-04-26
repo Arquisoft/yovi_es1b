@@ -138,7 +138,10 @@ const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
 
   if (!res.ok) {
     const errorText = await res.text().catch(() => 'No hay detalle del error');
-    console.error(`Error en fetch a ${url}: ${res.status} - ${errorText.replace(/[\n\r]/g, '_')}`);
+
+
+    console.error(`Error en fetch a ${url}: ${res.status} - ${errorText.replaceAll(/[\n\r]/g, '_')}`);
+
     throw new Error(`Error en la petición: ${res.status}`);
   }
 

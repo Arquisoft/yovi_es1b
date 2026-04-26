@@ -114,7 +114,9 @@ export const GameModePage = () => {
         <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="No spoken audio" />
       </video>
       <div className="menu-video-overlay" />
-      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop />
+      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop>
+        <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="Background music" />
+      </audio>
 
       <div className="menu-content">
         <GameModeScreen 

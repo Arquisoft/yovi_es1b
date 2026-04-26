@@ -532,7 +532,8 @@ app.post('/friends/respond', authMiddleware, async (req, res) => {
  */
 app.get('/users/public-profile/:username', authMiddleware, async (req, res) => {
   const targetUsername = String(req.params.username || '').trim();
-  const requester = String(req.query.requester || '').trim(); // Usuario que hace la petición
+  const requester = String(req.query.requester || '').trim();
+  const isOwnProfile = requester.localeCompare(targetUsername, undefined, { sensitivity: 'accent' }) === 0;
   try {
     // Buscar los campos públicos del usuario
     const user = await User.findOne({ username: targetUsername })
@@ -544,7 +545,7 @@ app.get('/users/public-profile/:username', authMiddleware, async (req, res) => {
 
     // Buscar relacion
     let relationship = 'none';
-    if (requester === targetUsername) {
+    if (isOwnProfile) {
       relationship = 'self';
     } else {
       const friendship = await Friendship.findOne({
@@ -654,7 +655,7 @@ app.post('/move', authMiddleware, async (req, res) => {
    if (!rustResponse.ok) {
     const text = await rustResponse.text();
 
-    const safeText = text.replace(/[\n\r]/g, '_');
+    const safeText = text.replaceAll(/[\n\r]/g, '_');
 
     console.error("Error técnico desde Rust: " + safeText);
 
@@ -715,7 +716,7 @@ app.post('/surrender',authMiddleware, async (req, res) => {
     //  Control de errores de la respuesta de Rust
     if (!rustResponse.ok) {
     const text = await rustResponse.text();
-    const safeLog = text.replace(/[\n\r]/g, '_');
+    const safeLog = text.replaceAll(/[\n\r]/g, '_');
     console.error("Error desde Rust en surrender:", safeLog);
 
     return res.status(rustResponse.status).json({

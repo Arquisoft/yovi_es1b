@@ -102,6 +102,15 @@ describe('Social & Friends Endpoints (Mocks)', () => {
             const res = await withAuthToken(request(app).get('/friends'), token)
             expect(res.status).toBe(400)
         })
+
+        it('devuelve 500 si falla la consulta de amigos', async () => {
+            vi.spyOn(Friendship, 'find').mockRejectedValue(new Error('db friends fail'))
+
+            const res = await withAuthToken(request(app).get('/friends?username=Alice'), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toContain('db friends fail')
+        })
     })
 
     // ── GET /friends/requests ──────────────────
@@ -117,6 +126,15 @@ describe('Social & Friends Endpoints (Mocks)', () => {
             expect(res.status).toBe(200)
             expect(res.body[0].sender).toBe('Bob')
             expect(res.body[0].id).toBe('req1')
+        })
+
+        it('devuelve 500 si falla la consulta de solicitudes', async () => {
+            vi.spyOn(Friendship, 'find').mockRejectedValue(new Error('db requests fail'))
+
+            const res = await withAuthToken(request(app).get('/friends/requests?username=Alice'), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toContain('db requests fail')
         })
     })
 
@@ -146,6 +164,45 @@ describe('Social & Friends Endpoints (Mocks)', () => {
 
             expect(res.status).toBe(200)
             expect(res.body.message).toMatch(/rechazada/i)
+        })
+
+        it('devuelve 500 si falla al responder una solicitud', async () => {
+            vi.spyOn(Friendship, 'findByIdAndUpdate').mockRejectedValue(new Error('db respond fail'))
+
+            const res = await withAuthToken(request(app)
+                .post('/friends/respond')
+                .send({ requestId: 'req1', action: 'accepted' }), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toContain('db respond fail')
+        })
+    })
+
+    describe('POST /friends/cancel', () => {
+        it('cancela una solicitud pendiente', async () => {
+            vi.spyOn(Friendship, 'findOneAndDelete').mockResolvedValue({ _id: 'req1' })
+
+            const res = await withAuthToken(request(app)
+                .post('/friends/cancel')
+                .send({ follower: 'Alice', following: 'Bob' }), token)
+
+            expect(res.status).toBe(200)
+            expect(res.body.message).toMatch(/cancelada/i)
+            expect(Friendship.findOneAndDelete).toHaveBeenCalledWith({
+                users: { $all: ['Alice', 'Bob'] },
+                status: 'pending',
+            })
+        })
+
+        it('devuelve 500 si falla al cancelar solicitud', async () => {
+            vi.spyOn(Friendship, 'findOneAndDelete').mockRejectedValue(new Error('db cancel fail'))
+
+            const res = await withAuthToken(request(app)
+                .post('/friends/cancel')
+                .send({ follower: 'Alice', following: 'Bob' }), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toContain('db cancel fail')
         })
     })
 });
