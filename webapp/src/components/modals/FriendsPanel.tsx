@@ -178,7 +178,9 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
         }
       }}
     >
-      <div className="friends-sidebar-content" onClick={e => e.stopPropagation()}>
+      <div className="friends-sidebar-content" onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()} role="presentation"
+>
         <button className="close-button" onClick={onClose}>&times;</button>
         
         <h2 className="sidebar-title">{t('friends.social')}</h2>

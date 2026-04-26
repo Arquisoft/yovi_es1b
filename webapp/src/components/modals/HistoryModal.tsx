@@ -36,7 +36,8 @@ export const HistoryModal = ({
         }
       }}
     >
-      <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}
+            role="presentation">
         <h3>{t('game.history_title')}</h3>
 
         {/* Selector de Filtro */}

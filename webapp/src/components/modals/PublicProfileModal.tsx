@@ -119,7 +119,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
                 }
             }}
         >
-            <div className="profile-card" onClick={e => e.stopPropagation()}>
+            <div className="profile-card" onClick={e => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()} role="presentation">
                 <button className="profile-close-button" onClick={onClose}>&times;</button>
 
                 <div className="profile-header-content">
