@@ -61,6 +61,7 @@ jobs:
       # NUEVO
       MONGODB_URI_USERS: mongodb://localhost:27017/users_test
       MONGODB_URI_GAMEY: mongodb://localhost:27017/gamey_test
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
     # nuevo
     services:
       mongodb:
@@ -75,6 +76,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      # --- NUEVO: Generar certificados para HTTPS ---
+      - name: Generate Self-Signed Certificates
+        run: |
+          mkdir -p certs
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout certs/server.key -out certs/server.crt \
+            -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=localhost"
+          # Copiamos o movemos donde tu servicio 'users' los busque
+          cp certs/server.key users/server.key
+          cp certs/server.crt users/server.crt
       - name: Install users dependencies
         run: |
           cd users
