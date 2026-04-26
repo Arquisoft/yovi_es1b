@@ -1,9 +1,8 @@
 import { StrictMode, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { MenuBackgroundChrome } from '../../components/layout/MenuBackgroundChrome';
+import { MenuBackgroundShell } from '../../components/layout/MenuBackgroundShell';
 import { LanguageModal } from '../../components/modals/LanguageModal';
-import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
 import LoginScreen from '../../screens/LoginScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
 import { persistUserSession } from '../../utils/sessionUtils';
@@ -15,7 +14,6 @@ import '../../index.css';
 const LoginPage = () => {
   const [showLanguageScreen, setShowLanguageScreen] = useState(false);
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
-  const background = useMenuBackgroundMedia();
 
   const handleLoginSuccess = (
     playerName: string,
@@ -34,34 +32,29 @@ const LoginPage = () => {
   };
 
   return (
-    <MenuBackgroundChrome
-      audioRef={background.audioRef}
-      isVideoPaused={background.isVideoPaused}
-      musicVolume={background.musicVolume}
-      setIsVideoPaused={background.setIsVideoPaused}
-      setMusicVolume={background.setMusicVolume}
-      setShowSettings={background.setShowSettings}
-      showSettings={background.showSettings}
-      videoRef={background.videoRef}
-    >
-      <LoginScreen
-        onBack={handleBack}
-        onRegister={() => {
-          globalThis.location.href = '/register.html';
-        }}
-        onOpenLanguage={() => setShowLanguageScreen(true)}
-        onOpenSettings={() => background.setShowSettings(true)}
-        onOpenTutorial={() => setShowTutorialScreen(true)}
-        onLogin={handleLoginSuccess}
-      />
+    <MenuBackgroundShell>
+      {(background) => (
+        <>
+          <LoginScreen
+            onBack={handleBack}
+            onRegister={() => {
+              globalThis.location.href = '/register.html';
+            }}
+            onOpenLanguage={() => setShowLanguageScreen(true)}
+            onOpenSettings={() => background.setShowSettings(true)}
+            onOpenTutorial={() => setShowTutorialScreen(true)}
+            onLogin={handleLoginSuccess}
+          />
 
-      <LanguageModal isOpen={showLanguageScreen} onClose={() => setShowLanguageScreen(false)} />
+          <LanguageModal isOpen={showLanguageScreen} onClose={() => setShowLanguageScreen(false)} />
 
-      <TutorialScreen
-        isOpen={showTutorialScreen}
-        onClose={() => setShowTutorialScreen(false)}
-      />
-    </MenuBackgroundChrome>
+          <TutorialScreen
+            isOpen={showTutorialScreen}
+            onClose={() => setShowTutorialScreen(false)}
+          />
+        </>
+      )}
+    </MenuBackgroundShell>
   );
 };
 

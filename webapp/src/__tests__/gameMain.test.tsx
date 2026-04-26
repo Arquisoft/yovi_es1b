@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ReactNode } from 'react'
@@ -63,12 +63,60 @@ vi.mock('../screens/GameScreen', () => ({
   ),
 }))
 
-vi.mock('../components/layout/MenuBackgroundChrome', () => ({
-  MenuBackgroundChrome: ({ children, showSettings }: { children?: ReactNode; showSettings: boolean }) => (
-    <div data-testid="menu-chrome" data-settings={String(showSettings)}>
-      {children}
-    </div>
-  ),
+vi.mock('../components/layout/MenuBackgroundShell', () => ({
+  MenuBackgroundShell: ({ children }: { children: (background: {
+    audioRef: { current: null }
+    isVideoPaused: boolean
+    musicVolume: number
+    setIsVideoPaused: (value: boolean) => void
+    setMusicVolume: (value: number) => void
+    setShowSettings: (value: boolean) => void
+    showSettings: boolean
+    videoRef: { current: null }
+  }) => ReactNode }) => {
+    const { useState } = require('react') as typeof import('react')
+    const [showSettings, setShowSettings] = useState(false)
+    const [musicVolume, setMusicVolume] = useState(0.4)
+    const [isVideoPaused, setIsVideoPaused] = useState(false)
+
+    return (
+      <div data-testid="menu-chrome" data-settings="mock">
+        {children({
+          audioRef: { current: null },
+          isVideoPaused,
+          musicVolume,
+          setIsVideoPaused,
+          setMusicVolume,
+          setShowSettings,
+          showSettings,
+          videoRef: { current: null },
+        })}
+        {showSettings && (
+          <div role="dialog" aria-label="Configuración">
+            <label>
+              volumen
+              <input
+                aria-label="volumen"
+                type="range"
+                value={Math.round(musicVolume * 100)}
+                onChange={(event) => setMusicVolume(Number(event.target.value) / 100)}
+              />
+            </label>
+            <label>
+              video
+              <input
+                aria-label="video"
+                type="checkbox"
+                checked={!isVideoPaused}
+                onChange={(event) => setIsVideoPaused(!event.target.checked)}
+              />
+            </label>
+            <button type="button" onClick={() => setShowSettings(false)}>cerrar</button>
+          </div>
+        )}
+      </div>
+    )
+  },
 }))
 
 vi.mock('../components/modals/SelectionModals', () => ({
@@ -183,19 +231,6 @@ vi.mock('../components/modals/PayPalStore', () => ({
       <button type="button" onClick={onClose}>paypal-close</button>
     </div>
   ),
-}))
-
-vi.mock('../hooks/useMenuBackgroundMedia', () => ({
-  useMenuBackgroundMedia: () => ({
-    audioRef: { current: null },
-    isVideoPaused: false,
-    musicVolume: 0.4,
-    setIsVideoPaused: vi.fn(),
-    setMusicVolume: vi.fn(),
-    setShowSettings: vi.fn(),
-    showSettings: false,
-    videoRef: { current: null },
-  }),
 }))
 
 vi.mock('../hooks/useGameLogic', () => ({
@@ -409,10 +444,15 @@ describe('game main entrypoint', () => {
     await user.click(screen.getByRole('button', { name: /paypal-close/i }))
 
     await user.click(screen.getByRole('button', { name: /settings/i }))
-    expect(screen.getByRole('dialog', { name: /configuraci/i })).toBeTruthy()
-    await user.click(screen.getByLabelText(/video/i))
-    fireEvent.change(screen.getByLabelText(/volumen/i), { target: { value: '50' } })
-    await user.click(screen.getByRole('button', { name: /cerrar/i }))
+    const dialogs = screen.getAllByRole('dialog')
+    const settingsDialog = dialogs.find((dialog) =>
+      within(dialog).queryByText(/Configuración de elementos de fondo/i)
+    )
+    expect(settingsDialog).toBeTruthy()
+    if (!settingsDialog) throw new Error('No se encontró el diálogo de configuración')
+    await user.click(within(settingsDialog).getByLabelText(/Video en movimiento/i))
+    fireEvent.change(within(settingsDialog).getByLabelText(/Volumen de la música/i), { target: { value: '50' } })
+    await user.click(within(settingsDialog).getByRole('button', { name: /Cerrar/i }))
 
     gameLogicMocks.executeHumanMove.mockResolvedValueOnce({ responseFromRust: null, winner: 1, score: 0 })
     await user.click(screen.getByRole('button', { name: /cell/i }))
