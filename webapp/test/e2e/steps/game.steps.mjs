@@ -7,77 +7,69 @@ const FRONTEND_URL = 'https://localhost:5173';
 Given('the game page is open for user {string} with password {string}', async function (username, password) {
   const page = this.page;
 
-  // 1. Registro previo via API
+  // PASO A: Primero cargamos la web (así el origen ya no es 'null' y evitamos CORS)
+  await page.goto(`${FRONTEND_URL}/login.html`);
+
+  // PASO B: Registramos al usuario (con el origen ya válido)
   await page.evaluate(async ({ apiUrl, user, pass }) => {
     await fetch(`${apiUrl}/createuser`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        username: user,
-        nickname: user + 'Nick',
-        password: pass,
-        birthDate: '2000-01-01',
-        language: 'en'
+        username: user, nickname: user + 'Nick',
+        password: pass, birthDate: '2000-01-01', language: 'en'
       }),
     }).catch(() => {}); 
   }, { apiUrl: API_URL, user: username, pass: password });
 
-  // 2. Login manual
-  await page.goto(`${FRONTEND_URL}/login.html`);
+  // PASO C: Login
   await page.fill('#login-username', username);
   await page.fill('#login-password', password);
   await page.click('button[type="submit"]');
 
-  // --- SOLUCIÓN AL 401: Esperar a que el Token se guarde ---
+  // PASO D: LA CLAVE. Esperamos a que el Token exista de verdad en el navegador
+  // Esto evita que el juego intente pedir datos sin estar "identificado" (Error 401)
   await page.waitForFunction(() => {
-    return localStorage.getItem('token') !== null || localStorage.getItem('yovi_user') !== null;
+    return localStorage.getItem('yovi_user') !== null;
   }, { timeout: 10000 });
 
-  // 3. PASO CLAVE: Pantalla de selección de modo
+  // PASO E: Seleccionamos el modo (tu nueva ventana)
   await page.waitForURL('**/gamemode.html', { timeout: 15000 });
-  
-  // Hacemos clic en el botón con id "botModeBtn" (Jugar contra IA)
-  const aiBtn = page.locator('#botModeBtn');
-  await aiBtn.waitFor({ state: 'visible' });
-  await aiBtn.click();
+  await page.click('#botModeBtn');
 
-  // 4. Ahora sí, esperamos al tablero real
+  // PASO F: Esperamos a que el tablero se pinte
   await page.waitForURL('**/game.html', { timeout: 15000 });
-  
-  // Esperamos a que la estructura del juego sea visible
-  // He subido el timeout por si el servidor de Rust tarda en responder
-  await page.locator('.game-board, [aria-label*="celda"]').first().waitFor({ 
-    state: 'visible', 
-    timeout: 20000 
-  });
+  await page.locator('.game-board, [aria-label*="celda"]').first().waitFor({ state: 'visible', timeout: 20000 });
 });
 
 When('I click on the cell {string}', async function (cellIndex) {
-  const page = this.page;
-  const cell = page.getByRole('button', { name: new RegExp(`celda ${cellIndex}`, 'i') });
+  const cell = this.page.getByRole('button', { name: new RegExp(`celda ${cellIndex}`, 'i') });
   await cell.waitFor({ state: 'visible' });
-  await cell.click({ force: true }); // force: true por si el video de fondo "tapa" el clic
+  await cell.click({ force: true });
 });
 
 Then('the cell {string} should be occupied by a piece', async function (cellIndex) {
   const page = this.page;
-  // Esperamos a que el texto cambie de '.' a 'B' o 'R'
+  // Esperamos a que la ficha aparezca (B o R)
   await page.waitForFunction((idx) => {
     const btn = document.querySelector(`button[aria-label*="celda ${idx}" i]`);
     const text = btn ? btn.innerText.trim() : '';
     return text === 'B' || text === 'R';
-  }, cellIndex, { timeout: 5000 });
+  }, cellIndex, { timeout: 8000 });
 
   const cell = page.getByRole('button', { name: new RegExp(`celda ${cellIndex}`, 'i') });
   const content = (await cell.innerText()).trim();
-  assert.ok(['B', 'R'].includes(content), `Fallo: la celda tiene "${content}"`);
+  assert.ok(['B', 'R'].includes(content), `La celda ${cellIndex} no tiene ficha. Hay: "${content}"`);
 });
 
 Then('the turn timer should be visible', async function () {
+  const page = this.page;
   const timerSelector = '[class*="turn-timer"]';
-  await this.page.waitForSelector(timerSelector, { state: 'visible', timeout: 10000 });
-  const isVisible = await this.page.locator(timerSelector).first().isVisible();
-  assert.strictEqual(isVisible, true, 'El temporizador no se ve');
+
+  await page.waitForSelector(timerSelector, { state: 'visible', timeout: 5000 });
+  const isVisible = await page.locator(timerSelector).first().isVisible();
+  
+  assert.strictEqual(isVisible, true, 'El temporizador de turno debería ser visible');
 });
 
 Given('I have played a move on cell {string}', async function (cellIndex) {
@@ -86,25 +78,24 @@ Given('I have played a move on cell {string}', async function (cellIndex) {
 });
 
 When('I click the button to {string}', async function (title) {
-  // Buscamos por el atributo 'title' (Reiniciar partida / Terminar partida)
-  const btn = this.page.locator(`button[title*="${title}" i]`).first();
-  await btn.click({ force: true });
+  // Buscamos por el atributo title
+  await this.page.getByTitle(new RegExp(title, 'i')).click({ force: true });
 });
 
 Then('all cells on the board should be empty', async function () {
   const page = this.page;
-  const cells = page.locator('button[aria-label*="celda" i]');
+  // Ajustamos el selector a lo que suele haber en el tablero
+  const cells = page.locator('button[aria-label*="celda"]');
   const count = await cells.count();
   
   for (let i = 0; i < count; i++) {
     const text = (await cells.nth(i).innerText()).trim();
-    // Vacío puede ser nada o un punto
-    assert.ok(text === '' || text === '.', `Celda ${i} no vacía: "${text}"`);
+    // Aceptamos vacío o el punto de celda vacía
+    assert.ok(text === '' || text === '.', `La celda ${i} no está vacía: "${text}"`);
   }
 });
 
 When('I change the difficulty to {string}', async function (difficulty) {
-  // Abrir el menú de dificultad
   await this.page.getByRole('button', { name: /dificultad/i }).click();
   
   const diffMap = { 'Hard': 'Difícil', 'Medium': 'Medio', 'Easy': 'Fácil' };
@@ -114,12 +105,18 @@ When('I change the difficulty to {string}', async function (difficulty) {
 });
 
 Then('the game should reflect the {string} difficulty setting', async function (expected) {
-  const diffButton = this.page.getByRole('button', { name: /dificultad/i });
-  await this.page.waitForTimeout(500); // Pequeño margen para el cambio de estado
+  const page = this.page;
+  const diffButton = page.getByRole('button', { name: /dificultad/i });
   
+  // Damos un momento para que React actualice el estado del botón
+  await page.waitForTimeout(500);
   const buttonText = await diffButton.innerText();
+
   const translations = { 'Hard': 'Difícil', 'Medium': 'Medio', 'Easy': 'Fácil' };
   const expectedTranslated = translations[expected] || expected;
 
-  assert.ok(buttonText.includes(expectedTranslated), `Esperaba ${expectedTranslated}, hay ${buttonText}`);
+  assert.ok(
+    buttonText.includes(expectedTranslated), 
+    `Se esperaba ${expectedTranslated}, pero se ve: ${buttonText}`
+  );
 });
