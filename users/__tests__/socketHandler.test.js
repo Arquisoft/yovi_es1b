@@ -125,6 +125,24 @@ describe('socketHandler gateway', () => {
     expect(invalidNext.mock.calls[0][0].message).toBe('Token invalido o expirado')
   })
 
+  it('rechaza cookie sin token y token ausente en cookie vacia', async () => {
+    const { middleware } = await createGatewayHarness()
+
+    const noTokenCookieSocket = createSocket('alice', 'socket-no-token-cookie')
+    noTokenCookieSocket.handshake.auth = {}
+    noTokenCookieSocket.handshake.headers.cookie = 'theme=dark; session=abc'
+    const noTokenCookieNext = vi.fn()
+    middleware(noTokenCookieSocket, noTokenCookieNext)
+    expect(noTokenCookieNext.mock.calls[0][0].message).toBe('Token no proporcionado')
+
+    const emptyCookieSocket = createSocket('alice', 'socket-empty-cookie')
+    emptyCookieSocket.handshake.auth = {}
+    emptyCookieSocket.handshake.headers.cookie = ''
+    const emptyCookieNext = vi.fn()
+    middleware(emptyCookieSocket, emptyCookieNext)
+    expect(emptyCookieNext.mock.calls[0][0].message).toBe('Token no proporcionado')
+  })
+
   it('desconecta sockets autenticados sin username', async () => {
     const { connect } = await createGatewayHarness()
     const socket = createSocket('', 'socket-empty')
@@ -287,6 +305,31 @@ describe('socketHandler gateway', () => {
       event: 'player_disconnected',
       payload: expect.objectContaining({ username: 'bob', reason: 'left' }),
     })
+  })
+
+  it('ignora join_match y leave_match cuando la partida no existe', async () => {
+    const harness = await createGatewayHarness()
+    const alice = createSocket('alice', 'socket-alice')
+    connectAuthenticated(harness, alice)
+
+    await alice.handlers.join_match({ matchId: 'missing' })
+    await alice.handlers.leave_match({ matchId: 'missing' })
+
+    expect(alice.join).not.toHaveBeenCalled()
+    expect(alice.emit).not.toHaveBeenCalledWith('sync_board', expect.anything())
+    expect(harness.roomEvents).toHaveLength(0)
+  })
+
+  it('rechaza movimientos de sockets autenticados que no pertenecen a la partida', async () => {
+    const fetchMock = vi.mocked(fetch)
+    const harness = await createGatewayHarness()
+    const { matchId } = await createActiveMatch(harness, fetchMock)
+    const carol = createSocket('carol', 'socket-carol')
+    connectAuthenticated(harness, carol)
+
+    await carol.handlers.game_move({ matchId, cellIndex: 0 })
+
+    expect(carol.emit).toHaveBeenCalledWith('sync_board', { error: 'No perteneces a esta partida' })
   })
 
   it('procesa movimientos validos y marca la partida como terminada si hay ganador', async () => {

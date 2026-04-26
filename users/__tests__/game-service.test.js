@@ -1,6 +1,7 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import request from 'supertest'
 import app from '../users-service.js'
+import User from '../models/user.js'
 import { generateTestToken, withAuthToken } from './test-utils.js'
 
 // Mock global fetch para no llamar a Rust
@@ -27,6 +28,7 @@ describe('Game endpoints (proxy a Rust)', () => {
     const token = generateTestToken()
 
     afterEach(() => {
+        vi.restoreAllMocks()
         vi.clearAllMocks()
     })
 
@@ -57,6 +59,42 @@ describe('Game endpoints (proxy a Rust)', () => {
 
             expect(res.status).toBe(500)
         })
+
+        it('acredita puntuacion fallback si el humano gana y Rust no manda score valido', async () => {
+            mockFetch.mockReturnValue(mockRustResponse({
+                board: { size: 12, layout: 'B' },
+                winner: 0,
+                score: 0,
+            }))
+            const updateSpy = vi.spyOn(User, 'findOneAndUpdate').mockResolvedValue({ username: 'Alice' })
+
+            const res = await withAuthToken(request(app)
+                .post('/move')
+                .send({
+                    cellIndex: 0,
+                    username: ' Alice ',
+                    difficulty: 'Difícil',
+                    boardSize: 12,
+                }), token)
+
+            expect(res.status).toBe(200)
+            expect(res.body.score).toBe(600)
+            expect(updateSpy).toHaveBeenCalledWith(
+                { username: 'Alice' },
+                { $inc: { totalScore: 600 } }
+            )
+        })
+
+        it('devuelve 500 si falla la comunicacion con Rust durante el movimiento', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('network down'))
+
+            const res = await withAuthToken(request(app)
+                .post('/move')
+                .send({ cellIndex: 0, username: 'Alice' }), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toContain('network down')
+        })
     })
 
     // ── POST /surrender ────────────────────────
@@ -71,6 +109,33 @@ describe('Game endpoints (proxy a Rust)', () => {
 
             expect(res.status).toBe(200)
             expect(res.body.message).toMatch(/rendici/i)
+        })
+
+        it('propaga el estado si Rust rechaza la rendicion', async () => {
+            mockFetch.mockReturnValue(Promise.resolve({
+                ok: false,
+                status: 503,
+                json: () => Promise.resolve({}),
+                text: () => Promise.resolve('rust\nfail'),
+            }))
+
+            const res = await withAuthToken(request(app)
+                .post('/surrender')
+                .send({ username: 'Alice', difficulty: 'Easy', boardSize: 6 }), token)
+
+            expect(res.status).toBe(503)
+            expect(res.body.error).toMatch(/rendici/i)
+        })
+
+        it('devuelve 500 si no puede conectar con Rust al rendirse', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('offline'))
+
+            const res = await withAuthToken(request(app)
+                .post('/surrender')
+                .send({ username: 'Alice', difficulty: 'Easy', boardSize: 6 }), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toContain('offline')
         })
     })
 
@@ -97,6 +162,36 @@ describe('Game endpoints (proxy a Rust)', () => {
 
             expect(res.status).toBe(200)
         })
+
+        it('redondea el size y envia username a Rust', async () => {
+            mockFetch.mockReturnValue(mockRustResponse({ size: 7, layout: '.' }))
+
+            const res = await withAuthToken(request(app)
+                .post('/reset')
+                .send({ size: 7.9, difficulty: 'Medium', username: 'Alice' }), token)
+
+            expect(res.status).toBe(200)
+            expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('/reset'), expect.objectContaining({
+                body: JSON.stringify({ size: 7, difficulty: 'Medium', player: 'Alice' }),
+            }))
+        })
+
+        it('devuelve 500 si Rust falla al resetear', async () => {
+            mockFetch.mockReturnValue(Promise.resolve({
+                ok: false,
+                status: 502,
+                json: () => Promise.resolve({}),
+                text: () => Promise.resolve('reset fail'),
+                headers: { get: () => 'application/json' },
+            }))
+
+            const res = await withAuthToken(request(app)
+                .post('/reset')
+                .send({ size: 6, difficulty: 'Easy' }), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toContain('Rust error: 502')
+        })
     })
 
     // ── GET /difficulties ──────────────────────
@@ -121,6 +216,53 @@ describe('Game endpoints (proxy a Rust)', () => {
     })
 
     // ── GET /history ───────────────────────────
+
+    describe('POST /users/purchase-xp', () => {
+        it('rechaza cantidades no numericas', async () => {
+            const res = await request(app)
+                .post('/users/purchase-xp')
+                .send({ username: 'Alice', amount: 'abc' })
+
+            expect(res.status).toBe(400)
+            expect(res.body.error).toMatch(/cantidad/i)
+        })
+
+        it('devuelve 404 si el usuario no existe', async () => {
+            vi.spyOn(User, 'findOneAndUpdate').mockResolvedValue(null)
+
+            const res = await request(app)
+                .post('/users/purchase-xp')
+                .send({ username: 'Alice', amount: 25 })
+
+            expect(res.status).toBe(404)
+        })
+
+        it('acredita puntos comprados', async () => {
+            vi.spyOn(User, 'findOneAndUpdate').mockResolvedValue({ totalScore: 125 })
+
+            const res = await request(app)
+                .post('/users/purchase-xp')
+                .send({ username: ' Alice ', amount: 25 })
+
+            expect(res.status).toBe(200)
+            expect(res.body.total).toBe(125)
+            expect(User.findOneAndUpdate).toHaveBeenCalledWith(
+                { username: 'Alice' },
+                { $inc: { totalScore: 25 } },
+                { new: true }
+            )
+        })
+
+        it('devuelve 500 si falla la compra', async () => {
+            vi.spyOn(User, 'findOneAndUpdate').mockRejectedValue(new Error('db fail'))
+
+            const res = await request(app)
+                .post('/users/purchase-xp')
+                .send({ username: 'Alice', amount: 25 })
+
+            expect(res.status).toBe(500)
+        })
+    })
 
     describe('GET /history', () => {
         it('devuelve el historial correctamente', async () => {
@@ -150,6 +292,32 @@ describe('Game endpoints (proxy a Rust)', () => {
             expect(mockFetch).toHaveBeenCalledWith(
                 expect.stringContaining('result=win')
             )
+        })
+
+        it('propaga error de Rust en historial', async () => {
+            mockFetch.mockReturnValue(Promise.resolve({
+                ok: false,
+                status: 502,
+                json: () => Promise.resolve({}),
+                text: () => Promise.resolve('history fail'),
+                headers: { get: () => 'application/json' },
+            }))
+
+            const res = await withAuthToken(request(app)
+                .get('/history?username=Alice&page=1'), token)
+
+            expect(res.status).toBe(502)
+            expect(res.body.error).toBe('Rust history service error')
+        })
+
+        it('devuelve 500 si no puede conectar con Rust para historial', async () => {
+            mockFetch.mockRejectedValueOnce(new Error('offline'))
+
+            const res = await withAuthToken(request(app)
+                .get('/history?username=Alice&page=1'), token)
+
+            expect(res.status).toBe(500)
+            expect(res.body.error).toMatch(/servicio de Rust/i)
         })
     })
 })
