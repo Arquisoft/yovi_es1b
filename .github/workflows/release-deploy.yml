@@ -76,18 +76,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      # --- NUEVO: Generar certificados para HTTPS ---
-      - name: Generate Self-Signed Certificates
+      # --- GENERAR CERTIFICADOS (Con tus nombres: key.pem y cert.pem) ---
+      - name: Create SSL Certificates
         run: |
           mkdir -p certs
           openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-            -keyout certs/server.key -out certs/server.crt \
+            -keyout certs/key.pem -out certs/cert.pem \
             -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=localhost"
-          # Copiamos o movemos donde tu servicio 'users' los busque
-          cp certs/cert.pem users/cert.pem
+
+          # Copiamos a la carpeta de users
           cp certs/key.pem users/key.pem
-          cp certs/cert.pem webapp/cert.pem
+          cp certs/cert.pem users/cert.pem
+
+          # Copiamos a la carpeta de webapp
           cp certs/key.pem webapp/key.pem
+          cp certs/cert.pem webapp/cert.pem
       - name: Install users dependencies
         run: |
           cd users
