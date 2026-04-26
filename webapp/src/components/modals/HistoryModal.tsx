@@ -29,6 +29,9 @@ export const HistoryModal = ({
   return (
     <div
       className="modal-backdrop"
+      role="button"
+      tabIndex={0}
+      aria-label={t('common.close')}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
