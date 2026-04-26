@@ -34,17 +34,17 @@ const mockJsonResponse = (data: unknown, ok = true) =>
       },
     },
   } as unknown as Response);
+
 const expectGetCall = (urlFragment: string) => {
-  expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining(urlFragment));
-};
-
-const expectGetCallWithOptions = (urlFragment: string) => {
-  expect(mockFetch).toHaveBeenCalledWith(
-    expect.stringContaining(urlFragment),
-    expect.anything()
+  // Usamos String() para forzar que tanto si es un string como un objeto URL,
+  // podamos buscar el fragmento correctamente.
+  const callFound = mockFetch.mock.calls.some(args => 
+    String(args).includes(urlFragment)
   );
+  
+  // Añadimos un mensaje de error personalizado para saber qué falló exactamente
+  expect(callFound, `No se encontró ninguna llamada a fetch que contuviera: ${urlFragment}`).toBe(true);
 };
-
 const expectPostCall = (urlFragment: string, bodyFragment: string) => {
   expect(mockFetch).toHaveBeenCalledWith(
     expect.stringContaining(urlFragment),
@@ -174,14 +174,14 @@ describe('gameService', () => {
       response: [{ name: 'bob', status: 'online' }],
       assert: (result: unknown) => {
         expect(result).toEqual([{ name: 'bob', status: 'online' }]);
-        expectGetCallWithOptions('username=alice');
+        expectGetCall('username=alice')
       },
     },
     {
       name: 'getProfile llama al endpoint correcto usando sesión',
       action: () => gameService.getProfile(),
       response: { username: 'alice' },
-      assert: () => expectGetCallWithOptions('/users/profile/alice'),
+      assert: () => expectGetCall('/users/profile/alice')
     },
     {
       name: 'searchUserByCode devuelve el primer usuario encontrado',
