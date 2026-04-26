@@ -30,7 +30,7 @@ const RegisterPage = () => {
     if (persistUserSession(playerName, { friendCode, icon, language, nickname }) && activateRegisteredSession(playerName)) {
 
       if (token && isSafeToken(token)) {
-        sessionStorage.setItem('token', token);
+        persistAuthToken(token);
 
       }
       globalThis.location.href = '/gamemode.html';
