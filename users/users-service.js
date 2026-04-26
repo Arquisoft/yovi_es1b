@@ -48,6 +48,9 @@ setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
+
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://gamey:4000';
 const tokenCookieOptions = {

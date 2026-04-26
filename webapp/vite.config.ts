@@ -13,6 +13,10 @@ const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
 export default defineConfig({
   plugins: [react()],
 
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-i18next', 'i18next'], // Fuerza estas dependencias
+  },
+
   server: {
   // Configuración multi-página (MPA)
 
@@ -33,7 +37,6 @@ export default defineConfig({
         register: resolve(__dirname, 'register.html'),
         gamemode: resolve(__dirname, 'gamemode.html'),
         game: resolve(__dirname, 'game.html'),
-        friends: resolve(__dirname, 'friends.html'),
       },
     },
   },
