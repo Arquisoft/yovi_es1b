@@ -5,7 +5,7 @@ import { MenuBackgroundShell } from '../../components/layout/MenuBackgroundShell
 import { LanguageModal } from '../../components/modals/LanguageModal';
 import RegisterScreen from '../../screens/RegisterScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
-import { activateRegisteredSession, persistUserSession } from '../../utils/sessionUtils';
+import { activateRegisteredSession, persistAuthToken, persistUserSession } from '../../utils/sessionUtils';
 
 import '../../css/App.css';
 import '../../css/Log.css';
@@ -28,8 +28,10 @@ const RegisterPage = () => {
     token?: string | null
   ) => {
     if (persistUserSession(playerName, { friendCode, icon, language, nickname }) && activateRegisteredSession(playerName)) {
+
       if (token && isSafeToken(token)) {
-        sessionStorage.setItem('token', token);
+        persistAuthToken(token);
+
       }
       globalThis.location.href = '/gamemode.html';
     }
@@ -71,4 +73,3 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <RegisterPage />
   </StrictMode>
 );
-  
