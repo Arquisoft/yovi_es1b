@@ -128,7 +128,7 @@ fn normalize_history_result(raw: &str) -> &'static str {
         .collect();
 
     match stripped.as_str() {
-        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "hasganado" => "Victoria",
+        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "hasganado" | "ganhaste" => "Victoria",
         _ => "Derrota",
     }
 }
@@ -138,7 +138,20 @@ fn normalize_history_document(record: &mut serde_json::Value) {
         if let Some(result) = obj.get("result").and_then(|v| v.as_str()) {
             obj.insert("result".to_string(), serde_json::json!(normalize_history_result(result)));
         }
+        if let Some(result_label) = obj.get("result_label").and_then(|v| v.as_str()) {
+            obj.insert("result_label".to_string(), serde_json::json!(normalize_history_result(result_label)));
+        }
     }
+}
+
+fn empty_history_response(page: u64, limit: i64) -> axum::Json<serde_json::Value> {
+    axum::Json(serde_json::json!({
+        "data": [],
+        "total": 0,
+        "page": page,
+        "limit": limit,
+        "total_pages": 0
+    }))
 }
 
 // --- SWAGGER ---
@@ -311,9 +324,7 @@ pub async fn obtener_historial(
         Ok(count) => count,
         Err(e) => {
             eprintln!("Error al contar documentos en BBDD: {}", e);
-            return axum::Json(serde_json::json!({
-                "error": "Error interno del servidor"
-            }));
+            return empty_history_response(page, limit);
         }
     };
 
@@ -327,9 +338,7 @@ pub async fn obtener_historial(
         Ok(c) => c,
         Err(e) => {
             eprintln!("Error al buscar en la BBDD: {}", e);
-            return axum::Json(serde_json::json!({
-                "error": "Error interno del servidor"
-            }));
+            return empty_history_response(page, limit);
         }
     };
 
@@ -434,14 +443,59 @@ pub async fn rendirse(axum::extract::State(state): axum::extract::State<AppState
     axum::Json(serde_json::json!({ "status": "ok" }))
 }
 
+fn validate_mongodb_uri(raw_uri: &str) -> Result<String, GameYError> {
+    let uri = raw_uri.trim();
+    if uri.is_empty() {
+        return Err(GameYError::ServerError {
+            message: "La variable MONGODB_URI esta vacia".to_string(),
+        });
+    }
+    if !(uri.starts_with("mongodb://") || uri.starts_with("mongodb+srv://")) {
+        return Err(GameYError::ServerError {
+            message: "MONGODB_URI falta el esquema mongodb:// o mongodb+srv://".to_string(),
+        });
+    }
+    Ok(uri.to_string())
+}
+
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
-    let uri = std::env::var("MONGODB_URI").unwrap_or_default();
+    let uri = validate_mongodb_uri(&std::env::var("MONGODB_URI").unwrap_or_default())?;
     let client = mongodb::Client::with_uri_str(uri).await.map_err(|e| GameYError::ServerError { message: e.to_string() })?;
     let db = client.database("gamey_db");
     let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot)).with_bot(Arc::new(ProBot));
     let state = AppState::new(bots, db);
-    let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
-    axum::serve(listener, create_router(state)).await.map_err(|e| GameYError::ServerError { message: e.to_string() })
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let router = create_router(state);
+
+    match (
+        std::env::var("GAMEY_TLS_CERT_PATH").ok(),
+        std::env::var("GAMEY_TLS_KEY_PATH").ok(),
+    ) {
+        (Some(cert_path), Some(key_path)) => {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+            let config = RustlsConfig::from_pem_file(PathBuf::from(cert_path), PathBuf::from(key_path))
+                .await
+                .map_err(|e| GameYError::ServerError {
+                    message: format!("Failed to load TLS certificate: {}", e),
+                })?;
+
+            axum_server::bind_rustls(addr, config)
+                .serve(router.into_make_service())
+                .await
+                .map_err(|e| GameYError::ServerError { message: e.to_string() })
+        }
+        _ => {
+            let listener = tokio::net::TcpListener::bind(addr)
+                .await
+                .map_err(|e| GameYError::ServerError {
+                    message: format!("Failed to bind to port {}: {}", port, e),
+                })?;
+
+            axum::serve(listener, router)
+                .await
+                .map_err(|e| GameYError::ServerError { message: e.to_string() })
+        }
+    }
 }
 #[cfg(test)]
 mod tests {

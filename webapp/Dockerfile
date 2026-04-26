@@ -9,7 +9,7 @@ RUN npm ci --silent
 # Copy sources
 COPY . .
 
-# Accept build-time API url (defaults to localhost:3000)
+# Accept build-time API url (defaults to HTTPS localhost services)
 ARG VITE_API_URL="https://localhost:3000"
 ARG VITE_GAMEY_URL="https://localhost:4000"
 
