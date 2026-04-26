@@ -29,9 +29,9 @@ export class MultiplayerStrategy implements GameProvider {
   private matchId: string | null = null;
   private rivalInfo: RivalInfo | null = null;
   private opponentUsername: string | null = null;
-  private handleSyncBoard: (payload: SyncBoardEvent) => void;
-  private handleConnectError: (error: Error) => void;
-  private handlePlayerDisconnected: (payload: { username: string }) => void;
+  private readonly handleSyncBoard: (payload: SyncBoardEvent) => void;
+  private readonly handleConnectError: (error: Error) => void;
+  private readonly handlePlayerDisconnected: (payload: { username: string }) => void;
 
   constructor(deps: MultiplayerStrategyDeps) {
     this.deps = deps;
@@ -131,26 +131,24 @@ export class MultiplayerStrategy implements GameProvider {
   }
 
   async onCellClick(index: number): Promise<ProviderMoveResult | null> {
-    if (!this.matchId) return null;
+    if (!this.matchId) {
+      return null;
+    }
     this.socket.emit('game_move', {
       matchId: this.matchId,
       cellIndex: index,
     });
-    return null;
+    return { board: null, winner: null };
   }
 
-  async reset(size: number, difficulty: string) {
-    void size;
-    void difficulty;
-    return;
+  async reset(_size: number, _difficulty: string) {
+    await Promise.resolve();
   }
 
-  async surrender(difficulty: string) {
-    void difficulty;
+  async surrender(_difficulty: string) {
     if (this.matchId) {
       this.socket.emit('leave_match', { matchId: this.matchId });
     }
-    return;
   }
 
   dispose() {
