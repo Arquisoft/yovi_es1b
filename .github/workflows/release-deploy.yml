@@ -84,8 +84,10 @@ jobs:
             -keyout certs/server.key -out certs/server.crt \
             -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=localhost"
           # Copiamos o movemos donde tu servicio 'users' los busque
-          cp certs/server.key users/server.key
-          cp certs/server.crt users/server.crt
+          cp certs/cert.pem users/cert.pem
+          cp certs/key.pem users/key.pem
+          cp certs/cert.pem webapp/cert.pem
+          cp certs/key.pem webapp/key.pem
       - name: Install users dependencies
         run: |
           cd users
