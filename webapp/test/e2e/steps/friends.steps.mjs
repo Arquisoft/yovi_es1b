@@ -24,8 +24,8 @@ Given('a user exists with name {string} and nickname {string}', async function (
 Given('a user exists with name {string} and nickname {string}', async function (username, nickname) {
   const page = this.page;
 
+  // 1. Registramos a Bob (esto suele ser público, así que no falla)
   await page.evaluate(async ({ apiUrl, user, nick }) => {
-    // 1. Registramos a Bob
     await fetch(`${apiUrl}/createuser`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,21 +33,20 @@ Given('a user exists with name {string} and nickname {string}', async function (
         username: user, nickname: nick, password: 'password123',
         birthDate: '1990-01-01', language: 'en'
       }),
-    });
+    }).catch(() => {}); 
   }, { apiUrl: API_URL, user: username, nick: nickname });
 
-  // 🛡️ TRUCO MAESTRO: Pedimos el perfil de Bob para saber su código REAL
-  const response = await fetch(`${API_URL}/users/profile/${username}`);
-  const userData = await response.json();
+  // 🛡️ BARRERA: Esperamos a que Mongo guarde
+  await page.waitForTimeout(2000);
 
-  console.log("--- 🔎 INVESTIGACIÓN DE BOB ---");
-  console.log("JSON completo que devuelve el servidor:", JSON.stringify(userData, null, 2));
-  console.log("-------------------------------");
-  
-  // Guardamos el código que el servidor ha generado aleatoriamente
-  this.targetFriendCode = userData.friendCode; 
-  
-  console.log(`✅ Bob listo. Código real detectado: ${this.targetFriendCode}`);
+  // 2. 🚀 EL TRUCO: Usamos page.evaluate para que el navegador (con la sesión de Alice) pida el código
+  this.targetFriendCode = await page.evaluate(async ({ apiUrl, user }) => {
+    const response = await fetch(`${apiUrl}/users/profile/${user}`);
+    const data = await response.json();
+    return data.friendCode || data.code; // Devolvemos el código al test
+  }, { apiUrl: API_URL, user: username });
+
+  console.log(`✅ Bob listo. Alice ha conseguido el código real: ${this.targetFriendCode}`);
 });
 
 When('I open the "Social" section', async function () {
