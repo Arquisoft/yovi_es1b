@@ -8,7 +8,21 @@ Given('the game page is open for user {string} with password {string}', async fu
   const page = this.page;
 
   // ... (Pasos de login y navegación igual que antes) ...
-  await page.goto(`${FRONTEND_URL}/login.html`, { waitUntil: 'networkidle' });
+  await page.goto(`${FRONTEND_URL}/login.html`, { waitUntil: 'load' });
+  await page.waitForLoadState('networkidle');
+
+  // 2. Registro vía API (Esto es lo que master borró y necesitamos para que Alice exista)
+  await page.evaluate(async ({ apiUrl, user, pass }) => {
+    await fetch(`${apiUrl}/createuser`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: user, nickname: user + 'Nick',
+        password: pass, birthDate: '2000-01-01', language: 'en'
+      }),
+    }).catch(() => {}); // Si ya existe, ignoramos el error 409
+  }, { apiUrl: API_URL, user: username, pass: password });
+  
   // ... login ...
   await page.fill('#login-username', username);
   await page.fill('#login-password', password);
