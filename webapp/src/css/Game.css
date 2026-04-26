@@ -1827,8 +1827,8 @@ body {
   margin-bottom: 1.5rem;
   font-weight: bold;
   font-size: 1.2rem;
-  color: #1d4ed8;
-  border: 1px dashed rgba(29, 78, 216, 0.35);
+  color: #0f172a;
+  border: 1px dashed rgba(15, 23, 42, 0.38);
 }
 
 .paypal-button-container {

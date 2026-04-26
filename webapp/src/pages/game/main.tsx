@@ -26,6 +26,7 @@ import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config'
 import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
 import { getSizeLabelKey } from '../../utils/gameLabelUtils';
 import { resolveIconFromAssets } from '../../utils/gamePageUtils';
+import { isSupportedLanguage } from '../../utils/languageUtils';
 
 // Assets y Estilos
 import '../../css/App.css';
@@ -78,6 +79,12 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
     path.toLowerCase().includes(iconValue.toLowerCase())
   );
   return match ? match[1] : iconValue;
+};
+
+const sanitizeStoredIcon = (icon: string | null | undefined): string | null => {
+  const iconValue = String(icon || '').trim();
+  if (!iconValue) return null;
+  return iconValue.replace(/[^a-zA-Z0-9._\-/:?=&%+#]/g, '');
 };
 
 const GameApp = () => {
@@ -236,6 +243,15 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
     setPendingChallenge(payload);
   }, [t]);
 
+  const handleInviteFriend = useCallback((friendUsername: string) => {
+    if (gameMode !== 'multiplayer') return;
+    setInviteLoadingUser(friendUsername);
+    multiplayerStrategyRef.current?.challengePlayer(friendUsername);
+    globalThis.setTimeout(() => {
+      setInviteLoadingUser((current) => (current === friendUsername ? null : current));
+    }, 8000);
+  }, [gameMode]);
+
   // --- EFECTOS INICIALES ---
   useEffect(() => {
     // 1. Cargar dificultades para los modales
@@ -265,7 +281,10 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
 
                 if (resolvedIcon) {
                     setPlayerIcon(resolvedIcon);
-                    localStorage.setItem('yovi_user_icon', resolvedIcon);
+                    const safeStoredIcon = sanitizeStoredIcon(safeIconName);
+                    if (safeStoredIcon) {
+                        localStorage.setItem('yovi_user_icon', safeStoredIcon);
+                    }
                 }
 
                 const languageToI18n: Record<string, string> = {
@@ -275,8 +294,9 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     Portuguese: 'pt',
                 };
 
-                if (profile.language) {
-                    const langCode = languageToI18n[profile.language] ?? 'es';
+                const safeLanguage = isSupportedLanguage(profile.language) ? profile.language : null;
+                if (safeLanguage) {
+                    const langCode = languageToI18n[safeLanguage] ?? 'es';
                     i18n.changeLanguage(langCode);
                 }
 
@@ -388,6 +408,11 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
             } catch (error) {
                 console.error('Error historial:', error);
             }
+        };
+
+        const handleHistoryFilterChange = (nextFilter: string) => {
+            setHistoryFilter(nextFilter);
+            void fetchHistory(1, nextFilter);
         };
 
         const openFriendsMenu = () => {
@@ -557,10 +582,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     totalPages={totalPages}
                     currentFilter={historyFilter}
                     onPageChange={fetchHistory}
-                    onFilterChange={(f) => {
-                        setHistoryFilter(f);
-                        fetchHistory(1, f);
-                    }}
+                    onFilterChange={handleHistoryFilterChange}
                 />
 
                 {/* 1. Panel de Amigos: el emisor del evento */}
@@ -574,14 +596,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     // Captura el nombre del amigo y lo guarda en el estado local de main.tsx
                     onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
                     inviteLoadingUser={inviteLoadingUser}
-                    onInviteFriend={(friendUsername) => {
-                        if (gameMode !== 'multiplayer') return;
-                        setInviteLoadingUser(friendUsername);
-                        multiplayerStrategyRef.current?.challengePlayer(friendUsername);
-                        globalThis.setTimeout(() => {
-                            setInviteLoadingUser((current) => (current === friendUsername ? null : current));
-                        }, 8000);
-                    }}
+                    onInviteFriend={handleInviteFriend}
                 />
 
                 {/* 2. Modal de Perfil Público: el receptor */}
