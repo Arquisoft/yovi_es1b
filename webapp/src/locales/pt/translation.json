@@ -34,7 +34,7 @@
     "subtitle": "Escolhe como queres jogar esta partida",
     "bot_duel": "Duelo contra IA",
     "multiplayer_duel": "Duelo Multijogador",
-    "logout": "Terminar sessao"
+    "logout": "Terminar sessao e voltar"
   },
   "login": {
     "title": "Bem-vindo de volta ao GameY",

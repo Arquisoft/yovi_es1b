@@ -24,6 +24,7 @@ const gameLogicMocks = {
 
 let triggerTimeUp: (() => void) | null = null
 const multiplayerInstances = vi.hoisted(() => [] as Array<Record<string, unknown>>)
+let locationReplaceMock: ReturnType<typeof vi.fn>
 
 const renderGameApp = async (ui: Parameters<typeof render>[0]) => {
   let result: ReturnType<typeof render> | undefined
@@ -204,11 +205,12 @@ describe('game main entrypoint', () => {
     localStorage.clear()
     sessionStorage.clear()
     window.history.pushState({}, '', '/game.html')
+    locationReplaceMock = vi.fn()
     vi.stubGlobal('location', {
       href: 'http://localhost/game.html',
       origin: 'http://localhost',
       pathname: '/game.html',
-      replace: vi.fn(),
+      replace: locationReplaceMock,
     })
     vi.spyOn(window.crypto, 'getRandomValues').mockImplementation((array) => {
       ;(array as Uint32Array)[0] = 0
@@ -397,13 +399,13 @@ describe('game main entrypoint', () => {
 
     ;(globalThis.confirm as ReturnType<typeof vi.fn>).mockReturnValueOnce(false)
     await user.click(screen.getByRole('button', { name: /mode-menu/i }))
-    expect((globalThis.location as { replace?: ReturnType<typeof vi.fn> }).replace).not.toHaveBeenCalled()
+    expect(locationReplaceMock).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('button', { name: /mode-menu/i }))
     expect(multiplayerInstances.some((instance) =>
       (instance.surrender as ReturnType<typeof vi.fn>).mock.calls.length > 0
     )).toBe(true)
-    expect((globalThis.location as { replace: ReturnType<typeof vi.fn> }).replace).toHaveBeenCalledWith('/gamemode.html')
+    expect(locationReplaceMock).toHaveBeenCalledWith('/gamemode.html')
   })
 })
 

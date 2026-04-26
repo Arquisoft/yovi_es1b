@@ -1523,7 +1523,6 @@ body {
 .opponent-card--connected {
   background: rgba(100, 200, 100, 0.08);
   border-color: rgba(100, 200, 100, 0.3);
-  border: 2px solid rgba(100, 200, 100, 0.3);
   box-shadow: 0 0 20px rgba(100, 200, 100, 0.15);
 }
 
