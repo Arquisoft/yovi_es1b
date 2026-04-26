@@ -13,6 +13,11 @@ const Friendship = require('./models/friendship');
 
 const express = require('express');
 const app = express();
+
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ready', message: 'Users Service is up and running' });
+});
+
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('js-yaml');

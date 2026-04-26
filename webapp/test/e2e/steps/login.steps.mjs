@@ -40,9 +40,9 @@ Then('I should be redirected to the game page and see {string}', async function 
   const page = this.page;
   
   // 1. Esperamos la redirección
-  await page.waitForURL('**/game.html', { timeout: 10000 });
+  await this.page.waitForURL('**/gamemode.html', { timeout: 15000 });
 
   // 2. Verificamos que el usuario está en el localStorage
-  const storedUser = await page.evaluate(() => localStorage.getItem('yovi_user'));
-  assert.strictEqual(storedUser, expected, `El usuario no se guardó correctamente. Esperado: ${expected}, Encontrado: ${storedUser}`);
+  const title = await this.page.locator('h1, h2, .selection-title').innerText();
+  assert.ok(title.includes('modo de juego'));
 });

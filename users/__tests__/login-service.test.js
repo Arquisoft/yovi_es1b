@@ -68,4 +68,19 @@ it('maneja correctamente nombres de usuario con espacios y devuelve 401 si no ex
     expect(res.status).toBe(401);
     expect(res.body.error).toBe('Usuario o contraseña incorrecta');
 });
+
+it('debe cubrir el catch de login si la base de datos falla', async () => {
+  // Forzamos que findOne lance un error
+  vi.spyOn(User, 'findOne').mockImplementationOnce(() => {
+    throw new Error('DB Connection Failed');
+  });
+
+  const res = await request(app)
+    .post('/login')
+    .send({ username: 'test', password: 'password' });
+
+  expect(res.status).toBe(500);
+  // Si corriges la seguridad, busca solo "Error del servidor"
+  expect(res.body.error).toContain('Error del servidor');
+});
 })

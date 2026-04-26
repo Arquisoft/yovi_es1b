@@ -1,12 +1,20 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
+import fs from 'node:fs';
+
+// 🔍 Definimos las rutas de los certificados
+const keyPath = resolve(__dirname, '../certs/key.pem');
+const certPath = resolve(__dirname, '../certs/cert.pem');
+
+// 🛡️ Comprobamos si ambos archivos existen
+const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
 
 export default defineConfig({
-  // Plugins necesarios para React
   plugins: [react()],
 
   server: {
+
     proxy: {
       '/createuser': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
       '/login': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
@@ -22,6 +30,16 @@ export default defineConfig({
   },
 
   // Configuración multi-página (MPA)
+
+    port: 5173,
+    https: useHttps ? {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    } : undefined, 
+    cors: true,
+  },
+
+
   build: {
     rollupOptions: {
       input: {
@@ -35,7 +53,6 @@ export default defineConfig({
     },
   },
 
-  // Configuración de Vitest
   test: {
     globals: true,
     environment: 'jsdom',
