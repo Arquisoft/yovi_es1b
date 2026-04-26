@@ -110,8 +110,11 @@ Then('the button for {string} should change to {string}', async function (_targe
 
   const isCorrect =
     msg.includes('sigues a') ||
+    msg.includes('now following') ||
     msg.includes('ya existe') ||
+    msg.includes('already') ||
     msg.includes('amistad') ||
+    msg.includes('friendship') ||
     msg.includes('400');
 
   assert.ok(isCorrect, `Respuesta inesperada: ${this.lastAlertMessage}`);
