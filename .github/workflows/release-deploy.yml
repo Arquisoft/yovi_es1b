@@ -99,6 +99,18 @@ jobs:
         run: |
           cd webapp
           npm ci
+      - name: Install Rust toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+
+      - name: Start Rust Server (Gamey)
+        run: |
+          cd gamey
+          # Arrancamos Rust en el puerto 4000 y lo mandamos al fondo con &
+          cargo run -- --mode server --port 4000 &
+        env:
+          MONGODB_URI: ${{ env.MONGODB_URI_GAMEY }}
+          GAMEY_TLS_CERT_PATH: ../users/cert.pem
+          GAMEY_TLS_KEY_PATH: ../users/key.pem
       - name: Install Playwright browsers
         run: |
           cd webapp
@@ -106,7 +118,9 @@ jobs:
       - name: Run E2E tests (start servers and run cucumber)
         run: |
           cd webapp
-          VITE_API_URL=https://localhost:3000 npm run test:e2e
+          VITE_API_URL=https://localhost:3000 \
+          GAMEY_SERVICE_URL=https://localhost:4000 \
+          npm run test:e2e
 
   docker-push-users:
     name: Publish users image

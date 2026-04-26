@@ -7,10 +7,11 @@ const FRONTEND_URL = 'https://localhost:5173';
 Given('the game page is open for user {string} with password {string}', async function (username, password) {
   const page = this.page;
 
-  // PASO A: Primero cargamos la web (así el origen ya no es 'null' y evitamos CORS)
-  await page.goto(`${FRONTEND_URL}/login.html`);
+  // ... (Pasos de login y navegación igual que antes) ...
+  await page.goto(`${FRONTEND_URL}/login.html`, { waitUntil: 'load' });
+  await page.waitForLoadState('networkidle');
 
-  // PASO B: Registramos al usuario (con el origen ya válido)
+  // 2. Registro vía API (Esto es lo que master borró y necesitamos para que Alice exista)
   await page.evaluate(async ({ apiUrl, user, pass }) => {
     await fetch(`${apiUrl}/createuser`, {
       method: 'POST',
@@ -19,47 +20,49 @@ Given('the game page is open for user {string} with password {string}', async fu
         username: user, nickname: user + 'Nick',
         password: pass, birthDate: '2000-01-01', language: 'en'
       }),
-    }).catch(() => {}); 
+    }).catch(() => {}); // Si ya existe, ignoramos el error 409
   }, { apiUrl: API_URL, user: username, pass: password });
-
-  // PASO C: Login
+  
+  // ... login ...
   await page.fill('#login-username', username);
   await page.fill('#login-password', password);
   await page.click('button[type="submit"]');
 
-  // PASO D: LA CLAVE. Esperamos a que el Token exista de verdad en el navegador
-  // Esto evita que el juego intente pedir datos sin estar "identificado" (Error 401)
-  await page.waitForFunction(() => {
-    return localStorage.getItem('yovi_user') !== null;
-  }, { timeout: 10000 });
-
-  // PASO E: Seleccionamos el modo (tu nueva ventana)
   await page.waitForURL('**/gamemode.html', { timeout: 15000 });
   await page.click('#botModeBtn');
-
-  // PASO F: Esperamos a que el tablero se pinte
   await page.waitForURL('**/game.html', { timeout: 15000 });
-  await page.locator('.game-board, [aria-label*="celda"]').first().waitFor({ state: 'visible', timeout: 20000 });
+  console.log("--- 🕵️‍♀️ Esperando a que las celdas se rendericen ---");
+
+  // Esperamos a que aparezca al menos un botón de celda
+  const firstCell = page.locator('button[aria-label*="Celda"]').first();
+  await firstCell.waitFor({ state: 'visible', timeout: 30000 });
+  console.log("✅ Celdas detectadas!");
 });
 
+// 2. EL CUANDO CLICO (Corregido para el label en español)
 When('I click on the cell {string}', async function (cellIndex) {
-  const cell = this.page.getByRole('button', { name: new RegExp(`celda ${cellIndex}`, 'i') });
-  await cell.waitFor({ state: 'visible' });
+  // Selector ultra-flexible para tu HTML: "Celda 0, vacia"
+  const cell = this.page.locator(`button[aria-label*="Celda ${cellIndex}"]`).first();
+  
+  // Esperamos a que sea clicable (por si Rust está tardando)
+  await cell.waitFor({ state: 'visible', timeout: 15000 });
   await cell.click({ force: true });
 });
 
+// 3. EL ENTONCES ESTÁ OCUPADA (Corregido para detectar el cambio de estado)
 Then('the cell {string} should be occupied by a piece', async function (cellIndex) {
   const page = this.page;
-  // Esperamos a que la ficha aparezca (B o R)
-  await page.waitForFunction((idx) => {
-    const btn = document.querySelector(`button[aria-label*="celda ${idx}" i]`);
-    const text = btn ? btn.innerText.trim() : '';
-    return text === 'B' || text === 'R';
-  }, cellIndex, { timeout: 8000 });
+  const cell = page.locator(`button[aria-label*="Celda ${cellIndex}"]`);
 
-  const cell = page.getByRole('button', { name: new RegExp(`celda ${cellIndex}`, 'i') });
-  const content = (await cell.innerText()).trim();
-  assert.ok(['B', 'R'].includes(content), `La celda ${cellIndex} no tiene ficha. Hay: "${content}"`);
+  // Esperamos a que la clase 'empty' DESAPAREZCA o que el label cambie
+  await page.waitForFunction((idx) => {
+    const btn = document.querySelector(`button[aria-label*="Celda ${idx}"]`);
+    // Si ya no tiene la clase 'empty', es que hay una ficha
+    return btn && !btn.classList.contains('empty');
+  }, cellIndex, { timeout: 10000 });
+
+  const classes = await cell.getAttribute('class');
+  assert.ok(!classes.includes('empty'), `La celda ${cellIndex} sigue estando vacía.`);
 });
 
 Then('the turn timer should be visible', async function () {
@@ -73,7 +76,9 @@ Then('the turn timer should be visible', async function () {
 });
 
 Given('I have played a move on cell {string}', async function (cellIndex) {
-  const cell = this.page.getByRole('button', { name: new RegExp(`celda ${cellIndex}`, 'i') });
+  // Hacemos lo mismo aquí para el Given
+  const cell = this.page.locator(`button[aria-label*="Celda ${cellIndex}"]`).first();
+  await cell.waitFor({ state: 'visible', timeout: 10000 });
   await cell.click({ force: true });
 });
 

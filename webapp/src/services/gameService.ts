@@ -123,18 +123,30 @@ const createAuthenticatedInit = (init?: RequestInit): RequestInit => {
 };
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
-  const res = init ? await fetch(url, init) : await fetch(url);
+  // Fusionamos las opciones que vengan con el permiso para enviar cookies
+  const requestOptions: RequestInit = {
+    ...init,
+    credentials: 'include', // <--- ESTO ES LO QUE ARREGLA EL 401
+    headers: {
+      'Content-Type': 'application/json',
+      ...init?.headers,
+    },
+  };
+
+  console.log("🚀 Llamando a:", url);
+  const res = await fetch(url, requestOptions);
 
   if (!res.ok) {
     const errorText = await res.text().catch(() => 'No hay detalle del error');
-    // Mantenemos la limpieza de logs que aplicamos antes para evitar inyecciones
+
+
     console.error(`Error en fetch a ${url}: ${res.status} - ${errorText.replaceAll(/[\n\r]/g, '_')}`);
+
     throw new Error(`Error en la petición: ${res.status}`);
   }
 
   const contentType = res.headers.get('content-type');
 
-  // CAMBIO CRÍTICO: Usamos el optional chaining aquí
   if (!contentType?.includes('application/json')) {
     throw new Error('La respuesta no es un JSON válido');
   }
