@@ -52,11 +52,15 @@ When('I search for {string}', async function (query) {
   
   // ⌨️ ¡CLAVE! Pulsamos Enter para que GitHub sepa que queremos buscar
   await page.keyboard.press('Enter');
+
+  // 🛡️ Esperamos a que el botón de añadir aparezca en la lista
+  const addBtn = page.locator('button.add-friend-btn');
+  await addBtn.waitFor({ state: 'visible', timeout: 15000 });
   
   await page.waitForTimeout(1000);
   await page.waitForLoadState('networkidle');
   
-  console.log(`🔍 Buscando a: ${query}`);
+  console.log(`🔍 Buscando a: ${query} y esperando resultados...`);
 });
 
 Then('I should see {string} in the search results', async function (expectedNickname) {
