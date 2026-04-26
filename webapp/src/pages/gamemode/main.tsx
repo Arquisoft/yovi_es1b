@@ -36,18 +36,13 @@ export const GameModePage = () => {
     gameService.getProfile()
       .then((profile) => {
         if (!active || profile?.error) return;
-        const safeLanguage = (() => {
-          switch (profile.language) {
-            case 'Spain':
-            case 'English':
-            case 'German':
-            case 'Portuguese':
-              return profile.language;
-            default:
-              return 'Spain';
-          }
-        })();
-        localStorage.setItem('yovi_user_language', safeLanguage);
+        const safeLanguage =
+          profile.language === 'Spain' ||
+          profile.language === 'English' ||
+          profile.language === 'German' ||
+          profile.language === 'Portuguese'
+            ? profile.language
+            : 'Spain';
         applyLanguage(safeLanguage);
       })
       .catch(() => undefined);

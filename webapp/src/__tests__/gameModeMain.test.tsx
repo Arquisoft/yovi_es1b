@@ -93,7 +93,7 @@ describe('gamemode main page', () => {
     expect((globalThis.location as { href: string }).href).toBe('/game.html')
   })
 
-  test('sincroniza idioma desde localStorage y perfil', async () => {
+  test('sincroniza idioma desde localStorage y perfil sin reescribir storage', async () => {
     localStorage.setItem('yovi_user', 'alice')
     localStorage.setItem('yovi_user_language', 'English')
     getProfileMock.mockResolvedValueOnce({ language: 'Portuguese' })
@@ -103,12 +103,12 @@ describe('gamemode main page', () => {
 
     await waitFor(() => {
       expect(getProfileMock).toHaveBeenCalledOnce()
-      expect(localStorage.getItem('yovi_user_language')).toBe('Portuguese')
+      expect(localStorage.getItem('yovi_user_language')).toBe('English')
       expect(document.documentElement.lang).toBe('pt')
     })
   })
 
-  test('normaliza idiomas no soportados antes de guardarlos', async () => {
+  test('normaliza idiomas no soportados antes de aplicarlos', async () => {
     localStorage.setItem('yovi_user', 'alice')
     getProfileMock.mockResolvedValueOnce({ language: 'French' })
 
@@ -117,7 +117,7 @@ describe('gamemode main page', () => {
 
     await waitFor(() => {
       expect(getProfileMock).toHaveBeenCalledOnce()
-      expect(localStorage.getItem('yovi_user_language')).toBe('Spain')
+      expect(localStorage.getItem('yovi_user_language')).toBeNull()
       expect(document.documentElement.lang).toBe('es')
     })
   })
