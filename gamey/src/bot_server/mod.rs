@@ -159,7 +159,7 @@ fn empty_history_response(page: u64, limit: i64) -> axum::Json<serde_json::Value
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial),
+    paths(play::play),
     components(schemas(
         play::PlayRequest,
         play::PlayResponse,
@@ -194,13 +194,7 @@ pub fn create_router(state: AppState) -> axum::Router {
 
 // --- HANDLERS (FUSIÓN DIRECTA) ---
 
-#[utoipa::path(
-    post,
-    path = "/execute-move",
-    request_body = MoveRequest,
-    responses((status = 200, description = "Movimiento realizado correctamente")),
-    tag = "Bot"
-)]
+
 pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
@@ -256,13 +250,6 @@ pub async fn realizar_movimiento(
     axum::Json(serde_json::json!({ "board": YEN::from(&*game), "winner": winner_id, "score": final_score }))
 }
 
-#[utoipa::path(
-    post,
-    path = "/reset",
-    request_body = ResetRequest,
-    responses((status = 200, description = "Tablero reiniciado correctamente", body = YEN)),
-    tag = "Bot"
-)]
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
@@ -288,18 +275,7 @@ pub async fn reiniciar_juego(
     axum::Json(YEN::from(&*game))
 }
 
-#[utoipa::path(
-    get,
-    path = "/history",
-    params(
-        ("username" = String, Query, description = "Nombre del usuario"),
-        ("page" = Option<u64>, Query, description = "Pagina solicitada"),
-        ("limit" = Option<i64>, Query, description = "Numero maximo de partidas"),
-        ("result" = Option<String>, Query, description = "Filtro de resultado")
-    ),
-    responses((status = 200, description = "Historial paginado")),
-    tag = "Bot"
-)]
+
 pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
