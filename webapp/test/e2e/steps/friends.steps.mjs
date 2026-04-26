@@ -3,6 +3,7 @@ import assert from 'assert';
 
 const API_URL = 'https://localhost:3000';
 
+/*
 Given('a user exists with name {string} and nickname {string}', async function (username, nickname) {
   await this.page.evaluate(async ({ apiUrl, user, nick }) => {
     await fetch(`${apiUrl}/createuser`, {
@@ -17,6 +18,32 @@ Given('a user exists with name {string} and nickname {string}', async function (
 
   this.targetFriendCode = (username.toLowerCase() === 'bob') ? 'UMNTSP' : username;
   console.log(`\x1b[36m[DEBUG]\x1b[0m Bob listo con código: ${this.targetFriendCode}`);
+});
+*/
+
+Given('a user exists with name {string} and nickname {string}', async function (username, nickname) {
+  const page = this.page;
+
+  await page.evaluate(async ({ apiUrl, user, nick }) => {
+    // 1. Registramos a Bob
+    await fetch(`${apiUrl}/createuser`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: user, nickname: nick, password: 'password123',
+        birthDate: '1990-01-01', language: 'en'
+      }),
+    });
+  }, { apiUrl: API_URL, user: username, nick: nickname });
+
+  // 🛡️ TRUCO MAESTRO: Pedimos el perfil de Bob para saber su código REAL
+  const response = await fetch(`${API_URL}/users/profile/${username}`);
+  const userData = await response.json();
+  
+  // Guardamos el código que el servidor ha generado aleatoriamente
+  this.targetFriendCode = userData.friendCode; 
+  
+  console.log(`✅ Bob listo. Código real detectado: ${this.targetFriendCode}`);
 });
 
 When('I open the "Social" section', async function () {

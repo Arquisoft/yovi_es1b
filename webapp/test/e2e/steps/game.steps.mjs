@@ -11,6 +11,8 @@ Given('the game page is open for user {string} with password {string}', async fu
   await page.goto(`${FRONTEND_URL}/login.html`, { waitUntil: 'load' });
   await page.waitForLoadState('networkidle');
 
+  await page.waitForTimeout(2000);
+
   // 2. Registro vía API (Esto es lo que master borró y necesitamos para que Alice exista)
   await page.evaluate(async ({ apiUrl, user, pass }) => {
     await fetch(`${apiUrl}/createuser`, {
