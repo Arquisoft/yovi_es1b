@@ -95,6 +95,11 @@ const setOrClear = (key: string, value?: string | null, maxLength = 128) => {
   }
 };
 
+const isSafeToken = (value: string): boolean => {
+    // JWT format: three base64url segments separated by dots
+    return /^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(value);
+};
+
 export const persistUserSession = (username: string, options: PersistUserSessionOptions) => {
   const name = normalizeStorageValue(username, 64);
   const friendCode = normalizeStorageValue(options.friendCode, 32).replace(/^#/, '');
