@@ -49,11 +49,11 @@ public class LoadTest extends Simulation {
                     .post("/move")
                     .header("Authorization", "Bearer #{token}")
                     .body(StringBody(
-                            "{\"index\":3," +
-                                    "\"player\":\"#{username}\"," +
+                            "{\"cellIndex\":3," +
+                                    "\"username\":\"#{username}\"," +
                                     "\"difficulty\":\"Easy\"," +
                                     "\"boardSize\":6," +
-                                    "\"boardLabel\":\"Pequeño\"," +
+                                    "\"boardLabel\":\"Pequeno\"," +
                                     "\"locale\":\"es\"," +
                                     "\"resultLabel\":\"Victoria\"}"
                     ))
@@ -66,11 +66,11 @@ public class LoadTest extends Simulation {
                     .post("/move")
                     .header("Authorization", "Bearer #{token}")
                     .body(StringBody(
-                            "{\"index\":8," +
-                                    "\"player\":\"#{username}\"," +
+                            "{\"cellIndex\":8," +
+                                    "\"username\":\"#{username}\"," +
                                     "\"difficulty\":\"Easy\"," +
                                     "\"boardSize\":6," +
-                                    "\"boardLabel\":\"Pequeño\"," +
+                                    "\"boardLabel\":\"Pequeno\"," +
                                     "\"locale\":\"es\"," +
                                     "\"resultLabel\":\"Victoria\"}"
                     ))
@@ -78,18 +78,22 @@ public class LoadTest extends Simulation {
             )
             .pause(1)
 
-// 5. Rendición
-            .exec(http("Rendicion")
-                    .post("/surrender")
-                    .header("Authorization", "Bearer #{token}")
-                    .body(StringBody(
-                            "{\"player\":\"#{username}\"," +
-                                    "\"difficulty\":\"Easy\"," +
-                                    "\"board_size\":6}"
-                    ))
+
+             // 5. Rendición
+        .exec(http("Rendicion")
+            .post("/surrender")
+            .header("Authorization", "Bearer #{token}")
+            .body(StringBody(
+                    "{\"username\":\"#{username}\"," +
+                    "\"difficulty\":\"Easy\"," +
+                    "\"boardSize\":6," +
+                    "\"boardLabel\":\"Pequeno\"," +
+                    "\"locale\":\"es\"," +
+                    "\"resultLabel\":\"Derrota\"}"
+            ))
                     .check(status().is(200))
-            )
-            .pause(1)
+                    )
+                    .pause(1)
 
             // 6. Historial
             .exec(http("Historial")
