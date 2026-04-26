@@ -95,15 +95,17 @@ describe('PublicProfileModal Coverage', () => {
     render(<PublicProfileModal {...defaultProps} />);
     await screen.findByText('Target');
 
-    // Buscamos el backdrop en el body
-    const backdrop = document.querySelector('.modal-backdrop');
-    if (backdrop) {
-      fireEvent.click(backdrop);
-      expect(defaultProps.onClose).toHaveBeenCalled();
-      
-      fireEvent.keyDown(backdrop, { key: 'Escape' });
-      expect(defaultProps.onClose).toHaveBeenCalled();
-    }
+    const backdrop = document.querySelector('.modal-backdrop') as HTMLElement;
+    const profileCard = document.querySelector('.profile-card') as HTMLElement;
+
+    fireEvent.click(profileCard);
+    expect(defaultProps.onClose).not.toHaveBeenCalled();
+
+    fireEvent.click(backdrop);
+    expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(backdrop, { key: ' ' });
+    expect(defaultProps.onClose).toHaveBeenCalledTimes(2);
   });
 
   it('debe mostrar la inicial del nickname si no hay icono', async () => {

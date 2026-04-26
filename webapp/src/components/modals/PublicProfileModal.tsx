@@ -37,7 +37,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
 
 
     useEffect(() => {
-        fetchProfile(true);
+        void Promise.resolve().then(() => fetchProfile(true));
     }, [fetchProfile]);
 
     const handleAddFriend = async () => {
@@ -46,8 +46,9 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
             await gameService.followUser( data.username);
             // Refrescamos sin mostrar el loader para que el botón cambie suavemente
             fetchProfile(false); 
-        } catch (error: any) {
-            alert(error.message || t('profile.error_add_friend'));
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : '';
+            alert(message || t('profile.error_add_friend'));
         }
     };
 
@@ -56,7 +57,7 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
         try {
             await gameService.cancelFriendRequest(myUsername, data.username);
             fetchProfile(false); 
-        } catch (error: any) {
+        } catch {
             alert(t('profile.error_cancel_request'));
         }
     };
@@ -72,14 +73,14 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
     const renderActionButton = () => {
         if (!data) return null;
         switch (data.relationship) {
-            case 'self': return <button className="profile-add-btn disabled" disabled>{t('profile.is_you')}</button>;
+            case 'self': return <button type="button" className="profile-add-btn disabled" disabled>{t('profile.is_you')}</button>;
             case 'pending': return (
-                <button className="profile-add-btn cancel" onClick={handleCancelRequest}>
+                <button type="button" className="profile-add-btn cancel" onClick={handleCancelRequest}>
                     {t('profile.cancel_request')}
                 </button>
             );
-            case 'accepted': return <button className="profile-add-btn accepted" disabled>{t('profile.already_friends')}</button>;
-            default: return <button className="profile-add-btn" onClick={handleAddFriend}>{t('profile.add_friend')}</button>;
+            case 'accepted': return <button type="button" className="profile-add-btn accepted" disabled>{t('profile.already_friends')}</button>;
+            default: return <button type="button" className="profile-add-btn" onClick={handleAddFriend}>{t('profile.add_friend')}</button>;
         }
     };
 
@@ -98,15 +99,19 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
         // Añadido onClick={onClose} al fondo para poder cerrar al hacer clic fuera
         <div
             className="modal-backdrop profile-overlay"
-            onClick={onClose}
+            onClick={(e) => {
+                if (e.target === e.currentTarget) {
+                    onClose();
+                }
+            }}
             onKeyDown={(e) => {
                 if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
                     onClose();
                 }
             }}
         >
-            <div className="profile-card" onClick={e => e.stopPropagation()}>
-                <button className="profile-close-button" onClick={onClose}>&times;</button>
+            <div className="profile-card">
+                <button type="button" className="profile-close-button" onClick={onClose}>&times;</button>
 
                 <div className="profile-header-content">
                     <div className="profile-avatar-wrapper">

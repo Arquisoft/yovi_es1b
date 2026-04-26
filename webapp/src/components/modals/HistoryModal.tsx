@@ -29,14 +29,18 @@ export const HistoryModal = ({
   return (
     <div
       className="modal-backdrop"
-      onClick={onClose}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
           onClose();
         }
       }}
     >
-      <div className="modal-box history-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-box history-modal">
         <h3>{t('game.history_title')}</h3>
 
         {/* Selector de Filtro */}
