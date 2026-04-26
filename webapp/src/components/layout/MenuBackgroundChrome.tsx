@@ -34,9 +34,12 @@ export const MenuBackgroundChrome = ({
     <div className="App">
       <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline aria-label={videoText}>
         <source src={menuVideo} type="video/mp4" />
+        <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="No spoken audio" />
       </video>
       <div className="menu-video-overlay" />
-      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop />
+      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop>
+        <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="Background music" />
+      </audio>
 
       {children}
 

@@ -99,6 +99,9 @@ export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProp
         // Añadido onClick={onClose} al fondo para poder cerrar al hacer clic fuera
         <div
             className="modal-backdrop profile-overlay"
+            role="button"
+            tabIndex={0}
+            aria-label={t('common.close')}
             onClick={(e) => {
                 if (e.target === e.currentTarget) {
                     onClose();

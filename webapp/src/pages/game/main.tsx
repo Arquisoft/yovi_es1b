@@ -259,7 +259,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                 if (!active || !profile || profile.error) return;
 
                 const rawIcon = typeof profile.iconName === 'string' ? profile.iconName : (profile.icon || '');
-                const safeIconName = String(rawIcon).replace(/[^a-zA-Z0-9._-]/g, '');
+                const safeIconName = String(rawIcon).replaceAll(/[^a-zA-Z0-9._-]/g, '');
 
                 const resolvedIcon = resolveIconFromAssets(safeIconName, iconModules);
 

@@ -24,6 +24,7 @@ When('I open the "Social" section', async function () {
   await this.page.locator('.sidebar-title').waitFor({ state: 'visible' });
 });
 
+/*
 When('I search for {string}', async function (query) {
   const page = this.page;
   const input = page.locator('input.friends-input-id');
@@ -34,6 +35,28 @@ When('I search for {string}', async function (query) {
   
   // Damos tiempo a React para que guarde el código en su estado interno
   await page.waitForTimeout(1000);
+  await page.waitForLoadState('networkidle');
+  
+  console.log(`🔍 Buscando a: ${query}`);
+});
+*/
+
+When('I search for {string}', async function (query) {
+  const page = this.page;
+  const input = page.locator('input.friends-input-id');
+  await input.waitFor({ state: 'visible' });
+  
+  await input.fill('');
+  // 🛡️ USAMOS 'query' (que es "Bob") en lugar del código hardcodeado
+  await input.fill(query); 
+  
+  // ⌨️ ¡CLAVE! Pulsamos Enter para que GitHub sepa que queremos buscar
+  await page.keyboard.press('Enter');
+  
+  await page.waitForTimeout(1000);
+  await page.waitForLoadState('networkidle');
+  
+  console.log(`🔍 Buscando a: ${query}`);
 });
 
 Then('I should see {string} in the search results', async function (expectedNickname) {
