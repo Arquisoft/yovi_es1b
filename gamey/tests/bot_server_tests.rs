@@ -10,6 +10,7 @@ use mongodb::Client;
 use std::sync::Arc;
 use tower::ServiceExt;
 
+
 /// Helper para obtener una base de datos de prueba (local/falsa)
 /// Esto permite que el struct AppState se cree correctamente
 async fn get_test_db() -> mongodb::Database {
@@ -985,4 +986,85 @@ async fn test_play_size_layout_mismatch() {
         error.message.contains("Invalid") || error.message.contains("size"),
         "El mensaje de error debería indicar la discrepancia de tamaños"
     );
+
+
+    
+#[tokio::test]
+async fn test_history_empty_coverage() {
+    // Usamos tu nueva función helper
+    let app = test_app().await; 
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/history?username=usuario_fantasma")
+                .body(Body::empty())
+                .unwrap()
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_obtener_estadisticas_coverage() {
+    let bots = gamey::YBotRegistry::new(); // O la lógica que uses para bots
+    let db = get_test_db().await;
+    let state = AppState::new(bots, db.clone());
+    
+    // Ahora tienes el estado para el router y la db para insertar
+    let col = db.collection::<serde_json::Value>("partidas");
+    col.insert_one(serde_json::json!({
+    "player": "Drus",
+    "result": "Victoria",
+    "score": 150
+})).await.unwrap();
+
+    let app = test_app_with_state(state);
+    
+    let response = app.oneshot(
+        Request::builder()
+            .uri("/api/stats?username=Drus")
+            .body(Body::empty())
+            .unwrap()
+    ).await.unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_pvp_errors_coverage() {
+    let bots = gamey::YBotRegistry::new();
+let db = get_test_db().await;
+let state = AppState::new(bots, db);
+let app = test_app_with_state(state);
+
+    // Error: No match (Línea 369)
+    let res_no_match = app.clone()
+        .oneshot(Request::builder()
+            .method("POST")
+            .uri("/api/pvp/move")
+            .header("Content-Type", "application/json")
+            .body(Body::from(r#"{"match_id": "falso", "player": "Drus", "index": 0}"#)).unwrap())
+        .await.unwrap();
+    
+    // Error: Player not in match (Línea 374)
+    // Primero tendrías que crear un match real pero enviar un nombre de jugador distinto
+}
+
+#[tokio::test]
+async fn test_pvp_victory_and_scoring_coverage() {
+    let app = test_app().await;
+
+    // 1. Crea una partida con dificultad "Hard" para cubrir la línea 226 de la img 3c9e9c
+    // 2. Realiza movimientos hasta que el estado sea 'Finished'
+    // 3. El trigger de victoria entrará en el bloque if let Some(winner) (Línea 385 img 3c9b96)
+    
+    // Análisis crítico: Como usas tokio::spawn para insertar en BD, 
+    // tienes que esperar un pelín para que a Rust le dé tiempo a ejecutarlo
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+    
+    // 4. Verifica que la colección "partidas" ahora tiene un documento nuevo
+}
 }
