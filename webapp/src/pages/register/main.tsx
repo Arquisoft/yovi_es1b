@@ -6,7 +6,7 @@ import { LanguageModal } from '../../components/modals/LanguageModal';
 import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
 import RegisterScreen from '../../screens/RegisterScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
-import { activateRegisteredSession, persistUserSession } from '../../utils/sessionUtils';
+import { activateRegisteredSession, persistUserSession, isSafeToken } from '../../utils/sessionUtils';
 
 import '../../css/App.css';
 import '../../css/Log.css';
