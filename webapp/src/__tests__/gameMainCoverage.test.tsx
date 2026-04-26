@@ -40,8 +40,60 @@ vi.mock('../screens/GameScreen', () => ({
   ),
 }));
 
-vi.mock('../components/layout/MenuBackgroundChrome', () => ({
-  MenuBackgroundChrome: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
+vi.mock('../components/layout/MenuBackgroundShell', () => ({
+  MenuBackgroundShell: ({ children }: { children: (background: {
+    audioRef: { current: null }
+    isVideoPaused: boolean
+    musicVolume: number
+    setIsVideoPaused: (value: boolean) => void
+    setMusicVolume: (value: number) => void
+    setShowSettings: (value: boolean) => void
+    showSettings: boolean
+    videoRef: { current: null }
+  }) => ReactNode }) => {
+    const { useState } = require('react') as typeof import('react')
+    const [showSettings, setShowSettings] = useState(false)
+    const [musicVolume, setMusicVolume] = useState(0.4)
+    const [isVideoPaused, setIsVideoPaused] = useState(false)
+
+    return (
+      <div>
+        {children({
+          audioRef: { current: null },
+          isVideoPaused,
+          musicVolume,
+          setIsVideoPaused,
+          setMusicVolume,
+          setShowSettings,
+          showSettings,
+          videoRef: { current: null },
+        })}
+        {showSettings && (
+          <div role="dialog" aria-label="Configuración">
+            <label>
+              volumen
+              <input
+                aria-label="volumen"
+                type="range"
+                value={Math.round(musicVolume * 100)}
+                onChange={(event) => setMusicVolume(Number(event.target.value) / 100)}
+              />
+            </label>
+            <label>
+              video
+              <input
+                aria-label="video"
+                type="checkbox"
+                checked={!isVideoPaused}
+                onChange={(event) => setIsVideoPaused(!event.target.checked)}
+              />
+            </label>
+            <button type="button" onClick={() => setShowSettings(false)}>cerrar</button>
+          </div>
+        )}
+      </div>
+    )
+  },
 }));
 
 vi.mock('../components/modals/SelectionModals', () => ({
@@ -74,19 +126,6 @@ vi.mock('../screens/TutorialScreen', () => ({
 
 vi.mock('../components/modals/FriendsPanel', () => ({
   FriendsPanel: () => <div data-testid="friends-panel" />,
-}));
-
-vi.mock('../hooks/useMenuBackgroundMedia', () => ({
-  useMenuBackgroundMedia: () => ({
-    audioRef: { current: null },
-    isVideoPaused: false,
-    musicVolume: 0.4,
-    setIsVideoPaused: vi.fn(),
-    setMusicVolume: vi.fn(),
-    setShowSettings: vi.fn(),
-    showSettings: false,
-    videoRef: { current: null },
-  }),
 }));
 
 vi.mock('../hooks/useGameLogic', () => ({

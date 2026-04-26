@@ -49,6 +49,9 @@ export const languageOptions: LanguageOption[] = (Object.keys(languageCodes) as 
 export const isSupportedLanguage = (value: string | null | undefined): value is SupportedLanguage =>
   value === 'Spain' || value === 'English' || value === 'German' || value === 'Portuguese';
 
+export const normalizeSupportedLanguage = (value: string | null | undefined): SupportedLanguage =>
+  isSupportedLanguage(value) ? value : 'Spain';
+
 export const getStoredLanguagePreference = (): SupportedLanguage => {
   const stored = localStorage.getItem('yovi_user_language');
   return isSupportedLanguage(stored) ? stored : 'Spain';

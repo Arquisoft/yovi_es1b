@@ -1,9 +1,28 @@
 import { useEffect, useRef, useState } from 'react'
 
+const readStoredNumber = (key: string, fallback: number) => {
+  const rawValue = localStorage.getItem(key)
+  if (rawValue === null) return fallback
+  const parsedValue = Number(rawValue)
+  return Number.isFinite(parsedValue) ? parsedValue : fallback
+}
+
+const readStoredBoolean = (key: string, fallback: boolean) => {
+  const rawValue = localStorage.getItem(key)
+  if (rawValue === null) return fallback
+  if (rawValue === 'true') return true
+  if (rawValue === 'false') return false
+  return fallback
+}
+
 export const useMenuBackgroundMedia = () => {
   const [showSettings, setShowSettings] = useState(false)
-  const [musicVolume, setMusicVolume] = useState(0.4)
-  const [isVideoPaused, setIsVideoPaused] = useState(false)
+  const [musicVolume, setMusicVolume] = useState(() =>
+    Math.min(1, Math.max(0, readStoredNumber('yovi_bg_volume', 0.4)))
+  )
+  const [isVideoPaused, setIsVideoPaused] = useState(() =>
+    readStoredBoolean('yovi_bg_video_paused', false)
+  )
   const audioRef = useRef<HTMLAudioElement>(null)
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -11,6 +30,7 @@ export const useMenuBackgroundMedia = () => {
     if (audioRef.current) {
       audioRef.current.volume = Math.min(1, Math.max(0, musicVolume))
     }
+    localStorage.setItem('yovi_bg_volume', String(Math.min(1, Math.max(0, musicVolume))))
   }, [musicVolume])
 
   useEffect(() => {
@@ -21,6 +41,7 @@ export const useMenuBackgroundMedia = () => {
     } else {
       video.play().catch(() => {})
     }
+    localStorage.setItem('yovi_bg_video_paused', String(isVideoPaused))
   }, [isVideoPaused])
 
   useEffect(() => {

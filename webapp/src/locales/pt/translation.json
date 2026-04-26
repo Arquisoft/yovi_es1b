@@ -282,7 +282,7 @@
     "register_feature_2": "Validação dos campos no cliente e no servidor.",
     "register_feature_3": "Mensagens de erro claras para dados inválidos.",
     "register_settings_description": "Captura do painel de configurações a partir do Registo.",
-    "register_help_title": "Ajuda",
+    "register_help_title": "Ajuda", 
     "register_help_description": "Captura de ajuda contextual do Registo.",
     "window_login": "Ecrã de início de sessão",
     "login_feature_1": "Acesso a utilizadores registados através de nome de utilizador e palavra-passe.",

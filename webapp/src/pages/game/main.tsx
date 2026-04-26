@@ -19,16 +19,16 @@ import { PayPalStore } from '../../components/modals/PayPalStore';
 // Hooks, Servicios y Utils
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
+import { MenuBackgroundShell } from '../../components/layout/MenuBackgroundShell';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
 import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
 import { getSizeLabelKey } from '../../utils/gameLabelUtils';
 import { resolveIconFromAssets } from '../../utils/gamePageUtils';
+import { isSupportedLanguage } from '../../utils/languageUtils';
 
 // Assets y Estilos
-import menuVideo from '../../assets/background_video.mp4';
-import backgroundMusic from '../../assets/background_music.mp3';
 import '../../css/App.css';
 import '../../css/Game.css';
 import '../../css/Log.css';
@@ -149,12 +149,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
-  const [musicVolume, setMusicVolume] = useState(0.4);
-  const [isVideoPaused, setIsVideoPaused] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // --- ESTADOS DE HISTORIAL ---
   const [showHistory, setShowHistory] = useState(false);
@@ -242,51 +237,14 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
     setPendingChallenge(payload);
   }, [t]);
 
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = Math.min(1, Math.max(0, musicVolume));
-    }
-  }, [musicVolume]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const storedTime = Number(localStorage.getItem('yovi_bg_time') || '0');
-    if (!Number.isNaN(storedTime) && storedTime > 0) {
-      const applyTime = () => {
-        audio.currentTime = Math.min(storedTime, Math.max(0, audio.duration || storedTime));
-      };
-      if (audio.readyState >= 1) {
-        applyTime();
-      } else {
-        audio.addEventListener('loadedmetadata', applyTime, { once: true });
-      }
-    }
-
-    const saveTime = () => {
-      localStorage.setItem('yovi_bg_time', String(audio.currentTime || 0));
-    };
-    const intervalId = globalThis.setInterval(saveTime, 1000);
-    globalThis.addEventListener('beforeunload', saveTime);
-    document.addEventListener('visibilitychange', saveTime);
-
-    return () => {
-      saveTime();
-      globalThis.clearInterval(intervalId);
-      globalThis.removeEventListener('beforeunload', saveTime);
-      document.removeEventListener('visibilitychange', saveTime);
-    };
-  }, []);
-
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (isVideoPaused) {
-      video.pause();
-    } else {
-      video.play().catch(() => {});
-    }
-  }, [isVideoPaused]);
+  const handleInviteFriend = useCallback((friendUsername: string) => {
+    if (gameMode !== 'multiplayer') return;
+    setInviteLoadingUser(friendUsername);
+    multiplayerStrategyRef.current?.challengePlayer(friendUsername);
+    globalThis.setTimeout(() => {
+      setInviteLoadingUser((current) => (current === friendUsername ? null : current));
+    }, 8000);
+  }, [gameMode]);
 
   // --- EFECTOS INICIALES ---
   useEffect(() => {
@@ -317,7 +275,6 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
 
                 if (resolvedIcon) {
                     setPlayerIcon(resolvedIcon);
-                    localStorage.setItem('yovi_user_icon', resolvedIcon);
                 }
 
                 const languageToI18n: Record<string, string> = {
@@ -327,8 +284,9 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     Portuguese: 'pt',
                 };
 
-                if (profile.language) {
-                    const langCode = languageToI18n[profile.language] ?? 'es';
+                const safeLanguage = isSupportedLanguage(profile.language) ? profile.language : null;
+                if (safeLanguage) {
+                    const langCode = languageToI18n[safeLanguage] ?? 'es';
                     i18n.changeLanguage(langCode);
                 }
 
@@ -442,6 +400,11 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
             }
         };
 
+        const handleHistoryFilterChange = (nextFilter: string) => {
+            setHistoryFilter(nextFilter);
+            void fetchHistory(1, nextFilter);
+        };
+
         const openFriendsMenu = () => {
             setShowFriendsMenu(true);
         };
@@ -451,17 +414,9 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
         };
 
         return (
+          <MenuBackgroundShell>
+            {(background) => (
             <div className="App">
-                {/* Fondo de video */}
-                <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline>
-                    <source src={menuVideo} type="video/mp4"/>
-                    <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="No spoken audio" />
-                </video>
-                <div className="menu-video-overlay"/>
-                <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop>
-                    <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="Background music" />
-                </audio>
-
                 {/* Pantalla Principal */}
                 <GameScreen
                     username={username}
@@ -549,7 +504,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     }}
                     onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
                     onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
-                    onOpenSettings={() => setShowSettings(true)}
+                    onOpenSettings={() => background.setShowSettings(true)}
                     onOpenTutorial={() => setShowTutorialScreen(true)}
                     onScoreButtonClick={() => {
                         setShowStore(true);
@@ -617,10 +572,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     totalPages={totalPages}
                     currentFilter={historyFilter}
                     onPageChange={fetchHistory}
-                    onFilterChange={(f) => {
-                        setHistoryFilter(f);
-                        fetchHistory(1, f);
-                    }}
+                    onFilterChange={handleHistoryFilterChange}
                 />
 
                 {/* 1. Panel de Amigos: el emisor del evento */}
@@ -634,14 +586,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     // Captura el nombre del amigo y lo guarda en el estado local de main.tsx
                     onTriggerPublicProfile={(targetUser) => setPublicProfileToView(targetUser)}
                     inviteLoadingUser={inviteLoadingUser}
-                    onInviteFriend={(friendUsername) => {
-                        if (gameMode !== 'multiplayer') return;
-                        setInviteLoadingUser(friendUsername);
-                        multiplayerStrategyRef.current?.challengePlayer(friendUsername);
-                        globalThis.setTimeout(() => {
-                            setInviteLoadingUser((current) => (current === friendUsername ? null : current));
-                        }, 8000);
-                    }}
+                    onInviteFriend={handleInviteFriend}
                 />
 
                 {/* 2. Modal de Perfil Público: el receptor */}
@@ -704,7 +649,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                         </div>
                     </dialog>
                 )}
-                {showSettings && (
+                {background.showSettings && (
                     <dialog className="modal-backdrop" aria-label={t('game.settings_title')} open>
                         <div className="modal-box">
                             <h3>{t('game.settings_title')}</h3>
@@ -716,8 +661,8 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                                     type="range"
                                     min="0"
                                     max="100"
-                                    value={Math.round(musicVolume * 100)}
-                                    onChange={(e) => setMusicVolume(Number(e.target.value) / 100)}
+                                    value={Math.round(background.musicVolume * 100)}
+                                    onChange={(e) => background.setMusicVolume(Number(e.target.value) / 100)}
                                 />
                             </div>
                             <div className="form-group">
@@ -725,18 +670,20 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                                 <input
                                     id="video-static"
                                     type="checkbox"
-                                    checked={!isVideoPaused}
-                                    onChange={(e) => setIsVideoPaused(!e.target.checked)}
+                                    checked={!background.isVideoPaused}
+                                    onChange={(e) => background.setIsVideoPaused(!e.target.checked)}
                                 />
                             </div>
                             <button type="button" className="submit-button settings-close-button"
-                                    onClick={() => setShowSettings(false)}>
+                                    onClick={() => background.setShowSettings(false)}>
                                 {t('common.close')}
                             </button>
                         </div>
                     </dialog>
                 )}
             </div>
+            )}
+          </MenuBackgroundShell>
         );
 
     };
