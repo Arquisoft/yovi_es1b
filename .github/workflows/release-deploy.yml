@@ -107,6 +107,8 @@ jobs:
           cd gamey
           # Arrancamos Rust en el puerto 4000 y lo mandamos al fondo con &
           cargo run -- --mode server --port 4000 &
+          echo "Esperando a que Rust compile y despierte..."
+          sleep 60
         env:
           MONGODB_URI: ${{ env.MONGODB_URI_GAMEY }}
           GAMEY_TLS_CERT_PATH: ../users/cert.pem
@@ -175,6 +177,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Create SSL Certificates for Docker
+        run: |
+          mkdir -p gamey/certs
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout gamey/certs/key.pem -out gamey/certs/cert.pem \
+            -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=localhost"
 
       - name: Publish to Registry (gamey)
         uses: elgohr/Publish-Docker-Github-Action@v5
