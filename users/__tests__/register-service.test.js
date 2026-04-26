@@ -127,9 +127,15 @@ describe('POST /createuser', () => {
 
   const res = await request(app)
     .post('/createuser')
-    .send({ username: 'new', nickname: 'new', password: '123', birthDate: '2000-01-01' });
+    .send({ 
+        username: 'new', 
+        nickname: 'new', 
+        password: '123', 
+        birthDate: '2000-01-01',
+        language: 'Spain' 
+    });
 
-  expect(res.status).toBe(400); // Según tu imagen, devuelves 400 aquí
+  expect(res.status).toBe(400); 
   expect(res.body.error).toBe("User already exists or database error");
 });
 
