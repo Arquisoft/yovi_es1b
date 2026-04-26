@@ -49,6 +49,41 @@ endif::arc42help[]
 
 image::10_arbol_calidad.png[align="center"]
 
+Los atributos de calidad de YoVi se priorizan según su impacto directo en los stakeholders del proyecto.
+
+[cols="1,2,1", options="header"]
+|===
+|Atributo |Sub-atributos relevantes |Prioridad
+
+|*Desplegabilidad*
+|Reproducibilidad en cualquier entorno, portabilidad, tiempo de puesta en marcha, despliegue automatizado en CI/CD
+|Alta
+
+|*Fiabilidad*
+|Consistencia del estado de partida, comportamiento correcto del temporizador y detección de victoria, gestión de rendiciones
+|Alta
+
+|*Usabilidad*
+|Internacionalización en 4 idiomas, claridad de la interfaz, modo invitado sin registro, tutorial interactivo integrado
+|Alta
+
+|*Seguridad*
+|Hash de contraseñas (bcrypt), autenticación JWT, validación de entradas contra inyección, uso de `crypto.getRandomValues` en lugar de `Math.random`
+|Media-Alta
+
+|*Mantenibilidad*
+|Cobertura de tests automatizados, análisis estático con SonarCloud, separación clara de responsabilidades entre capas
+|Media
+
+|*Rendimiento*
+|Tiempo de respuesta del motor Rust, fluidez del temporizador de turno, latencia del proxy Node→Rust
+|Media
+
+|*Interoperabilidad*
+|Protocolo YEN entre Node y Rust, API REST documentada (OpenAPI/Swagger), compatibilidad de contenedores
+|Media
+|===
+
 === Escenarios de calidad
 
 ifdef::arc42help[]
@@ -79,129 +114,153 @@ endif::arc42help[]
 
 ==== Escenarios de uso
 
-[cols="1,2,2,2" options="header"]
+[cols="1,2,2,2", options="header"]
 |===
-|ID|Escenario|Estímulo|Respuesta esperada del sistema
+|ID |Escenario |Estímulo |Respuesta esperada del sistema
 
 |SC-01
 |*Respuesta del bot en dificultad difícil*
-|El jugador realiza un movimiento en un tablero de tamaño 12x12x12 con el ProBot activo.
-|El motor Gamey calcula y devuelve el movimiento del bot en menos de 2 segundos,
-actualizándose el tablero en la webapp sin demora visible.
+|El jugador realiza un movimiento en un tablero de tamaño 12×12×12 con el ProBot o AttackerBot activo.
+|El motor Gamey calcula y devuelve el movimiento del bot (BFS de distancias + potencial exponencial)
+en menos de 2 segundos, actualizándose el tablero en la webapp sin demora visible.
 
 |SC-02
 |*Timeout de turno en dificultad Hard*
 |El jugador no realiza ningún movimiento durante 15 segundos en dificultad Hard.
-|El sistema selecciona automáticamente una celda vacía aleatoria en nombre del jugador,
-y reinicia el temporizador para el siguiente turno.
+|El sistema selecciona automáticamente una celda vacía usando `window.crypto.getRandomValues`
+(no `Math.random`) en nombre del jugador y reinicia el temporizador para el siguiente turno.
 
 |SC-03
 |*Aviso visual de tiempo agotándose*
 |Quedan 5 segundos o menos en el temporizador de turno del jugador.
 |La barra de progreso aplica la clase `turn-timer-urgent` cambiando de color,
-y el contador de segundos resalta visualmente para alertar al jugador de que
-debe actuar con urgencia.
+y el contador de segundos resalta visualmente para alertar al jugador.
 
 |SC-04
 |*Registro de nuevo usuario*
 |Un usuario rellena el formulario de registro con nombre, nickname, contraseña,
 idioma y fecha de nacimiento válidos.
-|El servicio Users crea el usuario en MongoDB con contraseña hasheada y asigna
-un friendCode único de 6 caracteres. La webapp redirige automáticamente a la
-pantalla de juego en menos de 1 segundo.
+|El Users Service crea el usuario en MongoDB con contraseña hasheada (bcrypt, saltRounds=10)
+y asigna un FriendCode único de 6 caracteres (nanoid). La webapp redirige a la pantalla
+de juego en menos de 1 segundo.
 
 |SC-05
 |*Consulta del historial de partidas*
 |El jugador pulsa el botón "Historial" durante una partida.
 |La webapp solicita al backend el historial paginado y muestra una tabla con fecha,
-rival, tamaño de tablero, dificultad y resultado de cada partida previa
-en menos de 2 segundos.
+rival, tamaño de tablero, dificultad y resultado de cada partida previa en menos de 2 segundos.
 
 |SC-06
 |*Rendición del jugador*
 |El jugador pulsa el botón "Rendirse" durante una partida en curso.
-|El sistema detiene el temporizador, registra la derrota en el historial
-de MongoDB y muestra el modal de resultado indicando "Has perdido".
+|El sistema detiene el temporizador, el Users Service proxifica a `/surrender` de Gamey que
+persiste la derrota en MongoDB de forma asíncrona, y la webapp muestra el modal de resultado.
 
 |SC-07
 |*Cambio de dificultad durante la partida*
-|El jugador cambia la dificultad desde el menú desplegable de la partida.
-|El sistema para el temporizador activo, reinicia el tablero con la nueva
-dificultad y arranca el temporizador con el nuevo límite correspondiente
-(Easy=60s, Medium=30s, Hard=15s).
+|El jugador cambia la dificultad desde el menú desplegable.
+|`startNewGame()` llama a `stopTimer()`, reinicia el tablero con la nueva dificultad
+y arranca el temporizador con el nuevo límite (Easy=60s, Medium=30s, Hard=15s).
+Gamey asigna aleatoriamente un bot del nivel pedido entre los disponibles para esa dificultad.
 
 |SC-08
 |*Cambio de tamaño de tablero*
-|El jugador selecciona un tablero de 12x12x12 desde el tamaño por defecto (6x6x6).
-|La webapp solicita un nuevo tablero al backend, lo renderiza correctamente
-con 78 celdas y reinicia el temporizador sin perder la dificultad seleccionada.
+|El jugador selecciona un tablero de 12×12×12 desde el tamaño por defecto (6×6×6).
+|La webapp solicita un nuevo tablero al backend, lo renderiza correctamente con 78 celdas
+y reinicia el temporizador sin perder la dificultad seleccionada.
 
 |SC-09
 |*Acceso concurrente de múltiples usuarios*
 |Diez usuarios distintos inician sesión y juegan simultáneamente.
-|Cada sesión es independiente; el estado de la partida de un usuario
-no interfiere con el de los demás y el servicio Users responde
-correctamente a todas las peticiones.
+|`DashMap` en Gamey gestiona sesiones independientes sin contención global. El estado
+de la partida de un usuario no interfiere con el de los demás. Error rate < 1%.
 
 |SC-10
 |*Condición de victoria*
 |Un jugador conecta los tres lados del tablero triangular con sus fichas.
-|El motor Gamey detecta la victoria, detiene el juego, el temporizador
-se para y la webapp muestra el modal de resultado según corresponda.
+|El motor Gamey detecta la victoria mediante Union-Find (máscara de región = 0b111),
+devuelve `winner: 0`, el Users Service suma XP atómicamente con `$inc`, el temporizador
+se detiene y la webapp muestra el modal de resultado.
 
 |SC-11
 |*Solicitud y aceptación de amistad*
-|El jugador busca a otro usuario por su friendCode en el panel de amigos
-y le envía una solicitud.
-|El sistema crea una relación pendiente en MongoDB. El destinatario la ve
-en su panel de amigos y puede aceptarla o rechazarla. Al aceptar, ambos
-usuarios aparecen en la lista de amigos del otro.
+|El jugador busca a otro usuario por su FriendCode en el panel de amigos y envía solicitud.
+|El sistema crea una relación `pending` en MongoDB. El destinatario la ve en su panel
+y puede aceptarla o rechazarla. Al aceptar, ambos aparecen en la lista de amigos del otro.
 
 |SC-12
 |*Actualización de perfil*
 |El jugador cambia su avatar e idioma desde la pantalla de perfil.
-|El servicio Users actualiza los campos en MongoDB y la webapp refleja
-el nuevo avatar inmediatamente sin necesidad de recargar la página.
+|El Users Service actualiza los campos en MongoDB. `i18n.changeLanguage()` aplica el
+nuevo idioma instantáneamente sin recargar la página. El nuevo avatar se refleja en la UI.
+
+|SC-13
+|*Cambio de idioma durante la partida*
+|El usuario selecciona un idioma distinto desde el selector de idioma mientras hay una
+partida en curso.
+|`i18n.changeLanguage(code)` actualiza el contexto de React; todos los componentes
+suscritos a `useTranslation` se re-renderizan. El temporizador continúa sin interrupción
+y el estado del tablero no se modifica.
+
+|SC-14
+|*Acceso como invitado*
+|Un usuario no registrado accede a la página de juego como invitado.
+|Puede jugar partidas completas. Al intentar acceder a historial, amigos o perfil
+se muestra `GuestAccessModal` con opciones de login/registro. 0 errores JavaScript.
+
+|SC-15
+|*Compra de XP con PayPal*
+|El jugador pulsa "Comprar 1000 XP" en la tienda y completa el pago con una cuenta sandbox.
+|PayPal confirma la operación, `onApprove` captura el pago, se llama a `/users/purchase-xp`
+y se acreditan 1000 XP al `totalScore` del usuario con `$inc` atómico en MongoDB.
 |===
 
 ==== Escenarios de cambio
 
-[cols="1,2,2,2" options="header"]
+[cols="1,2,2,2", options="header"]
 |===
-|ID|Escenario|Cambio|Respuesta esperada del sistema
+|ID |Escenario |Cambio |Respuesta esperada del sistema
 
 |SC-C01
 |*Añadir un nuevo nivel de dificultad*
 |Se implementa un nuevo bot en el módulo `bot/` de Gamey.
-|El nuevo bot se registra en `ybot_registry.rs` y aparece automáticamente
-en el endpoint `/difficulties`. La webapp lo muestra en el menú desplegable
-añadiéndolo al mapa `UI_TO_ENGLISH_DIFFICULTY` en `constants/config.ts`.
+|El nuevo bot se registra en `ybot_registry.rs` con `.with_bot(Arc::new(NuevoBot))`
+y aparece automáticamente en el endpoint `/difficulties`. La webapp lo muestra en el
+menú desplegable añadiéndolo al mapa `UI_TO_ENGLISH_DIFFICULTY` en `constants/config.ts`.
 
 |SC-C02
 |*Cambio en el tiempo límite por dificultad*
 |Se decide modificar el tiempo límite de alguna dificultad.
 |Solo es necesario modificar la constante `TURN_TIME_LIMIT` en `constants/config.ts`.
 El temporizador, la barra de progreso y el movimiento automático se adaptan
-automáticamente al nuevo valor.
+automáticamente al nuevo valor sin cambios en el hook `useGameTimer`.
 
 |SC-C03
 |*Caída del servicio Gamey*
 |El contenedor Gamey deja de responder durante una partida en curso.
-|El servicio Users recibe un error de red al intentar contactar con Gamey.
-La webapp muestra el error de conexión y el temporizador se reinicia
-para permitir al jugador intentarlo de nuevo.
+|El Users Service recibe un error de red al intentar contactar con Gamey. La webapp
+muestra el error de conexión. El historial de partidas ya guardadas en MongoDB permanece
+intacto. El usuario puede reiniciar la partida cuando el servicio se recupere.
 
 |SC-C04
 |*Escalado del tamaño de tablero*
 |Se añade soporte para un nuevo tamaño de tablero.
-|Basta con añadir la opción en `SIZE_OPTIONS` y en la función
-`getBoardDimensionFromSizeChoice` en `boardUtils.ts`. El motor Gamey
-ya soporta cualquier tamaño gracias a su topología triangular paramétrica.
+|Basta con añadir la opción en `SIZE_OPTIONS` y en `getBoardDimensionFromSizeChoice`
+en `boardUtils.ts`. El motor Gamey ya soporta cualquier tamaño (3-20) gracias a la
+topología triangular paramétrica; el clamp `payload.size.clamp(3, 20)` en `/reset`
+protege contra valores fuera de rango.
 
 |SC-C05
 |*Migración de base de datos*
 |Se decide cambiar de MongoDB local a MongoDB Atlas en producción.
-|Solo es necesario actualizar la variable de entorno `MONGODB_URI`
-en el `docker-compose.yml` o en el archivo `.env`. No se requiere
-ningún cambio en el código de la aplicación.
+|Solo es necesario actualizar la variable de entorno `MONGODB_URI` en el
+`docker-compose.yml` o en el archivo `.env`. `validate_mongodb_uri` en Gamey acepta
+tanto `mongodb://` como `mongodb+srv://`. No se requiere ningún cambio en el código.
+
+|SC-C06
+|*Adición de un nuevo idioma*
+|Se quiere añadir soporte para un quinto idioma.
+|Se crea el archivo `src/locales/XX/translation.json` con las traducciones, se
+importa en `src/i18n.ts` y se añade al objeto `resources`. Se añade la opción al
+componente selector de idioma. No se requieren cambios en ningún componente de juego.
 |===

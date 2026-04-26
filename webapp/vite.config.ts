@@ -14,6 +14,8 @@ export default defineConfig({
   plugins: [react()],
 
   server: {
+  // Configuración multi-página (MPA)
+
     port: 5173,
     https: useHttps ? {
       key: fs.readFileSync(keyPath),
@@ -21,6 +23,7 @@ export default defineConfig({
     } : undefined, 
     cors: true,
   },
+
 
   build: {
     rollupOptions: {
@@ -30,6 +33,7 @@ export default defineConfig({
         register: resolve(__dirname, 'register.html'),
         gamemode: resolve(__dirname, 'gamemode.html'),
         game: resolve(__dirname, 'game.html'),
+        friends: resolve(__dirname, 'friends.html'),
       },
     },
   },

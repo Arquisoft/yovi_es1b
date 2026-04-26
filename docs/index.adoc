@@ -5,7 +5,7 @@
 include::src/config.adoc[]
 = image:arc42-logo.png[arc42] Yovi en español - Equipo 1-B
 :revnumber: 8.2 EN
-:revdate: Febrero 2026
+:revdate: Abril 2026
 :revremark: (based upon AsciiDoc version)
 // toc-title definition MUST follow document title without blank line!
 :toc-title: Tabla de Contenidos
@@ -93,7 +93,9 @@ include::src/10_quality_requirements.adoc[]
 include::src/11_technical_risks.adoc[]
 
 <<<<
-// 12. Glossary
-include::src/12_glossary.adoc[]
+// 12. Testing Report
+include::src/12_testing_report.adoc[]
 
-
+<<<<
+// 13. Glossary
+include::src/13_glossary.adoc[]
