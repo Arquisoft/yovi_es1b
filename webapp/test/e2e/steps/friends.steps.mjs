@@ -39,6 +39,10 @@ Given('a user exists with name {string} and nickname {string}', async function (
   // 🛡️ TRUCO MAESTRO: Pedimos el perfil de Bob para saber su código REAL
   const response = await fetch(`${API_URL}/users/profile/${username}`);
   const userData = await response.json();
+
+  console.log("--- 🔎 INVESTIGACIÓN DE BOB ---");
+  console.log("JSON completo que devuelve el servidor:", JSON.stringify(userData, null, 2));
+  console.log("-------------------------------");
   
   // Guardamos el código que el servidor ha generado aleatoriamente
   this.targetFriendCode = userData.friendCode; 
