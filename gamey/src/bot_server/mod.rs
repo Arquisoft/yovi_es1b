@@ -307,7 +307,8 @@ pub async fn obtener_historial(
     }
 
     // 3. Contar el total de documentos usando el filtro final
-        let total_documents = match collection.count_documents(filter.clone()).await {        Ok(count) => count,
+    let total = match collection.count_documents(filter.clone()).await {
+        Ok(count) => count,
         Err(e) => {
             eprintln!("Error al contar documentos en BBDD: {}", e);
             return axum::Json(serde_json::json!({
@@ -316,13 +317,13 @@ pub async fn obtener_historial(
         }
     };
 
-    let total_pages = (total_documents as f64 / limit as f64).ceil() as u64;
-
-    let total = collection.count_documents(filter.clone()).await.unwrap_or(0);
     let options = mongodb::options::FindOptions::builder()
-        .sort(doc! { "date": -1 }).skip((page - 1) * (limit as u64)).limit(limit).build();
+        .sort(doc! { "date": -1 })
+        .skip(skip_value)
+        .limit(limit)
+        .build();
     // 5. Ejecutar la búsqueda pasando las opciones correctamente
-        let mut cursor = match collection.find(filter).with_options(find_options).await {
+    let mut cursor = match collection.find(filter).with_options(options).await {
         Ok(c) => c,
         Err(e) => {
             eprintln!("Error al buscar en la BBDD: {}", e);
@@ -336,11 +337,11 @@ pub async fn obtener_historial(
     let mut partidas = Vec::new();
     while let Some(Ok(mut doc)) = cursor.next().await {
         normalize_history_document(&mut doc);
-        data.push(doc);
+        partidas.push(doc);
     }
 
     axum::Json(serde_json::json!({
-        "data": data, "total": total, "page": page, "limit": limit,
+        "data": partidas, "total": total, "page": page, "limit": limit,
         "total_pages": (total as f64 / limit as f64).ceil() as u64
     }))
 }

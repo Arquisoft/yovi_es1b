@@ -24,6 +24,7 @@ import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
 import { clearGuestSession, isGuestSession } from '../../utils/sessionUtils';
 import { getSizeLabelKey } from '../../utils/gameLabelUtils';
+import { resolveIconFromAssets } from '../../utils/gamePageUtils';
 
 // Assets y Estilos
 import menuVideo from '../../assets/background_video.mp4';
@@ -341,6 +342,11 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
             }
         };
 
+        void syncProfileData();
+        return () => {
+            active = false;
+        };
+    }, []);
 
         // --- MANEJADORES DE ACCIONES ---
         const handleAutoMove = useCallback(async () => {

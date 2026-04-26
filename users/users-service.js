@@ -1,6 +1,7 @@
 // Node.js Server
 
 const https = require('node:https');
+const http = require('node:http');
 const fs = require('node:fs');
 
 const mongoose = require('mongoose');
@@ -14,7 +15,6 @@ const express = require('express');
 const app = express();
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
-const fs = require('node:fs');
 const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
 const { createSocketGateway } = require('./socketHandler');
@@ -838,17 +838,14 @@ if (require.main === module) {
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 
-  // https
-  if (sslOptions) {
-    // Si tenemos certs, levantamos HTTPS
-    https.createServer(sslOptions, app).listen(port, () => {
-      console.log(`User Service (HTTPS) listening at https://localhost:${port}`);
-    });
-  } else {
-    // Si no (como en CI o tests), levantamos HTTP normal
-    app.listen(port, () => {
-      console.log(`User Service (HTTP) listening at http://localhost:${port}`);
-    });
+  const server = sslOptions ? https.createServer(sslOptions, app) : http.createServer(app);
+  createSocketGateway(server, { gameyUrl: GAMEY_URL });
+
+  server.listen(port, () => {
+    const protocol = sslOptions ? 'HTTPS' : 'HTTP';
+    const scheme = sslOptions ? 'https' : 'http';
+    console.log(`User Service (${protocol}) listening at ${scheme}://localhost:${port}`);
+  });
 }
 
 // En lugar de module.exports = { app, loadSSLConfig };

@@ -7,7 +7,6 @@ import { languageOptions } from '../utils/languageUtils';
 import { API_BASE_URL } from '../constants/config';
 import {useTranslation} from "react-i18next";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
   import: 'default',
