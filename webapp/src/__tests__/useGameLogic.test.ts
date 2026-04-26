@@ -51,7 +51,7 @@ describe('useGameLogic', () => {
     });
 
     expect(stopTimer).toHaveBeenCalledTimes(1);
-    expect(mockedGameService.makeMove).toHaveBeenCalledWith(0, 'Easy', undefined);
+    expect(mockedGameService.makeMove).toHaveBeenCalledWith(0, 'Easy', undefined, undefined);
     expect(moveResult).toEqual({
       responseFromRust: responseBoard,
       winner: null,
@@ -94,7 +94,7 @@ describe('useGameLogic', () => {
     });
 
     expect(getRandomValuesSpy).toHaveBeenCalled();
-    expect(mockedGameService.makeMove).toHaveBeenLastCalledWith(1, 'Easy', 3);
+    expect(mockedGameService.makeMove).toHaveBeenLastCalledWith(1, 'Easy', 3, undefined);
     expect(autoMoveResult).toEqual({
       responseFromRust: responseBoard,
       winner: null,

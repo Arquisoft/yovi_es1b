@@ -1,21 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import ReactDOM from 'react-dom';
-import { gameService } from '../../services/gameService';
+import { gameService, type Friend as SocialFriend, type FriendRequest as SocialFriendRequest } from '../../services/gameService';
 
 import '../../i18n';
 import { useTranslation } from 'react-i18next';
 
 // --- INTERFACES DE DATOS ---
-interface Friend {
-  name: string;
-  status: string; // Cambiado de unión literal a string para evitar el error de asignación TS2345
-}
-
-interface FriendRequest {
-  id: string;
-  sender: string;
-}
-
 interface FriendsPanelProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,18 +14,20 @@ interface FriendsPanelProps {
   friendCode: string;
   icon?: string | null;
   onTriggerPublicProfile: (username: string) => void;
+  onInviteFriend?: (friendUsername: string) => void;
+  inviteLoadingUser?: string | null;
 }
 
-export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon,onTriggerPublicProfile }: FriendsPanelProps) => {
+export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCode, icon, onTriggerPublicProfile, onInviteFriend, inviteLoadingUser }: FriendsPanelProps) => {
   const { t } = useTranslation();
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [requests, setRequests] = useState<FriendRequest[]>([]);
+  const [friends, setFriends] = useState<SocialFriend[]>([]);
+  const [requests, setRequests] = useState<SocialFriendRequest[]>([]);
   const [loading, setLoading] = useState(false);
   const [searchCode, setSearchCode] = useState('');
   const [showRequests, setShowRequests] = useState(false);
 
   // --- 1. FUNCIÓN DE CARGA CENTRALIZADA ---
-  const fetchSocialData = async (showLoader = false) => {
+  const fetchSocialData = useCallback(async (showLoader = false) => {
     if (!username) return;
     if (showLoader) setLoading(true);
 
@@ -53,7 +45,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
     } finally {
       setLoading(false);
     }
-  };
+  }, [username]);
 
   // ---  EFECTO DE AUTO-REFRESCO (POLLING) ---
   useEffect(() => {
@@ -68,33 +60,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
 
       return () => clearInterval(interval); // Limpiamos al cerrar
     }
-  }, [isOpen, username]);
+  }, [fetchSocialData, isOpen, username]);
 
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const loadSocialData = async () => {
-      setLoading(true);
-      try {
-        // Ejecución en paralelo para optimizar la carga
-        const [friendsData, requestsData] = await Promise.all([
-          gameService.getFriends(),
-          gameService.getPendingRequests()
-        ]);
-
-        // TypeScript ahora aceptará esto correctamente
-        setFriends(friendsData);
-        setRequests(requestsData);
-      } catch (err) {
-        console.error("Error cargando datos sociales:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadSocialData();
-  }, [isOpen]);
 
   // Maneja la limpieza del input (solo mayúsculas y quita almohadillas accidentales)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -160,7 +127,7 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       } else {
         alert(t('friends.alert_not_found'));
       }
-    } catch (error) {
+    } catch {
       alert(t('friends.alert_search_error'));
     }
   };
@@ -203,9 +170,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
            {/* Botón de Solicitudes Pendientes */}
            <button 
               type="button"
-              className="pending-friend-btn"
+              className="pending-friend-btn pending-friend-btn-header"
               onClick={() => setShowRequests(true)}
-              style={{ marginLeft: 'auto', position: 'relative' }} 
             >
              {t('friends.pending_requests')}
               {requests.length > 0 && <span className="req-count">{requests.length}</span>}
@@ -275,7 +241,14 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
                   <div key={index} className="friend-item-row">
                     <div className={`status-dot ${friend.status}`}></div>
                     <span className="friend-name">{friend.name}</span>
-                    <button className="invite-btn">{t('friends.invite')}</button>
+                    <button
+                      className="invite-btn"
+                      type="button"
+                      onClick={() => onInviteFriend?.(friend.name)}
+                      disabled={Boolean(inviteLoadingUser && inviteLoadingUser === friend.name)}
+                    >
+                      {inviteLoadingUser && inviteLoadingUser === friend.name ? t('common.loading') : t('friends.invite')}
+                    </button>
                   </div>
                 ))
               ) : (

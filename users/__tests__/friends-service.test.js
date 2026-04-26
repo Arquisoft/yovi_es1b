@@ -6,8 +6,10 @@ import mongoose from 'mongoose'
 import User from '../models/user.js'
 import Friendship from '../models/friendship.js'
 import app from '../users-service.js'
+import { generateTestToken, withAuthToken } from './test-utils.js'
 
 describe('Social & Friends Endpoints (Mocks)', () => {
+    const token = generateTestToken()
 
     afterEach(() => {
         vi.restoreAllMocks()
@@ -23,7 +25,7 @@ describe('Social & Friends Endpoints (Mocks)', () => {
                 limit: vi.fn().mockResolvedValue(mockUsers)
             });
 
-            const res = await request(app).get('/users/search?query=Ali');
+            const res = await withAuthToken(request(app).get('/users/search?query=Ali'), token);
 
             expect(res.status).toBe(200);
             expect(res.body[0].username).toBe('Alice');
@@ -40,7 +42,7 @@ describe('Social & Friends Endpoints (Mocks)', () => {
             });
 
             // 3. Importante: encodeURIComponent para asegurar que el '#' viaje bien en la URL
-            const res = await request(app).get(`/users/search?query=${encodeURIComponent('#ALIC12')}`);
+            const res = await withAuthToken(request(app).get(`/users/search?query=${encodeURIComponent('#ALIC12')}`), token);
 
             // 4. Verificamos el estado y la llamada
             expect(res.status).toBe(200);
@@ -60,9 +62,9 @@ describe('Social & Friends Endpoints (Mocks)', () => {
                 status: 'pending'
             });
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/users/follow')
-                .send({ follower: 'Drus', following: 'Alice' });
+                .send({ follower: 'Drus', following: 'Alice' }), token);
 
             expect(res.status).toBe(200);
             expect(res.body.message).toBe('Solicitud enviada correctamente');
@@ -72,9 +74,9 @@ describe('Social & Friends Endpoints (Mocks)', () => {
             // Simulamos que ya existe una relación
             vi.spyOn(Friendship, 'findOne').mockResolvedValue({ status: 'pending' });
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/users/follow')
-                .send({ follower: 'Drus', following: 'Alice' });
+                .send({ follower: 'Drus', following: 'Alice' }), token);
 
             expect(res.status).toBe(400);
             expect(res.body.error).toBe('Ya existe una solicitud o amistad');
@@ -89,7 +91,7 @@ describe('Social & Friends Endpoints (Mocks)', () => {
                 { users: ['Alice', 'Bob'], status: 'accepted' },
             ])
 
-            const res = await request(app).get('/friends?username=Alice')
+            const res = await withAuthToken(request(app).get('/friends?username=Alice'), token)
 
             expect(res.status).toBe(200)
             expect(res.body[0].name).toBe('Bob')
@@ -97,7 +99,7 @@ describe('Social & Friends Endpoints (Mocks)', () => {
         })
 
         it('devuelve 400 si no se pasa username', async () => {
-            const res = await request(app).get('/friends')
+            const res = await withAuthToken(request(app).get('/friends'), token)
             expect(res.status).toBe(400)
         })
     })
@@ -110,7 +112,7 @@ describe('Social & Friends Endpoints (Mocks)', () => {
                 { users: ['Bob', 'Alice'], status: 'pending', _id: 'req1' },
             ])
 
-            const res = await request(app).get('/friends/requests?username=Alice')
+            const res = await withAuthToken(request(app).get('/friends/requests?username=Alice'), token)
 
             expect(res.status).toBe(200)
             expect(res.body[0].sender).toBe('Bob')
@@ -127,9 +129,9 @@ describe('Social & Friends Endpoints (Mocks)', () => {
                 status: 'accepted',
             })
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/friends/respond')
-                .send({ requestId: 'req1', action: 'accepted' })
+                .send({ requestId: 'req1', action: 'accepted' }), token)
 
             expect(res.status).toBe(200)
             expect(res.body.message).toMatch(/ahora sois amigos/i)
@@ -138,9 +140,9 @@ describe('Social & Friends Endpoints (Mocks)', () => {
         it('rechaza una solicitud de amistad', async () => {
             vi.spyOn(Friendship, 'findByIdAndDelete').mockResolvedValue(true)
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/friends/respond')
-                .send({ requestId: 'req1', action: 'rejected' })
+                .send({ requestId: 'req1', action: 'rejected' }), token)
 
             expect(res.status).toBe(200)
             expect(res.body.message).toMatch(/rechazada/i)

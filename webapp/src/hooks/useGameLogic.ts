@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import { gameService, type MoveResponse } from '../services/gameService';
+import { gameService } from '../services/gameService';
 import { patchTriangularLayoutCell } from '../utils/boardUtils';
 import type { GameYData } from '../types/game';
 
@@ -14,7 +14,7 @@ export const useGameLogic = () => {
   const [winner, setWinner] = useState<number | null>(null);
 
   // Función interna para aplicar el parche visual y actualizar estado
-  const updateBoardState = useCallback((data: MoveResponse, cellIndex: number) => {
+  const updateBoardState = useCallback((data: any, cellIndex: number) => {
     if (data.responseFromRust) {
       const serverBoard = data.responseFromRust as GameYData;
       const boardSize = serverBoard.size || 5;
@@ -40,9 +40,7 @@ export const useGameLogic = () => {
     historyContext?: GameHistoryContext,
   ) => {
     stopTimer();
-    const data = historyContext
-      ? await gameService.makeMove(index, difficulty, boardData?.size, historyContext)
-      : await gameService.makeMove(index, difficulty, boardData?.size);
+    const data = await gameService.makeMove(index, difficulty, boardData?.size, historyContext);
     const result = updateBoardState(data, index);
 
     if (result.winner === null) {
@@ -68,9 +66,7 @@ export const useGameLogic = () => {
     window.crypto.getRandomValues(array);
     const randomIndex = emptyCells[array[0] % emptyCells.length];
 
-    const data = historyContext
-      ? await gameService.makeMove(randomIndex, difficulty, boardData?.size, historyContext)
-      : await gameService.makeMove(randomIndex, difficulty, boardData?.size);
+    const data = await gameService.makeMove(randomIndex, difficulty, boardData?.size, historyContext);
     const result = updateBoardState(data, randomIndex);
 
     if (result.winner === null) {
@@ -99,5 +95,5 @@ export const useGameLogic = () => {
     setWinner(1);
   }, [boardData?.size]);
 
-  return { boardData, winner, executeHumanMove, executeAutoMove, resetGame, surrender };
+  return { boardData, winner, setBoardData, setWinner, executeHumanMove, executeAutoMove, resetGame, surrender };
 };

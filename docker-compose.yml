@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   users:
     build: ./users
@@ -7,12 +5,12 @@ services:
     image: ghcr.io/arquisoft/yovi_es1b-users:latest
     ports:
       - "3000:3000"
-    volumes:
-      - ./certs:/certs:ro
     environment:
       - MONGODB_URI_USERS=${MONGODB_URI_USERS}
       - GAMEY_SERVICE_URL=https://gamey:3000
       - NODE_TLS_REJECT_UNAUTHORIZED=0
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - monitor-net
 
@@ -20,7 +18,7 @@ services:
     build:
       context: ./webapp
       args:
-        - VITE_API_URL=${PUBLIC_API_URL}
+        - VITE_API_URL=${PUBLIC_API_URL:-}
         - VITE_GAMEY_URL=https://localhost:4000
     container_name: webapp
     image: ghcr.io/arquisoft/yovi_es1b-webapp:latest
@@ -46,6 +44,10 @@ services:
     command: ["./gamey", "--mode", "server", "--port", "3000"]
     environment:
       - MONGODB_URI=${MONGODB_URI_GAMEY}
+      - GAMEY_TLS_CERT_PATH=/certs/cert.pem
+      - GAMEY_TLS_KEY_PATH=/certs/key.pem
+    volumes:
+      - ./certs:/certs:ro
     networks:
       - monitor-net
 

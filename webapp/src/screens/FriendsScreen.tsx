@@ -69,15 +69,14 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
           {t('friends.search_button')}
         </button>
 
-        <div className="results-container" style={{ marginTop: '1rem' }}>
+        <div className="results-container friends-results-container">
           {results.map((user) => {
             const displayName = user.nickname || user.username;
             return (
             <div key={user.username} className="user-result-item" >
               <span>{displayName}</span>
               <button 
-                className="nav-btn" 
-                style={{ fontSize: '0.7rem', padding: '4px 8px' }}
+                className="nav-btn friends-follow-btn" 
                 onClick={() => handleFollow(displayName)}
               >
                 {t('friends.follow')}
