@@ -33,20 +33,16 @@ export const RivalSlot: React.FC<RivalSlotProps> = ({
 
   const isBotMode = gameMode === 'bot';
   const isMultiplayerWithRival = gameMode === 'multiplayer' && rivalName;
+  let displayIcon = defaultAvatar;
+  let displayName = t('game.invite_friend');
 
-  // Determinar icono a mostrar
-  const displayIcon = isBotMode
-    ? (botIcon?.trim() ? botIcon : defaultAvatar)
-    : isMultiplayerWithRival
-    ? (rivalIcon?.trim() ? rivalIcon : defaultAvatar)
-    : defaultAvatar;
-
-  // Determinar nombre a mostrar
-  const displayName = isBotMode
-    ? botName
-    : isMultiplayerWithRival
-    ? rivalName
-    : t('game.invite_friend');
+  if (isBotMode) {
+    displayIcon = botIcon?.trim() ? botIcon : defaultAvatar;
+    displayName = botName || 'Bot Player';
+  } else if (isMultiplayerWithRival) {
+    displayIcon = rivalIcon?.trim() ? rivalIcon : defaultAvatar;
+    displayName = rivalName;
+  }
 
   return (
     <div className="player-slot player-slot-right" aria-label={t('game.bot_player_slot')}>

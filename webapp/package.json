@@ -12,7 +12,7 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
     "test:e2e:run": "cucumber-js --import test/e2e/support/setup.mjs --import test/e2e/steps/**/*.mjs test/e2e/features --format progress",
-    "test:e2e": "concurrently \"npm run dev\" \"GAMEY_URL=https://localhost:4000 npm --prefix ../users start\"",
+    "test:e2e": "NODE_TLS_REJECT_UNAUTHORIZED=0 start-server-and-test 'npm run dev' tcp:5173 'npm --prefix ../users start' tcp:3000 'npm run test:e2e:run'",
     "test:e2e:install-browsers": "npx playwright install",
     "start:all": "concurrently \"npm run dev\" \"GAMEY_SERVICE_URL=https://localhost:4000 NODE_TLS_REJECT_UNAUTHORIZED=0 npm --prefix ../users start\""
   },

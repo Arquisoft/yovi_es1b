@@ -10,7 +10,7 @@ export const GameModeScreen = ({ onSelectMode, onLogout }: GameModeScreenProps) 
   const { t } = useTranslation();
 
   return (
-    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-label={t('mode.title')}>
+    <dialog className="modal-backdrop" aria-label={t('mode.title')} open>
       <div className="modal-box">
         <h3>{t('mode.title')}</h3>
         <p>{t('mode.subtitle')}</p>
@@ -28,6 +28,6 @@ export const GameModeScreen = ({ onSelectMode, onLogout }: GameModeScreenProps) 
           )}
         </div>
       </div>
-    </div>
+    </dialog>
   );
 };

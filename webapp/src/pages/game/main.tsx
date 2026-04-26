@@ -54,7 +54,6 @@ const botIconPool = Object.entries(iconModules)
 const pickRandomBotIcon = (): string | null => {
   const pool = botIconPool.length ? botIconPool : Object.values(iconModules);
   if (!pool.length) return null;
-  //const index = Math.floor(Math.random() * pool.length);
   const array = new Uint32Array(1);
   crypto.getRandomValues(array);
   const index = array[0] % pool.length;
@@ -267,14 +266,14 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
     const saveTime = () => {
       localStorage.setItem('yovi_bg_time', String(audio.currentTime || 0));
     };
-    const intervalId = window.setInterval(saveTime, 1000);
-    window.addEventListener('beforeunload', saveTime);
+    const intervalId = globalThis.setInterval(saveTime, 1000);
+    globalThis.addEventListener('beforeunload', saveTime);
     document.addEventListener('visibilitychange', saveTime);
 
     return () => {
       saveTime();
-      window.clearInterval(intervalId);
-      window.removeEventListener('beforeunload', saveTime);
+      globalThis.clearInterval(intervalId);
+      globalThis.removeEventListener('beforeunload', saveTime);
       document.removeEventListener('visibilitychange', saveTime);
     };
   }, []);
@@ -388,7 +387,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     setMatchId(null);
                     setTimerVisible(false);
                     alert('El rival ha salido de la partida.');
-                    window.location.replace('/gamemode.html');
+                    globalThis.location.replace('/gamemode.html');
                 },
             });
 
@@ -451,17 +450,17 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
             setGuestAccessReason(reason);
         };
 
-        // Mapeo para la interfaz
-        //const displayDifficulty = difficultyChoice;
-
         return (
             <div className="App">
                 {/* Fondo de video */}
                 <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline>
                     <source src={menuVideo} type="video/mp4"/>
+                    <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="No spoken audio" />
                 </video>
                 <div className="menu-video-overlay"/>
-                <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop/>
+                <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop>
+                    <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="Background music" />
+                </audio>
 
                 {/* Pantalla Principal */}
                 <GameScreen
@@ -537,7 +536,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                             void multiplayerStrategyRef.current?.surrender(difficultyChoice || 'Easy');
                             setWinner(1);
                             setShowResultModal(true);
-                            window.location.replace('/gamemode.html');
+                            globalThis.location.replace('/gamemode.html');
                             return;
                         }
                         await surrender(difficultyChoice!, {
@@ -556,12 +555,12 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                         setShowStore(true);
                     }}
                     onGoToModeMenu={() => {
-                        if (winner === null && !window.confirm(t('game.abandon_confirm'))) return;
+                        if (winner === null && !globalThis.confirm(t('game.abandon_confirm'))) return;
                         if (gameMode === 'multiplayer') {
                             void multiplayerStrategyRef.current?.surrender(difficultyChoice || 'Easy');
                         }
                         sessionStorage.setItem('yovi_previous_gamemode', gameMode);
-                        window.location.replace('/gamemode.html');
+                        globalThis.location.replace('/gamemode.html');
                     }}
                 />
 
@@ -639,7 +638,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                         if (gameMode !== 'multiplayer') return;
                         setInviteLoadingUser(friendUsername);
                         multiplayerStrategyRef.current?.challengePlayer(friendUsername);
-                        window.setTimeout(() => {
+                        globalThis.setTimeout(() => {
                             setInviteLoadingUser((current) => (current === friendUsername ? null : current));
                         }, 8000);
                     }}
@@ -679,8 +678,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     }}
                 />
                 {pendingChallenge && (
-                    <div className="modal-backdrop" role="dialog" aria-modal="true"
-                         aria-label="Invitacion multijugador">
+                    <dialog className="modal-backdrop" aria-label="Invitacion multijugador" open>
                         <div className="modal-box">
                             <h3>{t('mode.multiplayer_duel')}</h3>
                             <p>{pendingChallenge.challenger} te ha invitado a una partida.</p>
@@ -704,11 +702,10 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </dialog>
                 )}
                 {showSettings && (
-                    <div className="modal-backdrop" role="dialog" aria-modal="true"
-                         aria-label="Configuración de elementos de fondo">
+                    <dialog className="modal-backdrop" aria-label={t('game.settings_title')} open>
                         <div className="modal-box">
                             <h3>{t('game.settings_title')}</h3>
                             <div className="form-group">
@@ -737,7 +734,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                                 {t('common.close')}
                             </button>
                         </div>
-                    </div>
+                    </dialog>
                 )}
             </div>
         );

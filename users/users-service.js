@@ -5,7 +5,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 
 const mongoose = require('mongoose');
-const path = require('path');
+const path = require('node:path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const User = require('./models/user');
@@ -13,6 +13,11 @@ const Friendship = require('./models/friendship');
 
 const express = require('express');
 const app = express();
+
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ready', message: 'Users Service is up and running' });
+});
+
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('js-yaml');
@@ -113,10 +118,17 @@ const setupSwagger = (app) => {
 // Ejecución inmediata para el funcionamiento normal del servidor
 setupSwagger(app);
 
-// CORS --> The server accepts requests from any origin (*)
+const allowedOrigins = new Set(
+  (process.env.ALLOWED_ORIGINS || 'https://localhost,http://localhost,https://localhost:5173,http://localhost:5173')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+);
+
+// CORS
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin) {
+  if (origin && allowedOrigins.has(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');

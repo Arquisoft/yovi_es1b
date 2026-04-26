@@ -176,6 +176,50 @@ describe('Game UI (MPA Ready)', () => {
     expect(screen.getByRole('button', { name: /ver perfil/i })).toBeInTheDocument()
     expect(screen.getByRole('img', { name: /amigos/i })).toBeInTheDocument()
   })
+
+  test('en multijugador permite elegir tamano y dificultad y muestra espera del rival', () => {
+    const props = baseProps({
+      boardData: {
+        size: 3,
+        turn: 0,
+        players: ['B', 'R'],
+        layout: '.../....',
+      },
+    })
+
+    render(
+      <GameScreen
+        {...props}
+        gameMode="multiplayer"
+        isPlayerTurn={false}
+        isOpponentTurn={false}
+        opponentDisplayName="  "
+        gameStarted={false}
+        onGoToModeMenu={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('Esperando rival')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: /tama/i }))
+    fireEvent.click(screen.getByRole('button', { name: /mediano/i }))
+    expect(props.onChangeSize).toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: /dificultad/i }))
+    fireEvent.click(screen.getByRole('button', { name: /medio/i }))
+    expect(props.onChangeDifficulty).toHaveBeenCalledWith('Medio')
+  })
+
+  test('cierra el desplegable con escape', () => {
+    render(<GameScreen {...baseProps()} gameStarted={false} />)
+
+    fireEvent.click(screen.getByRole('button', { name: /tama/i }))
+    expect(screen.getByRole('button', { name: /mediano/i })).toBeInTheDocument()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    expect(screen.queryByRole('button', { name: /mediano/i })).not.toBeInTheDocument()
+  })
 })
 
 describe('Temporizador - renderizado en GameScreen', () => {

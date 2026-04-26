@@ -28,7 +28,7 @@ Then('I should see a welcome message containing {string}', async function (expec
   const page = this.page
   if (!page) throw new Error('Page not initialized')
 
-  await page.waitForURL('**/game.html', { timeout: 10000 })
+  await this.page.waitForURL('**/gamemode.html', { timeout: 15000 });
 
   const storedUser = await page.evaluate(() => localStorage.getItem('yovi_user'));
   
