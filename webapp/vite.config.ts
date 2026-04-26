@@ -3,23 +3,25 @@ import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
 import fs from 'node:fs';
 
+// 🔍 Definimos las rutas de los certificados
+const keyPath = resolve(__dirname, '../certs/key.pem');
+const certPath = resolve(__dirname, '../certs/cert.pem');
+
+// 🛡️ Comprobamos si ambos archivos existen
+const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
+
 export default defineConfig({
-  // Plugins necesarios para React
   plugins: [react()],
 
-  // Configuración del Servidor HTTPS
   server: {
     port: 5173,
-    https: {
-      // Usamos resolve para asegurar que encuentre la carpeta /certs en la raíz
-      key: fs.readFileSync(resolve(__dirname, '../certs/key.pem')),
-      cert: fs.readFileSync(resolve(__dirname, '../certs/cert.pem')),
-    },
-    // Opcional: para que no haya problemas de CORS en local
+    https: useHttps ? {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    } : undefined, 
     cors: true,
   },
 
-  // Configuración multi-página (MPA)
   build: {
     rollupOptions: {
       input: {
@@ -32,7 +34,6 @@ export default defineConfig({
     },
   },
 
-  // Configuración de Vitest
   test: {
     globals: true,
     environment: 'jsdom',
