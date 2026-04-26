@@ -1,4 +1,4 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import GameScreen from '../screens/GameScreen'; 
@@ -84,5 +84,34 @@ describe('Tests de Historial en MPA', () => {
 
     expect(await screen.findByText('pro_bot')).toBeInTheDocument();
     expect(screen.getByText('edge_bot')).toBeInTheDocument();
+  });
+
+  test('el modal de historial cierra con fondo y teclado, pero no al pulsar dentro', () => {
+    const onClose = vi.fn();
+
+    render(
+      <HistoryModal
+        isOpen
+        onClose={onClose}
+        data={mockHistoryResponse.data}
+        currentPage={1}
+        totalPages={3}
+        currentFilter={null}
+        onPageChange={vi.fn()}
+        onFilterChange={vi.fn()}
+      />
+    );
+
+    const backdrop = document.querySelector('.modal-backdrop') as HTMLElement;
+    const modalBox = document.querySelector('.history-modal') as HTMLElement;
+
+    fireEvent.click(modalBox);
+    expect(onClose).not.toHaveBeenCalled();
+
+    fireEvent.click(backdrop);
+    expect(onClose).toHaveBeenCalledTimes(1);
+
+    fireEvent.keyDown(backdrop, { key: 'Enter' });
+    expect(onClose).toHaveBeenCalledTimes(2);
   });
 });

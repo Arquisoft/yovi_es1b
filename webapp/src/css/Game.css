@@ -1473,7 +1473,7 @@ body {
 }
 
 .invite-friend-button:hover {
-  background: linear-gradient(135deg, #00f2ff 0%, 0055ff 100%);
+  background: linear-gradient(135deg, #00f2ff 0%, #0055ff 100%);
   box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
   transform: translateY(-2px);
 }
