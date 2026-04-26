@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { API_BASE_URL } from '../constants/config';
+import { getAuthHeaders } from '../utils/sessionUtils';
 import { useTranslation } from 'react-i18next';
 
 // Definimos la interfaz para los usuarios que busquemos
@@ -23,7 +24,12 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
   // Función para buscar usuarios
   const handleSearch = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/users/search?query=${searchQuery}`);
+      const query = encodeURIComponent(searchQuery.trim());
+      const token = sessionStorage.getItem('token');
+      const url = `${API_BASE_URL}/users/search?query=${query}`;
+      const response = token
+        ? await fetch(url, { headers: getAuthHeaders(), credentials: 'include' })
+        : await fetch(url);
       if (response.ok) {
         const data = await response.json();
         setResults(data);
@@ -38,7 +44,8 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
     try {
       await fetch(`${API_BASE_URL}/users/follow`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
+        credentials: 'include',
         body: JSON.stringify({
           follower: currentUser,
           following: targetUsername
@@ -58,6 +65,7 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
         <h3>{t('friends.search_title')}</h3>
         
         <input
+          id="friends-search-input"
           type="text"
           className="form-input"
           placeholder={t('friends.search_placeholder')}
@@ -65,7 +73,7 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
           onChange={(e) => setSearchQuery(e.target.value)}
         />
         
-        <button className="submit-button" onClick={handleSearch}>
+        <button id="friends-search-button" className="submit-button" onClick={handleSearch}>
           {t('friends.search_button')}
         </button>
 
@@ -76,8 +84,9 @@ export default function FriendsScreen({ currentUser, onBack }: FriendsScreenProp
             <div key={user.username} className="user-result-item" >
               <span>{displayName}</span>
               <button 
+                data-testid={`follow-${user.username}`}
                 className="nav-btn friends-follow-btn" 
-                onClick={() => handleFollow(displayName)}
+                onClick={() => handleFollow(user.username)}
               >
                 {t('friends.follow')}
               </button>

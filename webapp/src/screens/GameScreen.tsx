@@ -376,7 +376,13 @@ function GameScreen({
             <span className="nav-icon-caption nav-icon-caption-settings">{t('game.settings')}</span>
           </div>
           <div className="nav-icon-action">
-            <button className="nav-btn nav-btn-icon-frame nav-btn" onClick={onAddFriend} title={t('game.friends_menu')}>
+            <button
+              id="friends-menu-button"
+              className="nav-btn nav-btn-icon-frame nav-btn"
+              onClick={onAddFriend}
+              title={t('game.friends_menu')}
+              aria-label={t('game.friends_menu')}
+            >
               <img className="nav-btn-friends-img" src={amigosImg} alt={t('game.friends_menu_short')} />
             </button>
             <span className="nav-icon-caption">{t('game.friends_menu_short')}</span>
@@ -440,7 +446,7 @@ function GameScreen({
               </div>
             </div>
 
-            <div className={`board-container board-size-${boardDimension}`}>
+            <div id="game-board" className={`board-container board-size-${boardDimension}`}>
               {boardData ? (
                 rows.map((row, rowIndex) => (
                   <div key={row} className="board-row">
@@ -454,6 +460,7 @@ function GameScreen({
                       return (
                         <button
                           key={`${currentIndex}-${cell}`}
+                          data-testid={`game-cell-${currentIndex}`}
                           type="button"
                           className={`cell ${cellClassName}`}
                           onClick={() =>

@@ -34,7 +34,7 @@
     "subtitle": "Choose how you want to play this match",
     "bot_duel": "Duel vs AI",
     "multiplayer_duel": "Multiplayer Duel",
-    "logout": "Log out"
+    "logout": "Log out and go back"
   },
   "login": {
     "title": "Welcome back to GameY",
