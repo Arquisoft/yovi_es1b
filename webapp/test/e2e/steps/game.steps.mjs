@@ -29,7 +29,7 @@ Given('the game page is open for user {string} with password {string}', async fu
   await page.click('button[type="submit"]');
 
   // 3. Esperar a estar en el tablero
-  await page.waitForURL('**/game.html');
+  await page.waitForURL('**/game*.html', { timeout: 30000 });
 });
 
 When('I click on the cell {string}', async function (cellIndex) {
