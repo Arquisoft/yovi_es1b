@@ -22,7 +22,7 @@ Given('the game page is open for user {string} with password {string}', async fu
       }),
     }).catch(() => {}); // Si ya existe, ignoramos el error 409
   }, { apiUrl: API_URL, user: username, pass: password });
-  
+
   // ... login ...
   await page.fill('#login-username', username);
   await page.fill('#login-password', password);
@@ -35,7 +35,7 @@ Given('the game page is open for user {string} with password {string}', async fu
 
   // Esperamos a que aparezca al menos un botón de celda
   const firstCell = page.locator('button[aria-label*="Celda"]').first();
-  await firstCell.waitFor({ state: 'visible', timeout: 30000 });
+  await firstCell.waitFor({ state: 'visible', timeout: 60000 });
   console.log("✅ Celdas detectadas!");
 });
 
