@@ -135,7 +135,11 @@ const allowedOrigins = new Set(
 
 // CORS
 app.use((req, res, next) => {
-  const origin = req.headers.origin;
+  const rawOrigin  = req.headers.origin;
+  //Permitir solo http(s) de origenes válidos
+  const origin = typeof rawOrigin === 'string' && /^https?:\/\/[\w-.]+(?::\d+)?$/.test(rawOrigin)
+      ? rawOrigin
+      : null;
   if (origin && allowedOrigins.has(origin)) {
       res.setHeader('Access-Control-Allow-Origin', origin);
   }
