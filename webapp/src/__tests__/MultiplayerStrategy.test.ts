@@ -107,4 +107,25 @@ describe('MultiplayerStrategy', () => {
 
     await expect(strategy.onCellClick(1)).resolves.toBeNull();
   });
+
+  test('accepts challenges and forwards connection and disconnect events', async () => {
+    const onSync = vi.fn();
+    const onPlayerDisconnected = vi.fn();
+    const strategy = new MultiplayerStrategy({
+      username: 'alice',
+      boardSize: 6,
+      onSync,
+      onChallenge: vi.fn(),
+      onPlayerDisconnected,
+    });
+
+    await strategy.initialize();
+    strategy.acceptChallenge('challenge-1');
+    socketState.handlers.get('connect_error')?.(new Error('socket down'));
+    socketState.handlers.get('player_disconnected')?.({ username: 'rival' });
+
+    expect(socketState.socket.emit).toHaveBeenCalledWith('accept_challenge', { challengeId: 'challenge-1' });
+    expect(onSync).toHaveBeenCalledWith({ error: 'socket down' });
+    expect(onPlayerDisconnected).toHaveBeenCalledWith('rival');
+  });
 });
