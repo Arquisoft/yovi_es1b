@@ -246,11 +246,12 @@ describe('game main entrypoint', () => {
     localStorage.clear()
     sessionStorage.clear()
     window.history.pushState({}, '', '/game.html')
+    locationReplaceMock = vi.fn()
     vi.stubGlobal('location', {
       href: 'http://localhost/game.html',
       origin: 'http://localhost',
       pathname: '/game.html',
-      replace: vi.fn(),
+      replace: locationReplaceMock,
     })
     vi.spyOn(window.crypto, 'getRandomValues').mockImplementation((array) => {
       ;(array as Uint32Array)[0] = 0
