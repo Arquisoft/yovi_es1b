@@ -51,6 +51,8 @@ const getProfileIcon = (data: LoginResponse) => {
     return data.iconName || data.icon || null;
 };
 
+const getOptionalString = (value: unknown) => (typeof value === 'string' ? value : null);
+
 /**
  * Persistencia unificada: Limpia invitados y guarda en localStorage/sessionStorage
  */
@@ -116,8 +118,8 @@ function LoginScreen({
                     resolvedUsername,
                     data.friendCode,
                     getProfileIcon(data),
-                    data.nickname ?? null,
-                    data.language ?? null
+                    getOptionalString(data.nickname),
+                    getOptionalString(data.language)
                 );
             } else {
                 setFormError(resolveLoginErrorMessage(data, response.status));

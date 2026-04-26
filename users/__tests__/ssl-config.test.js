@@ -90,9 +90,9 @@ describe('Infraestructura y Utilidades de Users Service', () => {
     it('debe incluir los headers de Access-Control en las respuestas', async () => {
       // USAMOS /difficulties porque NO toca la base de datos de Mongo.
       // Así evitamos el error de "Timeout" que te dio antes.
-      const res = await request(app).get('/difficulties');
+      const res = await request(app).get('/difficulties').set('Origin', 'https://localhost');
       
-      expect(res.header['access-control-allow-origin']).toBe('*');
+      expect(res.header['access-control-allow-origin']).toBe('https://localhost');
       expect(res.header['access-control-allow-methods']).toBeDefined();
     });
   });

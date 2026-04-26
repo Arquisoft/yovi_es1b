@@ -90,9 +90,9 @@ describe('Profile endpoints', () => {
       save: vi.fn(),
     })
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .patch('/users/profile/Alice')
-      .send({ nickname: 'abcdefghijklmnop' })
+      .send({ nickname: 'abcdefghijklmnop' }), token)
 
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/nickname no puede tener mas de 15 caracteres/i)
@@ -165,33 +165,33 @@ describe('Profile endpoints', () => {
         nickname: nicknameDeNahiara 
     });
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .patch('/users/profile/diego')
         .send({ 
             nickname: nicknameDeNahiara 
-        });
+        }), token);
 
     expect(res.status).toBe(409);
     expect(res.body.error).toBe('Nickname ya existe');
 });
 
 it('devuelve 400 si falta algún campo (username, actual o nueva contraseña)', async () => {
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .post('/users/profile/diego/change-password')
         .send({
             currentPassword: 'una',
-        });
+        }), token);
 
     expect(res.status).toBe(400);
 });
 
 it('devuelve 400 si la nueva contraseña tiene menos de 6 caracteres', async () => {
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .post('/users/profile/diego/change-password')
         .send({
             currentPassword: 'passwordActual123',
             newPassword: '123' 
-        });
+        }), token);
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('La nueva contraseña debe tener al menos 6 caracteres');
@@ -200,12 +200,12 @@ it('devuelve 400 si la nueva contraseña tiene menos de 6 caracteres', async () 
 it('devuelve 500 si hay un error inesperado en el servidor', async () => {
     vi.spyOn(User, 'findOne').mockRejectedValue(new Error('Fallo de conexión DB'));
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .post('/users/profile/diego/change-password')
         .send({
             currentPassword: 'passwordActual123',
             newPassword: 'nuevaPassword123'
-        });
+        }), token);
 
     expect(res.status).toBe(500);
     expect(res.body.error).toContain('Error del servidor');

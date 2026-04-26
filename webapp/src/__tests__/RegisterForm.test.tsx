@@ -228,7 +228,7 @@ describe('RegisterForm', () => {
     })
 
     await waitFor(() => {
-      expect(onCreate).toHaveBeenCalledWith('Alice', 'NEW-123', expect.any(String), 'Spain', 'Ali')
+      expect(onCreate).toHaveBeenCalledWith('Alice', 'NEW-123', expect.any(String), 'Spain', 'Ali', undefined)
     })
 
     expect(global.fetch).toHaveBeenCalledWith(

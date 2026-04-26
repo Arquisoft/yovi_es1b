@@ -84,7 +84,7 @@ describe('Game UI (MPA Ready)', () => {
     fireEvent.click(screen.getByRole('button', { name: /ver perfil/i }))
     expect(props.onViewProfile).toHaveBeenCalled()
 
-    fireEvent.click(screen.getByTitle(/volver al menú/i))
+    fireEvent.click(screen.getByTitle(/cerrar sesion/i))
     expect(props.onExit).toHaveBeenCalled()
   })
 
@@ -234,8 +234,8 @@ describe('Temporizador - renderizado en GameScreen', () => {
   test('aplica la clase de urgencia en la barra cuando quedan 3 segundos', () => {
     render(<GameScreen {...baseProps({ timerVisible: true, turnTimeLeft: 3, turnTimeLimit: 60 })} />)
 
-    const barra = document.querySelector('.turn-timer-bar')
-    expect(barra).toHaveClass('turn-timer-bar-urgent')
+    const barra = document.querySelector('.turn-timer-progress')
+    expect(barra).toHaveClass('turn-timer-progress-urgent')
   })
 
   test('NO aplica la clase de urgencia cuando quedan mas de 5 segundos', () => {
@@ -248,31 +248,34 @@ describe('Temporizador - renderizado en GameScreen', () => {
   test('la barra de progreso ocupa el 100% al inicio', () => {
     render(<GameScreen {...baseProps({ timerVisible: true, turnTimeLeft: 60, turnTimeLimit: 60 })} />)
 
-    const barra = document.querySelector('.turn-timer-bar') as HTMLElement
-    expect(barra.style.width).toBe('100%')
+    const barra = document.querySelector('.turn-timer-progress') as HTMLProgressElement
+    expect(barra.value).toBe(60)
+    expect(barra.max).toBe(60)
   })
 
   test('la barra de progreso ocupa el 50% a mitad del tiempo', () => {
     render(<GameScreen {...baseProps({ timerVisible: true, turnTimeLeft: 30, turnTimeLimit: 60 })} />)
 
-    const barra = document.querySelector('.turn-timer-bar') as HTMLElement
-    expect(barra.style.width).toBe('50%')
+    const barra = document.querySelector('.turn-timer-progress') as HTMLProgressElement
+    expect(barra.value).toBe(30)
+    expect(barra.max).toBe(60)
   })
 
   test('la barra de progreso ocupa el 0% cuando el tiempo se acaba', () => {
     render(<GameScreen {...baseProps({ timerVisible: true, turnTimeLeft: 0, turnTimeLimit: 60 })} />)
 
-    const barra = document.querySelector('.turn-timer-bar') as HTMLElement
-    expect(barra.style.width).toBe('0%')
+    const barra = document.querySelector('.turn-timer-progress') as HTMLProgressElement
+    expect(barra.value).toBe(0)
+    expect(barra.max).toBe(60)
   })
 
   test.each([
-    { difficulty: 'facil', turnTimeLimit: 60, turnTimeLeft: 45, expectedWidth: '75%' },
-    { difficulty: 'medio', turnTimeLimit: 30, turnTimeLeft: 15, expectedWidth: '50%' },
-    { difficulty: 'dificil', turnTimeLimit: 15, turnTimeLeft: 3, expectedWidth: '20%' },
+    { difficulty: 'facil', turnTimeLimit: 60, turnTimeLeft: 45 },
+    { difficulty: 'medio', turnTimeLimit: 30, turnTimeLeft: 15 },
+    { difficulty: 'dificil', turnTimeLimit: 15, turnTimeLeft: 3 },
   ])(
     'barra correcta para dificultad $difficulty con $turnTimeLeft/$turnTimeLimit segundos',
-    ({ difficulty, turnTimeLimit, turnTimeLeft, expectedWidth }) => {
+    ({ difficulty, turnTimeLimit, turnTimeLeft }) => {
       render(
         <GameScreen
           {...baseProps({
@@ -284,8 +287,9 @@ describe('Temporizador - renderizado en GameScreen', () => {
         />
       )
 
-      const barra = document.querySelector('.turn-timer-bar') as HTMLElement
-      expect(barra.style.width).toBe(expectedWidth)
+      const barra = document.querySelector('.turn-timer-progress') as HTMLProgressElement
+      expect(barra.value).toBe(turnTimeLeft)
+      expect(barra.max).toBe(turnTimeLimit)
     }
   )
 })

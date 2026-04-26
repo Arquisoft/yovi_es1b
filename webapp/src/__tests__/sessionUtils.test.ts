@@ -1,5 +1,3 @@
-/*import { beforeEach, describe, expect, test } from 'vitest'
-import { clearSession, getAuthHeaders, getCurrentUser } from '../utils/sessionUtils'
 import { beforeEach, describe, expect, test } from 'vitest'
 import {
   activateRegisteredSession,
@@ -27,30 +25,34 @@ describe('sessionUtils', () => {
     })
   })
 
-  test('getAuthHeaders devuelve Authorization vacía cuando no hay token', () => {
+  test('getAuthHeaders devuelve Authorization vacia cuando no hay token', () => {
     expect(getAuthHeaders()).toEqual({
       'Content-Type': 'application/json',
       Authorization: '',
     })
   })
 
-  test('getCurrentUser devuelve username cuando existe en sesión', () => {
-    sessionStorage.setItem('username', 'pepe')
+  test('getCurrentUser normaliza el username guardado', () => {
+    sessionStorage.setItem('username', '  pepe  ')
     expect(getCurrentUser()).toBe('pepe')
   })
 
-  test('getCurrentUser devuelve cadena vacía cuando no hay username', () => {
+  test('getCurrentUser limpia valores inseguros', () => {
+    sessionStorage.setItem('username', '<script>')
     expect(getCurrentUser()).toBe('')
+    expect(sessionStorage.getItem('username')).toBeNull()
   })
 
-  test('clearSession elimina token y username', () => {
+  test('clearSession elimina token username y marca de invitado', () => {
     sessionStorage.setItem('token', 'tok')
     sessionStorage.setItem('username', 'ana')
+    enableGuestSession()
 
     clearSession()
 
     expect(sessionStorage.getItem('token')).toBeNull()
     expect(sessionStorage.getItem('username')).toBeNull()
+    expect(isGuestSession()).toBe(false)
   })
 
   test('activateRegisteredSession sustituye la sesion por el usuario nuevo', () => {
@@ -85,11 +87,6 @@ describe('sessionUtils', () => {
     expect(isGuestSession()).toBe(false)
   })
 
-  test('clearGuestSession deja la sesión sin marca aunque ya estuviera vacía', () => {
-    clearGuestSession()
-    expect(isGuestSession()).toBe(false)
-  })
-
   test('persistUserSession guarda y limpia los campos opcionales', () => {
     const result = persistUserSession('  ana  ', {
       friendCode: '#FRIEND-1',
@@ -106,24 +103,9 @@ describe('sessionUtils', () => {
     expect(localStorage.getItem('yovi_user_nickname')).toBeNull()
   })
 
-  test('persistUserSession acepta friendCode con almohadilla inicial', () => {
-    const result = persistUserSession('ana', {
-      friendCode: '#ABC123',
-    })
-
-    expect(result).toBe(true)
-    expect(localStorage.getItem('yovi_friend_code')).toBe('ABC123')
-  })
-
-  test('persistUserSession no guarda nada si el nombre está vacío', () => {
-    expect(
-      persistUserSession('   ', {
-        friendCode: 'FRIEND-1',
-        icon: 'avatar.png',
-      })
-    ).toBe(false)
-
+  test('persistUserSession rechaza usuario o friendCode invalidos', () => {
+    expect(persistUserSession('   ', { friendCode: 'FRIEND-1' })).toBe(false)
+    expect(persistUserSession('ana', { friendCode: '<bad>' })).toBe(false)
     expect(localStorage.length).toBe(0)
   })
 })
-*/

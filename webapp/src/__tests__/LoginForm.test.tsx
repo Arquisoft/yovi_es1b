@@ -270,8 +270,8 @@ describe('LoginForm', () => {
     )
 
     await act(async () => {
-      await user.click(screen.getByRole('button', { name: /configuración de elementos de fondo/i }))
-      await user.click(screen.getByRole('button', { name: /abrir ayuda/i }))
+      await user.click(screen.getByRole('button', { name: /configuración/i }))
+      await user.click(screen.getByRole('button', { name: /ayuda/i }))
     })
 
     expect(onSettings).toHaveBeenCalled()
