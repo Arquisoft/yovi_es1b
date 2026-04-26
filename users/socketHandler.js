@@ -6,6 +6,11 @@ const { JWT_SECRET } = require('./authMiddleware');
 const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const createId = customAlphabet(alphabet, 10);
 
+const allowedSocketOrigins = (process.env.ALLOWED_SOCKET_ORIGINS || process.env.ALLOWED_ORIGINS || 'https://localhost,http://localhost,https://localhost:5173,http://localhost:5173')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 const parseCookieToken = (cookieHeader) => {
   if (!cookieHeader) return null;
   const parts = String(cookieHeader).split(';').map((part) => part.trim());
@@ -25,7 +30,7 @@ const emitToUsername = (io, userSockets, username, eventName, payload) => {
 const createSocketGateway = (httpServer, { gameyUrl }) => {
   const io = new Server(httpServer, {
     cors: {
-      origin: true,
+      origin: allowedSocketOrigins,
       credentials: true,
     },
   });
@@ -43,7 +48,8 @@ const createSocketGateway = (httpServer, { gameyUrl }) => {
       const decoded = jwt.verify(token, JWT_SECRET);
       socket.data.user = decoded;
       return next();
-    } catch (_error) {
+    } catch (error) {
+      console.warn('Socket authentication failed:', error.message);
       return next(new Error('Token invalido o expirado'));
     }
   });
@@ -101,7 +107,7 @@ const createSocketGateway = (httpServer, { gameyUrl }) => {
       const challengeId = String(payload.challengeId || '').trim();
       const challenge = challenges.get(challengeId);
 
-      if (!challenge || challenge.status !== 'pending') {
+      if (challenge?.status !== 'pending') {
         socket.emit('sync_board', { error: 'Desafio no disponible' });
         return;
       }

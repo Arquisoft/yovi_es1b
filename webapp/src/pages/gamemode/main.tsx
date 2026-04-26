@@ -53,7 +53,7 @@ export const GameModePage = () => {
   useEffect(() => {
     // Si no hay usuario logeado, redigirir al login.
     if (!localStorage.getItem('yovi_user')) {
-      window.location.href = '/index.html'
+      globalThis.location.href = '/index.html'
     }
   }, [])
 
@@ -87,14 +87,14 @@ export const GameModePage = () => {
     const saveTime = () => {
       localStorage.setItem('yovi_bg_time', String(audio.currentTime || 0))
     }
-    const intervalId = window.setInterval(saveTime, 1000)
-    window.addEventListener('beforeunload', saveTime)
+    const intervalId = globalThis.setInterval(saveTime, 1000)
+    globalThis.addEventListener('beforeunload', saveTime)
     document.addEventListener('visibilitychange', saveTime)
 
     return () => {
       saveTime()
-      window.clearInterval(intervalId)
-      window.removeEventListener('beforeunload', saveTime)
+      globalThis.clearInterval(intervalId)
+      globalThis.removeEventListener('beforeunload', saveTime)
       document.removeEventListener('visibilitychange', saveTime)
     }
   }, [])
@@ -104,13 +104,14 @@ export const GameModePage = () => {
     sessionStorage.setItem('yovi_gamemode', mode)
     sessionStorage.setItem('yovi_previous_gamemode', mode)
     // Redirigir a la página del juego
-    window.location.href = '/game.html'
+    globalThis.location.href = '/game.html'
   }
 
   return (
     <div className="App">
       <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline>
         <source src={menuVideo} type="video/mp4" />
+        <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="No spoken audio" />
       </video>
       <div className="menu-video-overlay" />
       <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop />
@@ -127,7 +128,7 @@ export const GameModePage = () => {
             localStorage.removeItem('yovi_user_language')
             localStorage.removeItem('yovi_user_nickname')
             localStorage.removeItem('username')
-            window.location.href = '/index.html'
+            globalThis.location.href = '/index.html'
           }}
         />
       </div>
