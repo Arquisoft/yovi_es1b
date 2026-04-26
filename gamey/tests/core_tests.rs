@@ -362,6 +362,55 @@ fn test_check_player_turn_correct_player() {
     assert!(game.check_player_turn(&movement).is_ok());
 }
 
+#[test]
+fn test_get_player_at_empty_occupied_and_out_of_bounds_cells() {
+    let mut game = GameY::new(3);
+    let occupied = Coordinates::new(2, 0, 0);
+    let empty = Coordinates::new(1, 1, 0);
+
+    assert_eq!(game.get_player_at(empty), None);
+
+    game.add_move(Movement::Placement {
+        player: PlayerId::new(0),
+        coords: occupied,
+    })
+    .unwrap();
+
+    assert_eq!(game.get_player_at(occupied), Some(PlayerId::new(0)));
+    assert_eq!(game.get_player_at(Coordinates::new(0, 99, 0)), None);
+}
+
+#[test]
+fn test_get_cell_regions_for_corners_and_interior() {
+    let game = GameY::new(4);
+
+    assert_eq!(game.get_cell_regions(Coordinates::new(3, 0, 0)).count_ones(), 2);
+    assert_eq!(game.get_cell_regions(Coordinates::new(0, 0, 3)).count_ones(), 2);
+    assert_eq!(game.get_cell_regions(Coordinates::new(1, 1, 1)), 0);
+}
+
+#[test]
+fn test_placement_after_finished_game_keeps_original_winner() {
+    let mut game = GameY::new(1);
+
+    game.add_move(Movement::Placement {
+        player: PlayerId::new(0),
+        coords: Coordinates::new(0, 0, 0),
+    })
+    .unwrap();
+
+    let result = game.add_move(Movement::Placement {
+        player: PlayerId::new(1),
+        coords: Coordinates::new(0, 0, 0),
+    });
+
+    assert!(result.is_err());
+    match game.status() {
+        GameStatus::Finished { winner } => assert_eq!(*winner, PlayerId::new(0)),
+        _ => panic!("Game should remain finished"),
+    }
+}
+
 // ============================================================================
 // Game Actions Tests (Resign, Swap)
 // ============================================================================

@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { ReactNode } from 'react'
@@ -58,6 +58,7 @@ vi.mock('../screens/GameScreen', () => ({
       <button type="button" onClick={() => (props.onExit as () => void)()}>exit</button>
       <button type="button" onClick={() => (props.onCellClick as (index: number) => void)(3)}>cell</button>
       <button type="button" onClick={() => (props.onGoToModeMenu as () => void)?.()}>mode-menu</button>
+      <button type="button" onClick={() => (props.onScoreButtonClick as () => void)?.()}>score-store</button>
     </div>
   ),
 }))
@@ -92,11 +93,33 @@ vi.mock('../components/modals/SelectionModals', () => ({
 }))
 
 vi.mock('../components/modals/HistoryModal', () => ({
-  HistoryModal: ({ isOpen }: { isOpen: boolean }) => <div data-testid="history-modal">{String(isOpen)}</div>,
+  HistoryModal: ({
+    isOpen,
+    onClose,
+    onPageChange,
+    onFilterChange,
+  }: {
+    isOpen: boolean
+    onClose: () => void
+    onPageChange: (page: number) => void
+    onFilterChange: (filter: string) => void
+  }) => (
+    <div data-testid="history-modal">
+      {String(isOpen)}
+      <button type="button" onClick={() => onPageChange(2)}>history-page</button>
+      <button type="button" onClick={() => onFilterChange('win')}>history-filter</button>
+      <button type="button" onClick={onClose}>history-close</button>
+    </div>
+  ),
 }))
 
 vi.mock('../components/modals/ResultModal', () => ({
-  ResultModal: ({ isOpen }: { isOpen: boolean }) => <div data-testid="result-modal">{String(isOpen)}</div>,
+  ResultModal: ({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) => (
+    <div data-testid="result-modal">
+      {String(isOpen)}
+      <button type="button" onClick={onClose}>result-close</button>
+    </div>
+  ),
 }))
 
 vi.mock('../components/modals/PublicProfileModal', () => ({
@@ -140,6 +163,24 @@ vi.mock('../components/modals/FriendsPanel', () => ({
     <div>
       <button type="button" onClick={() => onTriggerPublicProfile('friend-user')}>trigger-public-profile</button>
       <button type="button" onClick={() => onInviteFriend?.('rival-user')}>invite-friend</button>
+    </div>
+  ),
+}))
+
+vi.mock('../components/modals/PayPalStore', () => ({
+  PayPalStore: ({
+    isOpen,
+    onClose,
+    onSuccess,
+  }: {
+    isOpen: boolean
+    onClose: () => void
+    onSuccess: (points: number) => Promise<void>
+  }) => (
+    <div data-testid="paypal-store">
+      {String(isOpen)}
+      <button type="button" onClick={() => onSuccess(25)}>paypal-success</button>
+      <button type="button" onClick={onClose}>paypal-close</button>
     </div>
   ),
 }))
@@ -282,7 +323,7 @@ describe('game main entrypoint', () => {
     await user.click(screen.getByRole('button', { name: /view-profile/i }))
     await user.click(screen.getByRole('button', { name: /settings/i }))
     await user.click(screen.getByRole('button', { name: /tutorial/i }))
-    await user.click(screen.getByRole('button', { name: /history/i }))
+    await user.click(screen.getByRole('button', { name: /^history$/i }))
     await user.click(screen.getByRole('button', { name: /cell/i }))
     await user.click(screen.getByRole('button', { name: /exit/i }))
 
@@ -312,7 +353,7 @@ describe('game main entrypoint', () => {
 
     await waitFor(() => {
       expect(gameLogicMocks.executeHumanMove).toHaveBeenCalled()
-      expect(screen.getByTestId('result-modal').textContent).toBe('true')
+      expect(screen.getByTestId('result-modal').textContent).toContain('true')
     })
   })
 
@@ -338,12 +379,45 @@ describe('game main entrypoint', () => {
     const { GameAppContent } = await loadGameMain()
     await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />)
 
-    await user.click(screen.getByRole('button', { name: /history/i }))
+    await user.click(screen.getByRole('button', { name: /^history$/i }))
 
     await waitFor(() => {
       expect(gameServiceMocks.getHistory).toHaveBeenCalledWith(1, null)
-      expect(screen.getByTestId('history-modal').textContent).toBe('true')
+      expect(screen.getByTestId('history-modal').textContent).toContain('true')
     })
+  })
+
+  test('controla historial, tienda, ajustes y cierres de modales', async () => {
+    localStorage.setItem('yovi_user', 'alice')
+    const user = userEvent.setup()
+
+    const { GameAppContent } = await loadGameMain()
+    await renderGameApp(<GameAppContent isGuestMode={false} storedUsername="alice" />)
+
+    await user.click(screen.getByRole('button', { name: /^history$/i }))
+    await user.click(screen.getByRole('button', { name: /history-page/i }))
+    await user.click(screen.getByRole('button', { name: /history-filter/i }))
+    await user.click(screen.getByRole('button', { name: /history-close/i }))
+
+    expect(gameServiceMocks.getHistory).toHaveBeenCalledWith(2, null)
+    expect(gameServiceMocks.getHistory).toHaveBeenCalledWith(1, 'win')
+
+    await user.click(screen.getByRole('button', { name: /score-store/i }))
+    expect(screen.getByTestId('paypal-store').textContent).toContain('true')
+    await user.click(screen.getByRole('button', { name: /paypal-success/i }))
+    expect(gameServiceMocks.addXP).toHaveBeenCalledWith(25)
+    await user.click(screen.getByRole('button', { name: /paypal-close/i }))
+
+    await user.click(screen.getByRole('button', { name: /settings/i }))
+    expect(screen.getByRole('dialog', { name: /configuraci/i })).toBeTruthy()
+    await user.click(screen.getByLabelText(/video/i))
+    fireEvent.change(screen.getByLabelText(/volumen/i), { target: { value: '50' } })
+    await user.click(screen.getByRole('button', { name: /cerrar/i }))
+
+    gameLogicMocks.executeHumanMove.mockResolvedValueOnce({ responseFromRust: null, winner: 1, score: 0 })
+    await user.click(screen.getByRole('button', { name: /cell/i }))
+    await waitFor(() => expect(screen.getByTestId('result-modal').textContent).toContain('true'))
+    await user.click(screen.getByRole('button', { name: /result-close/i }))
   })
 
   test('en modo invitado muestra el prompt de acceso', async () => {
@@ -359,11 +433,15 @@ describe('game main entrypoint', () => {
     await user.click(screen.getByRole('button', { name: /view-profile/i }))
     expect(screen.getByTestId('guest-reason').textContent).toBe('perfil')
 
-    await user.click(screen.getByRole('button', { name: /history/i }))
+    await user.click(screen.getByRole('button', { name: /^history$/i }))
     expect(screen.getByTestId('guest-reason').textContent).toBe('historial')
 
     await user.click(screen.getByRole('button', { name: /go-login/i }))
     expect((globalThis.location as { href: string }).href).toBe('/login.html')
+
+    await user.click(screen.getByRole('button', { name: /add-friend/i }))
+    await user.click(screen.getByRole('button', { name: /go-register/i }))
+    expect((globalThis.location as { href: string }).href).toBe('/register.html')
   })
 
   test('en multijugador usa estrategia para invitar, aceptar y abandonar al menu', async () => {
@@ -405,6 +483,51 @@ describe('game main entrypoint', () => {
     expect(multiplayerInstances.some((instance) =>
       (instance.surrender as ReturnType<typeof vi.fn>).mock.calls.length > 0
     )).toBe(true)
+    expect(locationReplaceMock).toHaveBeenCalledWith('/gamemode.html')
+  })
+
+  test('procesa sync, errores y desconexion multijugador', async () => {
+    localStorage.setItem('yovi_user', 'alice')
+    const alertMock = vi.fn()
+    vi.stubGlobal('alert', alertMock)
+
+    const { GameAppContent } = await loadGameMain()
+    await renderGameApp(<GameAppContent gameMode="multiplayer" isGuestMode={false} storedUsername="alice" />)
+
+    const strategy = multiplayerInstances.at(-1) as {
+      config: Record<string, (...args: unknown[]) => void>
+      setMatchId: ReturnType<typeof vi.fn>
+    }
+
+    await act(async () => {
+      strategy.config.onSync?.({ error: 'nope' })
+    })
+    expect(alertMock).toHaveBeenCalledWith('nope')
+
+    await act(async () => {
+      strategy.config.onOpponentDataFetched?.({ name: 'Bob', icon: 'hombre2.png' })
+      strategy.config.onSync?.({
+        matchId: 'match-1',
+        players: ['alice', 'bob'],
+        board: { size: 3, turn: 0, players: ['B', 'R'], layout: './..' },
+        currentTurn: 'alice',
+      })
+    })
+    expect(strategy.setMatchId).toHaveBeenCalledWith('match-1')
+
+    await act(async () => {
+      strategy.config.onSync?.({
+        matchId: 'match-1',
+        players: ['alice', 'bob'],
+        winner: 'alice',
+      })
+    })
+    expect(screen.getByTestId('result-modal').textContent).toContain('true')
+
+    await act(async () => {
+      strategy.config.onPlayerDisconnected?.()
+    })
+    expect(alertMock).toHaveBeenCalledWith('El rival ha salido de la partida.')
     expect(locationReplaceMock).toHaveBeenCalledWith('/gamemode.html')
   })
 })

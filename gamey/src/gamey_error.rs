@@ -199,6 +199,28 @@ mod tests {
     }
 
     #[test]
+    fn test_game_over_display() {
+        let movement = Movement::Action {
+            player: PlayerId::new(1),
+            action: crate::GameAction::Resign,
+        };
+        let err = GameYError::GameOver { movement };
+        let msg = format!("{}", err);
+
+        assert!(msg.contains("Attempt to play movement"));
+        assert!(msg.contains("Resign"));
+    }
+
+    #[test]
+    fn test_serde_error_display() {
+        let error = serde_json::from_str::<serde_json::Value>("{ invalid json }").unwrap_err();
+        let err = GameYError::SerdeError { error };
+        let msg = format!("{}", err);
+
+        assert!(msg.contains("Serde JSON error"));
+    }
+
+    #[test]
     fn test_invalid_num_players_display() {
         let err = GameYError::InvalidNumPlayers {
             num_players: 3,
