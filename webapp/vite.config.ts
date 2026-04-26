@@ -27,7 +27,7 @@ export default defineConfig({
       '/friends': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
       '/users': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
     },
-  },
+
 
   // Configuración multi-página (MPA)
 
