@@ -108,7 +108,7 @@ jobs:
           # Arrancamos Rust en el puerto 4000 y lo mandamos al fondo con &
           cargo run -- --mode server --port 4000 &
           echo "Esperando a que Rust compile y despierte..."
-          sleep 15
+          sleep 60
         env:
           MONGODB_URI: ${{ env.MONGODB_URI_GAMEY }}
           GAMEY_TLS_CERT_PATH: ../users/cert.pem
