@@ -19,7 +19,7 @@ export const resolveIconFromAssets = (
   if (!iconValue) return null;
 
   // Sanitizamos para que SonarCloud esté feliz
-  const safeValue = iconValue.replace(/[<>\"\'\\]/g, '');
+  const safeValue = iconValue.replace(/[<>\\]/g, '');
 
   if (
     safeValue.startsWith('http://') ||

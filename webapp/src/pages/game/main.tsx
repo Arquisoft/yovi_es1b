@@ -174,7 +174,7 @@ const GameAppContent = ({ isGuestMode, storedUsername }: GameAppContentProps) =>
     if (resolvedIcon) {
       setPlayerIcon(resolvedIcon);
       
-      const sanitizedIcon = String(resolvedIcon).replace(/[<>\"\'\\]/g, '');
+      const sanitizedIcon = String(resolvedIcon).replace(/[<>\\]/g, '');
       
       localStorage.setItem('yovi_user_icon', sanitizedIcon);
     }

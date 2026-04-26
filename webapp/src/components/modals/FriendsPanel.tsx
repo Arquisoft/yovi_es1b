@@ -179,7 +179,8 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
       }}
     >
       <div className="friends-sidebar-content" onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()} role="presentation"
+          onKeyDown={(e) => e.stopPropagation()} role="dialog" 
+          aria-label="Contenido de amigos"
 >
         <button className="close-button" onClick={onClose}>&times;</button>
         
