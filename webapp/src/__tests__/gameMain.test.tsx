@@ -7,6 +7,7 @@ const gameServiceMocks = {
   getDifficulties: vi.fn(),
   getProfile: vi.fn(),
   getHistory: vi.fn(),
+  logout: vi.fn(),
 }
 
 const gameLogicMocks = {
@@ -188,6 +189,7 @@ describe('game main entrypoint', () => {
     gameServiceMocks.getDifficulties.mockResolvedValue(['Easy', 'Hard'])
     gameServiceMocks.getProfile.mockResolvedValue({ iconName: 'hombre1.png' })
     gameServiceMocks.getHistory.mockResolvedValue({ data: [], total_pages: 1, page: 1 })
+    gameServiceMocks.logout.mockResolvedValue({})
     gameLogicMocks.executeHumanMove.mockResolvedValue({ responseFromRust: null, winner: null })
     gameLogicMocks.executeAutoMove.mockResolvedValue({ responseFromRust: null, winner: null })
     gameLogicMocks.resetGame.mockResolvedValue(null)

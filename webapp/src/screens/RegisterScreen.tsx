@@ -3,11 +3,10 @@ import logoGameY from '../assets/Logo_GameY.png';
 import settingsImg from '../assets/buttons/configuracion.png';
 import languageImg from '../assets/language/idioma.png';
 import { SERVER_ERROR_MESSAGE, isServerOrDatabaseError } from '../utils/authErrors';
-import { clearGuestSession } from '../utils/sessionUtils';
 import { languageOptions } from '../utils/languageUtils';
+import { API_BASE_URL } from '../constants/config';
 import {useTranslation} from "react-i18next";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000';
 const languageModules = import.meta.glob('../assets/language/*.{png,jpg,jpeg,webp,svg}', {
   eager: true,
   import: 'default',
@@ -109,7 +108,8 @@ interface RegisterScreenProps {
     friendCode: string,
     icon?: string | null,
     language?: string | null,
-    nickname?: string | null
+    nickname?: string | null,
+    token?: string | null
   ) => Promise<void> | void;
 }
 
@@ -187,13 +187,13 @@ function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, o
       const data = await response.json();
 
       if (response.ok) {
-        clearGuestSession();
         await onCreateAccount(
           formData.name.trim(),
           data.friendCode,
           selectedIconName,
           formData.language.trim(),
-          formData.nickname.trim()
+          formData.nickname.trim(),
+          data.token
         );
       } else {
         setFormError(
@@ -212,7 +212,7 @@ function RegisterScreen({ onBack, onGoToLogin, onOpenLanguage, onOpenSettings, o
     <div className="register-screen">
       <div className="auth-header auth-header-with-settings">
         <img src={logoGameY} alt="GameY" className="gamey-logo-large auth-logo-left" />
-        <h2 className="title-log" style={{ marginTop: '2.5rem', position: 'relative', zIndex: 3 }}>{t('register.title')}</h2>
+        <h2 className="title-log register-title">{t('register.title')}</h2>
         {(onOpenLanguage || onOpenSettings || onOpenTutorial) && (
           <div className="header-action-group">
             {onOpenLanguage && (

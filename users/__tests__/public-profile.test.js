@@ -3,8 +3,10 @@ import request from 'supertest';
 import app from '../users-service.js';
 import User from '../models/user.js';
 import Friendship from '../models/friendship.js';
+import { generateTestToken, withAuthToken } from './test-utils.js';
 
 describe('GET /users/public-profile/:username', () => {
+  const token = generateTestToken();
   
   beforeEach(() => {
     vi.restoreAllMocks();
@@ -23,7 +25,7 @@ describe('GET /users/public-profile/:username', () => {
         select: vi.fn().mockResolvedValue(null)
     });
 
-    const res = await request(app).get('/users/public-profile/inexistente');
+    const res = await withAuthToken(request(app).get('/users/public-profile/inexistente'), token);
     expect(res.status).toBe(404);
   });
 
@@ -35,7 +37,7 @@ describe('GET /users/public-profile/:username', () => {
     // Forzamos el error de red en Rust
     global.fetch.mockRejectedValue(new Error('Rust Offline'));
 
-    const res = await request(app).get('/users/public-profile/diego');
+    const res = await withAuthToken(request(app).get('/users/public-profile/diego'), token);
 
     expect(res.status).toBe(200);
     expect(res.body.username).toBe('diego');
@@ -51,7 +53,7 @@ describe('GET /users/public-profile/:username', () => {
       json: vi.fn().mockResolvedValue({ wins: 5, losses: 1, total: 6, total_score: 100 })
     });
 
-    const res = await request(app).get('/users/public-profile/diego?requester=diego');
+    const res = await withAuthToken(request(app).get('/users/public-profile/diego?requester=diego'), token);
     expect(res.status).toBe(200);
   });
 });

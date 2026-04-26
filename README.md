@@ -85,9 +85,9 @@ docker-compose up --build
 This command will build the Docker images for both the `webapp` and `users` services and start them.
 
 2.**Access the application:**
-- Web application: [http://localhost](http://localhost)
-- User service API: [http://localhost:3000](http://localhost:3000)
-- Gamey API: [http://localhost:4000](http://localhost:4000)
+- Web application: [https://localhost](https://localhost)
+- User service API: [https://localhost:3000](https://localhost:3000)
+- Gamey API: [https://localhost:4000](https://localhost:4000)
 
 ### Without Docker
 
@@ -117,7 +117,7 @@ Run the service:
 npm start
 ```
 
-The user service will be available at `http://localhost:3000`.
+The user service will be available at `https://localhost:3000`.
 
 #### 2. Running the Web Application
 

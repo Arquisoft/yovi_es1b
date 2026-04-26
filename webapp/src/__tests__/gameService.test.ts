@@ -23,12 +23,19 @@ const makeStorage = (initial: Record<string, string> = {}) => {
 const mockJsonResponse = (data: unknown, ok = true) =>
   Promise.resolve({
     ok,
+    status: ok ? 200 : 500, // Añadimos status por coherencia
     json: () => Promise.resolve(data),
     text: () => Promise.resolve(JSON.stringify(data)),
-  } as Response);
-
+    // SOLUCIÓN: Añadimos el objeto headers con el método get
+    headers: {
+      get: (name: string) => {
+        if (name.toLowerCase() === 'content-type') return 'application/json';
+        return null;
+      },
+    },
+  } as unknown as Response);
 const expectGetCall = (urlFragment: string) => {
-  expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining(urlFragment));
+  expect(String(mockFetch.mock.calls.at(-1)?.[0])).toContain(urlFragment);
 };
 
 const expectGetCallWithOptions = (urlFragment: string) => {

@@ -344,6 +344,21 @@
   gap: 0.35rem;
 }
 
+.register-title {
+  margin-top: 2.5rem;
+  position: relative;
+  z-index: 3;
+}
+
+.friends-results-container {
+  margin-top: 1rem;
+}
+
+.friends-follow-btn {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+}
+
 .register-screen > .choose-option.login-panel .form-group label {
   margin-bottom: 4px;
   font-size: 1rem;

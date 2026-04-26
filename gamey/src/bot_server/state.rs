@@ -13,11 +13,19 @@ pub struct UserSession {
     pub active_bot: Mutex<String>,
 }
 
+/// Sesion de partida multijugador 1v1.
+pub struct PvpSession {
+    pub game: Mutex<GameY>,
+    pub players: Mutex<Vec<String>>,
+}
+
 #[derive(Clone)]
 pub struct AppState {
     bots: Arc<YBotRegistry>,
     /// Mapa concurrente que asocia "username" -> Sesión individual
     pub sessions: Arc<DashMap<String, Arc<UserSession>>>,
+    /// Mapa concurrente que asocia "match_id" -> sesion PvP.
+    pub pvp_sessions: Arc<DashMap<String, Arc<PvpSession>>>,
     pub db: Database,
 }
 
@@ -26,6 +34,7 @@ impl AppState {
         Self {
             bots: Arc::new(bots),
             sessions: Arc::new(DashMap::new()),
+            pvp_sessions: Arc::new(DashMap::new()),
             db,
         }
     }
@@ -48,5 +57,19 @@ impl AppState {
 
     pub fn bots(&self) -> Arc<YBotRegistry> {
         Arc::clone(&self.bots)
+    }
+
+    pub fn upsert_pvp_session(&self, match_id: &str, board_size: u32, players: Vec<String>) -> Arc<PvpSession> {
+        let session = Arc::new(PvpSession {
+            game: Mutex::new(GameY::new(board_size)),
+            players: Mutex::new(players),
+        });
+
+        self.pvp_sessions.insert(match_id.to_string(), Arc::clone(&session));
+        session
+    }
+
+    pub fn get_pvp_session(&self, match_id: &str) -> Option<Arc<PvpSession>> {
+        self.pvp_sessions.get(match_id).map(|entry| Arc::clone(entry.value()))
     }
 }

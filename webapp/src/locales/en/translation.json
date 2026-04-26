@@ -29,6 +29,13 @@
     "welcome_main": "Welcome to GameY",
     "welcome_kicker": "Strategy has no luck"
   },
+  "mode": {
+    "title": "Select game mode",
+    "subtitle": "Choose how you want to play this match",
+    "bot_duel": "Duel vs AI",
+    "multiplayer_duel": "Multiplayer Duel",
+    "logout": "Log out"
+  },
   "login": {
     "title": "Welcome back to GameY",
     "subtitle": "What was your name?",
@@ -88,6 +95,7 @@
     "friends_menu": "Friends menu",
     "friends_menu_short": "Friends",
     "profile": "View profile",
+    "mode_menu": "Modes",
     "exit": "Back to menu",
     "exit_alt": "Exit to menu",
     "load_board": "Load the board to start",

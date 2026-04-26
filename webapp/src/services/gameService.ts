@@ -21,9 +21,10 @@ type HistoryResponse = {
   total_pages?: number;
 };
 
-type UserProfileResponse = {
+export type UserProfileResponse = {
   birthDate?: string | null;
   error?: string;
+  friendCode?: string;
   icon?: string | null;
   iconName?: string | null;
   language?: string | null;
@@ -35,256 +36,276 @@ type UserProfileResponse = {
   username?: string;
 };
 
-const createAuthenticatedInit = (init?: RequestInit): RequestInit => {
-  const headers = mergeHeaders(init);
-  if (!init) return { headers };
-  return { ...init, headers };
+export type Friend = {
+  name: string;
+  status: string;
 };
 
-const USERNAME_PATTERN = /^[\p{L}\p{N} _.-]{1,64}$/u;
+export type FriendRequest = {
+  id: string;
+  sender: string;
+};
 
+export type PublicProfileResponse = {
+  username: string;
+  nickname: string;
+  iconName: string | null;
+  friendCode: string;
+  stats: {
+    wins: number;
+    losses: number;
+    totalGames: number;
+    totalScore?: number;
+  };
+  relationship: 'none' | 'pending' | 'accepted' | 'self';
+};
+
+const USERNAME_PATTERN = /^[\p{L}\p{N}\s._-]{1,64}$/u;
+
+/**
+ * Normaliza y construye URLs para la API
+ */
 const buildApiUrl = (path: string, params?: Record<string, string | number | null | undefined>) => {
-  const url = new URL(path, API_BASE_URL);
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        url.searchParams.set(key, String(value));
-      }
-    });
-  }
-  return url.toString();
-};
-
-const getRequiredUsername = (username?: string | null) => {
-  const resolvedUsername = typeof username === 'string' ? username : getCurrentUser();
-  const trimmedUsername = resolvedUsername.trim();
-  if (!trimmedUsername || !USERNAME_PATTERN.test(trimmedUsername)) {
-    throw new Error('Missing username');
-  }
-
-  return trimmedUsername;
-};
-
-const getSafeUsernamePathSegment = (username?: string | null) => encodeURIComponent(getRequiredUsername(username));
-
-const mergeHeaders = (init?: RequestInit): HeadersInit => {
-  const headers: Record<string, string> = { ...getAuthHeaders() };
-  const incomingHeaders = init?.headers;
-
-  if (incomingHeaders instanceof Headers) {
-    incomingHeaders.forEach((value, key) => {
-      headers[key] = value;
-    });
-  } else if (Array.isArray(incomingHeaders)) {
-    for (const [key, value] of incomingHeaders) {
-      headers[key] = value;
+    const url = new URL(path, API_BASE_URL);
+    if (params) {
+        Object.entries(params).forEach(([key, value]) => {
+            if (value !== null && value !== undefined) {
+                url.searchParams.set(key, String(value));
+            }
+        });
     }
-  } else if (incomingHeaders) {
-    Object.assign(headers, incomingHeaders);
-  }
+    return url.toString();
+};
 
-  return headers;
+/**
+ * Valida y obtiene el usuario actual.
+ */
+const getRequiredUsername = (username?: string | null) => {
+    const resolvedUsername = typeof username === 'string' ? username : getCurrentUser();
+    const trimmedUsername = resolvedUsername.trim();
+    if (!trimmedUsername || !USERNAME_PATTERN.test(trimmedUsername)) {
+        throw new Error('Missing or invalid username');
+    }
+    return trimmedUsername;
+};
+
+/**
+ * Mezcla las cabeceras de autenticación (JWT/Sesión) con las del request.
+ */
+const createAuthenticatedInit = (init?: RequestInit): RequestInit => {
+    const authHeaders: Record<string, string> = getAuthHeaders();
+
+    // Filtramos para evitar la duplicación de Content-Type si authHeaders ya la provee,
+    // o si vamos a definirla por defecto.
+    const headers: Record<string, string> = {};
+    if (!authHeaders['Content-Type'] && !authHeaders['content-type']) {
+        headers['Content-Type'] = 'application/json';
+    }
+    Object.assign(headers, authHeaders);
+
+    if (init?.headers) {
+        const incoming = new Headers(init.headers);
+        incoming.forEach((v, k) => {
+            if (k.toLowerCase() === 'content-type') {
+                headers['Content-Type'] = v;
+                delete headers['content-type']; // Eliminar duplicados en minúscula si existen
+            } else {
+                headers[k] = v;
+            }
+        });
+    }
+
+    return {
+        credentials: 'include', // Importante para cookies/cors
+        ...init,
+        headers
+    };
 };
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
   const res = init ? await fetch(url, init) : await fetch(url);
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => 'No hay detalle del error');
+    // Mantenemos la limpieza de logs que aplicamos antes para evitar inyecciones
+    console.error(`Error en fetch a ${url}: ${res.status} - ${errorText.replace(/[\n\r]/g, '_')}`);
+    throw new Error(`Error en la petición: ${res.status}`);
+  }
+
+  const contentType = res.headers.get('content-type');
+
+  // CAMBIO CRÍTICO: Usamos el optional chaining aquí
+  if (!contentType?.includes('application/json')) {
+    throw new Error('La respuesta no es un JSON válido');
+  }
+
   return res.json() as Promise<T>;
 };
 
+// --- Servicio ---
+
 export const gameService = {
-  // Obtener dificultades
-  async getDifficulties(): Promise<string[]> {
-    return fetchJson(buildApiUrl('/difficulties'));
-  },
 
-  // Realizar un movimiento
-  async makeMove(cellIndex: number,  difficulty: string, boardSize?: number, context?: GameHistoryContext): Promise<MoveResponse> {
-    const username = getRequiredUsername();
-    return fetchJson<MoveResponse>(buildApiUrl('/move'), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ 
-        cellIndex, 
-        username, 
-        difficulty, 
-        boardSize,
-        ...context,
-      }),
-    }));
-  },
+    // 1. Autenticación y Registro
+    async register(payload: {
+        username: string;
+        nickname: string;
+        password: string;
+        birthDate: string;
+        language: string;
+        iconName: string;
+    }) {
+        return fetchJson(buildApiUrl('/createuser'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+    },
 
-  // Reiniciar tablero
-  async resetBoard(size: number | null, difficulty: string): Promise<GameYData> {
-    const username = getRequiredUsername();
-    const data = await fetchJson<GameYData & { responseFromRust?: GameYData }>(buildApiUrl('/reset'), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ size, difficulty, username }),
-    }));
-    return data.responseFromRust ?? data;
-  },
+    async logout() {
+        return fetchJson(buildApiUrl('/logout'), createAuthenticatedInit({ method: 'POST' }));
+    },
 
-  // Rendirse
-  async surrender( difficulty: string, boardSize?: number, context?: GameHistoryContext) {
-    const username = getRequiredUsername();
-    return fetch(buildApiUrl('/surrender'), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ username, difficulty, boardSize, ...context }),
-    }));
-  },
+    // 2. Lógica de Juego
+    async getDifficulties(): Promise<string[]> {
+        return fetchJson(buildApiUrl('/difficulties'));
+    },
 
-  // Historial
-  async getHistory( page: number, filter?: string | null): Promise<HistoryResponse> {
-    const username = getRequiredUsername();
-    let url = buildApiUrl('/history', { username, page, limit: 5 });
-    const normalizedFilter = getHistoryFilterKey(filter);
-    if (normalizedFilter) url = buildApiUrl('/history', { username, page, limit: 5, result: normalizedFilter });
-    return fetchJson<HistoryResponse>(url);
-  },
+    async makeMove(cellIndex: number, difficulty: string, boardSize?: number, context?: GameHistoryContext): Promise<MoveResponse> {
+        const username = getRequiredUsername();
+        return fetchJson<MoveResponse>(buildApiUrl('/move'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({ cellIndex, username, difficulty, boardSize, ...context }),
+        }));
+    },
 
-  async getFriends(): Promise<{ name: string, status: string }[]> {
-    try {
-      // Usamos encodeURIComponent por seguridad si el nombre tiene espacios o caracteres especiales
-      const url = buildApiUrl('/friends', { username: getRequiredUsername() });
-      
-      const res = await fetch(url, createAuthenticatedInit({ method: 'GET' }));
+    async resetBoard(size: number | null, difficulty: string): Promise<GameYData> {
+        const username = getRequiredUsername();
+        const data = await fetchJson<GameYData & { responseFromRust?: GameYData }>(buildApiUrl('/reset'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({ size, difficulty, username }),
+        }));
+        return data.responseFromRust ?? data;
+    },
 
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error("Error en la respuesta de amigos:", errorText);
-        return []; // Devolvemos array vacío para que la UI no rompa
-      }
+    async surrender(difficulty: string, boardSize?: number, context?: GameHistoryContext) {
+        const username = getRequiredUsername();
+        return fetch(buildApiUrl('/surrender'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({ username, difficulty, boardSize, ...context }),
+        }));
+    },
 
-      return await res.json();
-    } catch (error) {
-      console.error("Error de red al obtener amigos:", error);
-      return [];
+    async getHistory(page: number, filter?: string | null): Promise<HistoryResponse> {
+        const username = getRequiredUsername();
+        const normalizedFilter = getHistoryFilterKey(filter);
+        const url = buildApiUrl('/history', {
+            username,
+            page,
+            limit: 5,
+            result: normalizedFilter || undefined
+        });
+        return fetchJson<HistoryResponse>(url, createAuthenticatedInit({ method: 'GET' }));
+    },
+
+    // 3. Social y Amigos
+    async getFriends(): Promise<Friend[]> {
+        try {
+            const url = buildApiUrl('/friends', { username: getRequiredUsername() });
+            return await fetchJson<Friend[]>(url, createAuthenticatedInit({ method: 'GET' }));
+        } catch (error) {
+            console.error("Error al obtener amigos:", error);
+            return [];
+        }
+    },
+
+    async addFriend(friendName: string) {
+        const username = getRequiredUsername();
+        return fetchJson(buildApiUrl('/friends/add'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({ username, friendName }),
+        }));
+    },
+
+    async searchUserByCode(code: string) {
+        const safeCode = String(code || '').trim();
+        const url = buildApiUrl('/users/search', { query: `#${safeCode}` });
+        const users = await fetchJson<any[]>(url, createAuthenticatedInit({ method: 'GET' }));
+        return users.length > 0 ? users[0] : null;
+    },
+
+    async followUser(targetUsername: string) {
+        const username = getRequiredUsername();
+        return fetchJson(buildApiUrl('/users/follow'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({
+                follower: username,
+                following: String(targetUsername || '').trim(),
+            }),
+        }));
+    },
+
+    async respondToFriendRequest(requestId: string, action: 'accepted' | 'rejected') {
+        return fetchJson(buildApiUrl('/friends/respond'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({ requestId, action }),
+        }));
+    },
+
+    async getPendingRequests(): Promise<FriendRequest[]> {
+        return fetchJson<FriendRequest[]>(buildApiUrl('/friends/requests', { username: getRequiredUsername() }), createAuthenticatedInit({ method: 'GET' }));
+    },
+    /**
+     * Cancela una solicitud de amistad pendiente.
+     * @param follower
+     * @param following
+     * @returns
+     */
+    async cancelFriendRequest(follower: string, following: string) {
+        return fetchJson(buildApiUrl('/friends/cancel'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({
+                follower: String(follower || '').trim(),
+                following: String(following || '').trim(),
+            }),
+        }));
+    },
+
+    // 4. Perfil y Extras
+    async getProfile(username?: string): Promise<UserProfileResponse> {
+        const targetUser = getRequiredUsername(username);
+        return fetchJson<UserProfileResponse>(buildApiUrl(`/users/profile/${encodeURIComponent(targetUser)}`), createAuthenticatedInit({ method: 'GET' }));
+    },
+    /**
+     * Obtiene el perfil público de un usuario, incluyendo estadísticas de juego.
+     * @param targetUsername
+     * @returns el perfil público del usuario con estadísticas de juego
+     */
+    async getPublicProfile(targetUsername: string, myUsername: string): Promise<PublicProfileResponse> {
+        const safeTarget = encodeURIComponent(String(targetUsername || '').trim());
+        const safeRequester = encodeURIComponent(String(myUsername || '').trim());
+        return fetchJson<PublicProfileResponse>(buildApiUrl(`/users/public-profile/${safeTarget}`, { requester: safeRequester }), createAuthenticatedInit({ method: 'GET' }));
+    },
+
+    async updateProfile(payload: { birthDate?: string | null; language?: string; iconName?: string; nickname?: string }): Promise<UserProfileResponse> {
+        return fetchJson<UserProfileResponse>(buildApiUrl(`/users/profile/${encodeURIComponent(getRequiredUsername())}`), createAuthenticatedInit({
+            method: 'PATCH',
+            body: JSON.stringify(payload),
+        }));
+    },
+
+    async changePassword(currentPassword: string, newPassword: string): Promise<UserProfileResponse> {
+        return fetchJson<UserProfileResponse>(buildApiUrl(`/users/profile/${encodeURIComponent(getRequiredUsername())}/change-password`), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({ currentPassword, newPassword }),
+        }));
+    },
+
+    async addXP(amount: number) {
+        const username = getRequiredUsername();
+        return fetchJson(buildApiUrl('/users/purchase-xp'), createAuthenticatedInit({
+            method: 'POST',
+            body: JSON.stringify({ username, amount }),
+        }));
     }
-  },
-
-  async addFriend( friendName: string) {
-    const username = getRequiredUsername();
-    return fetchJson(buildApiUrl('/friends/add'), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ username, friendName }),
-    }));
-  },
-
-  async getProfile(username?: string): Promise<UserProfileResponse> {
-    // Si pasan un username (ej. un amigo), usamos ese.
-    // Si NO pasan nada, usamos el de la sesión activa.
-    const targetUser = getRequiredUsername(username);
-
-    return fetchJson<UserProfileResponse>(buildApiUrl(`/users/profile/${encodeURIComponent(targetUser)}`), createAuthenticatedInit({ method: 'GET' }));
-  },
-
-  async updateProfile(
-
-    payload: { birthDate?: string | null; language?: string; iconName?: string; nickname?: string }
-  ): Promise<UserProfileResponse> {
-    return fetchJson<UserProfileResponse>(buildApiUrl(`/users/profile/${getSafeUsernamePathSegment()}`), createAuthenticatedInit({
-      method: 'PATCH',
-      body: JSON.stringify(payload),
-    }));
-  },
-
-  async changePassword( currentPassword: string, newPassword: string): Promise<UserProfileResponse> {
-    return fetchJson<UserProfileResponse>(buildApiUrl(`/users/profile/${getSafeUsernamePathSegment()}/change-password`), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ currentPassword, newPassword }),
-    }));
-  },
-  
-  // 1. Buscar usuario específicamente por su Friend Code (#ABC123)
-  async searchUserByCode(code: string) {
-    // Le añadimos el # nosotros para que el buscador del back sepa que es un ID
-    const safeCode = String(code || '').trim();
-    const url = buildApiUrl('/users/search', { query: `#${safeCode}` });
-    const res = await fetch(url);
-    
-    if (!res.ok) throw new Error('Error en la búsqueda');
-    
-    const users = await res.json();
-    // Devolvemos el primer usuario que coincida o null
-    return users.length > 0 ? users[0] : null;
-  },
-
-  // 2. Seguir/Añadir amigo (Ajustado a tu endpoint /users/follow)
-  async followUser( targetUsername: string) {
-    const username = getRequiredUsername();
-    const safeTargetUsername = String(targetUsername || '').trim();
-    const res = await fetch(buildApiUrl('/users/follow'), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ 
-        follower: username,
-        following: safeTargetUsername 
-      }),
-    }));
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'No se pudo añadir al amigo');
-    }
-
-    return res.json();
-  },
-
-  async respondToFriendRequest(requestId: string, action: 'accepted' | 'rejected') {
-    const res = await fetch(buildApiUrl('/friends/respond'), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ requestId, action }),
-    }));
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.error || 'Error al procesar la solicitud');
-    }
-
-    return res.json();
-  },
-
-  async getPendingRequests() {
-    const res = await fetch(buildApiUrl('/friends/requests', { username: getRequiredUsername() }), createAuthenticatedInit({ method: 'GET' }));
-    if (!res.ok) throw new Error('No se pudieron obtener las solicitudes');
-    return res.json();
-  },
-
-  /**
-   * Obtiene el perfil público de un usuario, incluyendo estadísticas de juego.
-   * @param targetUsername 
-   * @returns el perfil público del usuario con estadísticas de juego
-   */
-  async getPublicProfile(targetUsername: string, myUsername: string) {
-    const safeTarget = encodeURIComponent(String(targetUsername || '').trim());
-    const safeRequester = encodeURIComponent(String(myUsername || '').trim());
-    const response = await fetch(buildApiUrl(`/users/public-profile/${safeTarget}`, { requester: safeRequester }), createAuthenticatedInit({ method: 'GET' }));
-    if (!response.ok) throw new Error('No se pudo obtener el perfil público');
-    return await response.json();
-  },
-
-  /**
-   * Cancela una solicitud de amistad pendiente.
-   * @param follower 
-   * @param following 
-   * @returns 
-   */
-  async cancelFriendRequest(follower: string, following: string) {
-    const safeFollower = String(follower || '').trim();
-    const safeFollowing = String(following || '').trim();
-    const response = await fetch(buildApiUrl('/friends/cancel'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ follower: safeFollower, following: safeFollowing })
-    });
-    return await response.json();
-  },
-
-  async addXP(amount: number) {
-    const username = getRequiredUsername();
-    return fetchJson(buildApiUrl('/users/purchase-xp'), createAuthenticatedInit({
-      method: 'POST',
-      body: JSON.stringify({ 
-        username, 
-        amount 
-      }),
-    }));
-  }
 };

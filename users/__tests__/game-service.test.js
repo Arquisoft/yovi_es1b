@@ -1,7 +1,9 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
 import request from 'supertest'
 import app from '../users-service.js'
+import { generateTestToken, withAuthToken } from './test-utils.js'
 
+// Mock global fetch para no llamar a Rust
 // Mock global fetch para no llamar a Rust
 const mockFetch = vi.fn()
 vi.stubGlobal('fetch', mockFetch)
@@ -9,12 +11,21 @@ vi.stubGlobal('fetch', mockFetch)
 const mockRustResponse = (data, ok = true) =>
     Promise.resolve({
         ok,
-        json: () => Promise.resolve(data),
-        text: () => Promise.resolve(JSON.stringify(data)),
         status: ok ? 200 : 500,
+        json: () => Promise.resolve(data),
+        text: () => Promise.resolve(typeof data === 'string' ? data : JSON.stringify(data)),
+        // SOLUCIÓN: Añadimos el objeto headers para que res.headers.get() no falle
+        headers: {
+            get: (name) => {
+                if (name.toLowerCase() === 'content-type') return 'application/json';
+                return null;
+            }
+        }
     })
 
 describe('Game endpoints (proxy a Rust)', () => {
+    const token = generateTestToken()
+
     afterEach(() => {
         vi.clearAllMocks()
     })
@@ -28,9 +39,9 @@ describe('Game endpoints (proxy a Rust)', () => {
                 winner: null,
             }))
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/move')
-                .send({ cellIndex: 0, username: 'Alice' })
+                .send({ cellIndex: 0, username: 'Alice' }), token)
 
             expect(res.status).toBe(200)
             expect(res.body.winner).toBeNull()
@@ -40,9 +51,9 @@ describe('Game endpoints (proxy a Rust)', () => {
         it('devuelve 500 si Rust falla', async () => {
             mockFetch.mockReturnValue(mockRustResponse('Error', false))
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/move')
-                .send({ cellIndex: 0, username: 'Alice' })
+                .send({ cellIndex: 0, username: 'Alice' }), token)
 
             expect(res.status).toBe(500)
         })
@@ -54,9 +65,9 @@ describe('Game endpoints (proxy a Rust)', () => {
         it('registra la rendición correctamente', async () => {
             mockFetch.mockReturnValue(mockRustResponse({ message: 'ok' }))
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/surrender')
-                .send({ username: 'Alice', difficulty: 'Easy', boardSize: 6 })
+                .send({ username: 'Alice', difficulty: 'Easy', boardSize: 6 }), token)
 
             expect(res.status).toBe(200)
             expect(res.body.message).toMatch(/rendici/i)
@@ -69,9 +80,9 @@ describe('Game endpoints (proxy a Rust)', () => {
         it('resetea el tablero correctamente', async () => {
             mockFetch.mockReturnValue(mockRustResponse({ size: 6, layout: '......' }))
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/reset')
-                .send({ size: 6, difficulty: 'Easy' })
+                .send({ size: 6, difficulty: 'Easy' }), token)
 
             expect(res.status).toBe(200)
             expect(res.body.responseFromRust).toBeDefined()
@@ -80,9 +91,9 @@ describe('Game endpoints (proxy a Rust)', () => {
         it('usa tamaño por defecto si el size no es válido', async () => {
             mockFetch.mockReturnValue(mockRustResponse({ size: 5, layout: '.' }))
 
-            const res = await request(app)
+            const res = await withAuthToken(request(app)
                 .post('/reset')
-                .send({ size: 999, difficulty: 'Easy' })
+                .send({ size: 999, difficulty: 'Easy' }), token)
 
             expect(res.status).toBe(200)
         })
@@ -94,7 +105,7 @@ describe('Game endpoints (proxy a Rust)', () => {
         it('devuelve las dificultades de Rust', async () => {
             mockFetch.mockReturnValue(mockRustResponse(['Easy', 'Medium', 'Hard']))
 
-            const res = await request(app).get('/difficulties')
+            const res = await withAuthToken(request(app).get('/difficulties'), token)
 
             expect(res.status).toBe(200)
             expect(res.body).toEqual(['Easy', 'Medium', 'Hard'])
@@ -103,7 +114,7 @@ describe('Game endpoints (proxy a Rust)', () => {
         it('devuelve 500 si Rust falla', async () => {
             mockFetch.mockReturnValue(mockRustResponse('Error', false))
 
-            const res = await request(app).get('/difficulties')
+            const res = await withAuthToken(request(app).get('/difficulties'), token)
 
             expect(res.status).toBe(500)
         })
@@ -119,22 +130,22 @@ describe('Game endpoints (proxy a Rust)', () => {
                 page: 1,
             }))
 
-            const res = await request(app)
-                .get('/history?username=Alice&page=1')
+            const res = await withAuthToken(request(app)
+                .get('/history?username=Alice&page=1'), token)
 
             expect(res.status).toBe(200)
             expect(res.body.data).toBeDefined()
         })
 
         it('devuelve 400 si no se pasa username', async () => {
-            const res = await request(app).get('/history')
+            const res = await withAuthToken(request(app).get('/history'), token)
             expect(res.status).toBe(400)
         })
 
         it('añade el filtro result a la URL de Rust si se pasa', async () => {
             mockFetch.mockReturnValue(mockRustResponse({ data: [], total_pages: 1, page: 1 }))
 
-            await request(app).get('/history?username=Alice&page=1&result=win')
+            await withAuthToken(request(app).get('/history?username=Alice&page=1&result=win'), token)
 
             expect(mockFetch).toHaveBeenCalledWith(
                 expect.stringContaining('result=win')
