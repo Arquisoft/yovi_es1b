@@ -58,6 +58,7 @@ export const clearSession = () => {
 
 const USERNAME_PATTERN = /^[\p{L}\p{N}\s._-]{1,64}$/u;
 const STORAGE_VALUE_PATTERN = /^[\p{L}\p{N}\s._-]{1,128}$/u;
+const TOKEN_PATTERN = /^[A-Za-z0-9._~+/=-]{1,4096}$/;
 
 const normalizeStorageValue = (value?: string | null, maxLength = 128) => {
   const trimmed = String(value ?? '').normalize('NFKC').trim().slice(0, maxLength);
@@ -77,6 +78,17 @@ export const activateRegisteredSession = (username: string) => {
     clearSession();
     sessionStorage.setItem('username', name);
     return true;
+};
+
+export const persistAuthToken = (token?: string | null) => {
+  const normalized = normalizeStorageValue(token, 4096);
+  if (!normalized || !TOKEN_PATTERN.test(normalized)) {
+    sessionStorage.removeItem('token');
+    return false;
+  }
+
+  sessionStorage.setItem('token', normalized);
+  return true;
 };
 
 type PersistUserSessionOptions = {

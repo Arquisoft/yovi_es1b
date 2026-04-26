@@ -7,6 +7,7 @@ import {
   getAuthHeaders,
   getCurrentUser,
   isGuestSession,
+  persistAuthToken,
   persistUserSession,
 } from '../utils/sessionUtils'
 
@@ -75,6 +76,18 @@ describe('sessionUtils', () => {
     expect(activateRegisteredSession('   ')).toBe(false)
     expect(sessionStorage.getItem('token')).toBe('tok')
     expect(sessionStorage.getItem('username')).toBe('usuario-viejo')
+  })
+
+  test('persistAuthToken normaliza y guarda tokens seguros', () => {
+    expect(persistAuthToken('  header.payload-signature_123  ')).toBe(true)
+    expect(sessionStorage.getItem('token')).toBe('header.payload-signature_123')
+  })
+
+  test('persistAuthToken rechaza tokens inseguros y limpia el anterior', () => {
+    sessionStorage.setItem('token', 'token-viejo')
+
+    expect(persistAuthToken('<script>alert(1)</script>')).toBe(false)
+    expect(sessionStorage.getItem('token')).toBeNull()
   })
 
   test('guest session helpers gestionan la marca de invitado', () => {

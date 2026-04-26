@@ -6,7 +6,7 @@ import { LanguageModal } from '../../components/modals/LanguageModal';
 import { useMenuBackgroundMedia } from '../../hooks/useMenuBackgroundMedia';
 import RegisterScreen from '../../screens/RegisterScreen';
 import { TutorialScreen } from '../../screens/TutorialScreen';
-import { activateRegisteredSession, persistUserSession } from '../../utils/sessionUtils';
+import { activateRegisteredSession, persistAuthToken, persistUserSession } from '../../utils/sessionUtils';
 
 import '../../css/App.css';
 import '../../css/Log.css';
@@ -27,7 +27,7 @@ const RegisterPage = () => {
   ) => {
     if (persistUserSession(playerName, { friendCode, icon, language, nickname }) && activateRegisteredSession(playerName)) {
       if (token) {
-        sessionStorage.setItem('token', token);
+        persistAuthToken(token);
       }
       globalThis.location.href = '/gamemode.html';
     }
