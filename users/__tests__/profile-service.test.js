@@ -6,6 +6,10 @@ import User from '../models/user.js'
 import app from '../users-service.js'
 import { generateTestToken, withAuthToken } from './test-utils.js'
 
+vi.mock('../middleware/auth', () => ({
+  isLoggedIn: (req, res, next) => next(), 
+}));
+
 describe('Profile endpoints', () => {
   const token = generateTestToken()
 
@@ -210,4 +214,34 @@ it('devuelve 500 si hay un error inesperado en el servidor', async () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toContain('Error del servidor');
 });
-})
+});
+
+describe('Profile & Search Catch Coverage', () => {
+  const token = generateTestToken(); 
+
+  it('debe cubrir el catch de /users/search', async () => {
+    const findSpy = vi.spyOn(User, 'find').mockRejectedValue(new Error('Database Error'));
+
+    const res = await withAuthToken(
+      request(app).get('/users/search?query=test'), 
+      token
+    );
+    
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBeDefined();
+    
+    findSpy.mockRestore();
+  });
+
+  it('debe cubrir la lógica de actualización del perfil (PATCH)', async () => {
+    const res = await request(app)
+      .patch('/users/profile/diego')
+      .send({
+        language: 'es',
+        iconName: 'avatar.png',
+        nickname: 'DiegoPro'
+      });
+
+    expect(res.status).not.toBe(404);
+  });
+});

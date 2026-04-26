@@ -120,6 +120,28 @@ describe('POST /createuser', () => {
     expect(res.status).toBe(204);   
     });
 
+   it('debe cubrir el catch de registro ante un error inesperado', async () => {
+  // 1. Mockeamos la búsqueda inicial para que no encuentre al usuario y pase al .save()
+  vi.spyOn(User, 'findOne').mockResolvedValue(null);
+  
+  // 2. Forzamos el error en el prototipo del modelo al intentar guardar
+  vi.spyOn(User.prototype, 'save').mockImplementationOnce(() => {
+    throw new Error('Save failed');
+  });
+
+  const res = await request(app)
+    .post('/createuser')
+    .send({ 
+      username: 'testCatch', 
+      nickname: 'testCatch', 
+      password: 'password123', 
+      birthDate: '2000-01-01',
+      language: 'es' // <--- Faltaba este campo según tu mensaje de error
+    });
+
+  expect(res.status).toBe(400);
+  expect(res.body.error).toBe("User already exists or database error");
+});
 
     
 })
