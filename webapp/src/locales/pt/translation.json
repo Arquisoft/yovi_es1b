@@ -141,7 +141,8 @@
     "page_info": "Página {{current}} de {{total}}",
     "back_to_game": "Voltar ao Jogo",
     "select_difficulty": "Com que dificuldade queres jogar?",
-    "select_size": "Com que tamanho de tabuleiro queres jogar?"
+    "select_size": "Com que tamanho de tabuleiro queres jogar?",
+    "player": "Jogador"
   },
   "profile": {
     "title": "Ver perfil",

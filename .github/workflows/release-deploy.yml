@@ -57,6 +57,17 @@ jobs:
     runs-on: ubuntu-latest
     needs: [test-node, test-rust]
     continue-on-error: true
+    env:
+      # NUEVO
+      MONGODB_URI_USERS: mongodb://localhost:27017/users_test
+      MONGODB_URI_GAMEY: mongodb://localhost:27017/gamey_test
+    # nuevo
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+    #
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -158,7 +169,8 @@ jobs:
           command: |
             wget https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/master/docker-compose.yml -O docker-compose.yml
 
-            echo "MONGODB_URI=${{ secrets.MONGODB_URI }}" > .env
+            echo "MONGODB_URI_USERS=${{ secrets.MONGODB_URI_USERS }}" > .env
+            echo "MONGODB_URI_GAMEY=${{ secrets.MONGODB_URI_GAMEY }}" >> .env
 
             docker compose down
             docker compose up -d --pull always

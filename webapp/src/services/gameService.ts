@@ -94,7 +94,7 @@ const getRequiredUsername = (username?: string | null) => {
  */
 const createAuthenticatedInit = (init?: RequestInit): RequestInit => {
     const authHeaders: Record<string, string> = getAuthHeaders();
-    
+
     // Filtramos para evitar la duplicación de Content-Type si authHeaders ya la provee,
     // o si vamos a definirla por defecto.
     const headers: Record<string, string> = {};
@@ -123,12 +123,23 @@ const createAuthenticatedInit = (init?: RequestInit): RequestInit => {
 };
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
-    const res = await fetch(url, init);
-    if (!res.ok && res.status !== 400) { // Manejo básico de errores de red
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `HTTP Error ${res.status}`);
-    }
-    return res.json() as Promise<T>;
+  const res = init ? await fetch(url, init) : await fetch(url);
+
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => 'No hay detalle del error');
+    // Mantenemos la limpieza de logs que aplicamos antes para evitar inyecciones
+    console.error(`Error en fetch a ${url}: ${res.status} - ${errorText.replace(/[\n\r]/g, '_')}`);
+    throw new Error(`Error en la petición: ${res.status}`);
+  }
+
+  const contentType = res.headers.get('content-type');
+
+  // CAMBIO CRÍTICO: Usamos el optional chaining aquí
+  if (!contentType?.includes('application/json')) {
+    throw new Error('La respuesta no es un JSON válido');
+  }
+
+  return res.json() as Promise<T>;
 };
 
 // --- Servicio ---
@@ -244,7 +255,12 @@ export const gameService = {
     async getPendingRequests(): Promise<FriendRequest[]> {
         return fetchJson<FriendRequest[]>(buildApiUrl('/friends/requests', { username: getRequiredUsername() }), createAuthenticatedInit({ method: 'GET' }));
     },
-
+    /**
+     * Cancela una solicitud de amistad pendiente.
+     * @param follower
+     * @param following
+     * @returns
+     */
     async cancelFriendRequest(follower: string, following: string) {
         return fetchJson(buildApiUrl('/friends/cancel'), createAuthenticatedInit({
             method: 'POST',
@@ -260,7 +276,11 @@ export const gameService = {
         const targetUser = getRequiredUsername(username);
         return fetchJson<UserProfileResponse>(buildApiUrl(`/users/profile/${encodeURIComponent(targetUser)}`), createAuthenticatedInit({ method: 'GET' }));
     },
-
+    /**
+     * Obtiene el perfil público de un usuario, incluyendo estadísticas de juego.
+     * @param targetUsername
+     * @returns el perfil público del usuario con estadísticas de juego
+     */
     async getPublicProfile(targetUsername: string, myUsername: string): Promise<PublicProfileResponse> {
         const safeTarget = encodeURIComponent(String(targetUsername || '').trim());
         const safeRequester = encodeURIComponent(String(myUsername || '').trim());

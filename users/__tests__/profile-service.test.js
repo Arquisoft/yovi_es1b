@@ -144,4 +144,70 @@ describe('Profile endpoints', () => {
     // Verificamos que la contraseña se haya cambiado y no quede en texto plano
     expect(mockUser.password).not.toBe('newPass123')
   })
+
+
+  it('devuelve error 409 si el nickname ya está en uso por otro usuario', async () => {
+    const idDiego = '69cfc57863b4e59b1d9fc9d';
+    const idNahiara = '69cf9958e6c33e348c3f772c';
+    const nicknameDeNahiara = 'nahi';
+
+    const findOneSpy = vi.spyOn(User, 'findOne');
+
+    findOneSpy.mockResolvedValueOnce({ 
+        _id: idDiego, 
+        username: 'diego', 
+        nickname: 'abeijon' 
+    });
+
+
+    findOneSpy.mockResolvedValueOnce({ 
+        _id: idNahiara, 
+        nickname: nicknameDeNahiara 
+    });
+
+    const res = await request(app)
+        .patch('/users/profile/diego')
+        .send({ 
+            nickname: nicknameDeNahiara 
+        });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toBe('Nickname ya existe');
+});
+
+it('devuelve 400 si falta algún campo (username, actual o nueva contraseña)', async () => {
+    const res = await request(app)
+        .post('/users/profile/diego/change-password')
+        .send({
+            currentPassword: 'una',
+        });
+
+    expect(res.status).toBe(400);
+});
+
+it('devuelve 400 si la nueva contraseña tiene menos de 6 caracteres', async () => {
+    const res = await request(app)
+        .post('/users/profile/diego/change-password')
+        .send({
+            currentPassword: 'passwordActual123',
+            newPassword: '123' 
+        });
+
+    expect(res.status).toBe(400);
+    expect(res.body.error).toBe('La nueva contraseña debe tener al menos 6 caracteres');
+});
+
+it('devuelve 500 si hay un error inesperado en el servidor', async () => {
+    vi.spyOn(User, 'findOne').mockRejectedValue(new Error('Fallo de conexión DB'));
+
+    const res = await request(app)
+        .post('/users/profile/diego/change-password')
+        .send({
+            currentPassword: 'passwordActual123',
+            newPassword: 'nuevaPassword123'
+        });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toContain('Error del servidor');
+});
 })

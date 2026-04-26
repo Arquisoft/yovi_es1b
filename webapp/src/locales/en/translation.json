@@ -141,7 +141,8 @@
     "page_info": "Page {{current}} of {{total}}",
     "back_to_game": "Back to Game",
     "select_difficulty": "What difficulty do you want to play?",
-    "select_size": "What board size do you want to play?"
+    "select_size": "What board size do you want to play?",
+    "player": "Player"
   },
   "profile": {
     "title": "View profile",

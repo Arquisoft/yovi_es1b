@@ -141,7 +141,8 @@
     "page_info": "Seite {{current}} von {{total}}",
     "back_to_game": "Zurück zum Spiel",
     "select_difficulty": "Mit welcher Schwierigkeit möchtest du spielen?",
-    "select_size": "Mit welcher Spielfeldgröße möchtest du spielen?"
+    "select_size": "Mit welcher Spielfeldgröße möchtest du spielen?",
+    "player": "Spieler"
   },
   "profile": {
     "title": "Profil anzeigen",

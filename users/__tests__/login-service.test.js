@@ -53,4 +53,19 @@ describe('POST /login', () => {
         expect(res.body.error).toBe('Usuario o contraseña incorrecta')
         expect(findOneSpy).toHaveBeenCalledWith({ username: 'testUser' })
     })
+
+it('maneja correctamente nombres de usuario con espacios y devuelve 401 si no existe', async () => {
+    // Simulamos que la base de datos no encuentra nada
+    vi.spyOn(User, 'findOne').mockResolvedValue(null);
+
+    const res = await request(app)
+        .post('/login')
+        .send({
+            username: '  usuarioConEspacios  ',
+            password: 'password123'
+        });
+
+    expect(res.status).toBe(401);
+    expect(res.body.error).toBe('Usuario o contraseña incorrecta');
+});
 })

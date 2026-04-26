@@ -1,5 +1,8 @@
 // Node.js Server
 
+const https = require('node:https');
+const fs = require('node:fs');
+
 const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
@@ -8,7 +11,6 @@ const User = require('./models/user');
 const Friendship = require('./models/friendship');
 
 const express = require('express');
-const http = require('node:http');
 const app = express();
 const port = 3000;
 const swaggerUi = require('swagger-ui-express');
@@ -39,11 +41,56 @@ const MAX_NICKNAME_LENGTH = 15;
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'http://localhost:4000';
 const tokenCookieOptions = {
-  httpOnly: true,
-  secure: process.env.COOKIE_SECURE === 'true',
-  sameSite: 'Lax',
-  maxAge: 86400000
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === 'true',
+    sameSite: 'Lax',
+    maxAge: 86400000
 };
+
+
+  /**
+ * Intenta cargar la configuración SSL desde rutas predefinidas.
+ * Se extrae a una función para permitir pruebas unitarias y aislamiento.
+ */
+const loadSSLConfig = () => {
+  // En entorno de test, por defecto devolvemos null para no interferir
+  // con el servidor de pruebas a menos que lo forcemos manualmente.
+  if (process.env.NODE_ENV === 'test' && !process.env.FORCE_SSL_TEST) {
+    return null;
+  }
+
+  try {
+    const keyPath = fs.existsSync('/certs/key.pem')
+      ? '/certs/key.pem'
+      : path.join(__dirname, '../certs/key.pem');
+
+    const certPath = fs.existsSync('/certs/cert.pem')
+      ? '/certs/cert.pem'
+      : path.join(__dirname, '../certs/cert.pem');
+
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+      const config = {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath)
+      };
+      console.log("🔒 Certificados SSL cargados correctamente.");
+      return config;
+    }
+  } catch (err) {
+    // SEGURIDAD: Logueamos el error completo internamente para debug
+    console.error("Error técnico al cargar SSL:", err);
+    // Pero al log de advertencia enviamos un mensaje genérico sin 'err.message'
+    console.warn("No se pudieron cargar los certificados SSL, se usará HTTP por defecto.");
+  }
+  return null;
+};
+
+// Inicializamos la variable usando la función
+const sslOptions = loadSSLConfig();
+
+// IMPORTANTE: Exporta la función al final del archivo para que el test pueda verla
+// (Usa module.exports o export dependiendo de tu sistema de módulos)
+module.exports = { app, loadSSLConfig };
 
 
 const normalizeIconName = (rawValue) => {
@@ -54,12 +101,17 @@ const normalizeIconName = (rawValue) => {
   return parts[parts.length - 1] || 'SinAvatar.png';
 };
 
-try {
-  const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8')); // Create the web page on http://localhost:3000/api-docs
-  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-} catch (e) {
-  console.log(e);
-}
+const setupSwagger = (app) => {
+  try {
+    const swaggerDocument = YAML.load(fs.readFileSync('./openapi.yaml', 'utf8'));
+    app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+  } catch (e) {
+    console.log("⚠️ Error al cargar la documentación Swagger:", e.message);
+  }
+};
+
+// Ejecución inmediata para el funcionamiento normal del servidor
+setupSwagger(app);
 
 // CORS --> The server accepts requests from any origin (*)
 app.use((req, res, next) => {
@@ -68,7 +120,6 @@ app.use((req, res, next) => {
       res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,OPTIONS');
-  // MODIFICA ESTA LÍNEA PARA INCLUIR Authorization
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
@@ -141,7 +192,7 @@ app.post('/createuser', async (req, res) => {
     );
     res.cookie('token', token, tokenCookieOptions);
 
-    res.json({ 
+    res.json({
       message: `Hello ${username}! Your account has been created!`,
       friendCode: `#${friendCode}`,
       nickname,
@@ -212,7 +263,7 @@ app.get('/users/search', authMiddleware, async (req, res) => {
 
     // Si la búsqueda empieza por #, buscamos coincidencia exacta por friendCode
     if (query.startsWith('#')) {
-      // Quitamos el # para buscar en la base de datos (donde se guarda como "ABC123")
+      // Quitamos el # para buscar en la base de datos
       const cleanCode = query.substring(1).toUpperCase();
       searchCriteria = { friendCode: cleanCode };
     } else {
@@ -256,14 +307,12 @@ app.post('/users/follow', authMiddleware, async (req, res) => {
   }
 });
 
-// En users-service.js (alrededor de la línea 170)
+// En users-service.js
 app.get('/users/profile/:username', authMiddleware, async (req, res) => {
   const username = String(req.params.username || '').trim();
 
   try {
     const user = await User.findOne({ username });
-    // Si decides usar populate, asegúrate de que el modelo esté bien definido,
-    // si da error 500, comenta las líneas de populate.
 
     if (!user) {
       return res.status(404).json({ error: 'Usuario no encontrado' });
@@ -276,7 +325,6 @@ app.get('/users/profile/:username', authMiddleware, async (req, res) => {
       language: user.language,
       iconName: user.iconName,
       totalScore: user.totalScore || 0,
-      // Usamos el tamaño del array directamente si no vas a popular
       followingCount: user.following?.length || 0,
       followersCount: user.followers?.length || 0
     });
@@ -559,25 +607,31 @@ app.post('/move', authMiddleware, async (req, res) => {
     // CORRECCIÓN: Extraer username del body
     const { cellIndex, username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
-    try {
-        const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                index: cellIndex,
-                player: username,
-                difficulty,
-                board_size: boardSize,
-                board_label: boardLabel,
-                locale,
-                result_label: resultLabel,
-            })
-        });
+  try {
+    //  Integración: Llamada al servicio de Rust
+    const rustResponse = await fetch(`${GAMEY_URL}/execute-move`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+         index: cellIndex,
+         player: username,
+         difficulty,
+         board_size: boardSize,
+         board_label: boardLabel,
+         locale,
+         result_label: resultLabel,
+      })
+    });
 
-        if (!rustResponse.ok) {
-            const text = await rustResponse.text();
-            return res.status(500).send(text);
-        }
+   if (!rustResponse.ok) {
+    const text = await rustResponse.text();
+
+    const safeText = text.replace(/[\n\r]/g, '_');
+
+    console.error("Error técnico desde Rust: " + safeText);
+
+    return res.status(500).json({ error: "Error en la comunicación con el juego" });
+}
 
         const newBoard = await rustResponse.json();
         const fallbackScore = calculateVictoryScore(difficulty, boardSize);
@@ -585,30 +639,38 @@ app.post('/move', authMiddleware, async (req, res) => {
             ? newBoard.score
             : fallbackScore;
 
-        if (newBoard.winner === 0 && finalScore > 0) {
-            await User.findOneAndUpdate(
-                { username: username },
-                { $inc: { totalScore: finalScore } }
-            );
-        }
+    // Si Rust dice que hay un ganador y ese ganador es el humano (ID 0)
+    if (newBoard.winner === 0 && finalScore > 0) {
+    // 2. SANITIZACIÓN: Aseguramos que es un string y un número
+    const safeUsername = String(username || '').trim();
+    const awardedScore = Number(finalScore);
 
-        res.json({
-            responseFromRust: newBoard.board,
-            winner: newBoard.winner,
-            score: finalScore
-        });
-    }
-    catch (e) {
-        res.status(500).json({error: 'Error communicating with Rust server. ' + e.message});
-    }
+    // 3. OPERACIÓN SEGURA
+    await User.findOneAndUpdate(
+        { username: safeUsername }, // Filtro protegido contra objetos/inyecciones
+        { $inc: { totalScore: awardedScore } }
+    );
+}
+
+    //  Respuesta HTTP
+    res.json({ 
+      responseFromRust: newBoard.board,
+      winner: newBoard.winner,
+      score: newBoard.score || finalScore // Nuevo campo para el puntaje de la partida
+    });
+  }
+  catch (e) {
+    console.error(e);
+    res.status(500).json({error: 'Error communicating with Rust server. ' + e.message});
+  }
 });
 
-// NEW: Endpoint para registrar una rendición (derrota)
-app.post('/surrender', authMiddleware, async (req, res) => {
+//  Endpoint para registrar una rendición (derrota)
+app.post('/surrender',authMiddleware, async (req, res) => {
   const { username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
-    // 1. Integración: Llamada al servicio de Rust (GameY)
+    //  Integración: Llamada al servicio de Rust (GameY)
     const rustResponse = await fetch(`${GAMEY_URL}/surrender`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -622,16 +684,20 @@ app.post('/surrender', authMiddleware, async (req, res) => {
       })
     });
 
-    // 2. Control de errores de la respuesta de Rust
+    //  Control de errores de la respuesta de Rust
     if (!rustResponse.ok) {
-      const text = await rustResponse.text();
-      console.error("Error desde Rust en surrender:", text);
-      return res.status(rustResponse.status).send(text);
-    }
+    const text = await rustResponse.text();
+    const safeLog = text.replace(/[\n\r]/g, '_');
+    console.error("Error desde Rust en surrender:", safeLog);
+
+    return res.status(rustResponse.status).json({
+        error: "No se pudo procesar la rendición en este momento."
+    });
+}
 
     const data = await rustResponse.json();
 
-    // 3. Respuesta al Frontend
+    //  Respuesta al Frontend
     res.json({ 
       message: "Rendición registrada correctamente",
       details: data 
@@ -677,7 +743,7 @@ app.post('/reset', authMiddleware, async (req, res) => {
   }
 });
 
-// New
+
 // Get available difficulties
 app.get('/difficulties', authMiddleware, async (req, res) => {
   try {
@@ -721,8 +787,7 @@ app.get('/history', authMiddleware, async (req, res) => {
     }
     
     const paginatedData = await rustResponse.json();
-    
-    // DEBUG: Mira tu terminal de Node para ver si llegan datos
+
     console.log('Historial de partidas consultado correctamente.');
 
     // 5. Enviamos el array directo al Frontend
@@ -739,32 +804,57 @@ app.get('/history', authMiddleware, async (req, res) => {
  */
 app.post('/users/purchase-xp', async (req, res) => {
   const { username, amount } = req.body;
+
   try {
+    const safeUsername = String(username || '').trim();
+    const safeAmount = Number(amount);
+
+   if (Number.isNaN(safeAmount)) {
+    return res.status(400).json({ error: "Cantidad no válida" });
+    }
+
     const updatedUser = await User.findOneAndUpdate(
-      { username },
-      { $inc: { totalScore: amount } }, // Sumamos los puntos comprados
+      { username: safeUsername },
+      { $inc: { totalScore: safeAmount } },
       { new: true }
     );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
     res.json({ message: "Puntos acreditados", total: updatedUser.totalScore });
+
   } catch (e) {
-    res.status(500).json({ error: "No se pudo procesar la compra. " + e.message });
+    console.error("Error en purchase-xp:", e);
+    res.status(500).json({ error: "No se pudo procesar la compra." });
   }
 });
 
 
 if (require.main === module) {
-    mongoose.connect(process.env.MONGODB_URI)
-        .then(() => console.log('Connected to MongoDB'))
-        .catch(err => console.error('Could not connect to MongoDB', err));
 
-    const finalServer = http.createServer(app);
-    console.log("HTTP mode enabled");
+  mongoose.connect(process.env.MONGODB_URI_USERS)
+    .then(() => console.log('Connected to MongoDB'))
+    .catch(err => console.error('Could not connect to MongoDB', err));
 
-    createSocketGateway(finalServer, { gameyUrl: GAMEY_URL });
-
-    finalServer.listen(port, () => {
-        console.log(`User Service (HTTP) listening at http://localhost:${port}`);
+  // https
+  if (sslOptions) {
+    // Si tenemos certs, levantamos HTTPS
+    https.createServer(sslOptions, app).listen(port, () => {
+      console.log(`User Service (HTTPS) listening at https://localhost:${port}`);
+    });
+  } else {
+    // Si no (como en CI o tests), levantamos HTTP normal
+    app.listen(port, () => {
+      console.log(`User Service (HTTP) listening at http://localhost:${port}`);
     });
 }
 
+// En lugar de module.exports = { app, loadSSLConfig };
+// Hacemos esto para no romper los tests existentes:
+
 module.exports = app;
+module.exports.loadSSLConfig = loadSSLConfig;
+module.exports.normalizeIconName = normalizeIconName;
+module.exports.setupSwagger = setupSwagger;

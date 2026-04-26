@@ -28,7 +28,8 @@ dashmap = "6.1"
 jsonwebtoken = "9.3"
 # ... otras dependencias
 anyhow = "1.0"
-axum = { version = "0.8", features = ["macros"] }
+axum = { version = "0.7", features = ["macros"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
 clap = { version = "4.0", features = ["derive"] }
 rand = "0.9"
 rustyline = { version = "17.0", features = ["with-file-history"] }
@@ -38,9 +39,10 @@ thiserror = "1.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 tokio = { version = "1.0", features = ["full"] }
+rustls = { version = "0.23", features = ["ring"] }
 
-utoipa = { version = "5.3", features = ["axum_extras"] }
-utoipa-swagger-ui = { version = "9.0", default-features = false, features = ["axum", "vendored"] }
+utoipa = { version = "4.2", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "7.1", default-features = false, features = ["axum", "vendored"] }
 tower-http = { version = "0.5", features = ["cors"] }
 mongodb = "3.5.1"
 chrono = "0.4"

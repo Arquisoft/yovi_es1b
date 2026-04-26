@@ -36,7 +36,14 @@ jobs:
       - run: npm --prefix webapp run test:coverage
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov --locked
+      - name: Create dummy certs for Rust tests
+        run: |
+          mkdir -p certs
+          openssl req -x509 -newkey rsa:4096 -keyout certs/key.pem -out certs/cert.pem -days 1 -nodes -subj "/CN=localhost"
       - name: Generate gamey code coverage
+        # 2. ENV: Para que el test de historial use el Mongo del runner
+        env:
+          MONGODB_URI: mongodb://localhost:27017/gamey_test
         run: cd gamey && cargo llvm-cov --lcov --output-path lcov.info
       - name: Normalize Rust coverage paths
         run: |

@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const friendshipSchema = new mongoose.Schema({
 
-  users: [{ type: String, required: true }], // Guardamos los usernames ["nahiara", "hugo"]
+  users: [{ type: String, required: true }], // Guardamos los usernames 
   status: { type: String, default: 'accepted' },
   since: { type: Date, default: Date.now },
   last_interaction: { type: Date, default: Date.now }

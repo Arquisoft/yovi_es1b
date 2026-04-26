@@ -1,3 +1,27 @@
+// This module defines how the server works when there are visitors.
+
+//! HTTP server for Y game bots.
+//!
+//! This module provides an Axum-based REST API for querying Y game bots.
+//! The server exposes endpoints for checking bot status and requesting moves.
+//!
+//! # Endpoints
+//! - `GET /status` - Health check endpoint
+//! - `POST /{api_version}/ybot/choose/{bot_id}` - Request a move from a bot
+//!
+//! # Example
+//! ```no_run
+//! use gamey::run_bot_server;
+//!
+//!
+//! #[tokio::main]
+//! async fn main() {
+//!     if let Err(e) = run_bot_server(4000).await {
+//!         eprintln!("Server error: {}", e);
+//!     }
+//! }
+//! ```
+
 pub mod error;
 pub mod play;
 pub mod state;
@@ -15,6 +39,9 @@ use utoipa::OpenApi;
 pub use error::ErrorResponse;
 pub use play::{PlayRequest, PlayResponse, play};
 pub use version::*;
+use axum_server::tls_rustls::RustlsConfig;
+use std::net::SocketAddr;
+use std::path::PathBuf;
 
 use crate::{BotDifficulty, GameYError, YEN, state::AppState};
 use crate::bot::{
@@ -116,10 +143,19 @@ fn normalize_history_document(record: &mut serde_json::Value) {
 
 // --- SWAGGER ---
 
-#[derive(OpenApi)]
+
+#[derive(utoipa::OpenApi)]
 #[openapi(
     paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial),
-    components(schemas(PlayRequest, PlayResponse, YEN, ResetRequest, MoveRequest, GameRecord, ErrorResponse)),
+    components(schemas(
+        play::PlayRequest,
+        play::PlayResponse,
+        YEN,
+        ResetRequest,
+        MoveRequest,
+        GameRecord,
+        error::ErrorResponse
+    )),
     tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
 )]
 pub struct ApiDoc;
@@ -223,11 +259,16 @@ pub async fn reiniciar_juego(
     let size = payload.size.unwrap_or(5).clamp(3, 20);
     *game = crate::core::game::GameY::new(size);
 
-    if let Some(d) = payload.difficulty {
-        if let Ok(diff) = BotDifficulty::from_str(&d) {
-            *session.current_difficulty.lock().await = diff;
-            if let Some(b) = state.bots().get_random_bot_by_difficulty(diff) {
-                *session.active_bot.lock().await = b.name().to_string();
+
+    if let Some(diff_str) = payload.difficulty {
+        if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
+            // Actualizamos la dificultad dentro de la sesión
+            let mut current_diff = session.current_difficulty.lock().await;
+            *current_diff = diff;
+
+            if let Some(chosen_bot) = state.bots().get_random_bot_by_difficulty(diff) {
+                let mut active_bot = session.active_bot.lock().await;
+                *active_bot = chosen_bot.name().to_string();
             }
         }
     }
@@ -251,18 +292,48 @@ pub async fn obtener_historial(
     axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
 ) -> impl IntoResponse {
     let collection = state.db.collection::<serde_json::Value>("partidas");
+
+    // 1. Configuración de la paginación
     let page = params.page.unwrap_or(1).max(1);
     let limit = params.limit.unwrap_or(10).clamp(1, 100);
+    let skip_value = (page - 1) * (limit as u64);
 
+    // 2. Construir un  filtro dinámico
     let mut filter = doc! { "player": &params.username };
-    if let Some(res) = &params.result { filter.insert("result", normalize_history_result(res)); }
+
+    // Añadimos el filtro de resultado si el frontend lo enví­a
+    if let Some(res) = &params.result {
+        filter.insert("result", res);
+    }
+
+    // 3. Contar el total de documentos usando el filtro final
+        let total_documents = match collection.count_documents(filter.clone()).await {        Ok(count) => count,
+        Err(e) => {
+            eprintln!("Error al contar documentos en BBDD: {}", e);
+            return axum::Json(serde_json::json!({
+                "error": "Error interno del servidor"
+            }));
+        }
+    };
+
+    let total_pages = (total_documents as f64 / limit as f64).ceil() as u64;
 
     let total = collection.count_documents(filter.clone()).await.unwrap_or(0);
     let options = mongodb::options::FindOptions::builder()
         .sort(doc! { "date": -1 }).skip((page - 1) * (limit as u64)).limit(limit).build();
+    // 5. Ejecutar la búsqueda pasando las opciones correctamente
+        let mut cursor = match collection.find(filter).with_options(find_options).await {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Error al buscar en la BBDD: {}", e);
+            return axum::Json(serde_json::json!({
+                "error": "Error interno del servidor"
+            }));
+        }
+    };
 
-    let mut cursor = collection.find(filter).with_options(options).await.unwrap();
-    let mut data = Vec::new();
+    // 6. Recoger los resultados del cursor
+    let mut partidas = Vec::new();
     while let Some(Ok(mut doc)) = cursor.next().await {
         normalize_history_document(&mut doc);
         data.push(doc);
@@ -370,4 +441,84 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let state = AppState::new(bots, db);
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
     axum::serve(listener, create_router(state)).await.map_err(|e| GameYError::ServerError { message: e.to_string() })
+}
+#[cfg(test)]
+mod tests {
+    use super::{normalize_history_document, normalize_history_result, validate_mongodb_uri, run_bot_server};
+
+    #[test]
+    fn normalize_history_result_maps_common_win_variants() {
+        assert_eq!(normalize_history_result("Has ganado"), "Victoria");
+        assert_eq!(normalize_history_result("Victory"), "Victoria");
+        assert_eq!(normalize_history_result("ganhaste"), "Victoria");
+    }
+
+    #[test]
+    fn normalize_history_result_maps_common_loss_variants() {
+        assert_eq!(normalize_history_result("Has perdido"), "Derrota");
+        assert_eq!(normalize_history_result("loss"), "Derrota");
+        assert_eq!(normalize_history_result("Du hast verloren"), "Derrota");
+    }
+
+    #[test]
+    fn normalize_history_document_updates_result_fields() {
+        let mut record = serde_json::json!({
+            "result": "Has ganado",
+            "result_label": "Has perdido",
+        });
+
+        normalize_history_document(&mut record);
+
+        assert_eq!(record["result"], "Victoria");
+        assert_eq!(record["result_label"], "Derrota");
+    }
+
+    #[test]
+    fn validate_mongodb_uri_rejects_empty_and_missing_scheme() {
+        let empty_err = validate_mongodb_uri("   ").unwrap_err();
+        assert!(empty_err.to_string().contains("esta vacia"));
+
+        let scheme_err = validate_mongodb_uri("localhost:27017/gamey_db").unwrap_err();
+        assert!(scheme_err.to_string().contains("falta el esquema"));
+    }
+
+    #[test]
+    fn validate_mongodb_uri_accepts_valid_uri() {
+        let uri = validate_mongodb_uri(" mongodb://localhost:27017/gamey_db ").unwrap();
+        assert_eq!(uri, "mongodb://localhost:27017/gamey_db");
+    }
+
+    #[tokio::test]
+    async fn run_bot_server_reports_bind_error_when_port_is_busy() {
+        let listener = tokio::net::TcpListener::bind("0.0.0.0:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let _keep_alive = listener;
+
+        let original_uri = std::env::var("MONGODB_URI").ok();
+        unsafe {
+            std::env::set_var("MONGODB_URI", "mongodb://localhost:27017/gamey_db");
+        }
+
+        let result = tokio::time::timeout(std::time::Duration::from_secs(5), run_bot_server(port))
+            .await
+            .expect("run_bot_server should not hang when bind fails");
+
+        if let Some(value) = original_uri {
+            unsafe {
+                std::env::set_var("MONGODB_URI", value);
+            }
+        } else {
+            unsafe {
+                std::env::remove_var("MONGODB_URI");
+            }
+        }
+
+        let err = result.unwrap_err();
+        let err_msg = err.to_string();
+        assert!(
+            err_msg.contains("Failed to bind") ||
+                err_msg.contains("Address already in use"),
+            "Se esperaba un error de puerto ocupado, pero se obtuvo: {}", err_msg
+        );
+    }
 }

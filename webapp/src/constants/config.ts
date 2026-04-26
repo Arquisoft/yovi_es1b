@@ -1,13 +1,7 @@
 ﻿
 
-// URL del backend. Si no se inyecta una URL publica, usa el mismo host
-// desde el que se sirvio la web para funcionar en LAN/VM sin recompilar.
-const getDefaultApiBaseUrl = () => {
-  if (typeof window === 'undefined') return 'http://localhost:3000';
-  return `${window.location.protocol}//${window.location.hostname}:3000`;
-};
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || getDefaultApiBaseUrl();
+// URL del backend (se inyecta desde docker-compose o se usa localhost por defecto)
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000';
 
 // Tiempo lÃ­mite en segundos segÃºn dificultad (Easy=60s, Medium=30s, Hard=15s)
 const TURN_TIME_LIMIT: Record<string, number> = {
