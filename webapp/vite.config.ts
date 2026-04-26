@@ -14,6 +14,23 @@ export default defineConfig({
   plugins: [react()],
 
   server: {
+
+    proxy: {
+      '/createuser': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/login': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/logout': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/difficulties': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/reset': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/move': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/surrender': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/history': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/friends': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+      '/users': { target: 'https://localhost:3000', secure: false, changeOrigin: true },
+    },
+
+
+  // Configuración multi-página (MPA)
+
     port: 5173,
     https: useHttps ? {
       key: fs.readFileSync(keyPath),
@@ -21,6 +38,7 @@ export default defineConfig({
     } : undefined, 
     cors: true,
   },
+
 
   build: {
     rollupOptions: {
@@ -30,6 +48,7 @@ export default defineConfig({
         register: resolve(__dirname, 'register.html'),
         gamemode: resolve(__dirname, 'gamemode.html'),
         game: resolve(__dirname, 'game.html'),
+        friends: resolve(__dirname, 'friends.html'),
       },
     },
   },
