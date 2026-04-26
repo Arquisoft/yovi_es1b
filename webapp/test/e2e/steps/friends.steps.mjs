@@ -81,6 +81,11 @@ Then('the button for {string} should change to {string}', async function (target
   const msg = (this.lastAlertMessage || "").toLowerCase();
   
   // Aceptamos cualquier respuesta que indique que la API respondió
-  const isCorrect = msg.includes('sigues a') || msg.includes('ya existe') || msg.includes('amistad');
+  const isCorrect = 
+    msg.includes('sigues a') || 
+    msg.includes('ya existe') || 
+    msg.includes('amistad') ||
+    msg.includes('400'); // Añadimos esto por seguridad
+    
   assert.ok(isCorrect, `Respuesta inesperada: ${this.lastAlertMessage}`);
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import failedJson from '../assets/buttons/Failed.json';
 import logoutJson from '../assets/buttons/Logout.json';
 import historyJson from '../assets/buttons/History.json';
@@ -515,9 +515,6 @@ function GameScreen({
           <strong className="guide-center-heading guide-objective-heading">{t('game.objective_title')}</strong>
           <br />
           - {t('game.objective_1')}
-          <br />
-          - {t('game.objective_2')}
-          <br />
           <br />
           <strong className="guide-center-heading guide-instructions-heading">{t('game.instructions_title')}</strong>
           <br />

@@ -1,0 +1,239 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-testing]]
+== Informe de Pruebas
+
+=== 12.1. Tests Unitarios
+
+Los tests unitarios verifican el comportamiento correcto de cada componente de forma aislada, proporcionando seguridad, fiabilidad y consistencia al proyecto.
+
+==== Webapp (Vitest + React Testing Library)
+
+La webapp cuenta con *163 casos de test* distribuidos en *22 archivos*, cubriendo los componentes, hooks y servicios más críticos del sistema:
+
+[cols="1,2,1", options="header"]
+|===
+|Archivo de test |Qué verifica |Tests
+
+|`useGameTimer.test.tsx`
+|Cuenta atrás por dificultad, `onTimeUp`, `reset`, pausa y reanudación. Usa `vi.useFakeTimers()` para control del tiempo.
+|12
+
+|`useGameLogic.test.ts`
+|Movimiento humano, movimiento automático por tiempo agotado (via `crypto.getRandomValues`), reset de partida y rendición.
+|15
+
+|`Game.test.tsx`
+|Renderizado del tablero triangular YEN, interacción con celdas, estados de victoria y derrota.
+|18
+
+|`gameService.test.ts`
+|Llamadas HTTP al backend: login, registro, reset, move, surrender, historial. Mockea `fetch` para no llamar al servidor real.
+|20
+
+|`boardUtils.test.ts`
+|Conversión de tamaño de tablero, parcheado visual del layout triangular, coordenadas de celdas.
+|14
+
+|`i18n-test.ts`
+|Carga de traducciones en los 4 idiomas (es, en, de, pt), interpolación de parámetros, fallback a español.
+|8
+
+|Resto de archivos
+|Componentes de pantalla, modales, perfil, amigos, historial y sesión de invitado.
+|76
+|===
+
+El setup global mockea `lottie-react` y fija el idioma a `es` para garantizar tests deterministas independientes del entorno.
+
+==== Users Service (Vitest + Supertest)
+
+El backend Node.js cuenta con *39 casos de test* en *6 archivos*, probando todos los endpoints REST mediante Supertest sin levantar un puerto de red real:
+
+[cols="1,2,1", options="header"]
+|===
+|Archivo de test |Qué verifica |Tests
+
+|`register-service.test.js`
+|Registro con campos obligatorios, nickname largo, username duplicado, fecha inválida, error de DB.
+|7
+
+|`login-service.test.js`
+|Login correcto, contraseña incorrecta, trim de espacios en username.
+|3
+
+|`friends-service.test.js`
+|Búsqueda por username y por FriendCode, follow, duplicado, friends, requests, respond (accept/reject).
+|9
+
+|`game-service.test.js`
+|Proxies a GameY: move, surrender, reset, difficulties, history. Mockea `fetch` global para no llamar a Rust.
+|10
+
+|`profile-service.test.js`
+|GET y PATCH de perfil, cambio de contraseña correcto e incorrecto, nickname duplicado.
+|7
+
+|`public-profile.test.js`
+|Perfil 404, GameY offline (graceful fallback), relación "self".
+|3
+|===
+
+==== GameY (Rust — cargo test)
+
+El motor de juego Rust cuenta con *143 tests* distribuidos en 5 archivos de integración y tests unitarios inline:
+
+[cols="1,2,1", options="header"]
+|===
+|Archivo de test |Qué verifica |Tests
+
+|`core_tests.rs`
+|Inicialización del tablero, movimientos, alternancia de turnos, detección de victoria con Union-Find, conversión YEN↔GameY.
+|44
+
+|`bot_server_tests.rs`
+|Todos los endpoints HTTP Axum con estado mockeado: move, reset, surrender, difficulties, history, stats. Tests async con `tokio::test`.
+|30
+
+|`cli_tests.rs`
+|Parseo de comandos CLI, modo computer, historial en terminal.
+|55
+
+|`bot_logic_tests.rs`
+|Comportamiento específico de RandomBot, EdgeBot, BlockerBot, AttackerBot y ProBot.
+|9
+
+|`view_tests.rs`
+|Rendering del tablero triangular en terminal.
+|5
+|===
+
+==== Cobertura de código (SonarCloud)
+
+Para la medición de cobertura se utiliza *SonarCloud*, integrado en el pipeline de CI/CD mediante GitHub Actions. La cobertura se reporta en formato `lcov` (webapp) y se sube automáticamente en cada push a la rama `development`.
+
+image::12_sonarcloud_coverage.png[align="center", title="Quality Gate de SonarCloud"]
+
+El Quality Gate exige:
+
+* Cobertura de tests ≥ 70% en el módulo `webapp`
+* 0 issues de seguridad críticos o blockers
+* Duplicación de código < 3%
+
+=== 12.2. Tests End-to-End (E2E)
+
+Los tests end-to-end verifican que toda la aplicación funciona correctamente desde la perspectiva del usuario final, simulando escenarios reales de uso e interactuando con la interfaz tal como lo haría un usuario real.
+
+En YoVi se ha configurado *Cucumber + Playwright* para los tests E2E, con los siguientes casos de prueba implementados:
+
+. *Flujo de registro*: Verifica que un nuevo usuario puede completar el formulario de registro correctamente, incluyendo validación de username (regex Unicode), nickname (máx. 15 chars), idioma y fecha de nacimiento. Comprueba también que el sistema gestiona errores comunes como username ya registrado o contraseña inválida.
+
+. *Flujo de login*: Comprueba que el sistema gestiona correctamente intentos de login con credenciales inválidas, mostrando los mensajes de error localizados en el idioma del usuario. Verifica que el JWT se almacena correctamente en `sessionStorage` tras el login.
+
+. *Partida completa contra bot*: Verifica que el usuario puede seleccionar dificultad (Easy/Medium/Hard) y tamaño de tablero, realizar movimientos, que el bot responde correctamente y que el temporizador funciona con los límites correctos (60s/30s/15s). Comprueba que al ganar o rendirse se muestra el modal de resultado y se registra la partida en el historial.
+
+. *Cambio de idioma durante la partida*: Verifica que al cambiar el idioma desde el selector, todos los textos de la interfaz se actualizan inmediatamente sin recargar la página y sin perder el estado de la partida en curso.
+
+. *Gestión de amigos*: Comprueba el flujo completo de solicitudes de amistad: búsqueda por FriendCode, envío de solicitud, aceptación y aparición en la lista de amigos de ambos usuarios.
+
+. *Modo invitado*: Verifica que un usuario no registrado puede jugar partidas completas como invitado, y que al intentar acceder a historial, perfil o amigos se muestra el modal de acceso restringido.
+
+=== 12.3. Tests de Carga
+
+Los tests de carga miden el rendimiento del sistema ante carga normal y picos de carga, permitiendo anticipar problemas de rendimiento antes de que afecten a usuarios reales.
+
+Para la realización de estas pruebas se ha utilizado *Gatling* (Java + Maven), siguiendo las directrices del Laboratorio 9 de la asignatura.
+
+==== Escenario de prueba
+
+El escenario simula el flujo completo de un usuario jugando una partida:
+
+. *Login* — autenticación y obtención de JWT
+. *Reset de partida* — inicialización del tablero (tamaño 6, dificultad Easy)
+. *Movimiento 1* — el jugador coloca una ficha (cellIndex: 3)
+. *Movimiento 2* — el jugador coloca una segunda ficha (cellIndex: 8)
+. *Rendición* — el jugador se rinde y se persiste la derrota en MongoDB
+. *Consulta de historial* — el usuario consulta sus partidas anteriores
+
+==== Configuración de carga
+
+[cols="1,2,2", options="header"]
+|===
+|Escenario |Configuración |Descripción
+
+|Carga sostenida
+|`rampUsers(10).during(30)` + `constantUsersPerSec(2).during(60)`
+|Subida progresiva a 10 usuarios en 30 segundos, manteniendo 2 usuarios/segundo durante 1 minuto.
+
+|Pico de carga
+|`nothingFor(10)` + `rampUsers(25).during(15)` + `constantUsersPerSec(4).during(30)`
+|Pausa de 10 segundos seguida de rampa rápida a 25 usuarios en 15 segundos.
+|===
+
+Los *thresholds* de aceptación definidos son:
+
+* p95 de tiempo de respuesta < 500ms
+* Porcentaje de peticiones exitosas > 95%
+
+==== Resultados
+
+[cols="1,1,1", options="header"]
+|===
+|Métrica |Carga sostenida (10 VUs) |Pico de carga (25 VUs)
+
+|Peticiones totales
+|780
+|1.650
+
+|Peticiones OK
+|780 (100%)
+|1.650 (100%)
+
+|Error rate
+|0%
+|0%
+
+|Latencia mínima
+|2ms
+|2ms
+
+|Latencia media
+|43ms
+|41ms
+
+|Percentil 50 (p50)
+|37ms
+|37ms
+
+|Percentil 75 (p75)
+|75ms
+|76ms
+
+|Percentil 95 (p95)
+|116ms ✓
+|109ms ✓
+
+|Percentil 99 (p99)
+|136ms
+|124ms
+
+|Latencia máxima
+|441ms
+|157ms
+
+|Throughput medio
+|8.21 req/s
+|11 req/s
+
+|Duración total
+|94s
+|149s
+|===
+
+==== Conclusiones de las pruebas de carga
+
+El sistema YoVi supera en ambos escenarios los thresholds de calidad definidos. Con 25 usuarios concurrentes ejecutando flujos completos de partida, el p95 de latencia es de 109ms, muy por debajo del límite de 500ms. Destacablemente, el sistema escala bien bajo pico de carga: el p95 mejora de 116ms a 109ms al pasar de 10 a 25 usuarios, y el throughput aumenta de 8.21 a 11 req/s. El error rate se mantiene en 0% en ambos escenarios.
+
+Esto valida el escenario de calidad *SC-09* (acceso concurrente de múltiples usuarios) definido en la sección 10, donde se exigía un error rate < 1% y latencia media < 500ms.
+
+image::12_gatling_response_times.png[align="center", title="Distribución de tiempos de respuesta - Gatling"]

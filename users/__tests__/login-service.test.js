@@ -80,7 +80,6 @@ it('debe cubrir el catch de login si la base de datos falla', async () => {
     .send({ username: 'test', password: 'password' });
 
   expect(res.status).toBe(500);
-  // Si corriges la seguridad, busca solo "Error del servidor"
   expect(res.body.error).toContain('Error del servidor');
 });
 })
