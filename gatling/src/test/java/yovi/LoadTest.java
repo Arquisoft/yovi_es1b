@@ -106,9 +106,13 @@ public class LoadTest extends Simulation {
     {
         setUp(
                 scn.injectOpen(
-                        // Escenario 1: carga sostenida
+                        // Escenario 1: carga sostenida - 10 usuarios
                         rampUsers(10).during(30),           // sube a 10 usuarios en 30s
-                        constantUsersPerSec(2).during(60)   // mantiene 2/s durante 1 minuto
+                        constantUsersPerSec(2).during(60),   // mantiene 2/s durante 1 minuto
+                        // Escenario 2: pico de carga - 25 usuarios
+                        nothingFor(10),
+                        rampUsers(25).during(15),
+                        constantUsersPerSec(4).during(30)
                 )
         )
                 .protocols(httpProtocol)
