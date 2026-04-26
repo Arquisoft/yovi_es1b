@@ -87,3 +87,35 @@ export const GameModePage = () => {
 export default GameModePage;
 
 ReactDOM.createRoot(document.getElementById('root')!).render(<GameModePage />);
+    <div className="App">
+      <video ref={videoRef} className="menu-video-bg" autoPlay loop muted playsInline>
+        <source src={menuVideo} type="video/mp4" />
+        <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="No spoken audio" />
+      </video>
+      <div className="menu-video-overlay" />
+      <audio ref={audioRef} className="bg-music" src={backgroundMusic} autoPlay loop>
+        <track kind="captions" src="/empty-captions.vtt" srcLang="en" label="Background music" />
+      </audio>
+
+      <div className="menu-content">
+        <GameModeScreen 
+          onSelectMode={handleSelectMode} 
+          onLogout={async () => {
+            await gameService.logout().catch(() => undefined)
+            sessionStorage.clear()
+            localStorage.removeItem('yovi_user')
+            localStorage.removeItem('yovi_friend_code')
+            localStorage.removeItem('yovi_user_icon')
+            localStorage.removeItem('yovi_user_language')
+            localStorage.removeItem('yovi_user_nickname')
+            localStorage.removeItem('username')
+            globalThis.location.href = '/index.html'
+          }}
+        />
+      </div>
+    </div>
+  )
+}
+
+export default GameModePage
+

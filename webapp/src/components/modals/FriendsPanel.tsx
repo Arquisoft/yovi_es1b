@@ -138,6 +138,9 @@ export const FriendsPanel = ({ isOpen, onClose, username, displayName, friendCod
   return ReactDOM.createPortal(
     <div
       className="friends-sidebar-overlay"
+      role="button"
+      tabIndex={0}
+      aria-label={t('common.close')}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onClose();
