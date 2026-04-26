@@ -87,23 +87,28 @@ const mergeHeaders = (init?: RequestInit): HeadersInit => {
 };
 
 const fetchJson = async <T>(url: string, init?: RequestInit): Promise<T> => {
-  const res = init ? await fetch(url, init) : await fetch(url);
+  const res = await fetch(url, init);
 
+  // 1. Manejo robusto de errores de red
   if (!res.ok) {
-    const errorText = await res.text().catch(() => 'No hay detalle del error');
-    // Mantenemos la limpieza de logs que aplicamos antes para evitar inyecciones
-    console.error(`Error en fetch a ${url}: ${res.status} - ${errorText.replace(/[\n\r]/g, '_')}`);
+    const errorText = await res.text().catch(() => 'Sin detalle del error');
+    const safeErrorLog = errorText.replace(/[\n\r]/g, '_');
+    console.error(`Error en fetch a ${url}: ${res.status} - ${safeErrorLog}`);
+    
     throw new Error(`Error en la petición: ${res.status}`);
   }
 
+  // 2. Validación de cabeceras
   const contentType = res.headers.get('content-type');
 
-  // CAMBIO CRÍTICO: Usamos el optional chaining aquí
   if (!contentType?.includes('application/json')) {
-    throw new Error('La respuesta no es un JSON válido');
+    throw new Error('La respuesta del servidor no es un JSON válido');
   }
 
-  return res.json() as Promise<T>; 
+  // 3. Procesamiento de datos
+  const data = await res.json();
+  
+  return data as T; 
 };
 export const gameService = {
   // Obtener dificultades
