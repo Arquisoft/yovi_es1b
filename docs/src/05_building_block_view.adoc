@@ -1,8 +1,6 @@
 ifndef::imagesdir[:imagesdir: ../images]
 
 [[section-building-block-view]]
-
-
 == Vista de Bloques de Construcción
 
 ifdef::arc42help[]
@@ -33,7 +31,6 @@ box descriptions of all contained building blocks.
 Thus it contains the white box description of selected building blocks of level 1, together with black box descriptions of their internal building blocks.
 
 *Level 3* zooms into selected building blocks of level 2, and so on.
-
 
 .Further Information
 
@@ -71,153 +68,181 @@ image::5_1-building_block.png[align="center"]
 
 Motivation::
 
-La aplicación YGame permite jugar al juego de conexión Y online contra distintos bots
+La aplicación YoVi permite jugar al juego de conexión Y online contra distintos bots
 con diferentes niveles de dificultad. Gestiona el registro y autenticación de usuarios,
 guarda el historial de partidas y ofrece una interfaz web accesible desde el navegador.
+El sistema se estructura como una arquitectura de microservicios orquestados con
+Docker Compose, donde cada servicio es propietario de su propia área de datos
+(patrón _Database-per-Service_).
 
 Bloques de Construcción de Contenidos::
-[cols="1,2" options="header"]
+
+[cols="1,2,1" options="header"]
 |===
-|Nombre| Descripción
+|Nombre |Descripción |Puerto
+
 |*Usuario*
 |Usuario de la aplicación que interactúa con ella a través del navegador web.
+|—
+
 |*Webapp*
-|Interfaz gráfica SPA (Single Page Application) construida con React, Vite y TypeScript.
-Gestiona las pantallas de inicio, registro, login y partida. Renderiza el tablero
-triangular en formato YEN, controla el temporizador de turno (con límites de 60s/30s/15s
-según dificultad Easy/Medium/Hard) y se comunica con el backend mediante llamadas REST.
-Incluye panel de amigos, gestión de perfil de usuario con avatares, configuración de música
-de fondo y vídeo de menú.
+|Interfaz gráfica Multi-Page Application (MPA) construida con React 18, Vite 7 y
+TypeScript. Gestiona 4 páginas independientes (index, login, register, game). Renderiza
+el tablero triangular en SVG con celdas interactivas, controla el temporizador de turno
+(Easy=60s, Medium=30s, Hard=15s), gestiona el sistema de amigos, el perfil de usuario,
+la tienda de XP con PayPal y la internacionalización en 4 idiomas (es, en, de, pt).
+Servida por Nginx con HTTPS.
+|443
+
 |*Users*
-|Servicio backend construido con Node.js y Express. Gestiona el registro y autenticación
-de usuarios con contraseñas hasheadas (bcryptjs), el historial de partidas, la gestión de
-amistades (solicitudes, aceptación y rechazo) y actúa de intermediario entre la webapp y
-el motor de juego Gamey. Expone métricas para Prometheus. Cada usuario recibe un friendCode
-único al registrarse, generado con nanoid, que permite identificarle de forma inequívoca
-para añadirle como amigo.
+|Servicio backend en Node.js + Express que actúa como BFF (_Backend For Frontend_)
+y API Gateway. Centraliza autenticación (JWT 24h + bcryptjs), registro, gestión de
+perfil, sistema de amigos por FriendCode (generado con nanoid) y tienda de XP.
+Proxifica todas las llamadas al motor de juego hacia Gamey. Expone métricas Prometheus.
+|3000
+
 |*Gamey*
-|Motor de juego implementado en Rust. Implementa la lógica completa del juego Y sobre
-un tablero triangular con coordenadas trilineales (x,y,z). Expone una API REST para
-gestionar partidas y ofrece tres niveles de bot: RandomBot (fácil), BlockerBot (medio)
-y ProBot (difícil).
+|Motor de juego implementado en Rust + Axum. Mantiene el estado de cada partida en
+memoria mediante `DashMap<username, UserSession>`. Implementa la lógica completa del
+Juego Y (Union-Find con máscaras de bits para detección de victoria), coordenadas
+baricentricas (x,y,z), serialización YEN y cinco bots con distintos niveles.
+Persiste historial en MongoDB. Requiere HTTPS (Rustls).
+|4000
+
 |*MongoDB*
-|Base de datos NoSQL que almacena los usuarios registrados, el historial de partidas y
-las relaciones de amistad, utilizada tanto por el servicio Users como por Gamey.
+|Base de datos documental accesible únicamente desde la red interna Docker. El Users
+Service gestiona las colecciones `users` y `friendships`. Gamey gestiona la colección
+`partidas` en la base de datos `gamey_db`.
+|27017
+
 |*Prometheus*
-|Sistema de monitorización que recolecta métricas del servicio Users.
+|Recolecta métricas del Users Service cada 5 segundos mediante scraping del endpoint
+`/metrics`, inyectado automáticamente por `express-prom-bundle`.
+|9090
+
 |*Grafana*
-|Plataforma de visualización que muestra los dashboards con las métricas recogidas
-por Prometheus.
+|Visualiza en dashboards las métricas recopiladas por Prometheus. Provisionado
+automáticamente desde ficheros YAML en `monitoring/grafana/provisioning/`.
+|3001
 |===
 
 Important Interfaces::
 
 [cols="1,1,2" options="header"]
 |===
-|Interfaz|Entre|Descripción
-|REST `/reset`|Webapp → Users|Inicia o reinicia una partida con el tamaño de tablero
-y dificultad seleccionados. Devuelve el estado inicial del tablero en formato YEN.
-|REST `/move`|Webapp → Users|Envía el índice de celda elegida por el jugador.
-El servicio lo reenvía a Gamey, que responde con el nuevo estado del tablero
-tras el movimiento del jugador y la respuesta del bot.
-|REST `/surrender`|Webapp → Users|Registra la rendición del jugador y actualiza
-el historial de partidas en MongoDB.
-|REST `/history`|Webapp → Users|Consulta el historial de partidas del usuario
-autenticado almacenado en MongoDB, con soporte de paginación y filtros por resultado.
-|REST `/difficulties`|Webapp → Users|Devuelve la lista de dificultades disponibles
-(Easy, Medium, Hard).
-|REST `/users/profile/:username`|Webapp → Users|Consulta y actualiza el perfil del
-usuario: nickname, idioma, avatar e icono.
-|REST `/users/follow`|Webapp → Users|Envía una solicitud de amistad a otro usuario
-identificado por su friendCode.
-|REST `/friends/requests`|Webapp → Users|Consulta las solicitudes de amistad pendientes
-recibidas.
-|REST `/friends/respond`|Webapp → Users|Acepta o rechaza una solicitud de amistad.
-|REST `/execute-move`|Users → Gamey|Reenvía el índice de celda al motor de juego Rust,
-que ejecuta el movimiento del jugador, calcula la respuesta del bot y devuelve el nuevo
-estado YEN junto con el ganador si lo hay.
+|Interfaz |Entre |Descripción
+
+|REST `/reset`
+|Webapp → Users
+|Inicia o reinicia una partida con el tamaño de tablero y dificultad seleccionados.
+Devuelve el estado inicial del tablero en formato YEN.
+
+|REST `/move`
+|Webapp → Users
+|Envía el índice de celda elegida por el jugador. El servicio lo reenvía a Gamey,
+que responde con el nuevo estado YEN tras el movimiento del jugador y la respuesta
+del bot. Suma XP atómicamente si el ganador es el humano.
+
+|REST `/surrender`
+|Webapp → Users
+|Registra la rendición del jugador y persiste la derrota en MongoDB vía Gamey.
+
+|REST `/history`
+|Webapp → Users
+|Consulta el historial de partidas paginado con filtros por resultado (Victoria/Derrota).
+
+|REST `/difficulties`
+|Webapp → Users
+|Devuelve la lista de dificultades disponibles (Easy, Medium, Hard).
+
+|REST `/users/profile/:username`
+|Webapp → Users
+|Consulta y actualiza el perfil del usuario: nickname, idioma, avatar e icono.
+
+|REST `/users/follow`
+|Webapp → Users
+|Envía una solicitud de amistad a otro usuario identificado por su FriendCode.
+
+|REST `/friends/requests`
+|Webapp → Users
+|Consulta las solicitudes de amistad pendientes recibidas.
+
+|REST `/friends/respond`
+|Webapp → Users
+|Acepta o rechaza una solicitud de amistad pendiente.
+
+|REST `/execute-move`
+|Users → Gamey
+|Reenvía el índice de celda al motor Rust, que ejecuta el movimiento del jugador,
+calcula la respuesta del bot y devuelve el nuevo estado YEN junto con el ganador si
+lo hay.
+
+|REST `/reset`
+|Users → Gamey
+|Crea o reinicia la `UserSession` del jugador en el `DashMap` de Gamey con el
+tamaño y dificultad indicados. Selecciona el bot activo aleatoriamente entre los
+disponibles para esa dificultad.
+
+|YEN (JSON)
+|Users ↔ Gamey
+|Formato de intercambio del estado del tablero: `{"size":N,"turn":0,"players":["B","R"],"layout":"B/BR/.R."}`.
+Filas separadas por `/`; celdas como `B` (jugador 0), `R` (jugador 1) o `.` (vacía).
 |===
-
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Insert your explanations of black boxes from level 1:
-
-If you use tabular form you will only describe your black boxes with name and
-responsibility according to the following schema:
-
-[cols="1,2" options="header"]
-|===
-| **Name** | **Responsibility**
-| _<black box 1>_ | _<Text>_
-| _<black box 2>_ | _<Text>_
-|===
-
-If you use a list of black box descriptions then you fill in a separate black box template for every important building block.
-Its headline is the name of the black box.
-****
-endif::arc42help[]
 
 ==== Webapp
-
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Here you describe <black box 1>
-according the the following black box template:
-
-* Purpose/Responsibility
-* Interface(s), when they are not extracted as separate paragraphs. This interfaces may include qualities and performance characteristics.
-* (Optional) Quality-/Performance characteristics of the black box, e.g.availability, run time behavior, ....
-* (Optional) directory/file location
-* (Optional) Fulfilled requirements (if you need traceability to requirements).
-* (Optional) Open issues/problems/risks
-
-****
-endif::arc42help[]
 
 *Purpose/Responsibility*: Proporcionar la interfaz gráfica del juego al usuario final.
 Gestiona el flujo completo de la partida: selección de dificultad y tamaño de tablero,
 renderizado del tablero triangular YEN, temporizador de turno con movimiento automático
-al agotarse, y visualización del historial de partidas.
+al agotarse, y visualización del historial de partidas. La Webapp es una MPA de 4
+páginas independientes; Nginx sirve cada fichero HTML directamente sin fallback SPA.
 
-*Interface(s)*: Se comunica exclusivamente con el servicio Users mediante peticiones
-HTTP REST. No accede directamente a Gamey ni a MongoDB.
+*Interface(s)*: Se comunica exclusivamente con el Users Service mediante `fetch` nativo
+(sin librerías HTTP adicionales). No accede directamente a Gamey ni a MongoDB.
+El JWT se envía en la cabecera `Authorization: Bearer <token>`.
 
-*Quality/Performance Characteristics*: Aplicación SPA que no requiere recarga de página.
-El temporizador de turno opera en cliente con intervalos de 1 segundo.
+*Quality/Performance Characteristics*: El temporizador de turno opera en cliente con
+`setInterval` de 1 segundo. El cambio de idioma es instantáneo (< 200ms) sin recarga
+de página gracias a `react-i18next`. El modo invitado permite jugar sin registro.
 
 *Directory/File Location*: `webapp/src/`
 
 ==== Users
 
 *Purpose/Responsibility*: Gestionar la autenticación y registro de usuarios, el historial
-de partidas y actuar como API Gateway entre la webapp y el motor de juego Gamey.
-Al registrarse, cada usuario recibe un friendCode único generado automáticamente que
+de partidas, el sistema de amigos y la tienda de XP. Actúa como API Gateway entre la
+webapp y el motor de juego Gamey. Al registrarse, cada usuario recibe un FriendCode
+único de 6 caracteres (generado con `nanoid`, alfabeto sin caracteres ambiguos) que
 permite identificarle para añadirle como amigo.
 
-*Interface(s)*: Expone una API REST en el puerto 3000. Se conecta a MongoDB para
-persistencia y a Gamey (puerto 4000) para la lógica del juego.
+*Interface(s)*: Expone una API REST en el puerto 3000. Se conecta a MongoDB mediante
+Mongoose para persistencia y a Gamey (puerto 4000) para toda la lógica de juego.
 
-*Quality/Performance Characteristics*: Expone métricas en formato Prometheus para
-monitorización en tiempo real mediante Grafana.
+*Quality/Performance Characteristics*: Expone métricas en formato Prometheus mediante
+`express-prom-bundle` (latencia, método HTTP, código de estado). Soporta HTTPS
+condicional: si encuentra certificados en `/certs/` arranca con HTTPS; si no, con HTTP
+(útil para CI sin certificados).
 
 *Directory/File Location*: `users/`
 
 ==== Gamey
 
-*Purpose/Responsibility*: Ejecutar toda la lógica del juego Y: validar movimientos,
-detectar la condición de victoria (conexión de los tres lados del triángulo),
-gestionar el estado del tablero en formato YEN y calcular las respuestas de los bots.
+*Purpose/Responsibility*: Ejecutar toda la lógica del Juego Y: mantener el estado de
+cada partida en memoria, validar movimientos, detectar la condición de victoria
+(conexión de los tres lados del triángulo mediante Union-Find), gestionar el estado
+del tablero en formato YEN y calcular las respuestas de los cinco bots disponibles.
+Persiste el historial de partidas y estadísticas en MongoDB.
 
-*Interface(s)*: Expone una API REST en el puerto 3000 (mapeado al 4000 en Docker).
-Recibe y devuelve el estado del tablero en formato YEN (JSON).
+*Interface(s)*: Expone una API REST en el puerto 4000 con HTTPS obligatorio (Rustls).
+Recibe y devuelve el estado del tablero en formato YEN (JSON). Incluye documentación
+OpenAPI generada automáticamente con `utoipa`, accesible en `/swagger-ui`.
 
-*Quality/Performance Characteristics*: Implementado en Rust para máximo rendimiento
-en el cálculo de movimientos del ProBot, que usa BFS con potencial exponencial.
+*Quality/Performance Characteristics*: Implementado en Rust para máximo rendimiento en
+el cálculo de los bots Hard (AttackerBot y ProBot), que ejecutan BFS sobre todo el
+tablero en cada turno. La topología triangular pre-calcula vecinos y regiones en la
+construcción del tablero, garantizando acceso O(1) durante el juego.
 
 *Directory/File Location*: `gamey/src/`
-
 
 === Nivel 2
 
@@ -234,95 +259,169 @@ endif::arc42help[]
 
 ==== White Box _Webapp_
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-...describes the internal structure of _building block 1_.
-****
-endif::arc42help[]
+image::5_2-webapp_blocks.png[align="center"]
 
-La webapp está organizada en pantallas y hooks independientes:
+La webapp está organizada en páginas MPA, pantallas de presentación, hooks de lógica
+y una capa de servicios. Cada página MPA tiene su propio bundle JavaScript compilado
+por Vite.
 
 [cols="1,2" options="header"]
 |===
-|Componente|Descripción
-|`HomeScreen`|Pantalla inicial con acceso a registro e inicio de sesión.
-|`RegisterScreen`|Formulario de registro de nuevos usuarios.
-|`LoginScreen`|Formulario de autenticación de usuarios existentes.
-|`GameScreen`|Pantalla principal de juego. Renderiza el tablero triangular YEN con
-celdas interactivas, muestra el temporizador de turno con barra de progreso y estado
-de urgencia (≤5s), y gestiona las acciones de reiniciar, rendirse, cambiar
+|Componente |Descripción
+
+|`pages/*/main.tsx`
+|Puntos de entrada para cada página MPA (index, login, register, game). `game/main.tsx`
+coordina `useGameLogic`, `useGameTimer`, sincronización de perfil con el backend,
+sesión de usuario y todos los modales. Implementa el patrón ref-para-callback
+(`handleAutoMoveRef`) para garantizar que `onTimeUp` siempre llama a la versión
+más reciente de `handleAutoMove`.
+
+|`screens/GameScreen`
+|Renderiza el tablero triangular YEN con celdas SVG interactivas. Muestra el
+temporizador con barra de progreso y aplica la clase `turn-timer-urgent` cuando
+quedan ≤ 5 segundos. Gestiona las acciones de reiniciar, rendirse, cambiar
 dificultad/tamaño y consultar historial.
-|`ProfileScreen`|Pantalla de perfil del usuario. Permite actualizar nickname, idioma,
-avatar e icono, y cambiar la contraseña.
-|`FriendsPanel`|Panel lateral de amigos. Permite buscar usuarios por friendCode, enviar
-solicitudes de amistad, ver amigos activos y gestionar solicitudes pendientes.
-|`SelectionModals`|Modales de selección de dificultad y tamaño de tablero. Se muestran
-cuando el jugador quiere cambiar estos parámetros durante la partida.
-|`useGameLogic`|Hook que encapsula la lógica de movimientos: movimiento humano, movimiento
-automático del bot, reset de partida y rendición.
-|`useGameTimer`|Hook que gestiona el temporizador de turno. Soporta múltiples dificultades
-mediante el mapa `UI_TO_ENGLISH_DIFFICULTY` y lanza el movimiento automático al agotarse el tiempo.
-|`gameService`|Servicio de comunicación con el backend. Encapsula todas las llamadas REST a la
-API de Users.
-|`boardUtils`|Utilidades del tablero: conversión de tamaño de tablero y parcheado visual del layout
-triangular YEN.
+
+|`screens/ProfileScreen`
+|Permite actualizar nickname (máx. 15 chars), idioma, avatar e icono, y cambiar
+la contraseña. Sincroniza los cambios con el Users Service.
+
+|`screens/FriendsScreen`
+|Panel de amigos. Búsqueda por username (regex) o por `#FRIENDCODE` (exacto).
+Gestión completa de solicitudes: enviar, aceptar, rechazar y cancelar.
+
+|`hooks/useGameLogic`
+|Encapsula la lógica de partida: movimiento humano, movimiento automático por tiempo
+agotado (usando `window.crypto.getRandomValues`, no `Math.random`), reset y rendición.
+
+|`hooks/useGameTimer`
+|Gestiona el temporizador de turno. `startTimer(difficulty)` normaliza la dificultad
+mediante `UI_TO_ENGLISH_DIFFICULTY` y consulta `TURN_TIME_LIMIT`. Cancela el intervalo
+activo antes de crear uno nuevo para evitar duplicados.
+
+|`services/gameService`
+|Único punto de salida para todas las llamadas HTTP con `fetch` nativo. Construye URLs
+con `buildApiUrl` y adjunta el JWT mediante `getAuthHeaders()`. Valida el username
+antes de cada llamada con regex Unicode `/^[\p{L}\p{N} _.-]{1,64}$/u`.
+
+|`i18n.ts`
+|Configuración de `react-i18next`. Lee el idioma desde `localStorage`
+(`yovi_user_language`). Al cargar la partida sincroniza con el idioma del perfil del
+servidor. Traducciones en memoria para los 4 idiomas (es, en, de, pt).
+
+|`constants/config.ts`
+|`API_BASE_URL`, `TURN_TIME_LIMIT`, `UI_TO_ENGLISH_DIFFICULTY`,
+`DIFFICULTY_TRANSLATIONS`, `REVERSE_DIFFICULTY_MAP`.
+
+|`utils/boardUtils`
+|`getBoardDimensionFromSizeChoice` (Pequeño=6, Mediano=9, Grande=12) y
+`patchTriangularLayoutCell` para pintar el movimiento del humano antes de que llegue
+la respuesta de Rust.
+
+|`utils/sessionUtils`
+|JWT en `sessionStorage`, datos de usuario en `localStorage`, modo invitado
+(`isGuestSession`). Todas las funciones normalizan cadenas con NFKC + trim + maxLength.
 |===
 
 ==== White Box _Gamey_
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-...describes the internal structure of _building block 2_.
-****
-endif::arc42help[]
+image::5_2-gamey_blocks.png[align="center"]
 
 El motor de juego Rust está organizado en los siguientes módulos:
 
 [cols="1,2" options="header"]
 |===
-|Módulo|Descripción
-|`core/game.rs`|Estado principal de la partida (`GameY`). Gestiona el tablero,
-el turno actual, el historial de movimientos y la condición de victoria.
-|`core/topology/`|Implementación de la topología triangular. Pre-calcula vecinos
-y regiones para cada celda usando coordenadas trilineales (x+y+z = size-1).
-|`core/coord.rs`|Sistema de coordenadas trilineales con conversión a/desde índice lineal.
-|`bot/random.rs`|Bot fácil: elige una celda vacía aleatoriamente.
-|`bot/blocker_bot.rs`|Bot medio: prioriza bloquear los movimientos del oponente.
-|`bot/pro_bot.rs`|Bot difícil: usa BFS para calcular distancias a los tres lados
-y puntúa cada celda con potencial exponencial, bonificación de centralidad
-y conectividad.
-|`notation/yen.rs`|Serialización/deserialización del formato YEN (JSON con layout
-triangular separado por `/`).
-|`bot_server/`|Servidor HTTP Axum que expone la API REST del motor de juego.
+|Módulo |Descripción
+
+|`core/game.rs`
+|Struct `GameY`: tablero, turno, historial de movimientos (`Vec<Movement>`) y celdas
+disponibles. Implementa conversión bidireccional con YEN (`From<&GameY>` y
+`TryFrom<YEN>`). Delega la física del tablero al `GameEngine`.
+
+|`core/topology/engine.rs`
+|`GameEngine<T>`: motor genérico con Union-Find. Al colocar una ficha crea un nuevo
+conjunto, hace OR de máscaras de región con sus vecinos del mismo jugador y verifica
+victoria comparando contra `winning_mask` (0b111 = los 3 lados). Incluye path
+compression en `find()` para operaciones casi O(1).
+
+|`core/topology/triangular.rs`
+|`TriangularTopology`: pre-calcula en `new()` la lista de adyacencia y las máscaras
+de región para cada celda (SIDE_A: x=0, SIDE_B: y=0, SIDE_C: z=0). Los accesos
+durante el juego son O(1).
+
+|`core/coord.rs`
+|`Coordinates(x,y,z)`: coordenadas baricentricas donde `x+y+z = size-1`.
+`from_index` usa la fórmula de números triangulares para conversión O(1).
+
+|`notation/yen.rs`
+|`YEN`: formato JSON para serializar el estado del tablero. Layout como string
+con filas separadas por `/`. Ejemplo: `"B/BR/.R."`.
+
+|`bot/random.rs`
+|`RandomBot` (Easy): elige una celda vacía del array `available_cells` de forma
+aleatoria con `rand::rng()`.
+
+|`bot/edge_bot.rs`
+|`EdgeBot` (Easy): prefiere celdas de los bordes del triángulo (columna 0,
+columna = fila, fila = N-1). Fallback a aleatorio si el borde está lleno.
+
+|`bot/blocker_bot.rs`
+|`BlockerBot` (Medium): escanea fichas del oponente, calcula qué lados le faltan
+mediante máscaras de bits y prioriza celdas adyacentes que bloqueen esos lados.
+
+|`bot/attacker_bot.rs`
+|`AttackerBot` (Hard): simula primero movimientos ganadores inmediatos (propio y del
+oponente). Luego usa BFS de distancias con potencial `50000 / (d1²+d2²+d3²+1)`.
+
+|`bot/pro_bot.rs`
+|`ProBot` (Hard): similar al AttackerBot pero con potencial `1000 / (d⁴+1)`,
+más peso al oponente (×15 vs ×1 propio), centralidad y bonus de bloqueo.
+
+|`bot/ybot_registry.rs`
+|`YBotRegistry`: `HashMap<String, Arc<dyn YBot>>`. `get_random_bot_by_difficulty`
+filtra por nivel y selecciona un bot al azar entre los disponibles.
+
+|`bot_server/mod.rs`
+|Router Axum con 8 endpoints. `AppState` contiene registry de bots +
+`DashMap<username, Arc<UserSession>>` + `Database` MongoDB.
+
+|`bot_server/state.rs`
+|`UserSession`: `Mutex<GameY>` (tablero), `Mutex<BotDifficulty>` (dificultad actual),
+`Mutex<String>` (bot activo). `get_or_create_session` crea sesión por defecto
+(tablero 5×5, Easy, `random_bot`) si no existe.
 |===
 
 ==== White Box _Users_
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-...describes the internal structure of _building block 3_.
-****
-endif::arc42help[]
-
 [cols="1,2" options="header"]
 |===
-|Módulo|Descripción
-|`users-service.js`|Servicio principal Express. Define los endpoints REST,
-gestiona la conexión a MongoDB, hashea contraseñas con bcryptjs y reenvía
-las peticiones de juego a Gamey.
-|`models/user.js`|Modelo Mongoose para usuarios. Incluye los campos username, nickname,
-password (hasheado con bcryptjs), friendCode (código único de 6 caracteres generado con
-nanoid al registrarse, usado para identificar al usuario en el sistema de amigos),
-birthDate, language, iconName, score, following y followers.
-|`models/friendship.js`|Modelo Mongoose para relaciones de amistad. Gestiona el estado
-(pending/accepted) entre pares de usuarios identificados por su friendCode.
-|`monitoring/prometheus`|Configuración de Prometheus para recolección de métricas.
-|`monitoring/grafana`|Dashboards de Grafana para visualización de métricas.
-|===
+|Módulo |Descripción
 
+|`users-service.js`
+|Servicio principal Express (774 líneas, 18 endpoints). Define los endpoints REST,
+gestiona la conexión a MongoDB, hashea contraseñas con bcryptjs y proxifica las
+peticiones de juego a Gamey mediante `fetch` nativo.
+
+|`authMiddleware.js`
+|Middleware de verificación JWT implementado y disponible. Actualmente importado pero
+no aplicado como middleware en ninguna ruta (deuda técnica DT-01).
+
+|`models/user.js`
+|Modelo Mongoose para usuarios: username (único), password (hash bcrypt), friendCode
+(único, 6 chars, generado con nanoid), birthDate, language, nickname (máx. 15 chars),
+iconName, totalScore (XP acumulados).
+
+|`models/friendship.js`
+|Modelo Mongoose para relaciones de amistad. Campo `users` (array de dos usernames,
+indexado), `status` (pending/accepted), `since`, `last_interaction`.
+
+|`monitoring/prometheus/`
+|`prometheus.yml`: configuración de scraping al Users Service cada 5 segundos.
+
+|`monitoring/grafana/`
+|Provisioning automático de datasource (Prometheus) y dashboards de latencia y
+disponibilidad del Users Service.
+|===
 
 === Nivel 3
 
@@ -336,75 +435,94 @@ part of arc42 for additional levels.
 ****
 endif::arc42help[]
 
-==== White Box _ProBot (bot/pro_bot.rs)_
+==== White Box _ProBot / AttackerBot (bot/)_
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Specifies the internal structure of _building block x.1_.
-****
-endif::arc42help[]
-
-El ProBot implementa la estrategia más avanzada en varias fases:
+Los dos bots de dificultad Hard comparten la utilidad `bot_utils.rs` y siguen el
+mismo esquema de evaluación en varias fases:
 
 [cols="1,2" options="header"]
 |===
-|Fase|Descripción
-|*Cálculo de distancias*|Para cada jugador ejecuta BFS desde cada uno de los
-tres lados del tablero, calculando el coste mínimo de conexión. Pasar por una
-celda propia cuesta 0, por una vacía cuesta 1 y por una del oponente cuesta 2.
-|*Potencial exponencial*|Convierte distancias en puntuación con la fórmula
-`1000 / (d⁴ + 1)`, haciendo que la urgencia crezca exponencialmente al
-acercarse a un lado.
-|*Puntuación final*|Combina: potencial del oponente (×15) + potencial propio (×1)
-+ bonificación de centralidad + bonificación de conectividad (+15 si conecta
-≥2 fichas propias) + bloqueo crítico (+1000 si bloquea ≥2 fichas del oponente).
-|*Selección*|Elige la celda vacía con mayor puntuación total.
+|Fase |Descripción
+
+|*Detección de victoria inmediata* (solo AttackerBot)
+|Simula cada celda vacía para el jugador propio y para el oponente. Si encuentra un
+movimiento ganador inmediato lo juega (o lo bloquea). Esta fase no existe en ProBot.
+
+|*Cálculo de distancias BFS*
+|`calculate_all_distances` ejecuta BFS desde cada uno de los tres lados del tablero.
+Pasar por una celda propia cuesta 0, por una vacía cuesta 1, por una del oponente
+cuesta `opp_weight` (AttackerBot=100, ProBot=2).
+
+|*Potencial por celda*
+|AttackerBot: `50000 / (d1²+d2²+d3²+1)`. ProBot: suma de `1000/(d⁴+1)` para cada
+lado. Ambas fórmulas hacen que la urgencia crezca al acercarse a los tres lados.
+
+|*Puntuación final (ProBot)*
+|`(potencial_oponente × 15) + (potencial_propio × 1) + centralidad + bonus_bloqueo`.
+El bonus de bloqueo (+1000) se activa si hay ≥ 2 vecinos del oponente en la celda.
+
+|*Puntuación final (AttackerBot)*
+|`(potencial_propio × 10) + (potencial_oponente × threat_level) + centralidad + conectividad`.
+`threat_level` varía (25/12/0.5) según la magnitud del potencial del oponente.
+
+|*Selección*
+|Elige la celda vacía con mayor puntuación total.
 |===
 
 ==== White Box _Topología Triangular (core/topology/)_
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Specifies the internal structure of _building block x.2_.
-****
-endif::arc42help[]
-
 [cols="1,2" options="header"]
 |===
-|Elemento|Descripción
-|`TriangularTopology`|Pre-calcula en construcción la lista de adyacencia y las
-regiones (lados A, B, C) de cada celda para acceso O(1) durante el juego.
-|Coordenadas trilineales|Cada celda se identifica por (x,y,z) donde x+y+z = size-1.
-Los tres lados del triángulo corresponden a x=0, y=0 y z=0 respectivamente.
-|`GameEngine`|Motor genérico parametrizado con la topología. Gestiona el estado
-de las celdas y detecta la victoria mediante Union-Find sobre los tres lados.
+|Elemento |Descripción
+
+|`TriangularTopology`
+|Pre-calcula en construcción la lista de adyacencia y las regiones (lados A, B, C)
+de cada celda para acceso O(1) durante el juego. Total de celdas = `N×(N+1)/2`.
+
+|Coordenadas baricentricas
+|Cada celda se identifica por `(x,y,z)` donde `x+y+z = size-1`. Los tres lados del
+triángulo corresponden a x=0 (lado A), y=0 (lado B) y z=0 (lado C) respectivamente.
+Las esquinas del triángulo tocan dos lados simultáneamente.
+
+|`GameEngine` (Union-Find)
+|Motor genérico parametrizado con la topología. Al colocar una ficha: (1) crea un
+conjunto con su máscara de región; (2) hace `union` con vecinos del mismo jugador
+combinando máscaras por OR; (3) comprueba si la máscara resultante es `0b111`
+(victoria). `find()` usa path compression para operaciones casi O(1).
 |===
 
 ==== White Box _Temporizador de turno (useGameTimer)_
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Specifies the internal structure of _building block y.1_.
-****
-endif::arc42help[]
-
 [cols="1,2" options="header"]
 |===
-|Elemento|Descripción
-|`UI_TO_ENGLISH_DIFFICULTY`|Mapa de traducción de dificultades de UI (Fácil/Medio/Difícil)
-a claves internas (Easy/Medium/Hard), definido en `constants/config.ts`. Cubre también
-los valores ya en inglés para mayor robustez.
-|`TURN_TIME_LIMIT`|Constante que define el límite en segundos por dificultad:
+|Elemento |Descripción
+
+|`UI_TO_ENGLISH_DIFFICULTY`
+|Mapa de traducción de dificultades de UI (Fácil/Medio/Difícil/Easy/Medium/Hard)
+a claves internas (Easy/Medium/Hard), definido en `constants/config.ts`.
+Cubre también los valores ya en inglés para mayor robustez.
+
+|`TURN_TIME_LIMIT`
+|Constante que define el límite en segundos por dificultad:
 Easy=60s, Medium=30s, Hard=15s.
-|`startTimer(difficulty)`|Arranca un intervalo de 1 segundo que decrementa `timeLeft`. Traduce
-automáticamente el nombre de dificultad mediante `UI_TO_ENGLISH_DIFFICULTY`. Al llegar a 0 llama a
-`onTimeUp()`.
-|`stopTimer()`|Detiene el intervalo activo. Se invoca al hacer clic en una celda,
-al reiniciar partida (mediante `startNewGame`), al rendirse, al terminar o al salir.
-|`startNewGame()`|Llama a `stopTimer()` y `setTimerVisible(false)` antes de resetear el tablero,
-asegurando que el temporizador se reinicia correctamente al cambiar dificultad, tamaño o pulsar
-reiniciar.
+
+|`startTimer(difficulty)`
+|Cancela el `setInterval` activo (si existe) antes de crear uno nuevo, evitando
+duplicados. Traduce la dificultad mediante `UI_TO_ENGLISH_DIFFICULTY`. Al llegar a 0
+llama a `onTimeUp()`.
+
+|`stopTimer()`
+|Detiene el intervalo activo. Se invoca al hacer clic en una celda,
+al reiniciar partida, al rendirse, al terminar o al salir.
+
+|`handleAutoMoveRef` (en `game/main.tsx`)
+|Ref que siempre apunta a la versión más reciente de `handleAutoMove`. Resuelve
+el problema del closure de `setInterval`: `onTimeUp` es un callback estable
+(via `useCallback`) que llama a `handleAutoMoveRef.current`, evitando que el
+intervalo capture una versión desactualizada de la función.
+
+|`startNewGame()`
+|Llama a `stopTimer()` y `setTimerVisible(false)` antes de resetear el tablero,
+asegurando que el temporizador se reinicia correctamente al cambiar dificultad,
+tamaño o pulsar reiniciar.
 |===
