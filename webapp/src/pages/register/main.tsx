@@ -17,6 +17,10 @@ const RegisterPage = () => {
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
   const background = useMenuBackgroundMedia();
 
+  const isSafeToken = (token: string | null): boolean => {
+    return typeof token === 'string' && token.length > 10; // Una validación simple
+  };
+
   const handleRegisterSuccess = (
     playerName: string,
     friendCode: string,
