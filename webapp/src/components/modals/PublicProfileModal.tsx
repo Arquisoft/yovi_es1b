@@ -1,27 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { useEffect, useState, useCallback } from 'react';
 import ReactDOM from 'react-dom';
-import { gameService } from '../../services/gameService';
+import { gameService, type PublicProfileResponse } from '../../services/gameService';
 import '../../css/Game.css';
 
 const iconModules = import.meta.glob('../../assets/icon/*.{png,jpg,jpeg,webp,svg}', {
     eager: true,
     import: 'default',
 }) as Record<string, string>;
-
-interface PublicProfileData {
-    username: string;
-    nickname: string;
-    iconName: string;
-    friendCode: string;
-    stats: {
-        wins: number;
-        losses: number;
-        totalGames: number;
-        totalScore: number;
-    };
-    relationship: 'none' | 'pending' | 'accepted' | 'self';
-}
 
 interface PublicProfileModalProps {
     username: string;
@@ -30,7 +16,7 @@ interface PublicProfileModalProps {
 
 export const PublicProfileModal = ({ username, onClose }: PublicProfileModalProps) => {
     const { t } = useTranslation();
-    const [data, setData] = useState<PublicProfileData | null>(null);
+    const [data, setData] = useState<PublicProfileResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const myUsername = localStorage.getItem('yovi_user') || '';
 

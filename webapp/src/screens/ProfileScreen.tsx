@@ -325,7 +325,7 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
   };
 
   return (
-    <ModalDialog className="modal-backdrop" ariaLabel="Ver mi perfil">
+    <ModalDialog className="modal-backdrop profile-modal-backdrop" ariaLabel="Ver mi perfil">
       <div className="modal-box profile-modal">
         <h3 className="profile-title">{t('profile.title')}</h3>
 
@@ -377,21 +377,18 @@ export const ProfileScreen = ({ isOpen, username, onClose, onIconUpdated }: Prof
               <div className="country-checkbox-box" role="group" aria-label="Seleccion de idioma">
                 {countryOptions.map((option) => {
                   const checked = language === option.value;
-                  const displayState = getLanguageIconDisplayState(option.icon);
                   return (
                     <label key={option.value} className="country-checkbox-item">
                       <span className="country-checkbox-left">
-                        <img
-                          src={displayState.src}
-                          alt={t(option.labelKey)}
-                          className="country-flag-icon"
-                          style={{ display: displayState.iconDisplay }}
-                        />
-                        <span
-                          className="country-flag-fallback"
-                          aria-hidden="true"
-                          style={{ display: displayState.fallbackDisplay }}
-                        />
+                        {option.icon ? (
+                          <img
+                            src={option.icon}
+                            alt={t(option.labelKey)}
+                            className="country-flag-icon"
+                          />
+                        ) : (
+                          <span className="country-flag-fallback" aria-hidden="true" />
+                        )}
                         <span>{t(option.labelKey)}</span>
                       </span>
                       <input

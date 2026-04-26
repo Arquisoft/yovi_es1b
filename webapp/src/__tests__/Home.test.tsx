@@ -7,12 +7,12 @@ import '@testing-library/jest-dom'
 describe('Home', () => {
   beforeEach(() => {
     // 1. IMPORTANTE: Definimos la URL base para que el constructor new URL() no explote
-    vi.stubEnv('VITE_API_URL', 'http://localhost:3000');
+    vi.stubEnv('VITE_API_URL', 'https://localhost:3000');
     
     // 2. Mockeamos location con una URL válida
     vi.stubGlobal('location', { 
-      href: 'http://localhost/',
-      origin: 'http://localhost',
+      href: 'https://localhost/',
+      origin: 'https://localhost',
       pathname: '/'
     });
     

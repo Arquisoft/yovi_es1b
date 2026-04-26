@@ -132,6 +132,16 @@
   font-size: 1.1rem;
 }
 
+.modal-action-list,
+.mode-action-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mode-logout-button {
+  background-color: #dc2626;
+}
+
 .floating-settings-btn {
   position: fixed;
   top: 1rem;

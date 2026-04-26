@@ -132,8 +132,8 @@ jobs:
           registry: ghcr.io
           workdir: webapp
           buildargs: |
-            VITE_API_URL=http://${{ secrets.DEPLOY_HOST }}:3000
-            VITE_GAMEY_URL=http://${{ secrets.DEPLOY_HOST }}:4000
+            VITE_API_URL=https://${{ secrets.DEPLOY_HOST }}:3000
+            VITE_GAMEY_URL=https://${{ secrets.DEPLOY_HOST }}:4000
 
   docker-push-gamey:
     name: Publish gamey image

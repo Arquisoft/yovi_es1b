@@ -35,7 +35,7 @@ const mockJsonResponse = (data: unknown, ok = true) =>
     },
   } as unknown as Response);
 const expectGetCall = (urlFragment: string) => {
-  expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining(urlFragment));
+  expect(String(mockFetch.mock.calls.at(-1)?.[0])).toContain(urlFragment);
 };
 
 const expectGetCallWithOptions = (urlFragment: string) => {

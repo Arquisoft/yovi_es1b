@@ -4,9 +4,15 @@ import bcrypt from 'bcryptjs'
 import mongoose from 'mongoose'
 import User from '../models/user.js'
 import app from '../users-service.js'
+import { generateTestToken, withAuthToken } from './test-utils.js'
+
+vi.mock('../middleware/auth', () => ({
+  isLoggedIn: (req, res, next) => next(), 
+}));
 
 describe('Profile endpoints', () => {
-  
+  const token = generateTestToken()
+
   beforeEach(() => {
     // Evitamos bloqueos de Mongoose por falta de conexión real
     mongoose.set('bufferCommands', false)
@@ -28,8 +34,8 @@ describe('Profile endpoints', () => {
     // El endpoint actual hace await sobre findOne(), así que basta con devolver el usuario mockeado.
     vi.spyOn(User, 'findOne').mockResolvedValue(mockUser)
 
-    const res = await request(app).get('/users/profile/Alice')
-    
+    const res = await withAuthToken(request(app).get('/users/profile/Alice'), token)
+
     expect(res.status).toBe(200)
     expect(res.body.username).toBe('Alice')
     // Comprobamos que contenga la fecha sin importar el formato ISO completo
@@ -50,13 +56,13 @@ describe('Profile endpoints', () => {
     // Primera llamada: busca al usuario para editarlo
     vi.spyOn(User, 'findOne').mockResolvedValue(mockUser)
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .patch('/users/profile/Alice')
       .send({
         language: 'United Kingdom',
         iconName: 'new-icon.png',
         birthDate: '2001-02-03',
-      })
+      }), token)
 
     expect(res.status).toBe(200)
     expect(mockUser.language).toBe('United Kingdom')
@@ -72,9 +78,9 @@ describe('Profile endpoints', () => {
       save: vi.fn(),
     })
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .patch('/users/profile/Alice')
-      .send({ birthDate: 'esto-no-es-una-fecha' })
+      .send({ birthDate: 'esto-no-es-una-fecha' }), token)
 
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/fecha de nacimiento inválida/i)
@@ -88,9 +94,9 @@ describe('Profile endpoints', () => {
       save: vi.fn(),
     })
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .patch('/users/profile/Alice')
-      .send({ nickname: 'abcdefghijklmnop' })
+      .send({ nickname: 'abcdefghijklmnop' }), token)
 
     expect(res.status).toBe(400)
     expect(res.body.error).toMatch(/nickname no puede tener mas de 15 caracteres/i)
@@ -103,12 +109,12 @@ describe('Profile endpoints', () => {
       password: hashed,
     })
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .post('/users/profile/Alice/change-password')
       .send({ 
         currentPassword: 'wrongPass', 
         newPassword: 'newPass123' 
-      })
+      }), token)
 
     expect(res.status).toBe(401)
     expect(res.body.error).toMatch(/la contraseña actual no es correcta/i)
@@ -128,12 +134,12 @@ describe('Profile endpoints', () => {
       .mockResolvedValueOnce(false)
     vi.spyOn(bcrypt, 'hash').mockResolvedValue('hashed-new-password')
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
       .post('/users/profile/Alice/change-password')
       .send({ 
         currentPassword: 'realPass123', 
         newPassword: 'newPass123' 
-      })
+      }), token)
 
     expect(res.status).toBe(200)
     expect(res.body.message).toMatch(/contraseña actualizada correctamente/i)
@@ -163,33 +169,33 @@ describe('Profile endpoints', () => {
         nickname: nicknameDeNahiara 
     });
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .patch('/users/profile/diego')
         .send({ 
             nickname: nicknameDeNahiara 
-        });
+        }), token);
 
     expect(res.status).toBe(409);
     expect(res.body.error).toBe('Nickname ya existe');
 });
 
 it('devuelve 400 si falta algún campo (username, actual o nueva contraseña)', async () => {
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .post('/users/profile/diego/change-password')
         .send({
             currentPassword: 'una',
-        });
+        }), token);
 
     expect(res.status).toBe(400);
 });
 
 it('devuelve 400 si la nueva contraseña tiene menos de 6 caracteres', async () => {
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .post('/users/profile/diego/change-password')
         .send({
             currentPassword: 'passwordActual123',
             newPassword: '123' 
-        });
+        }), token);
 
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('La nueva contraseña debe tener al menos 6 caracteres');
@@ -198,30 +204,36 @@ it('devuelve 400 si la nueva contraseña tiene menos de 6 caracteres', async () 
 it('devuelve 500 si hay un error inesperado en el servidor', async () => {
     vi.spyOn(User, 'findOne').mockRejectedValue(new Error('Fallo de conexión DB'));
 
-    const res = await request(app)
+    const res = await withAuthToken(request(app)
         .post('/users/profile/diego/change-password')
         .send({
             currentPassword: 'passwordActual123',
             newPassword: 'nuevaPassword123'
-        });
+        }), token);
 
     expect(res.status).toBe(500);
     expect(res.body.error).toContain('Error del servidor');
 });
-})
+});
 
 describe('Profile & Search Catch Coverage', () => {
-  it('debe cubrir el catch de /users/search', async () => {
-    vi.spyOn(User, 'find').mockImplementationOnce(() => {
-      throw new Error('Search failed');
-    });
+  const token = generateTestToken(); 
 
-    const res = await request(app).get('/users/search?query=test');
+  it('debe cubrir el catch de /users/search', async () => {
+    const findSpy = vi.spyOn(User, 'find').mockRejectedValue(new Error('Database Error'));
+
+    const res = await withAuthToken(
+      request(app).get('/users/search?query=test'), 
+      token
+    );
+    
     expect(res.status).toBe(500);
+    expect(res.body.error).toBeDefined();
+    
+    findSpy.mockRestore();
   });
 
   it('debe cubrir la lógica de actualización del perfil (PATCH)', async () => {
-    // Este test cubrirá las líneas de language, iconName y nickname
     const res = await request(app)
       .patch('/users/profile/diego')
       .send({
@@ -230,7 +242,6 @@ describe('Profile & Search Catch Coverage', () => {
         nickname: 'DiegoPro'
       });
 
-    // Como el endpoint continúa, esto pondrá esas líneas en verde
     expect(res.status).not.toBe(404);
   });
 });
