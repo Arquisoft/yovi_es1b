@@ -1623,7 +1623,7 @@ body {
 
 .opponent-invite-btn {
   padding: 0.75rem 1.25rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #1d4ed8;
   border: none;
   border-radius: 8px;
   color: white;
@@ -1684,8 +1684,8 @@ body {
 
 /* Modificamos los estilos de los botones de modo de dificultad y tamaño */
 .dropdown-trigger {
-  background: rgba(255, 255, 255, 0.15); /* Igual que nav-btn */
-  color: white;
+  background: #334155; /* Igual que nav-btn */
+  color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 8px 16px;
   border-radius: 8px;
@@ -1702,9 +1702,9 @@ body {
 }
 
 .dropdown-trigger:disabled {
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.4);
-    border-color: rgba(255, 255, 255, 0.1);
+    background: #475569;
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.35);
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -1750,8 +1750,8 @@ body {
 
 /* Estilos para el botón de Puntos de XP */
 .score-badge-button {
-  background: rgba(255, 255, 255, 0.15); /* igual que nav-btn */
-  color: white;
+  background: #334155; /* igual que nav-btn */
+  color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.3);
   padding: 8px 16px;
   border-radius: 8px;

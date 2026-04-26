@@ -114,5 +114,11 @@ describe('Cobertura de Infraestructura y Middlewares', () => {
       expect(res.header['access-control-allow-origin']).toBe('https://localhost');
       expect(res.header['access-control-allow-methods']).toBeDefined();
     });
+    it('no debe reflejar origen no permitido', async () => {
+      const res = await request(app).options('/createuser').set('Origin', 'https://evil.example');
+
+      expect(res.status).toBe(204);
+      expect(res.header['access-control-allow-origin']).toBeUndefined();
+    });
   });
 });

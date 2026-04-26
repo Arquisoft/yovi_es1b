@@ -208,12 +208,12 @@ pub async fn realizar_movimiento(
     let coords = crate::Coordinates::from_index(payload.index, b_size);
     let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(0), coords });
 
-    if !game.check_game_over() {
-        if let Some(bot) = state.bots().find(&bot_name) {
-            if let Some(bot_coords) = bot.choose_move(&*game) {
-                let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(1), coords: bot_coords });
-            }
-        }
+    let bot_coords = (!game.check_game_over())
+        .then(|| state.bots().find(&bot_name))
+        .flatten()
+        .and_then(|bot| bot.choose_move(&*game));
+    if let Some(bot_coords) = bot_coords {
+        let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(1), coords: bot_coords });
     }
 
     let winner_id = match game.status() {
