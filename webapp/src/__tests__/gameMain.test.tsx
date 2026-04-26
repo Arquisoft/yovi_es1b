@@ -397,13 +397,11 @@ describe('game main entrypoint', () => {
 
     ;(globalThis.confirm as ReturnType<typeof vi.fn>).mockReturnValueOnce(false)
     await user.click(screen.getByRole('button', { name: /mode-menu/i }))
-    expect((globalThis.location as { replace?: ReturnType<typeof vi.fn> }).replace).not.toHaveBeenCalled()
-
+    expect((globalThis.location as unknown as { replace: any }).replace).not.toHaveBeenCalled()
     await user.click(screen.getByRole('button', { name: /mode-menu/i }))
     expect(multiplayerInstances.some((instance) =>
       (instance.surrender as ReturnType<typeof vi.fn>).mock.calls.length > 0
     )).toBe(true)
-    expect((globalThis.location as { replace: ReturnType<typeof vi.fn> }).replace).toHaveBeenCalledWith('/gamemode.html')
-  })
+    expect((globalThis.location as unknown as { replace: any }).replace).toHaveBeenCalledWith('/gamemode.html')  })
 })
 
