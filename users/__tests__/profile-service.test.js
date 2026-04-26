@@ -6,10 +6,6 @@ import User from '../models/user.js'
 import app from '../users-service.js'
 import { generateTestToken, withAuthToken } from './test-utils.js'
 
-vi.mock('../middleware/auth', () => ({
-  isLoggedIn: (req, res, next) => next(), 
-}));
-
 describe('Profile endpoints', () => {
   const token = generateTestToken()
 

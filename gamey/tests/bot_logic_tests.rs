@@ -1,4 +1,5 @@
 use gamey::bot::{BlockerBot, ProBot, EdgeBot, AttackerBot};
+use gamey::BotDifficulty;
 use gamey::{GameY, YEN, YBot}; // Ajusta los imports según tu lib.rs
 
 // Función de ayuda para crear un tablero GameY a partir de un string YEN en los tests
@@ -70,6 +71,32 @@ fn test_blocker_bot_prioritizes_defense_over_offense() {
         move_idx, 2, 
         "BlockerBot falló en su heurística de bloqueo esperada"
     );
+}
+
+#[test]
+fn test_blocker_bot_metadata() {
+    let bot = BlockerBot;
+
+    assert_eq!(bot.name(), "blocker_bot");
+    assert_eq!(bot.difficulty(), BotDifficulty::Medium);
+}
+
+#[test]
+fn test_blocker_bot_falls_back_to_first_cell_without_opponent() {
+    let bot = BlockerBot;
+    let board = setup_board(3, "./../...");
+
+    let coords = bot.choose_move(&board).expect("BlockerBot should choose a fallback move");
+
+    assert_eq!(coords.to_index(3), 0);
+}
+
+#[test]
+fn test_blocker_bot_returns_none_on_finished_full_board() {
+    let bot = BlockerBot;
+    let board = setup_board(1, "B");
+
+    assert!(bot.choose_move(&board).is_none());
 }
 
 // =============================================================================

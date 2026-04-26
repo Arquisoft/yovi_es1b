@@ -14,11 +14,10 @@ const Friendship = require('./models/friendship');
 const express = require('express');
 const app = express();
 
-app.get('/', (req, res) => {
-  res.status(200).json({ status: 'ready', message: 'Users Service is up and running' });
-});
 
 const port = 3000;
+
+
 const swaggerUi = require('swagger-ui-express');
 const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
@@ -42,11 +41,18 @@ const { customAlphabet } = require('nanoid');
 const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
 const MAX_NICKNAME_LENGTH = 15;
+const { setGlobalDispatcher, Agent } = require('undici');
+
+// Esto le dice a Node: "Confía en todos los servidores HTTPS locales aunque no tengan certificado oficial"
+setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
+
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://localhost:4000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://gamey:4000';
 const tokenCookieOptions = {
     httpOnly: true,
     secure: process.env.COOKIE_SECURE === 'true',
@@ -93,7 +99,7 @@ const loadSSLConfig = () => {
 };
 
 // Inicializamos la variable usando la función
-const sslOptions = loadSSLConfig();
+//const sslOptions = loadSSLConfig();
 
 // IMPORTANTE: Exporta la función al final del archivo para que el test pueda verla
 // (Usa module.exports o export dependiendo de tu sistema de módulos)
@@ -147,6 +153,10 @@ app.use(express.json());
 
 
 // --- ENDPOINTS (Controllers) ---
+
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ready', message: 'Users Service is up and running' });
+});
 
 
 // ACTION --> Someone sends a Name and we respond with a Welcome Message
@@ -726,7 +736,6 @@ app.post('/surrender',authMiddleware, async (req, res) => {
 
 // Resets the game board WITHOUT affecting stats
 app.post('/reset', authMiddleware, async (req, res) => {
-  // CORRECCIÓN: Añadimos username a la extracción del body
   const { size, difficulty, username } = req.body;
 
   try {
@@ -735,14 +744,21 @@ app.post('/reset', authMiddleware, async (req, res) => {
         ? Math.floor(requestedSize)
         : 5;
 
+    // USAMOS UN DISPATCHER PARA IGNORAR EL SSL AUTOFIRMADO DE RUST
     const rustResponse = await fetch(`${GAMEY_URL}/reset`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
         size: safeSize,
         difficulty: difficulty,
-        player: username //
+        player: username
       }),
+      // Esta es la parte clave para que el fetch no muera
+      dispatcher: new Agent({
+        connect: { rejectUnauthorized: false,
+        timeout: 60000
+        }
+      })
     });
 
     if (!rustResponse.ok) {
@@ -751,6 +767,7 @@ app.post('/reset', authMiddleware, async (req, res) => {
 
     const newBoard = await rustResponse.json();
     res.json({ responseFromRust: newBoard });
+
   } catch (e) {
     console.error("Fallo en reset:", e.message);
     res.status(500).json({ error: 'Error communicating with Rust server. ' + e.message });
@@ -847,18 +864,28 @@ app.post('/users/purchase-xp', async (req, res) => {
 
 
 if (require.main === module) {
-
+  // 1. Conexión a DB
   mongoose.connect(process.env.MONGODB_URI_USERS)
-    .then(() => console.log('Connected to MongoDB'))
-    .catch(err => console.error('Could not connect to MongoDB', err));
+    .then(() => console.log('✅ Connected to MongoDB'))
+    .catch(err => console.error('❌ Could not connect to MongoDB', err));
 
-  const server = sslOptions ? https.createServer(sslOptions, app) : http.createServer(app);
-  createSocketGateway(server, { gameyUrl: GAMEY_URL });
+  // 2. Carga de certificados (Usando la función que ya tienes)
+  const sslOptions = loadSSLConfig(); 
 
-  server.listen(port, () => {
+  // 3. Creación del servidor (HTTPS si hay certs, si no HTTP)
+  const server = sslOptions 
+    ? https.createServer(sslOptions, app) 
+    : http.createServer(app);
+
+  // 4. Configuración de Sockets (Si los usas)
+  if (typeof createSocketGateway === 'function') {
+    createSocketGateway(server, { gameyUrl: GAMEY_URL });
+  }
+
+  // 5. EL ÚNICO LISTEN
+  server.listen(port, '0.0.0.0', () => {
     const protocol = sslOptions ? 'HTTPS' : 'HTTP';
-    const scheme = sslOptions ? 'https' : 'http';
-    console.log(`User Service (${protocol}) listening at ${scheme}://localhost:${port}`);
+    console.log(`🚀 User Service (${protocol}) escuchando en el puerto ${port}`);
   });
 }
 
