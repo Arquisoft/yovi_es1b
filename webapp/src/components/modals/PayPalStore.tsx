@@ -22,7 +22,7 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
     };
 
   return ReactDOM.createPortal(
-    <ModalDialog ref={dialogRef} className="payment-overlay" ariaLabel={t('store.title')} onClose={onClose}>
+    <ModalDialog ref={dialogRef} className="modal-backdrop payment-overlay" ariaLabel={t('store.title')} onClose={onClose}>
       <div className="payment-card">
         <button type="button" className="payment-close" aria-label={t('common.close')} onClick={onClose}>&times;</button>
 

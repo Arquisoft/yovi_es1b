@@ -77,6 +77,23 @@ describe('useMenuBackgroundMedia', () => {
 
     expect(audioEl.volume).toBe(1)
     expect(pauseSpy).toHaveBeenCalledTimes(1)
+    expect(localStorage.getItem('yovi_bg_volume')).toBe('1')
+    expect(localStorage.getItem('yovi_bg_video_paused')).toBe('true')
+  })
+
+  test('restaura volumen y estado de video desde localStorage al montar', () => {
+    localStorage.setItem('yovi_bg_volume', '0.75')
+    localStorage.setItem('yovi_bg_video_paused', 'true')
+    const audioEl = buildMediaElement<HTMLAudioElement>('audio')
+    const videoEl = buildMediaElement<HTMLVideoElement>('video')
+    const playSpy = vi.spyOn(videoEl, 'play').mockResolvedValue(undefined)
+    const pauseSpy = vi.spyOn(videoEl, 'pause')
+
+    render(<HookHarness audioEl={audioEl} videoEl={videoEl} onReady={() => {}} />)
+
+    expect(audioEl.volume).toBe(0.75)
+    expect(pauseSpy).toHaveBeenCalledTimes(1)
+    expect(playSpy).not.toHaveBeenCalled()
   })
 
   test('restaura y persiste yovi_bg_time cuando el audio ya tiene metadata', () => {
