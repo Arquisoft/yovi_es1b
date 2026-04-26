@@ -13,6 +13,7 @@ const authMiddleware = (req, res, next) => {
 
     // LOG DE PRECISIÓN
     const cookieToken = req.cookies?.token;
+    const safePath = req.path.replace(/[^\w\/\-\.]/g, '');
     console.log(`[CHECK] Ruta: ${req.path} | Cookie: ${cookieToken ? 'SÍ' : 'NO'} | Header: ${bearerToken ? 'SÍ' : 'NO'}`);
 
     
