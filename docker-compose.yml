@@ -35,8 +35,7 @@ services:
 
   gamey:
     build:
-      context: .
-      dockerfile: gamey/Dockerfile
+      context: ./gamey
     container_name: gamey
     image: ghcr.io/arquisoft/yovi_es1b-gamey:latest
     ports:

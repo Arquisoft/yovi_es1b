@@ -4,9 +4,9 @@ FROM rust:bookworm AS builder
 WORKDIR /app/gamey
 
 # Copy Cargo.toml and Cargo.lock
-COPY gamey/benches ./benches
-COPY gamey/Cargo.toml gamey/Cargo.lock ./
-COPY gamey/src/ ./src/
+COPY benches ./benches
+COPY Cargo.toml Cargo.lock ./
+COPY src/ ./src/
 
 # Build the application
 RUN cargo build --release
@@ -20,8 +20,6 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/gamey/target/release/gamey .
-
-COPY certs /certs
 
 # Expose the port gamey will listen on
 EXPOSE 4000
