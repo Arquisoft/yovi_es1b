@@ -39,14 +39,20 @@ Given('a user exists with name {string} and nickname {string}', async function (
   // 🛡️ BARRERA: Esperamos a que Mongo guarde
   await page.waitForTimeout(2000);
 
-  // 2. 🚀 EL TRUCO: Usamos page.evaluate para que el navegador (con la sesión de Alice) pida el código
   this.targetFriendCode = await page.evaluate(async ({ apiUrl, user }) => {
-    const response = await fetch(`${apiUrl}/users/profile/${user}`);
+    // 🛡️ EXTRAEMOS EL TOKEN (Asegúrate de que tu app lo guarda con este nombre 'token')
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    
+    const response = await fetch(`${apiUrl}/users/profile/${user}`, {
+      headers: { 
+        'Authorization': `Bearer ${token}` // <--- ESTO ES LO QUE FALTA
+      }
+    });
     const data = await response.json();
-    return data.friendCode || data.code; // Devolvemos el código al test
+    return data.friendCode || data.code;
   }, { apiUrl: API_URL, user: username });
 
-  console.log(`✅ Bob listo. Alice ha conseguido el código real: ${this.targetFriendCode}`);
+  console.log(`✅ Bob listo con código: ${this.targetFriendCode}`);
 });
 
 When('I open the "Social" section', async function () {
