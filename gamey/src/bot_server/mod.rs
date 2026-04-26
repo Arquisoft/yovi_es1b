@@ -29,24 +29,22 @@ pub mod version;
 
 use axum::response::IntoResponse;
 use chrono::Utc;
-use std::sync::Arc;
-use std::str::FromStr;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
 use serde::Deserialize;
+use std::str::FromStr;
+use std::sync::Arc;
 use utoipa::OpenApi;
 
+use axum_server::tls_rustls::RustlsConfig;
 pub use error::ErrorResponse;
 pub use play::{PlayRequest, PlayResponse, play};
-pub use version::*;
-use axum_server::tls_rustls::RustlsConfig;
 use std::net::SocketAddr;
 use std::path::PathBuf;
+pub use version::*;
 
+use crate::bot::{pro_bot::ProBot, random::RandomBot, ybot_registry::YBotRegistry};
 use crate::{BotDifficulty, GameYError, YEN, state::AppState};
-use crate::bot::{
-    pro_bot::ProBot, random::RandomBot, ybot_registry::YBotRegistry
-};
 
 // --- ESTRUCTURAS ---
 
@@ -128,7 +126,9 @@ fn normalize_history_result(raw: &str) -> &'static str {
         .collect();
 
     match stripped.as_str() {
-        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "hasganado" | "ganhaste" => "Victoria",
+        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "hasganado" | "ganhaste" => {
+            "Victoria"
+        }
         _ => "Derrota",
     }
 }
@@ -136,10 +136,16 @@ fn normalize_history_result(raw: &str) -> &'static str {
 fn normalize_history_document(record: &mut serde_json::Value) {
     if let Some(obj) = record.as_object_mut() {
         if let Some(result) = obj.get("result").and_then(|v| v.as_str()) {
-            obj.insert("result".to_string(), serde_json::json!(normalize_history_result(result)));
+            obj.insert(
+                "result".to_string(),
+                serde_json::json!(normalize_history_result(result)),
+            );
         }
         if let Some(result_label) = obj.get("result_label").and_then(|v| v.as_str()) {
-            obj.insert("result_label".to_string(), serde_json::json!(normalize_history_result(result_label)));
+            obj.insert(
+                "result_label".to_string(),
+                serde_json::json!(normalize_history_result(result_label)),
+            );
         }
     }
 }
@@ -155,7 +161,6 @@ fn empty_history_response(page: u64, limit: i64) -> axum::Json<serde_json::Value
 }
 
 // --- SWAGGER ---
-
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
@@ -177,8 +182,10 @@ pub struct ApiDoc;
 
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
-        .merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
-            .url("/api-docs/openapi.json", ApiDoc::openapi()))
+        .merge(
+            utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
+                .url("/api-docs/openapi.json", ApiDoc::openapi()),
+        )
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento))
         .route("/history", axum::routing::get(obtener_historial))
@@ -194,7 +201,6 @@ pub fn create_router(state: AppState) -> axum::Router {
 
 // --- HANDLERS (FUSIÓN DIRECTA) ---
 
-
 pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
@@ -206,14 +212,20 @@ pub async fn realizar_movimiento(
 
     let b_size = game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
-    let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(0), coords });
+    let _ = game.add_move(crate::Movement::Placement {
+        player: crate::PlayerId::new(0),
+        coords,
+    });
 
     let bot_coords = (!game.check_game_over())
         .then(|| state.bots().find(&bot_name))
         .flatten()
         .and_then(|bot| bot.choose_move(&*game));
     if let Some(bot_coords) = bot_coords {
-        let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(1), coords: bot_coords });
+        let _ = game.add_move(crate::Movement::Placement {
+            player: crate::PlayerId::new(1),
+            coords: bot_coords,
+        });
     }
 
     let winner_id = match game.status() {
@@ -223,8 +235,16 @@ pub async fn realizar_movimiento(
 
     let mut final_score = 0;
     if let Some(wid) = winner_id {
-        let mult = match diff_str.as_str() { "Medium" => 2.0, "Hard" => 3.0, _ => 1.0 };
-        final_score = if wid == 0 { (100.0 * mult * (b_size as f32 / 6.0)) as i32 } else { 0 };
+        let mult = match diff_str.as_str() {
+            "Medium" => 2.0,
+            "Hard" => 3.0,
+            _ => 1.0,
+        };
+        final_score = if wid == 0 {
+            (100.0 * mult * (b_size as f32 / 6.0)) as i32
+        } else {
+            0
+        };
 
         let db = state.db.clone();
         let p_name = payload.player.clone();
@@ -247,18 +267,21 @@ pub async fn realizar_movimiento(
         });
     }
 
-    axum::Json(serde_json::json!({ "board": YEN::from(&*game), "winner": winner_id, "score": final_score }))
+    axum::Json(
+        serde_json::json!({ "board": YEN::from(&*game), "winner": winner_id, "score": final_score }),
+    )
 }
 
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
 ) -> impl IntoResponse {
-    let session = state.get_or_create_session(payload.player.as_deref().unwrap_or("default")).await;
+    let session = state
+        .get_or_create_session(payload.player.as_deref().unwrap_or("default"))
+        .await;
     let mut game = session.game.lock().await;
     let size = payload.size.unwrap_or(5).clamp(3, 20);
     *game = crate::core::game::GameY::new(size);
-
 
     if let Some(diff_str) = payload.difficulty {
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
@@ -274,7 +297,6 @@ pub async fn reiniciar_juego(
     }
     axum::Json(YEN::from(&*game))
 }
-
 
 pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
@@ -344,10 +366,21 @@ pub async fn obtener_estadisticas(
         total_score += doc.get("score").and_then(|v| v.as_i64()).unwrap_or(0);
     }
 
-    let wins = collection.count_documents(doc!{"player": &params.username, "result": "Victoria"}).await.unwrap_or(0);
-    let losses = collection.count_documents(doc!{"player": &params.username, "result": "Derrota"}).await.unwrap_or(0);
+    let wins = collection
+        .count_documents(doc! {"player": &params.username, "result": "Victoria"})
+        .await
+        .unwrap_or(0);
+    let losses = collection
+        .count_documents(doc! {"player": &params.username, "result": "Derrota"})
+        .await
+        .unwrap_or(0);
 
-    axum::Json(UserStats { wins: wins as i64, losses: losses as i64, total: (wins + losses) as i64, total_score })
+    axum::Json(UserStats {
+        wins: wins as i64,
+        losses: losses as i64,
+        total: (wins + losses) as i64,
+        total_score,
+    })
 }
 
 // --- PVP HANDLERS ---
@@ -358,7 +391,9 @@ pub async fn reiniciar_juego_pvp(
 ) -> impl IntoResponse {
     let size = payload.size.unwrap_or(6).clamp(3, 20);
     let session = state.upsert_pvp_session(&payload.match_id, size, payload.players.clone());
-    axum::Json(serde_json::json!({ "board": YEN::from(&*session.game.lock().await), "next_turn": payload.players[0] }))
+    axum::Json(
+        serde_json::json!({ "board": YEN::from(&*session.game.lock().await), "next_turn": payload.players[0] }),
+    )
 }
 
 pub async fn realizar_movimiento_pvp(
@@ -376,17 +411,30 @@ pub async fn realizar_movimiento_pvp(
     let mut game = session.game.lock().await;
 
     let coords = crate::Coordinates::from_index(payload.index, game.board_size());
-    let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(p_idx as u32), coords });
+    let _ = game.add_move(crate::Movement::Placement {
+        player: crate::PlayerId::new(p_idx as u32),
+        coords,
+    });
 
     let winner_name = match game.status() {
-        crate::core::game::GameStatus::Finished { winner } => Some(players[winner.id() as usize].clone()),
+        crate::core::game::GameStatus::Finished { winner } => {
+            Some(players[winner.id() as usize].clone())
+        }
         _ => None,
     };
     if let Some(winner) = &winner_name {
         let collection = state.db.collection::<serde_json::Value>("partidas");
         for player in &players {
-            let opponent = players.iter().find(|candidate| *candidate != player).cloned().unwrap_or_default();
-            let result = if player == winner { "Victoria" } else { "Derrota" };
+            let opponent = players
+                .iter()
+                .find(|candidate| *candidate != player)
+                .cloned()
+                .unwrap_or_default();
+            let result = if player == winner {
+                "Victoria"
+            } else {
+                "Derrota"
+            };
             let record = serde_json::json!({
                 "player": player,
                 "date": Utc::now().to_rfc3339(),
@@ -409,13 +457,27 @@ pub async fn realizar_movimiento_pvp(
 }
 
 // Endpoints básicos
-pub async fn status() -> impl IntoResponse { "OK" }
-pub async fn listar_dificultades() -> impl IntoResponse {
-    axum::Json(BotDifficulty::all().iter().map(|d| d.to_string()).collect::<Vec<_>>())
+pub async fn status() -> impl IntoResponse {
+    "OK"
 }
-pub async fn rendirse(axum::extract::State(state): axum::extract::State<AppState>, axum::extract::Json(payload): axum::extract::Json<SurrenderRequest>) -> impl IntoResponse {
+pub async fn listar_dificultades() -> impl IntoResponse {
+    axum::Json(
+        BotDifficulty::all()
+            .iter()
+            .map(|d| d.to_string())
+            .collect::<Vec<_>>(),
+    )
+}
+pub async fn rendirse(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<SurrenderRequest>,
+) -> impl IntoResponse {
     let record = serde_json::json!({ "player": payload.player, "date": Utc::now().to_rfc3339(), "result": "Derrota", "score": 0 });
-    let _ = state.db.collection::<serde_json::Value>("partidas").insert_one(record).await;
+    let _ = state
+        .db
+        .collection::<serde_json::Value>("partidas")
+        .insert_one(record)
+        .await;
     axum::Json(serde_json::json!({ "status": "ok" }))
 }
 
@@ -436,9 +498,15 @@ fn validate_mongodb_uri(raw_uri: &str) -> Result<String, GameYError> {
 
 pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     let uri = validate_mongodb_uri(&std::env::var("MONGODB_URI").unwrap_or_default())?;
-    let client = mongodb::Client::with_uri_str(uri).await.map_err(|e| GameYError::ServerError { message: e.to_string() })?;
+    let client = mongodb::Client::with_uri_str(uri)
+        .await
+        .map_err(|e| GameYError::ServerError {
+            message: e.to_string(),
+        })?;
     let db = client.database("gamey_db");
-    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot)).with_bot(Arc::new(ProBot));
+    let bots = YBotRegistry::new()
+        .with_bot(Arc::new(RandomBot))
+        .with_bot(Arc::new(ProBot));
     let state = AppState::new(bots, db);
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
     let router = create_router(state);
@@ -449,33 +517,42 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
     ) {
         (Some(cert_path), Some(key_path)) => {
             let _ = rustls::crypto::ring::default_provider().install_default();
-            let config = RustlsConfig::from_pem_file(PathBuf::from(cert_path), PathBuf::from(key_path))
-                .await
-                .map_err(|e| GameYError::ServerError {
-                    message: format!("Failed to load TLS certificate: {}", e),
-                })?;
+            let config =
+                RustlsConfig::from_pem_file(PathBuf::from(cert_path), PathBuf::from(key_path))
+                    .await
+                    .map_err(|e| GameYError::ServerError {
+                        message: format!("Failed to load TLS certificate: {}", e),
+                    })?;
 
             axum_server::bind_rustls(addr, config)
                 .serve(router.into_make_service())
                 .await
-                .map_err(|e| GameYError::ServerError { message: e.to_string() })
+                .map_err(|e| GameYError::ServerError {
+                    message: e.to_string(),
+                })
         }
         _ => {
-            let listener = tokio::net::TcpListener::bind(addr)
-                .await
-                .map_err(|e| GameYError::ServerError {
-                    message: format!("Failed to bind to port {}: {}", port, e),
-                })?;
+            let listener =
+                tokio::net::TcpListener::bind(addr)
+                    .await
+                    .map_err(|e| GameYError::ServerError {
+                        message: format!("Failed to bind to port {}: {}", port, e),
+                    })?;
 
             axum::serve(listener, router)
                 .await
-                .map_err(|e| GameYError::ServerError { message: e.to_string() })
+                .map_err(|e| GameYError::ServerError {
+                    message: e.to_string(),
+                })
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
-    use super::{normalize_history_document, normalize_history_result, validate_mongodb_uri, run_bot_server};
+    use super::{
+        normalize_history_document, normalize_history_result, run_bot_server, validate_mongodb_uri,
+    };
 
     #[test]
     fn normalize_history_result_maps_common_win_variants() {
@@ -547,9 +624,9 @@ mod tests {
         let err = result.unwrap_err();
         let err_msg = err.to_string();
         assert!(
-            err_msg.contains("Failed to bind") ||
-                err_msg.contains("Address already in use"),
-            "Se esperaba un error de puerto ocupado, pero se obtuvo: {}", err_msg
+            err_msg.contains("Failed to bind") || err_msg.contains("Address already in use"),
+            "Se esperaba un error de puerto ocupado, pero se obtuvo: {}",
+            err_msg
         );
     }
 }

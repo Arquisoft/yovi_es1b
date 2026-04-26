@@ -7,8 +7,15 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
 const JWT_SECRET = process.env.JWT_SECRET || 'clave_secreta_super_segura_2026';
 
 const authMiddleware = (req, res, next) => {
+
     const authHeader = String(req.headers.authorization || '');
     const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : '';
+
+    // LOG DE PRECISIÓN
+    const cookieToken = req.cookies?.token;
+    console.log(`[CHECK] Ruta: ${req.path} | Cookie: ${cookieToken ? 'SÍ' : 'NO'} | Header: ${bearerToken ? 'SÍ' : 'NO'}`);
+
+    
     const token = req.cookies?.token || bearerToken;
 
     if (!token) {
