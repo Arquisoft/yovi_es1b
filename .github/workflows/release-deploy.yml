@@ -61,6 +61,7 @@ jobs:
       # NUEVO
       MONGODB_URI_USERS: mongodb://localhost:27017/users_test
       MONGODB_URI_GAMEY: mongodb://localhost:27017/gamey_test
+      NODE_TLS_REJECT_UNAUTHORIZED: 0
     # nuevo
     services:
       mongodb:
@@ -75,6 +76,21 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      # --- GENERAR CERTIFICADOS (Con tus nombres: key.pem y cert.pem) ---
+      - name: Create SSL Certificates
+        run: |
+          mkdir -p certs
+          openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+            -keyout certs/key.pem -out certs/cert.pem \
+            -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=localhost"
+
+          # Copiamos a la carpeta de users
+          cp certs/key.pem users/key.pem
+          cp certs/cert.pem users/cert.pem
+
+          # Copiamos a la carpeta de webapp
+          cp certs/key.pem webapp/key.pem
+          cp certs/cert.pem webapp/cert.pem
       - name: Install users dependencies
         run: |
           cd users
@@ -90,7 +106,7 @@ jobs:
       - name: Run E2E tests (start servers and run cucumber)
         run: |
           cd webapp
-          npm run test:e2e
+          VITE_API_URL=https://localhost:3000 npm run test:e2e
 
   docker-push-users:
     name: Publish users image
@@ -132,8 +148,8 @@ jobs:
           registry: ghcr.io
           workdir: webapp
           buildargs: |
-            VITE_API_URL=http://${{ secrets.DEPLOY_HOST }}:3000
-            VITE_GAMEY_URL=http://${{ secrets.DEPLOY_HOST }}:4000
+            VITE_API_URL=https://${{ secrets.DEPLOY_HOST }}:3000
+            VITE_GAMEY_URL=https://${{ secrets.DEPLOY_HOST }}:4000
 
   docker-push-gamey:
     name: Publish gamey image

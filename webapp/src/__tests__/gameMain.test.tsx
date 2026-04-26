@@ -7,11 +7,15 @@ const gameServiceMocks = {
   getDifficulties: vi.fn(),
   getProfile: vi.fn(),
   getHistory: vi.fn(),
+  logout: vi.fn(),
+  addXP: vi.fn(),
 }
 
 const gameLogicMocks = {
   boardData: { size: 5, turn: 0, players: ['B', 'R'], layout: '.....' },
   winner: null as number | null,
+  setBoardData: vi.fn(),
+  setWinner: vi.fn(),
   executeHumanMove: vi.fn(),
   executeAutoMove: vi.fn(),
   resetGame: vi.fn(),
@@ -19,6 +23,7 @@ const gameLogicMocks = {
 }
 
 let triggerTimeUp: (() => void) | null = null
+const multiplayerInstances = vi.hoisted(() => [] as Array<Record<string, unknown>>)
 
 const renderGameApp = async (ui: Parameters<typeof render>[0]) => {
   let result: ReturnType<typeof render> | undefined
@@ -51,6 +56,7 @@ vi.mock('../screens/GameScreen', () => ({
       <button type="button" onClick={() => (props.onFetchHistory as () => void)()}>history</button>
       <button type="button" onClick={() => (props.onExit as () => void)()}>exit</button>
       <button type="button" onClick={() => (props.onCellClick as (index: number) => void)(3)}>cell</button>
+      <button type="button" onClick={() => (props.onGoToModeMenu as () => void)?.()}>mode-menu</button>
     </div>
   ),
 }))
@@ -123,8 +129,17 @@ vi.mock('../screens/TutorialScreen', () => ({
 }))
 
 vi.mock('../components/modals/FriendsPanel', () => ({
-  FriendsPanel: ({ onTriggerPublicProfile }: { onTriggerPublicProfile: (value: string) => void }) => (
-    <button type="button" onClick={() => onTriggerPublicProfile('friend-user')}>trigger-public-profile</button>
+  FriendsPanel: ({
+    onTriggerPublicProfile,
+    onInviteFriend,
+  }: {
+    onTriggerPublicProfile: (value: string) => void
+    onInviteFriend?: (value: string) => void
+  }) => (
+    <div>
+      <button type="button" onClick={() => onTriggerPublicProfile('friend-user')}>trigger-public-profile</button>
+      <button type="button" onClick={() => onInviteFriend?.('rival-user')}>invite-friend</button>
+    </div>
   ),
 }))
 
@@ -162,6 +177,23 @@ vi.mock('../services/gameService', () => ({
   gameService: gameServiceMocks,
 }))
 
+vi.mock('../strategies/MultiplayerStrategy', () => ({
+  MultiplayerStrategy: vi.fn().mockImplementation(function MockStrategy(config: Record<string, unknown>) {
+    const instance = {
+      config,
+      initialize: vi.fn().mockResolvedValue(undefined),
+      dispose: vi.fn(),
+      surrender: vi.fn().mockResolvedValue(undefined),
+      onCellClick: vi.fn().mockResolvedValue(undefined),
+      challengePlayer: vi.fn(),
+      acceptChallenge: vi.fn(),
+      setMatchId: vi.fn(),
+    }
+    multiplayerInstances.push(instance)
+    return instance
+  }),
+}))
+
 const loadGameMain = async () => import('../pages/game/main')
 
 describe('game main entrypoint', () => {
@@ -176,6 +208,7 @@ describe('game main entrypoint', () => {
       href: 'http://localhost/game.html',
       origin: 'http://localhost',
       pathname: '/game.html',
+      replace: vi.fn(),
     })
     vi.spyOn(window.crypto, 'getRandomValues').mockImplementation((array) => {
       ;(array as Uint32Array)[0] = 0
@@ -188,12 +221,18 @@ describe('game main entrypoint', () => {
     gameServiceMocks.getDifficulties.mockResolvedValue(['Easy', 'Hard'])
     gameServiceMocks.getProfile.mockResolvedValue({ iconName: 'hombre1.png' })
     gameServiceMocks.getHistory.mockResolvedValue({ data: [], total_pages: 1, page: 1 })
+    gameServiceMocks.logout.mockResolvedValue({})
+    gameServiceMocks.addXP.mockResolvedValue({})
     gameLogicMocks.executeHumanMove.mockResolvedValue({ responseFromRust: null, winner: null })
     gameLogicMocks.executeAutoMove.mockResolvedValue({ responseFromRust: null, winner: null })
     gameLogicMocks.resetGame.mockResolvedValue(null)
     gameLogicMocks.surrender.mockResolvedValue(undefined)
+    gameLogicMocks.setBoardData.mockReset()
+    gameLogicMocks.setWinner.mockReset()
     triggerTimeUp = null
+    multiplayerInstances.length = 0
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    vi.stubGlobal('confirm', vi.fn(() => true))
   })
 
   afterEach(() => {
@@ -323,6 +362,48 @@ describe('game main entrypoint', () => {
 
     await user.click(screen.getByRole('button', { name: /go-login/i }))
     expect((globalThis.location as { href: string }).href).toBe('/login.html')
+  })
+
+  test('en multijugador usa estrategia para invitar, aceptar y abandonar al menu', async () => {
+    localStorage.setItem('yovi_user', 'alice')
+    const user = userEvent.setup()
+
+    const { GameAppContent } = await loadGameMain()
+    await renderGameApp(<GameAppContent gameMode="multiplayer" isGuestMode={false} storedUsername="alice" />)
+
+    const strategy = multiplayerInstances.at(-1) as {
+      config: Record<string, (...args: unknown[]) => void>
+      challengePlayer: ReturnType<typeof vi.fn>
+      acceptChallenge: ReturnType<typeof vi.fn>
+      surrender: ReturnType<typeof vi.fn>
+      initialize: ReturnType<typeof vi.fn>
+    }
+
+    expect(strategy.initialize).toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: /invite-friend/i }))
+    expect(multiplayerInstances.some((instance) =>
+      (instance.challengePlayer as ReturnType<typeof vi.fn>).mock.calls.some(([arg]) => arg === 'rival-user')
+    )).toBe(true)
+
+    await act(async () => {
+      strategy.config.onChallenge?.({ challenger: 'rival-user', challengeId: 'challenge-1' })
+    })
+
+    await user.click(screen.getByRole('button', { name: /aceptar/i }))
+    expect(multiplayerInstances.some((instance) =>
+      (instance.acceptChallenge as ReturnType<typeof vi.fn>).mock.calls.some(([arg]) => arg === 'challenge-1')
+    )).toBe(true)
+
+    ;(globalThis.confirm as ReturnType<typeof vi.fn>).mockReturnValueOnce(false)
+    await user.click(screen.getByRole('button', { name: /mode-menu/i }))
+    expect((globalThis.location as { replace?: ReturnType<typeof vi.fn> }).replace).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: /mode-menu/i }))
+    expect(multiplayerInstances.some((instance) =>
+      (instance.surrender as ReturnType<typeof vi.fn>).mock.calls.length > 0
+    )).toBe(true)
+    expect((globalThis.location as { replace: ReturnType<typeof vi.fn> }).replace).toHaveBeenCalledWith('/gamemode.html')
   })
 })
 

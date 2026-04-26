@@ -5,10 +5,8 @@ const API_URL = 'https://localhost:3000';
 
 Given('the login page is open', async function () {
   const page = this.page;
-  if (!page) throw new Error('Page not initialized');
   
-  // 1. Antes de loguearnos, registramos al usuario en la DB para que exista
-  // Lo hacemos mediante una petición directa a la API para ir más rápido
+  // 1. Aseguramos que el usuario existe en la DB antes de intentar entrar
   await page.evaluate(async (apiUrl) => {
     await fetch(`${apiUrl}/createuser`, {
       method: 'POST',
@@ -20,29 +18,32 @@ Given('the login page is open', async function () {
         birthDate: '2000-01-01',
         language: 'Spain'
       }),
-    });
+    }).catch(() => {}); // Si ya existe, no pasa nada
   }, API_URL);
 
-  // 2. Vamos a la página de login
   await page.goto('https://localhost:5173/login.html'); 
 });
 
 When('I login with {string} and {string}', async function (username, password) {
   const page = this.page;
-  
-  // Ajusta estos IDs según cómo los tengas en tu LoginScreen.tsx
+  // Usamos los IDs que tienes en tu LoginScreen
   await page.fill('#login-username', username);
   await page.fill('#login-password', password);
   await page.click('button[type="submit"]');
 });
 
-Then('I should be redirected to the game page and see {string}', async function (expected) {
+Then('I should be redirected to the game page and see {string}', async function (expectedUsername) {
   const page = this.page;
   
-  // 1. Esperamos la redirección
-  await page.waitForURL('**/game.html', { timeout: 10000 });
+  // 1. Esperamos a que cargue la pantalla de la selección de modo (gamemode.html)
+  await page.waitForURL('**/gamemode.html', { timeout: 15000 });
 
-  // 2. Verificamos que el usuario está en el localStorage
+  // 2. Verificamos el título h1 según el HTML que me has pasado
+  const title = await page.locator('.gamemode-title').innerText();
+  assert.strictEqual(title, 'Selecciona tu modo de juego');
+
+  // 3. Como en esa pantalla no sale el nombre "Alice" escrito, 
+  // verificamos que el login ha funcionado comprobando el localStorage
   const storedUser = await page.evaluate(() => localStorage.getItem('yovi_user'));
-  assert.strictEqual(storedUser, expected, `El usuario no se guardó correctamente. Esperado: ${expected}, Encontrado: ${storedUser}`);
+  assert.strictEqual(storedUser, expectedUsername, `Se esperaba el usuario ${expectedUsername} en el almacenamiento`);
 });

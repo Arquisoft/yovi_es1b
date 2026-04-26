@@ -1,6 +1,6 @@
 ﻿
 
-// URL del backend (se inyecta desde docker-compose o se usa localhost por defecto)
+// URL del backend. En Docker usamos same-origin y Nginx proxya la API.
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000';
 
 // Tiempo lÃ­mite en segundos segÃºn dificultad (Easy=60s, Medium=30s, Hard=15s)

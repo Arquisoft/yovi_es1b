@@ -1,24 +1,39 @@
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'node:path';
+import fs from 'node:fs';
+
+// 🔍 Definimos las rutas de los certificados
+const keyPath = resolve(__dirname, '../certs/key.pem');
+const certPath = resolve(__dirname, '../certs/cert.pem');
+
+// 🛡️ Comprobamos si ambos archivos existen
+const useHttps = fs.existsSync(keyPath) && fs.existsSync(certPath);
 
 export default defineConfig({
-  // Plugins necesarios para React
   plugins: [react()],
 
-  // Configuración multi-página (MPA)
+  server: {
+    port: 5173,
+    https: useHttps ? {
+      key: fs.readFileSync(keyPath),
+      cert: fs.readFileSync(certPath),
+    } : undefined, 
+    cors: true,
+  },
+
   build: {
     rollupOptions: {
       input: {
         main: resolve(__dirname, 'index.html'),
         login: resolve(__dirname, 'login.html'),
         register: resolve(__dirname, 'register.html'),
+        gamemode: resolve(__dirname, 'gamemode.html'),
         game: resolve(__dirname, 'game.html'),
       },
     },
   },
 
-  // Configuración de Vitest
   test: {
     globals: true,
     environment: 'jsdom',

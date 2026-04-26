@@ -279,6 +279,42 @@ body {
   color: #fff;
 }
 
+.turn-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+.turn-pill-active {
+  color: #052e16;
+  background: #86efac;
+  border-color: #22c55e;
+}
+
+.turn-pill-red {
+  color: #450a0a;
+  background: #fecaca;
+  border-color: #ef4444;
+}
+
+.turn-pill-waiting {
+  color: #334155;
+  background: #e2e8f0;
+}
+
+.turn-pill-icon {
+  min-width: 1rem;
+  text-align: center;
+}
+
 .bot-guide-box {
   width: 26rem;
   min-height: 8rem;
@@ -1028,12 +1064,24 @@ body {
   font-weight: 600;
 }
 
-.profile-modal {
-  width: min(88vw, 40rem);
-  max-height: 90vh;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
+.profile-modal-backdrop {
+    padding: 1.25rem;
+  }
+
+  .profile-modal-backdrop .modal-shell {
+    width: min(96vw, 76rem);
+    max-height: 92vh;
+  }
+
+  .modal-box.profile-modal {
+    width: 100%;
+    max-width: none;
+    max-height: 92vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 1.75rem;
+    box-sizing: border-box;
+  }
 
 .profile-title {
   margin: 0;
@@ -1045,10 +1093,11 @@ body {
 }
 
 .profile-modal-layout {
-  display: grid;
-  grid-template-columns: minmax(8rem, 9.5rem) 1fr;
-  gap: 1.25rem;
-}
+    display: grid;
+    grid-template-columns: minmax(12rem, 16rem) minmax(32rem, 1fr);
+    gap: 2rem;
+    align-items: start;
+  }
 
 .profile-left-pane {
   display: flex;
@@ -1059,8 +1108,8 @@ body {
 }
 
 .profile-main-avatar {
-  width: 8rem;
-  height: 8rem;
+    width: 11rem;
+    height: 11rem;
   border-radius: 1rem;
   object-fit: cover;
   border: 2px solid #d2d9e4;
@@ -1108,13 +1157,14 @@ body {
   flex-direction: column;
   gap: 0.85rem;
   min-width: 0;
+  width: 100%;
 }
 
 .profile-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.75rem;
-}
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
 
 .profile-password-section {
   display: grid;
@@ -1125,10 +1175,11 @@ body {
 }
 
 .profile-password-row {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.6rem;
+  }
 
 .profile-password-row .form-input {
   flex: 1 1 auto;
@@ -1166,7 +1217,32 @@ body {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.75rem;
+  margin-top: 1rem;
 }
+
+.profile-modal .form-input,
+.profile-modal .country-checkbox-box {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+.profile-modal .country-checkbox-box {
+    grid-template-columns: repeat(4, minmax(8rem, 1fr));
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .profile-modal .country-checkbox-item {
+    min-width: 0;
+  }
+
+  .profile-modal-actions {
+    position: sticky;
+    bottom: -1.75rem;
+    padding-top: 0.85rem;
+    padding-bottom: 0.1rem;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.96) 35%);
+  }
 
 /* Ajuste opcional por si el botón queda muy cuadrado */
 .nav-btn-icon-frame {
@@ -1263,22 +1339,94 @@ body {
   background: linear-gradient(90deg, #ff6b6b, #dc3545);
 }
 
+.turn-timer-progress {
+  width: 100%;
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.15);
+  display: block;
+}
+
+.turn-timer-progress::-webkit-progress-bar {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 999px;
+}
+
+.turn-timer-progress::-webkit-progress-value {
+  background: linear-gradient(90deg, #4da6ff, #007bff);
+  border-radius: 999px;
+  transition: width 0.9s linear, background 0.4s ease;
+}
+
+.turn-timer-progress::-moz-progress-bar {
+  background: linear-gradient(90deg, #4da6ff, #007bff);
+  border-radius: 999px;
+}
+
+.turn-timer-progress-urgent::-webkit-progress-value {
+  background: linear-gradient(90deg, #ff6b6b, #dc3545);
+}
+
+.turn-timer-progress-urgent::-moz-progress-bar {
+  background: linear-gradient(90deg, #ff6b6b, #dc3545);
+}
+
+.pending-friend-btn-header {
+  margin-left: auto;
+  position: relative;
+}
+
 @keyframes pulse-urgent {
   from { transform: scale(1); }
   to   { transform: scale(1.12); }
 }
 
-@media (max-width: 750px) {
+  @media (max-width: 750px) {
+  .profile-modal-backdrop {
+    padding: 0.6rem;
+  }
+
+  .profile-modal-backdrop .modal-shell {
+    width: 96vw;
+  }
+
+  .modal-box.profile-modal {
+    padding: 1rem;
+  }
+
   .profile-modal-layout {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .profile-form-grid {
     grid-template-columns: 1fr;
   }
 
+  .profile-password-row {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-modal .country-checkbox-box {
+    grid-template-columns: 1fr;
+  }
+
   .profile-icon-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 751px) and (max-width: 1050px) {
+  .profile-modal-layout {
+    grid-template-columns: minmax(10rem, 13rem) minmax(24rem, 1fr);
+    gap: 1.25rem;
+  }
+
+  .profile-modal .country-checkbox-box {
+    grid-template-columns: repeat(2, minmax(8rem, 1fr));
   }
 }
 
@@ -1288,332 +1436,406 @@ body {
   }
 }
 
+/* --- RIVAL SLOT STYLES --- */
 
-
-/* Contenedor relativo para que la lista se posicione respecto a él */
-.custom-dropdown-container {
-  position: relative;
-  display: inline-block;
-  margin: 0 10px;
+/* Ícono vacío en multijugador sin rival */
+.avatar-empty {
+  opacity: 0.3;
+  filter: grayscale(100%);
 }
 
-/* Estilo del botón (Trigger) */
-.dropdown-trigger {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 800;
-  transition: all 0.3s ease;
-  min-width: 190px;
+/* Contenedor para el botón de invitación */
+.rival-invite-container {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: center;
   width: 100%;
-  display: inline-flex;
-  flex-direction: row;
+}
+
+/* Botón de invitación de amigos */
+.invite-friend-button {
+  display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   gap: 0.5rem;
-  line-height: 1.05;
+  padding: 0.6rem 1rem;
+  background: linear-gradient(135deg, #00d4ff 0%, #0055ff 100%);
+  border: none;
+  border-radius: 0.5rem;
+  color: #000;
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.4);
+  letter-spacing: 1px;
+}
+
+.invite-friend-button:hover {
+  background: linear-gradient(135deg, #00f2ff 0%, 0055ff 100%);
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
+  transform: translateY(-2px);
+}
+
+.invite-button-icon {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.invite-button-text {
   white-space: nowrap;
 }
 
-.dropdown-trigger-text {
-  display: inline-flex;
+/* === OPPONENT CARD COMPONENT STYLES === */
+
+.opponent-card {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  gap: 0.3rem;
-  min-width: 0;
-  font-size: 0.9rem;
-  font-weight: 800;
-  text-align: left;
+  gap: 0.75rem;
+  padding: 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 200px;
+  justify-content: center;
 }
 
-.dropdown-trigger-legacy-text {
+.opponent-card--waiting {
+  background: rgba(100, 100, 100, 0.08);
+  border-color: rgba(200, 200, 200, 0.15);
+}
+
+.opponent-card--connecting {
+  background: rgba(255, 200, 100, 0.08);
+  border-color: rgba(255, 200, 100, 0.2);
+  animation: opponent-pulse-connect 1.5s ease-in-out infinite;
+}
+
+@keyframes opponent-pulse-connect {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.opponent-card--connected {
+  background: rgba(100, 200, 100, 0.08);
+  border-color: rgba(100, 200, 100, 0.3);
+  border: 2px solid rgba(100, 200, 100, 0.3);
+  box-shadow: 0 0 20px rgba(100, 200, 100, 0.15);
+}
+
+.opponent-card--disconnected {
+  background: rgba(200, 100, 100, 0.08);
+  border-color: rgba(200, 100, 100, 0.2);
+}
+
+.opponent-avatar-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 120px;
+}
+
+.opponent-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+}
+
+.opponent-avatar--active {
+  border-color: rgba(100, 200, 100, 0.5);
+  box-shadow: 0 0 25px rgba(100, 200, 100, 0.4), inset 0 0 10px rgba(100, 200, 100, 0.1);
+  animation: opponent-avatar-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes opponent-avatar-glow {
+  0%, 100% { box-shadow: 0 0 25px rgba(100, 200, 100, 0.4), inset 0 0 10px rgba(100, 200, 100, 0.1); }
+  50% { box-shadow: 0 0 35px rgba(100, 200, 100, 0.6), inset 0 0 15px rgba(100, 200, 100, 0.2); }
+}
+
+.opponent-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(100, 100, 100, 0.2), rgba(150, 150, 150, 0.15));
+  border: 3px dashed rgba(200, 200, 200, 0.3);
+}
+
+.opponent-placeholder-icon {
+  font-size: 3rem;
+  color: rgba(200, 200, 200, 0.4);
+  font-weight: bold;
+}
+
+.opponent-turn-indicator {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
+  top: -8px;
+  right: -8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(100, 200, 100, 0.9);
+  font-size: 1.2rem;
+  animation: opponent-turn-pulse 1s ease-in-out infinite;
+  box-shadow: 0 0 15px rgba(100, 200, 100, 0.6);
+}
+
+@keyframes opponent-turn-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.opponent-info {
+  text-align: center;
+  width: 100%;
+}
+
+.opponent-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.25rem;
   overflow: hidden;
-  clip: rect(0, 0, 0, 0);
+  text-overflow: ellipsis;
   white-space: nowrap;
-  border: 0;
 }
 
-.dropdown-trigger-label {
-  font-size: inherit;
-  font-weight: inherit;
-  letter-spacing: 0.01em;
+.opponent-status {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
 }
 
-.dropdown-trigger-value {
-  font-size: inherit;
-  font-weight: inherit;
+.opponent-invite-btn {
+  padding: 0.75rem 1.25rem;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
-.dropdown-trigger-arrow {
-  font-size: 0.78rem;
-  line-height: 1;
-  flex: 0 0 auto;
-  flex-shrink: 0;
-  text-align: left;
+.opponent-invite-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
 }
 
-.dropdown-trigger:hover, .dropdown-trigger.active {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: #00d4ff; /* Color cian */
-  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+.opponent-invite-btn:active {
+  transform: translateY(-1px);
+}
+
+.opponent-invite-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+@media (max-width: 600px) {
+  .opponent-card {
+    padding: 0.75rem;
+    min-height: auto;
+    gap: 0.5rem;
+  }
+
+  .opponent-avatar-container {
+    width: 100px;
+    height: 100px;
+  }
+
+  .opponent-name {
+    font-size: 1rem;
+  }
+
+  .opponent-status {
+    font-size: 0.75rem;
+  }
+
+  .opponent-invite-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Modificamos los estilos de los botones de modo de dificultad y tamaño */
+.dropdown-trigger {
+  background: #334155; /* Igual que nav-btn */
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.dropdown-trigger:hover:not(:disabled) {
+  background: #bc84ee; /* Morado suave al pasar el ratón, igual que nav-btn */
+  transform: translateY(-2px);
+  border-color: white;
 }
 
 .dropdown-trigger:disabled {
-  cursor: not-allowed;
-  opacity: 0.45;
-  filter: grayscale(0.9);
-  box-shadow: none;
-}
-
-.dropdown-trigger:disabled:hover,
-.dropdown-trigger:disabled.active {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: none;
-}
-
-/* La lista flotante */
-.dropdown-floating-list {
-  position: absolute;
-  top: calc(100% + 5px); /* Aparece justo debajo del botón */
-  left: 0;
-  background: #1a1a1a; /* Fondo oscuro sólido */
-  border: 1px solid #333;
-  border-radius: 8px;
-  min-width: 100%;
-  z-index: 9999; /* Asegura que flote sobre el tablero */
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8);
-  overflow: hidden;
-  animation: fadeInDown 0.2s ease-out;
-}
-
-/* Los items de la lista */
-.dropdown-item {
-  padding: 12px 16px;
-  color: #ccc;
-  cursor: pointer;
-  font-size: 0.85rem;
-  text-align: left;
-  transition: all 0.2s;
-}
-
-.dropdown-item:hover {
-  background: #00d4ff;
-  color: #000;
-  font-weight: bold;
-}
-
-/* Animación de entrada */
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
+    background: #475569;
+    color: #f8fafc;
+    border-color: rgba(255, 255, 255, 0.35);
+    cursor: not-allowed;
+    box-shadow: none;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+
+  .custom-dropdown-container {
+    position: relative;
   }
-}
 
+  .dropdown-floating-list {
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    left: 0;
+    z-index: 30;
+    min-width: 100%;
+    padding: 0.35rem;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 8px;
+    background: #f8fafc;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.32);
+  }
 
+  .dropdown-item {
+    display: block;
+    width: 100%;
+    min-width: 8rem;
+    padding: 0.65rem 0.85rem;
+    border: 0;
+    border-radius: 6px;
+    background: #ffffff;
+    color: #111827;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+  }
 
-/* PUNTOS */
+  .dropdown-item:hover,
+  .dropdown-item:focus-visible {
+    background: #2563eb;
+    color: #ffffff;
+    outline: none;
+  }
 
-.nav-center-score {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: 0.45rem;
-  flex: 1; /* Esto ayuda a que se mantenga en el centro si el nav es flex */
-}
-
-/* El botón/insignia de XP */
+/* Estilos para el botón de Puntos de XP */
 .score-badge-button {
-  background: rgba(20, 20, 20, 0.6); /* Fondo oscuro semitransparente */
-  backdrop-filter: blur(8px); /* Efecto cristal */
-  border: 2px solid #dcfd8b; /* Tu color verde lima característico */
-  border-radius: 12px;
-  padding: 6px 16px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  background: #334155; /* igual que nav-btn */
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: bold;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  box-shadow: 
-    0 0 10px rgba(220, 253, 139, 0.2), 
-    inset 0 0 5px rgba(220, 253, 139, 0.1);
-}
-
-/* Efecto al pasar el ratón */
-.score-badge-button:hover {
-  transform: translateY(-2px) scale(1.02);
-  background: rgba(220, 253, 139, 0.15);
-  box-shadow: 
-    0 0 20px rgba(220, 253, 139, 0.4), 
-    0 0 40px rgba(220, 253, 139, 0.1);
-  border-color: #fff; /* El borde brilla en blanco al pasar el ratón */
-}
-
-/* La estrella dorada */
-.score-star {
-  color: #ffd700;
-  font-size: 1.3rem;
-  line-height: 1;
-  filter: drop-shadow(0 0 5px rgba(255, 214, 0, 0.8));
-  animation: star-pulse 2s infinite ease-in-out;
-}
-
-/* El texto de los puntos */
-.score-text {
-  color: #dcfd8b;
-  font-weight: 800;
-  font-family: 'Orbitron', 'Courier New', monospace; /* Tipografía técnica */
-  font-size: 1.1rem;
-  letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(220, 253, 139, 0.5);
-}
-
-.score-caption {
-  color: #f7fbff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-}
-
-/* Animación sutil para la estrella */
-@keyframes star-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.2); opacity: 0.8; }
-}
-
-/* Estilo para cuando el puntaje sube (puedes añadir esta clase por JS si quieres) */
-.score-badge-button.updating {
-  animation: flash-update 0.5s ease-out;
-}
-
-@keyframes flash-update {
-  0% { background: #dcfd8b; color: #000; }
-  100% { background: rgba(20, 20, 20, 0.6); }
-}
-
-
-
-
-/* paypal */
-
-/* El fondo oscuro que cubre toda la pantalla */
-.payment-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  padding: 1rem;
-  background: rgba(0, 0, 0, 0.85); /* Oscurece el fondo del juego */
+  transition: all 0.3s ease;
   display: flex;
-  justify-content: center;
   align-items: center;
-  overflow-y: auto;
-  z-index: 9999; /* Asegura que esté por encima de TODO el tablero */
-  backdrop-filter: blur(5px); /* Desenfoca el tablero detrás */
+  gap: 0.5rem;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* La tarjeta blanca/oscura de la tienda */
+.score-badge-button:hover {
+  background: #bc84ee;
+  transform: translateY(-2px);
+  border-color: white;
+}
+
+.score-star {
+  color: #ffc107; /* Amarillo para la estrella */
+  font-size: 1.1rem;
+}
+
+/* Estilos para la ventana modal de PayPal */
 .payment-card {
-  background: #f6f3e8; /* Fondo claro para que el texto de PayPal sea legible */
-  border: 2px solid #ffd700; /* Borde dorado */
-  border-radius: 15px;
-  padding: 3rem 1.5rem 1.5rem;
-  width: min(400px, calc(100vw - 2rem));
-  max-height: calc(100vh - 2rem);
-  overflow-y: auto;
-  box-sizing: border-box;
+  background: rgba(18, 28, 48, 0.95); /* Color oscuro como el tablero */
+  border: 2px solid rgba(100, 200, 100, 0.3); /* Un borde verde para denotar 'tienda' */
+  border-radius: 12px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  color: white;
   text-align: center;
   position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  color: #1f1f1f;
+  box-shadow: 0 14px 34px rgba(5, 12, 26, 0.8);
 }
 
-/* Título de la tienda */
-.payment-title {
-  color: #8a6a00;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.8rem;
-  margin: 0;
-}
-
-/* Subtítulo */
-.payment-subtitle {
-  color: #333333;
-  font-size: 0.9rem;
-  opacity: 0.8;
-}
-
-/* Caja del producto (1000 XP - 1€) */
-.payment-item-detail {
-  background: rgba(255, 255, 255, 0.75);
-  border-radius: 10px;
-  padding: 15px;
-  border: 1px solid #d6d1c1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #1f1f1f;
-  margin-bottom: 10px;
-}
-
-.price-tag {
-  color: #dcfd8b;
-  font-weight: bold;
-  font-size: 1.2rem;
-}
-
-/* Botón de cerrar (X) */
 .payment-close {
   position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  top: 10px;
+  right: 15px;
   background: none;
   border: none;
-  color: #1f1f1f;
+  color: white;
   font-size: 1.5rem;
-  line-height: 1;
-  padding: 0;
   cursor: pointer;
-  opacity: 0.65;
+  transition: color 0.3s ease;
 }
 
 .payment-close:hover {
-  opacity: 1;
+  color: #dc3545;
 }
 
-/* Contenedor de los botones de PayPal */
+.payment-title {
+  margin-top: 0;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #cce4ff;
+}
+
+.payment-subtitle {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.payment-item-detail {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #ffc107;
+  border: 1px dashed rgba(255, 193, 7, 0.5);
+}
+
 .paypal-button-container {
-  width: 100%;
-  margin-top: 10px;
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid #ddd7c3;
-  border-radius: 12px;
-  padding: 12px;
-  box-sizing: border-box;
+  margin-bottom: 1rem;
 }
 
 .payment-footer {
   font-size: 0.75rem;
-  color: #555;
-  margin-top: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
 }

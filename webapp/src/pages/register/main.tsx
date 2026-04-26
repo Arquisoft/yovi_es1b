@@ -22,10 +22,14 @@ const RegisterPage = () => {
     friendCode: string,
     icon?: string | null,
     language?: string | null,
-    nickname?: string | null
+    nickname?: string | null,
+    token?: string | null
   ) => {
     if (persistUserSession(playerName, { friendCode, icon, language, nickname }) && activateRegisteredSession(playerName)) {
-      globalThis.location.href = '/game.html';
+      if (token) {
+        sessionStorage.setItem('token', token);
+      }
+      globalThis.location.href = '/gamemode.html';
     }
   };
 

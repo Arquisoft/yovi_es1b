@@ -27,40 +27,35 @@ pub mod play;
 pub mod state;
 pub mod version;
 
-use axum::{ response::IntoResponse};
+use axum::response::IntoResponse;
 use chrono::Utc;
-pub use error::ErrorResponse;
-pub use play::{PlayRequest, PlayResponse, play};
 use std::sync::Arc;
-pub use version::*;
-
-use crate::{BotDifficulty, GameYError, YEN, state::AppState};
-
-use serde::Deserialize;
 use std::str::FromStr;
-
-use crate::bot::attacker_bot::AttackerBot;
-use crate::bot::edge_bot::EdgeBot;
-use crate::bot::pro_bot::ProBot;
-use crate::bot::random::RandomBot;
-use crate::bot::blocker_bot::BlockerBot;
-use crate::bot::ybot_registry::YBotRegistry;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
+use serde::Deserialize;
+use utoipa::OpenApi;
+
+pub use error::ErrorResponse;
+pub use play::{PlayRequest, PlayResponse, play};
+pub use version::*;
 use axum_server::tls_rustls::RustlsConfig;
 use std::net::SocketAddr;
 use std::path::PathBuf;
 
+use crate::{BotDifficulty, GameYError, YEN, state::AppState};
+use crate::bot::{
+    pro_bot::ProBot, random::RandomBot, ybot_registry::YBotRegistry
+};
 
-// This helps Rust to understand the JSON that receive from Node
+// --- ESTRUCTURAS ---
+
 #[derive(Deserialize, utoipa::ToSchema)]
 pub struct MoveRequest {
     pub index: u32,
     pub player: String,
 }
 
-// Para obtener el historial de partidas de un usuario especí­fico.
-//añadida la paginación con page y limit opcionales.
 #[derive(Deserialize)]
 pub struct HistoryQuery {
     pub username: String,
@@ -69,30 +64,37 @@ pub struct HistoryQuery {
     pub result: Option<String>,
 }
 
-/**
- * Estructura para recibir la consulta de estadí­sticas de un usuario especí­fico.
- */
 #[derive(Deserialize)]
 pub struct StatsQuery {
     pub username: String,
 }
 
-// Estructura de respuesta para el historial paginado
-#[derive(serde::Serialize)]
-pub struct PaginatedHistoryResponse {
-    pub data: Vec<serde_json::Value>,
-    pub total: u64,
-    pub page: u64,
-    pub limit: i64,
-    pub total_pages: u64,
+#[derive(Deserialize, utoipa::ToSchema)]
+pub struct ResetRequest {
+    pub size: Option<u32>,
+    pub difficulty: Option<String>,
+    pub player: Option<String>,
 }
 
-// Estructura para recibir la Rendición
 #[derive(Deserialize)]
 pub struct SurrenderRequest {
-    player: String,
-    difficulty: String,
-    board_size: i32,
+    pub player: String,
+    pub difficulty: String,
+    pub board_size: i32,
+}
+
+#[derive(Deserialize)]
+pub struct PvpResetRequest {
+    pub match_id: String,
+    pub size: Option<u32>,
+    pub players: Vec<String>,
+}
+
+#[derive(Deserialize)]
+pub struct PvpMoveRequest {
+    pub match_id: String,
+    pub player: String,
+    pub index: u32,
 }
 
 #[derive(serde::Serialize)]
@@ -100,39 +102,7 @@ pub struct UserStats {
     pub wins: i64,
     pub losses: i64,
     pub total: i64,
-}
-
-use utoipa::OpenApi;
-
-#[derive(utoipa::OpenApi)]
-#[openapi(
-    paths(play::play, reiniciar_juego, realizar_movimiento, obtener_historial), 
-    components(schemas(
-        play::PlayRequest,
-        play::PlayResponse,
-        YEN,
-        ResetRequest,
-        MoveRequest,
-        GameRecord, 
-        error::ErrorResponse
-    )),
-    tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
-)]
-pub struct ApiDoc;
-
-/*
- * Para pasar el tamaño del tablero desde Node hasta Rust.
- *
- * #[derive(Deserialize)] --> Convierte el JSON recibido a esta estructura de Rust
- *
- * pub size: usize -->  tamaño del tablero
- *
- */
-#[derive(Deserialize, utoipa::ToSchema)]
-pub struct ResetRequest {
-    pub size: Option<u32>,
-    pub difficulty: Option<String>,
-    pub player: Option<String>, 
+    pub total_score: i64,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
@@ -147,6 +117,8 @@ pub struct GameRecord {
     pub result: String,
 }
 
+// --- LÓGICA DE NORMALIZACIÓN (NUEVA) ---
+
 fn normalize_history_result(raw: &str) -> &'static str {
     let stripped: String = raw
         .trim()
@@ -156,45 +128,57 @@ fn normalize_history_result(raw: &str) -> &'static str {
         .collect();
 
     match stripped.as_str() {
-        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "duhastgewonnen" | "ganhaste" => "Victoria",
-        "derrota" | "defeat" | "loss" | "lost" | "perdido" | "youlose" | "duhastverloren" | "perdeste" => "Derrota",
-        "hasganado" => "Victoria",
-        "hasperdido" => "Derrota",
+        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "hasganado" | "ganhaste" => "Victoria",
         _ => "Derrota",
     }
 }
 
 fn normalize_history_document(record: &mut serde_json::Value) {
     if let Some(obj) = record.as_object_mut() {
-        if let Some(result) = obj.get("result").and_then(|value| value.as_str()) {
-            obj.insert(
-                "result".to_string(),
-                serde_json::Value::String(normalize_history_result(result).to_string()),
-            );
+        if let Some(result) = obj.get("result").and_then(|v| v.as_str()) {
+            obj.insert("result".to_string(), serde_json::json!(normalize_history_result(result)));
         }
-
-        if let Some(result_label) = obj.get("result_label").and_then(|value| value.as_str()) {
-            obj.insert(
-                "result_label".to_string(),
-                serde_json::Value::String(normalize_history_result(result_label).to_string()),
-            );
+        if let Some(result_label) = obj.get("result_label").and_then(|v| v.as_str()) {
+            obj.insert("result_label".to_string(), serde_json::json!(normalize_history_result(result_label)));
         }
     }
 }
 
-// Routes
-/// Creates the Axum router with the given state.
-///
-/// This is useful for testing the API without binding to a network port.
+fn empty_history_response(page: u64, limit: i64) -> axum::Json<serde_json::Value> {
+    axum::Json(serde_json::json!({
+        "data": [],
+        "total": 0,
+        "page": page,
+        "limit": limit,
+        "total_pages": 0
+    }))
+}
+
+// --- SWAGGER ---
+
+
+#[derive(utoipa::OpenApi)]
+#[openapi(
+    paths(play::play),
+    components(schemas(
+        play::PlayRequest,
+        play::PlayResponse,
+        YEN,
+        ResetRequest,
+        MoveRequest,
+        GameRecord,
+        error::ErrorResponse
+    )),
+    tags((name = "Bot", description = "Endpoints para jugar contra la IA"))
+)]
+pub struct ApiDoc;
+
+// --- ROUTER ---
+
 pub fn create_router(state: AppState) -> axum::Router {
     axum::Router::new()
-
-       
-        .merge(
-            utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
-                .url("/api-docs/openapi.json", ApiDoc::openapi()),
-        )
-       
+        .merge(utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
+            .url("/api-docs/openapi.json", ApiDoc::openapi()))
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento))
         .route("/history", axum::routing::get(obtener_historial))
@@ -202,225 +186,79 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/difficulties", axum::routing::get(listar_dificultades))
         .route("/surrender", axum::routing::post(rendirse))
         .route("/stats", axum::routing::get(obtener_estadisticas))
+        .route("/pvp/reset", axum::routing::post(reiniciar_juego_pvp))
+        .route("/pvp/move", axum::routing::post(realizar_movimiento_pvp))
         .route("/api/play", axum::routing::post(play::play))
         .with_state(state)
 }
 
-/*
-/// Creates the default application state with the standard bot registry.
-///
-/// The default state includes the `RandomBot` which selects moves randomly.
-pub fn create_default_state() -> AppState {
-    let bots = create_default_registry();
-    AppState::new(bots)
-}
-*/
+// --- HANDLERS (FUSIÓN DIRECTA) ---
 
-/// Starts the bot server on the specified port.
-///
-/// This function blocks until the server is shut down.
-///
-/// # Arguments
-/// * `port` - The TCP port to listen on
-///
-/// # Errors
-/// Returns `GameYError::ServerError` if:
-/// - The TCP port cannot be bound (e.g., port already in use, permission denied)
-/// - The server encounters an error while running
-pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
-    let _ = rustls::crypto::ring::default_provider().install_default();
-    
-    // Leer y validar la URI de MongoDB desde variables de entorno.
-    let uri = validate_mongodb_uri(
-        &std::env::var("MONGODB_URI").map_err(|_| GameYError::ServerError {
-            message: "La variable MONGODB_URI no esta configurada. Usa una URI completa, por ejemplo: mongodb://localhost:27017/gamey_db".to_string(),
-        })?,
-    )?;
 
-    // Conectar a la BBDD
-    let client = mongodb::Client::with_uri_str(&uri)
-        .await
-        .map_err(|e| GameYError::ServerError {
-            message: format!("Error conectando a Mongo: {}", e),
-        })?;
-
-    let db = client.database("gamey_db");
-
-    // Crar el estado pasando la DB
-
-    let bots = YBotRegistry::new()
-        .with_bot(Arc::new(RandomBot))
-        .with_bot(Arc::new(ProBot))
-        .with_bot(Arc::new(BlockerBot))
-        .with_bot(Arc::new(AttackerBot))
-        .with_bot(Arc::new(EdgeBot));
-
-    let state = AppState::new(bots, db);
-    let app = create_router(state);
-
-    let cert_path = std::env::var("CERT_PATH").unwrap_or_else(|_| "../certs/cert.pem".to_string());
-    let key_path = std::env::var("KEY_PATH").unwrap_or_else(|_| "../certs/key.pem".to_string());
-
-    let config = RustlsConfig::from_pem_file(
-        PathBuf::from(&cert_path),
-        PathBuf::from(&key_path),
-    )
-    .await
-    .map_err(|e| GameYError::ServerError {
-        message: format!("Error cargando certificados SSL ({} o {}): {}", cert_path, key_path, e),
-    })?;
-
-    let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    println!("Server mode: Listening on https://{}", addr);
-
-    axum_server::bind_rustls(addr, config)
-        .serve(app.into_make_service())
-        .await
-        .map_err(|e| GameYError::ServerError {
-            message: format!("Server error: {}", e),
-        })?;
-
-    Ok(())
-}
-
-fn validate_mongodb_uri(raw_uri: &str) -> Result<String, GameYError> {
-    let uri = raw_uri.trim().to_string();
-
-    if uri.is_empty() {
-        return Err(GameYError::ServerError {
-            message: "La variable MONGODB_URI esta vacia. Debe incluir esquema (mongodb:// o mongodb+srv://).".to_string(),
-        });
-    }
-
-    if !uri.starts_with("mongodb://") && !uri.starts_with("mongodb+srv://") {
-        return Err(GameYError::ServerError {
-            message: format!(
-                "MONGODB_URI invalida: falta el esquema. Valor recibido: '{}'. Formato esperado: mongodb://... o mongodb+srv://...",
-                uri
-            ),
-        });
-    }
-
-    Ok(uri)
-}
-
-/// Health check endpoint handler.
-///
-/// Returns "OK" to indicate the server is running.
-pub async fn status() -> impl IntoResponse {
-    "OK"
-}
-
-// New
-// This endpoint handles the move made by the human player and then triggers the bot's response.
-
-#[utoipa::path(
-    post,
-    path = "/execute-move",
-    request_body = MoveRequest,
-    responses(
-        (status = 200, description = "Movimiento procesado", body = Value) // Value porque devuelves un json! manual
-    ),
-    tag = "Bot"
-)]
 pub async fn realizar_movimiento(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<MoveRequest>,
 ) -> impl IntoResponse {
-    // 1. Obtener la sesión del usuario 
     let session = state.get_or_create_session(&payload.player).await;
-
-    // Bloqueamos la sesión privada (Añadidos tipos explí­citos para ayudar al compilador)
     let mut game = session.game.lock().await;
-    let current_difficulty_guard = session.current_difficulty.lock().await;
-    let active_bot_name = session.active_bot.lock().await.clone();
+    let diff_str = session.current_difficulty.lock().await.to_string();
+    let bot_name = session.active_bot.lock().await.clone();
 
-    // 2. Movimiento Humano
     let b_size = game.board_size();
     let coords = crate::Coordinates::from_index(payload.index, b_size);
+    let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(0), coords });
 
-    let human_movement = crate::Movement::Placement {
-        player: crate::PlayerId::new(0),
-        coords,
-    };
-
-    if let Err(e) = game.add_move(human_movement) {
-        println!("Aviso: Movimiento humano no válido: {:?}", e);
+    let bot_coords = (!game.check_game_over())
+        .then(|| state.bots().find(&bot_name))
+        .flatten()
+        .and_then(|bot| bot.choose_move(&*game));
+    if let Some(bot_coords) = bot_coords {
+        let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(1), coords: bot_coords });
     }
 
-    // 3. Turno del Bot
-    if !game.check_game_over() {
-        // Buscamos un bot usando el nombre guardado en la sesión
-        if let Some(bot) = state.bots().find(&active_bot_name) {
-            if let Some(bot_coords) = bot.choose_move(&*game) {
-                let bot_move = crate::Movement::Placement {
-                    player: crate::PlayerId::new(1),
-                    coords: bot_coords,
-                };
-                let _ = game.add_move(bot_move);
-            }
-        }
-    }
-
-    // 4. Extraer el ganador y guardar en DB
     let winner_id = match game.status() {
-        &crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
+        crate::core::game::GameStatus::Finished { winner } => Some(winner.id()),
         _ => None,
     };
 
-    if winner_id.is_some() {
+    let mut final_score = 0;
+    if let Some(wid) = winner_id {
+        let mult = match diff_str.as_str() { "Medium" => 2.0, "Hard" => 3.0, _ => 1.0 };
+        final_score = if wid == 0 { (100.0 * mult * (b_size as f32 / 6.0)) as i32 } else { 0 };
+
         let db = state.db.clone();
-        let final_bot_name = active_bot_name.clone();
-        let final_difficulty = current_difficulty_guard.to_string();
-        let player_name = payload.player.clone();
+        let p_name = payload.player.clone();
+        let b_name = bot_name.clone();
+        let d_str = diff_str.clone();
 
         tokio::spawn(async move {
             let collection = db.collection::<serde_json::Value>("partidas");
+            let result_raw = if wid == 0 { "Victoria" } else { "Derrota" };
             let record = serde_json::json!({
-                "player": player_name,
+                "player": p_name,
                 "date": Utc::now().to_rfc3339(),
-                "opponent": final_bot_name,
+                "opponent": b_name,
                 "board_size": b_size,
-                "difficulty": final_difficulty,
-                "result": normalize_history_result(if winner_id == Some(0) { "Victoria" } else { "Derrota" })
+                "difficulty": d_str,
+                "result": normalize_history_result(result_raw),
+                "score": final_score
             });
             let _ = collection.insert_one(record).await;
         });
     }
 
-    let yen_data: crate::YEN = (&*game).into();
-    axum::Json(serde_json::json!({
-        "board": yen_data,
-        "winner": winner_id
-    }))
+    axum::Json(serde_json::json!({ "board": YEN::from(&*game), "winner": winner_id, "score": final_score }))
 }
 
-/*
- * Para reiniciar el juego a su estado inicial, creando una nueva instancia de GameY con el tamaño especificado.
- *
- *
- */
-
-#[utoipa::path(
-    post,
-    path = "/reset",
-    request_body = ResetRequest,
-    responses(
-        (status = 200, description = "Tablero reiniciado", body = YEN)
-    ),
-    tag = "Bot"
-)]
 pub async fn reiniciar_juego(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Json(payload): axum::extract::Json<ResetRequest>,
 ) -> impl IntoResponse {
-
-    let username = payload.player.as_deref().unwrap_or("default_user");
-    let session = state.get_or_create_session(username).await;
-
+    let session = state.get_or_create_session(payload.player.as_deref().unwrap_or("default")).await;
     let mut game = session.game.lock().await;
     let size = payload.size.unwrap_or(5).clamp(3, 20);
     *game = crate::core::game::GameY::new(size);
+
 
     if let Some(diff_str) = payload.difficulty {
         if let Ok(diff) = BotDifficulty::from_str(&diff_str) {
@@ -434,35 +272,19 @@ pub async fn reiniciar_juego(
             }
         }
     }
-
-    let yen_data: crate::YEN = (&*game).into();
-    axum::Json(yen_data)
+    axum::Json(YEN::from(&*game))
 }
 
-/// Endpoint para listar las dificultades disponibles.
-pub async fn listar_dificultades() -> impl IntoResponse {
-    let difficulties = BotDifficulty::all();
-    let diff_strings: Vec<String> = difficulties.iter().map(|d| d.to_string()).collect();
-    axum::Json(diff_strings)
-}
 
-#[utoipa::path(
-    get,
-    path = "/history",
-    responses(
-        (status = 200, description = "Listado de partidas guardadas", body = [GameRecord])
-    ),
-    tag = "Bot"
-)]
 pub async fn obtener_historial(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<HistoryQuery>,
 ) -> impl IntoResponse {
     let collection = state.db.collection::<serde_json::Value>("partidas");
 
-    // 1. Configuración de la paginación 
-    let page = params.page.unwrap_or(1).max(1); 
-    let limit = params.limit.unwrap_or(10).clamp(1, 100); 
+    // 1. Configuración de la paginación
+    let page = params.page.unwrap_or(1).max(1);
+    let limit = params.limit.unwrap_or(10).clamp(1, 100);
     let skip_value = (page - 1) * (limit as u64);
 
     // 2. Construir un  filtro dinámico
@@ -474,32 +296,25 @@ pub async fn obtener_historial(
     }
 
     // 3. Contar el total de documentos usando el filtro final
-        let total_documents = match collection.count_documents(filter.clone()).await {        Ok(count) => count,
+    let total = match collection.count_documents(filter.clone()).await {
+        Ok(count) => count,
         Err(e) => {
             eprintln!("Error al contar documentos en BBDD: {}", e);
-            return axum::Json(serde_json::json!({
-                "error": "Error interno del servidor"
-            }));
+            return empty_history_response(page, limit);
         }
     };
 
-    let total_pages = (total_documents as f64 / limit as f64).ceil() as u64;
-
-    // 4. Opciones de consulta con paginación
-    let find_options = mongodb::options::FindOptions::builder()
-        .sort(doc! { "date": -1 }) // Asegúrate de que el campo fecha se llama "date"
+    let options = mongodb::options::FindOptions::builder()
+        .sort(doc! { "date": -1 })
         .skip(skip_value)
         .limit(limit)
         .build();
-
-    // 5. Ejecutar la búsqueda pasando las opciones correctamente   
-        let mut cursor = match collection.find(filter).with_options(find_options).await {        
+    // 5. Ejecutar la búsqueda pasando las opciones correctamente
+    let mut cursor = match collection.find(filter).with_options(options).await {
         Ok(c) => c,
         Err(e) => {
             eprintln!("Error al buscar en la BBDD: {}", e);
-            return axum::Json(serde_json::json!({
-                "error": "Error interno del servidor"
-            }));
+            return empty_history_response(page, limit);
         }
     };
 
@@ -510,68 +325,154 @@ pub async fn obtener_historial(
         partidas.push(doc);
     }
 
-    // 7. Devolver la respuesta como JSON
     axum::Json(serde_json::json!({
-        "data": partidas,
-        "total": total_documents,
-        "page": page,
-        "limit": limit,
-        "total_pages": total_pages,
+        "data": partidas, "total": total, "page": page, "limit": limit,
+        "total_pages": (total as f64 / limit as f64).ceil() as u64
     }))
 }
-
-pub async fn rendirse(
-    axum::extract::State(state): axum::extract::State<AppState>,
-    axum::extract::Json(payload): axum::extract::Json<SurrenderRequest>,
-) -> impl IntoResponse {
-    // Buscamos la sesión para saber contra qué bot estaba perdiendo
-    let session = state.get_or_create_session(&payload.player).await;
-    let active_bot_name = session.active_bot.lock().await.clone();
-    let db = state.db.clone();
-
-    tokio::spawn(async move {
-        let collection = db.collection::<serde_json::Value>("partidas");
-        let record = serde_json::json!({
-            "player": payload.player,
-            "date": Utc::now().to_rfc3339(),
-            "opponent": active_bot_name,
-            "board_size": payload.board_size,
-            "difficulty": payload.difficulty,
-            "result": "Derrota"
-        });
-        let _ = collection.insert_one(record).await;
-    });
-
-    axum::Json(serde_json::json!({ "status": "ok", "message": "Rendición registrada" }))
-
-}
-
 
 pub async fn obtener_estadisticas(
     axum::extract::State(state): axum::extract::State<AppState>,
     axum::extract::Query(params): axum::extract::Query<StatsQuery>,
-) -> impl axum::response::IntoResponse {
+) -> impl IntoResponse {
     let collection = state.db.collection::<serde_json::Value>("partidas");
+    let filter = doc! { "player": &params.username };
 
-    // Contar victorias
-    let wins_filter = doc! { "player": &params.username, "result": "Victoria" };
-    let wins = collection.count_documents(wins_filter).await.unwrap_or(0);
+    let mut cursor = collection.find(filter.clone()).await.unwrap();
+    let mut total_score = 0i64;
+    while let Some(Ok(doc)) = cursor.next().await {
+        total_score += doc.get("score").and_then(|v| v.as_i64()).unwrap_or(0);
+    }
 
-    // Contar derrotas
-    let losses_filter = doc! { "player": &params.username, "result": "Derrota" };
-    let losses = collection.count_documents(losses_filter).await.unwrap_or(0);
+    let wins = collection.count_documents(doc!{"player": &params.username, "result": "Victoria"}).await.unwrap_or(0);
+    let losses = collection.count_documents(doc!{"player": &params.username, "result": "Derrota"}).await.unwrap_or(0);
 
-    println!("Victorias: {}, Derrotas: {}", wins, losses);
-    println!("-------------------");
-
-    // Devolver la estructura
-    axum::Json(UserStats {
-        wins: wins as i64,
-        losses: losses as i64,
-        total: (wins + losses) as i64,
-    })
+    axum::Json(UserStats { wins: wins as i64, losses: losses as i64, total: (wins + losses) as i64, total_score })
 }
 
+// --- PVP HANDLERS ---
+
+pub async fn reiniciar_juego_pvp(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<PvpResetRequest>,
+) -> impl IntoResponse {
+    let size = payload.size.unwrap_or(6).clamp(3, 20);
+    let session = state.upsert_pvp_session(&payload.match_id, size, payload.players.clone());
+    axum::Json(serde_json::json!({ "board": YEN::from(&*session.game.lock().await), "next_turn": payload.players[0] }))
+}
+
+pub async fn realizar_movimiento_pvp(
+    axum::extract::State(state): axum::extract::State<AppState>,
+    axum::extract::Json(payload): axum::extract::Json<PvpMoveRequest>,
+) -> impl IntoResponse {
+    let Some(session) = state.get_pvp_session(&payload.match_id) else {
+        return axum::Json(serde_json::json!({"error": "No match"})).into_response();
+    };
+
+    let players = session.players.lock().await.clone();
+    let Some(p_idx) = players.iter().position(|p| p == &payload.player) else {
+        return axum::Json(serde_json::json!({"error": "Player not in match"})).into_response();
+    };
+    let mut game = session.game.lock().await;
+
+    let coords = crate::Coordinates::from_index(payload.index, game.board_size());
+    let _ = game.add_move(crate::Movement::Placement { player: crate::PlayerId::new(p_idx as u32), coords });
+
+    let winner_name = match game.status() {
+        crate::core::game::GameStatus::Finished { winner } => Some(players[winner.id() as usize].clone()),
+        _ => None,
+    };
+    if let Some(winner) = &winner_name {
+        let collection = state.db.collection::<serde_json::Value>("partidas");
+        for player in &players {
+            let opponent = players.iter().find(|candidate| *candidate != player).cloned().unwrap_or_default();
+            let result = if player == winner { "Victoria" } else { "Derrota" };
+            let record = serde_json::json!({
+                "player": player,
+                "date": Utc::now().to_rfc3339(),
+                "opponent": opponent,
+                "board_size": game.board_size(),
+                "difficulty": "Multiplayer",
+                "result": result,
+                "score": if player == winner { 100 } else { 0 }
+            });
+            let _ = collection.insert_one(record).await;
+        }
+    }
+    let next_turn = if winner_name.is_some() {
+        serde_json::Value::Null
+    } else {
+        serde_json::json!(players[(p_idx + 1) % players.len()])
+    };
+
+    axum::Json(serde_json::json!({ "board": YEN::from(&*game), "winner": winner_name, "next_turn": next_turn })).into_response()
+}
+
+// Endpoints básicos
+pub async fn status() -> impl IntoResponse { "OK" }
+pub async fn listar_dificultades() -> impl IntoResponse {
+    axum::Json(BotDifficulty::all().iter().map(|d| d.to_string()).collect::<Vec<_>>())
+}
+pub async fn rendirse(axum::extract::State(state): axum::extract::State<AppState>, axum::extract::Json(payload): axum::extract::Json<SurrenderRequest>) -> impl IntoResponse {
+    let record = serde_json::json!({ "player": payload.player, "date": Utc::now().to_rfc3339(), "result": "Derrota", "score": 0 });
+    let _ = state.db.collection::<serde_json::Value>("partidas").insert_one(record).await;
+    axum::Json(serde_json::json!({ "status": "ok" }))
+}
+
+fn validate_mongodb_uri(raw_uri: &str) -> Result<String, GameYError> {
+    let uri = raw_uri.trim();
+    if uri.is_empty() {
+        return Err(GameYError::ServerError {
+            message: "La variable MONGODB_URI esta vacia".to_string(),
+        });
+    }
+    if !(uri.starts_with("mongodb://") || uri.starts_with("mongodb+srv://")) {
+        return Err(GameYError::ServerError {
+            message: "MONGODB_URI falta el esquema mongodb:// o mongodb+srv://".to_string(),
+        });
+    }
+    Ok(uri.to_string())
+}
+
+pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
+    let uri = validate_mongodb_uri(&std::env::var("MONGODB_URI").unwrap_or_default())?;
+    let client = mongodb::Client::with_uri_str(uri).await.map_err(|e| GameYError::ServerError { message: e.to_string() })?;
+    let db = client.database("gamey_db");
+    let bots = YBotRegistry::new().with_bot(Arc::new(RandomBot)).with_bot(Arc::new(ProBot));
+    let state = AppState::new(bots, db);
+    let addr = SocketAddr::from(([0, 0, 0, 0], port));
+    let router = create_router(state);
+
+    match (
+        std::env::var("GAMEY_TLS_CERT_PATH").ok(),
+        std::env::var("GAMEY_TLS_KEY_PATH").ok(),
+    ) {
+        (Some(cert_path), Some(key_path)) => {
+            let _ = rustls::crypto::ring::default_provider().install_default();
+            let config = RustlsConfig::from_pem_file(PathBuf::from(cert_path), PathBuf::from(key_path))
+                .await
+                .map_err(|e| GameYError::ServerError {
+                    message: format!("Failed to load TLS certificate: {}", e),
+                })?;
+
+            axum_server::bind_rustls(addr, config)
+                .serve(router.into_make_service())
+                .await
+                .map_err(|e| GameYError::ServerError { message: e.to_string() })
+        }
+        _ => {
+            let listener = tokio::net::TcpListener::bind(addr)
+                .await
+                .map_err(|e| GameYError::ServerError {
+                    message: format!("Failed to bind to port {}: {}", port, e),
+                })?;
+
+            axum::serve(listener, router)
+                .await
+                .map_err(|e| GameYError::ServerError { message: e.to_string() })
+        }
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::{normalize_history_document, normalize_history_result, validate_mongodb_uri, run_bot_server};
@@ -646,10 +547,9 @@ mod tests {
         let err = result.unwrap_err();
         let err_msg = err.to_string();
         assert!(
-            err_msg.contains("Failed to bind") || 
-            err_msg.contains("Address already in use"),
+            err_msg.contains("Failed to bind") ||
+                err_msg.contains("Address already in use"),
             "Se esperaba un error de puerto ocupado, pero se obtuvo: {}", err_msg
         );
     }
 }
-

@@ -50,16 +50,24 @@ describe('Cobertura de Infraestructura y Middlewares', () => {
   // --- COBERTURA CORS / OPTIONS  ---
   describe('CORS Middleware', () => {
     it('debe cubrir el branch de OPTIONS (Verde en res.sendStatus(204))', async () => {
-      const res = await request(app).options('/createuser');
-      
+      const origin = 'https://localhost:5173';
+      const res = await request(app)
+        .options('/any-route')
+        .set('Origin', origin); 
+
       expect(res.status).toBe(204);
-      expect(res.header['access-control-allow-origin']).toBe('*');
+      // ✅ CAMBIO: Esperamos que refleje nuestro origen
+      expect(res.get('Access-Control-Allow-Origin')).toBe(origin);
     });
 
     it('debe cubrir el flujo normal (Verde en el next())', async () => {
-      // Llamamos a cualquier ruta GET simple
-      const res = await request(app).get('/difficulties');
-      expect(res.header['access-control-allow-origin']).toBe('*');
+      const origin = 'https://localhost:5173';
+      const res = await request(app)
+        .get('/difficulties')
+        .set('Origin', origin); 
+
+      // ✅ CAMBIO: Esperamos que refleje nuestro origen
+      expect(res.get('Access-Control-Allow-Origin')).toBe(origin);
     });
   });
 
@@ -72,12 +80,45 @@ describe('Cobertura de Infraestructura y Middlewares', () => {
   });
 
   // --- COBERTURA SWAGGER ---
-  it('debe cubrir el catch de Swagger', () => {
-    const YAML = require('js-yaml');
-    vi.spyOn(YAML, 'load').mockImplementation(() => { throw new Error('fail') });
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    
-    setupSwagger({ use: vi.fn() });
-    expect(logSpy).toHaveBeenCalled();
+ describe('Swagger Setup', () => {
+    it('debe cubrir el error de carga de Swagger si el archivo YAML falla', () => {
+      const YAML = require('js-yaml');
+      vi.spyOn(YAML, 'load').mockImplementation(() => {
+        throw new Error('YAML corrupto o inexistente');
+      });
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+      // Llamamos a la función
+      setupSwagger({ use: vi.fn() });
+
+      // CORRECCIÓN: Añadimos expect.anything() para el segundo argumento (e.message)
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error al cargar la documentación Swagger'),
+        expect.anything()
+      );
+    });
+  });
+
+  // --- COBERTURA CORS Y OPTIONS ---
+  describe('Middleware CORS y Pre-flight', () => {
+    it('debe responder 204 No Content a las peticiones OPTIONS', async () => {
+      const res = await request(app).options('/createuser');
+      expect(res.status).toBe(204);
+    });
+
+    it('debe incluir los headers de Access-Control en las respuestas', async () => {
+      // USAMOS /difficulties porque NO toca la base de datos de Mongo.
+      // Así evitamos el error de "Timeout" que te dio antes.
+      const res = await request(app).get('/difficulties').set('Origin', 'https://localhost');
+      
+      expect(res.header['access-control-allow-origin']).toBe('https://localhost');
+      expect(res.header['access-control-allow-methods']).toBeDefined();
+    });
+    it('no debe reflejar origen no permitido', async () => {
+      const res = await request(app).options('/createuser').set('Origin', 'https://evil.example');
+
+      expect(res.status).toBe(204);
+      expect(res.header['access-control-allow-origin']).toBeUndefined();
+    });
   });
 });

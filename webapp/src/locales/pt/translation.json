@@ -29,6 +29,13 @@
     "welcome_main": "Bem-vindo ao GameY",
     "welcome_kicker": "A estratégia não tem sorte"
   },
+  "mode": {
+    "title": "Seleciona o modo de jogo",
+    "subtitle": "Escolhe como queres jogar esta partida",
+    "bot_duel": "Duelo contra IA",
+    "multiplayer_duel": "Duelo Multijogador",
+    "logout": "Terminar sessao"
+  },
   "login": {
     "title": "Bem-vindo de volta ao GameY",
     "subtitle": "Qual era o teu nome?",
@@ -88,6 +95,7 @@
     "friends_menu": "Menu de amigos",
     "friends_menu_short": "Amigos",
     "profile": "Ver perfil",
+    "mode_menu": "Modos",
     "exit": "Voltar ao menu",
     "exit_alt": "Sair para o menu",
     "load_board": "Carrega o tabuleiro para começar",

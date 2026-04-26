@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOVI - Seleccion de modo</title>
+    <link rel="icon" type="image/ico" href="/favicon.ico" />
+    <link rel="stylesheet" href="/src/css/App.css">
+    <link rel="stylesheet" href="/src/css/Log.css">
+    <link rel="stylesheet" href="/src/index.css">
+    <style>
+        .gamemode-screen {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100vh;
+            overflow-y: auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .gamemode-title {
+            width: min(48rem, 92vw);
+            margin: 0;
+            padding: 0.9rem 1.2rem;
+            border-radius: 1rem;
+            border: 1px solid rgba(255, 255, 255, 0.42);
+            background: linear-gradient(135deg, rgba(7, 20, 37, 0.78), rgba(18, 47, 78, 0.64));
+            color: #f8fbff;
+            font-size: clamp(1.45rem, 3.5vw, 2rem);
+            font-weight: 800;
+            line-height: 1.2;
+            box-shadow: 0 0.7rem 1.8rem rgba(0, 0, 0, 0.32);
+            text-shadow: 0 0.3rem 0.9rem rgba(0, 0, 0, 0.45);
+        }
+
+        .gamemode-panel {
+            width: min(24rem, 92vw);
+            display: flex;
+            flex-direction: column;
+            gap: 0.9rem;
+            margin: 0 auto;
+            padding: 1.2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.92);
+        }
+
+        .gamemode-subtitle {
+            margin: 0;
+            color: #253348;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .gamemode-btn {
+            width: 100%;
+        }
+
+        .gamemode-btn-multiplayer {
+            background: linear-gradient(135deg, #0d2f61, #2e6fd0);
+            color: #fff;
+        }
+
+        .gamemode-btn-multiplayer:hover {
+            background: linear-gradient(135deg, #113976, #4b85e1);
+        }
+
+        .gamemode-btn-bot {
+            background: linear-gradient(135deg, #050505, #6b6b6b);
+            color: #fff;
+        }
+
+        .gamemode-btn-bot:hover {
+            background: linear-gradient(135deg, #121212, #8a8a8a);
+        }
+
+        .gamemode-help {
+            margin: 0;
+            padding: 0.75rem;
+            border-radius: 0.45rem;
+            text-align: left;
+            font-size: 0.82rem;
+            color: #2d3a4f;
+            background: rgba(231, 239, 249, 0.9);
+            border: 1px solid rgba(182, 201, 229, 0.8);
+        }
+
+        .gamemode-help p {
+            margin: 0 0 0.45rem;
+        }
+
+        .gamemode-help p:last-child {
+            margin-bottom: 0;
+        }
+
+        .gamemode-back-btn {
+            width: 100%;
+            background: #f0f2f5;
+            color: #1b2431;
+            border: 1px solid #d0d8e3;
+        }
+
+        .gamemode-back-btn:hover {
+            background: #e5eaf1;
+            border-color: #b6c3d4;
+        }
+    </style>
+</head>
+<body>
+    <div class="App">
+        <video class="menu-video-bg" autoplay loop muted playsinline>
+            <source src="/src/assets/background_video.mp4" type="video/mp4">
+        </video>
+        <div class="menu-video-overlay"></div>
+        <audio class="bg-music" src="/src/assets/background_music.mp3" autoplay loop></audio>
+
+        <main class="gamemode-screen">
+            <h1 class="gamemode-title">Selecciona tu modo de juego</h1>
+
+            <section class="gamemode-panel" aria-label="Seleccion de modo">
+                <p class="gamemode-subtitle">Elige como quieres jugar esta partida</p>
+
+                <button class="submit-button gamemode-btn gamemode-btn-bot" id="botModeBtn" type="button" aria-label="Jugar contra IA">
+                    Jugar contra IA
+                </button>
+
+                <button class="submit-button gamemode-btn gamemode-btn-multiplayer" id="multiplayerModeBtn" type="button" aria-label="Jugar multijugador">
+                    Jugar multijugador
+                </button>
+
+                <div class="gamemode-help" aria-label="Descripcion de modos">
+                    <p><strong>IA:</strong> partida rapida contra el bot.</p>
+                    <p><strong>Multijugador:</strong> reta a un amigo y juega en tiempo real.</p>
+                </div>
+
+                <button class="submit-button cancel-button gamemode-back-btn" id="backBtn" type="button" aria-label="Volver">
+                    Volver
+                </button>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Verificar autenticacion
+        function checkAuthentication() {
+            const username = localStorage.getItem('yovi_user');
+            if (!username) {
+                if (window.location.pathname !== '/login.html') {
+                    window.location.replace('/login.html');
+                }
+            }
+        }
+
+        checkAuthentication();
+
+        // Manejadores de botones
+        document.getElementById('botModeBtn').addEventListener('click', () => {
+            sessionStorage.setItem('yovi_gamemode', 'bot');
+            window.location.replace('/game.html');
+        });
+
+        document.getElementById('multiplayerModeBtn').addEventListener('click', () => {
+            const isGuest = sessionStorage.getItem('yovi_guest') === 'true';
+            if (isGuest) {
+                alert('Los usuarios invitados no pueden jugar en modo multijugador. Por favor, regístrate para acceder a esta función.');
+                sessionStorage.setItem('yovi_gamemode', 'bot');
+            } else {
+                sessionStorage.setItem('yovi_gamemode', 'multiplayer');
+            }
+            window.location.replace('/game.html');
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            window.location.replace('/index.html');
+        });
+    </script>
+</body>
+</html>
+
