@@ -43,6 +43,8 @@ const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S2NW"
 const MAX_NICKNAME_LENGTH = 15;
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
 const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://localhost:4000';
 const tokenCookieOptions = {

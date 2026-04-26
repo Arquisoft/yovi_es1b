@@ -475,7 +475,21 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
 }
 #[cfg(test)]
 mod tests {
-    use super::{normalize_history_document, normalize_history_result, validate_mongodb_uri, run_bot_server};
+    use super::*; 
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use tower::ServiceExt; 
+    use serde_json::json;
+
+
+    // Función que crea el router. Si ya tienes una función que lo hace en mod.rs,
+    // asegúrate de que sea pública o accesible aquí.
+    fn router(state: AppState) -> axum::Router {
+        // Llama a tu función principal de rutas
+        crate::bot_server::create_router(state) 
+    }
 
     #[test]
     fn normalize_history_result_maps_common_win_variants() {
@@ -552,4 +566,5 @@ mod tests {
             "Se esperaba un error de puerto ocupado, pero se obtuvo: {}", err_msg
         );
     }
+
 }
