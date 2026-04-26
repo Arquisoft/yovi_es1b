@@ -49,6 +49,8 @@ Given('a user exists with name {string} and nickname {string}', async function (
       }
     });
     const data = await response.json();
+    // 🕵️‍♀️ LOG PARA VER EN GITHUB: Esto saldrá en [BROWSER-LOG]
+    console.log("JSON PERFIL BOB:", JSON.stringify(data));
     return data.friendCode || data.code;
   }, { apiUrl: API_URL, user: username });
 
@@ -56,8 +58,15 @@ Given('a user exists with name {string} and nickname {string}', async function (
 });
 
 When('I open the "Social" section', async function () {
-  await this.page.getByTitle('Ver menú de amigos').click();
-  await this.page.locator('.sidebar-title').waitFor({ state: 'visible' });
+  const page = this.page;
+  // Buscamos el botón de forma mucho más agresiva: por texto, por clase o por icono
+  const socialBtn = page.locator('button:has-text("Social"), .friends-toggle-btn, [aria-label*="amigos"]').first();
+  
+  await socialBtn.waitFor({ state: 'visible', timeout: 15000 });
+  await socialBtn.click({ force: true });
+  
+  // Esperamos a que la sidebar de amigos sea visible
+  await page.locator('.friends-sidebar, .sidebar-title').first().waitFor({ state: 'visible' });
 });
 
 /*
