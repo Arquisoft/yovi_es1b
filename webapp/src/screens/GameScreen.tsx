@@ -159,23 +159,27 @@ function GameScreen({
   const translatedSizeLabel = t(`game.${getSizeLabelKey(sizeLabel)}`);
 
   // Nombre del Bot: Dinámico según lo que recibimos
-  const botName = gameMode === 'multiplayer'
-    ? (opponentDisplayName?.trim() || t('mode.multiplayer_duel'))
-    : difficultyChoice
-    ? `Bot Player (${difficultyLabel})`
-    : 'Bot Player';
+  let botName = 'Bot Player';
+  if (gameMode === 'multiplayer') {
+    botName = opponentDisplayName?.trim() || t('mode.multiplayer_duel');
+  } else if (difficultyChoice) {
+    botName = `Bot Player (${difficultyLabel})`;
+  }
 
   const boardDimension = boardData?.size ?? selectedBoardDimension ?? 6;
   const safePlayerIcon = playerIcon?.trim() ? playerIcon : defaultAvatar;
   const safeBotIcon = (gameMode === 'multiplayer' ? opponentDisplayIcon : botIcon)?.trim() || defaultAvatar;
   const playerLabel = displayName?.trim() ? displayName : username;
-  const turnStatusLabel = gameMode === 'multiplayer'
-    ? isPlayerTurn
-      ? 'Tu turno'
-      : isOpponentTurn
-        ? 'Turno del rival'
-        : 'Esperando rival'
-    : null;
+  let turnStatusLabel: string | null = null;
+  if (gameMode === 'multiplayer') {
+    if (isPlayerTurn) {
+      turnStatusLabel = 'Tu turno';
+    } else if (isOpponentTurn) {
+      turnStatusLabel = 'Turno del rival';
+    } else {
+      turnStatusLabel = 'Esperando rival';
+    }
+  }
   const victoryPointsLabel = getVictoryPointsLabel(difficultyChoice, boardDimension);
   const canSurrender = boardData !== null && winner === null && gameStarted;
   const canChangeGameSetup = !gameStarted || winner !== null;
