@@ -44,6 +44,16 @@ vi.mock('../services/gameService', () => ({
 
 const loadModule = async () => import('../pages/gamemode/main')
 
+const renderGameModeApp = async (ui: Parameters<typeof render>[0]) => {
+  let result: ReturnType<typeof render> | undefined
+  await act(async () => {
+    result = render(ui)
+    await Promise.resolve()
+    await Promise.resolve()
+  })
+  return result!
+}
+
 describe('gamemode main page', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -63,7 +73,7 @@ describe('gamemode main page', () => {
   test('redirige al index si no hay usuario guardado', async () => {
     const { GameModePage } = await loadModule()
 
-    render(<GameModePage />)
+    await renderGameModeApp(<GameModePage />)
 
     await waitFor(() => {
       expect((globalThis.location as { href: string }).href).toBe('/index.html')
@@ -75,7 +85,7 @@ describe('gamemode main page', () => {
     const user = userEvent.setup()
     const { GameModePage } = await loadModule()
 
-    render(<GameModePage />)
+    await renderGameModeApp(<GameModePage />)
     await user.click(screen.getByRole('button', { name: /select-multiplayer/i }))
 
     expect(sessionStorage.getItem('yovi_gamemode')).toBe('multiplayer')
@@ -83,18 +93,32 @@ describe('gamemode main page', () => {
     expect((globalThis.location as { href: string }).href).toBe('/game.html')
   })
 
-  test('sincroniza idioma desde localStorage y perfil', async () => {
+  test('sincroniza idioma desde localStorage y perfil sin reescribir storage', async () => {
     localStorage.setItem('yovi_user', 'alice')
     localStorage.setItem('yovi_user_language', 'English')
     getProfileMock.mockResolvedValueOnce({ language: 'Portuguese' })
 
     const { GameModePage } = await loadModule()
-    render(<GameModePage />)
+    await renderGameModeApp(<GameModePage />)
 
     await waitFor(() => {
       expect(getProfileMock).toHaveBeenCalledOnce()
-      expect(localStorage.getItem('yovi_user_language')).toBe('Portuguese')
+      expect(localStorage.getItem('yovi_user_language')).toBe('English')
       expect(document.documentElement.lang).toBe('pt')
+    })
+  })
+
+  test('normaliza idiomas no soportados antes de aplicarlos', async () => {
+    localStorage.setItem('yovi_user', 'alice')
+    getProfileMock.mockResolvedValueOnce({ language: 'French' })
+
+    const { GameModePage } = await loadModule()
+    await renderGameModeApp(<GameModePage />)
+
+    await waitFor(() => {
+      expect(getProfileMock).toHaveBeenCalledOnce()
+      expect(localStorage.getItem('yovi_user_language')).toBeNull()
+      expect(document.documentElement.lang).toBe('es')
     })
   })
 
@@ -109,7 +133,7 @@ describe('gamemode main page', () => {
     const user = userEvent.setup()
     const { GameModePage } = await loadModule()
 
-    render(<GameModePage />)
+    await renderGameModeApp(<GameModePage />)
     await act(async () => {
       await user.click(screen.getByRole('button', { name: /^logout$/i }))
     })

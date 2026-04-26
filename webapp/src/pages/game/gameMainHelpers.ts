@@ -12,3 +12,4 @@ export const resolveBoardLabel = (
 
 export const resolveTurnTimeLimit = (difficultyChoice: DifficultyChoice | null) =>
   (difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null);
+

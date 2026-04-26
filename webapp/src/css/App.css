@@ -120,6 +120,18 @@
   z-index: 2;
 }
 
+.payment-overlay {
+  overflow-y: auto;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.payment-overlay .modal-shell {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
 .modal-box {
   width: min(92vw, 24rem);
   background: rgba(255, 255, 255, 0.96);
