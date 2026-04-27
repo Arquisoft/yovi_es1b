@@ -47,6 +47,7 @@ Given('a user exists with name {string} and nickname {string}', async function (
     return findExistingCode();
   }, { apiUrl: API_URL, user: username, nick: nickname });
 
+
   assert.ok(this.targetFriendCode, `No se pudo preparar el friendCode de ${username}`);
   console.log(`Bob listo con codigo: ${this.targetFriendCode}`);
 });
@@ -56,6 +57,7 @@ When('I open the "Social" section', async function () {
   await friendsButton.waitFor({ state: 'visible', timeout: 15000 });
   await friendsButton.click();
   await this.page.locator('.friends-sidebar-content .sidebar-title').waitFor({ state: 'visible' });
+
 });
 
 When('I search for {string}', async function (query) {
