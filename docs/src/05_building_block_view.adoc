@@ -87,7 +87,7 @@ Bloques de Construcción de Contenidos::
 
 |*Webapp*
 |Interfaz gráfica Multi-Page Application (MPA) construida con React 18, Vite 7 y
-TypeScript. Gestiona 4 páginas independientes (index, login, register, game). Renderiza
+TypeScript. Gestiona 5 paginas independientes (index, login, register, gamemode, game). Renderiza
 el tablero triangular en SVG con celdas interactivas, controla el temporizador de turno
 (Easy=60s, Medium=30s, Hard=15s), gestiona el sistema de amigos, el perfil de usuario,
 la tienda de XP con PayPal y la internacionalización en 4 idiomas (es, en, de, pt).
@@ -230,7 +230,7 @@ condicional: si encuentra certificados en `/certs/` arranca con HTTPS; si no, co
 *Purpose/Responsibility*: Ejecutar toda la lógica del Juego Y: mantener el estado de
 cada partida en memoria, validar movimientos, detectar la condición de victoria
 (conexión de los tres lados del triángulo mediante Union-Find), gestionar el estado
-del tablero en formato YEN y calcular las respuestas de los cinco bots disponibles.
+del tablero en formato YEN y calcular las respuestas de los bots registrados en el servidor. El codigo contiene varios bots, aunque el arranque HTTP actual registra `RandomBot` y `ProBot`.
 Persiste el historial de partidas y estadísticas en MongoDB.
 
 *Interface(s)*: Expone una API REST en el puerto 4000 con HTTPS obligatorio (Rustls).
@@ -270,7 +270,7 @@ por Vite.
 |Componente |Descripción
 
 |`pages/*/main.tsx`
-|Puntos de entrada para cada página MPA (index, login, register, game). `game/main.tsx`
+|Puntos de entrada para cada pagina MPA (index, login, register, gamemode, game). `game/main.tsx`
 coordina `useGameLogic`, `useGameTimer`, sincronización de perfil con el backend,
 sesión de usuario y todos los modales. Implementa el patrón ref-para-callback
 (`handleAutoMoveRef`) para garantizar que `onTimeUp` siempre llama a la versión
@@ -526,3 +526,29 @@ intervalo capture una versión desactualizada de la función.
 asegurando que el temporizador se reinicia correctamente al cambiar dificultad,
 tamaño o pulsar reiniciar.
 |===
+
+==== White Box _Modo multijugador_
+
+El modo multijugador actual se apoya en una estrategia separada de la partida contra bot. En la webapp, `BotStrategy` y `MultiplayerStrategy` implementan la misma abstraccion `GameProvider`, de forma que la pantalla de juego puede trabajar con ambos modos sin mezclar toda la logica en el componente visual.
+
+[cols="1,2" options="header"]
+|===
+|Pieza |Funcionamiento
+
+|`gamemode.html` / `pages/gamemode`
+|Pantalla de seleccion de modo. Se construye como una quinta entrada MPA junto a `index`, `login`, `register` y `game`.
+
+|`socketClient.ts`
+|Crea un cliente Socket.IO contra `API_BASE_URL`, enviando el JWT desde `sessionStorage` y usando `withCredentials` para compartir la cookie de sesion.
+
+|`MultiplayerStrategy`
+|Gestiona desafios, aceptacion de partida, sincronizacion de tablero, movimientos por socket y desconexiones. Tambien consulta el perfil publico del rival para mostrar nickname e icono.
+
+|`users/socketHandler.js`
+|Actua como gateway en tiempo real. Autentica cada socket con JWT, mantiene sockets activos por usuario, crea desafios, salas y partidas, y reenvia los movimientos al motor Rust.
+
+|`gamey /pvp/reset` y `/pvp/move`
+|Mantienen partidas PvP en `pvp_sessions: DashMap<match_id, PvpSession>`. Cada partida guarda tablero y jugadores; al terminar se persiste una entrada de historial para cada participante.
+|===
+
+Este diseno deja el tiempo real en `users`, que ya conoce la identidad del usuario, y conserva en `gamey` la unica responsabilidad de validar el tablero y detectar el ganador. Es una extension natural del modo contra bot, pero con estado de partida indexado por `match_id` en lugar de por `username`.

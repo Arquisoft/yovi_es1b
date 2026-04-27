@@ -225,3 +225,34 @@ store -down-> disk : Guardado permanente
 
 **Explicación:**
 Se utiliza un motor de base de datos MongoDB que organiza la información en colecciones independientes: los perfiles de usuario (gestionados por Node.js) y el historial de juegos (registrado por Rust). Mediante un volumen persistente de Docker, los datos se sincronizan directamente con el disco duro del servidor. Esto garantiza que, aunque el contenedor de la base de datos se detenga o se actualice, la información de las partidas y las cuentas de usuario permanezca segura y disponible, funcionando como un almacenamiento externo permanente.
+
+=== Detalles actuales de despliegue local
+
+El `docker-compose.yml` actual levanta cinco servicios principales en la red `monitor-net`: `webapp`, `users`, `gamey`, `prometheus` y `grafana`. La base de datos no se crea como contenedor propio en este compose; los servicios reciben sus URI mediante variables de entorno (`MONGODB_URI_USERS` y `MONGODB_URI_GAMEY`), lo que permite usar MongoDB externo o Atlas sin cambiar codigo.
+
+[cols="1,2,2" options="header"]
+|===
+|Servicio |Puerto externo |Notas
+
+|`webapp`
+|80 y 443
+|Nginx sirve la MPA y proxifica `/socket.io`, `/login`, `/createuser`, `/move`, `/history`, `/reset`, `/surrender`, `/friends` y `/users` hacia `users`.
+
+|`users`
+|3000
+|Arranca en HTTPS si encuentra `/certs/key.pem` y `/certs/cert.pem`; si no, cae a HTTP. Tambien crea el gateway Socket.IO.
+
+|`gamey`
+|4000 externo -> 3000 interno
+|El binario se ejecuta con `--mode server --port 3000`. Dentro de Docker, `users` lo llama como `https://gamey:3000`; desde el host queda expuesto como `https://localhost:4000`.
+
+|`prometheus`
+|9090
+|Lee la configuracion desde `users/monitoring/prometheus` y recoge metricas del Users Service.
+
+|`grafana`
+|9091 externo -> 3000 interno
+|Provisiona datasource y dashboards desde `users/monitoring/grafana/provisioning`.
+|===
+
+Los certificados locales se montan desde `./certs` tanto en Nginx como en `users` y `gamey`. En desarrollo con Vite, `webapp/vite.config.ts` tambien intenta usar esos certificados si existen.

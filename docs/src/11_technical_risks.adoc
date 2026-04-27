@@ -24,9 +24,9 @@ endif::arc42help[]
 |Alta
 
 |R-02
-|Rutas del backend sin protección por JWT
-|`authMiddleware` está implementado y disponible en `authMiddleware.js` pero no se aplica como middleware en ninguna ruta. Un atacante con conocimiento del API podría modificar el perfil de cualquier usuario o acreditar XP falsamente llamando directamente al backend.
-|Identificado como deuda técnica DT-01. Mitigación en sprint planificado. Actualmente mitigado parcialmente por CORS y por el hecho de que el backend no está expuesto directamente al exterior en producción (detrás de Nginx).
+|Autorizacion fina incompleta
+|`authMiddleware` ya protege la mayoria de rutas sensibles, pero algunas operaciones siguen confiando en el `username` recibido por body/query y `/users/purchase-xp` no exige token. Un cliente podria intentar operar sobre recursos de otro usuario si no se compara contra `req.user.username`.
+|JWT activo en rutas de usuarios, amigos, juego e historial; queda pendiente aplicar proteccion a compra de XP y validar propietario del recurso en rutas sensibles.
 |Alta
 
 |R-03
@@ -73,9 +73,9 @@ endif::arc42help[]
 |ID |Deuda |Descripción |Impacto si no se resuelve |Prioridad
 
 |DT-01
-|`authMiddleware` importado pero no aplicado en ninguna ruta
-|`authMiddleware.js` está implementado correctamente (verificación JWT), importado en `users-service.js` y `JWT_SECRET` se usa para firmar tokens en `/login`. Sin embargo, ningún endpoint usa `authMiddleware` como middleware de protección. Cualquier ruta que modifique datos de usuario es accesible sin token válido.
-|Vulnerabilidad de autorización: cualquier cliente puede modificar perfiles, acreditar XP o enviar solicitudes de amistad sin autenticarse. Requisito previo para cualquier despliegue en producción público.
+|Autorizacion por propietario pendiente
+|El middleware JWT esta aplicado en la mayoria de rutas sensibles, pero conviene usar `req.user.username` como fuente de verdad y no aceptar ciegamente usernames enviados por el cliente. `/users/purchase-xp` tambien debe exigir token y validar la compra en servidor.
+|Riesgo de operaciones sobre otra cuenta o acreditacion de XP sin una verificacion suficientemente fuerte.
 |Alta
 
 |DT-02
@@ -128,8 +128,8 @@ endif::arc42help[]
 |Horizonte |Elementos a abordar |Criterio de hecho
 
 |*Sprint inmediato*
-|DT-01 (aplicar `authMiddleware` en rutas sensibles), DT-03 (implementar tests E2E para flujo login y partida completa)
-|Todas las rutas de escritura requieren JWT válido; al menos 3 escenarios E2E en verde en CI
+|DT-01 (cerrar autorizacion por propietario y proteger compra de XP), DT-03 (implementar tests E2E para flujo login y partida completa)
+|Todas las rutas de escritura usan JWT y validan propietario; al menos 3 escenarios E2E en verde en CI
 
 |*Próximos sprints*
 |DT-02 (persistencia de estado activo en MongoDB), DT-04 (restringir CORS al dominio de producción), DT-07 (desplegar Prometheus/Grafana en producción)
@@ -139,3 +139,14 @@ endif::arc42help[]
 |DT-05 (actualizar `openapi.yaml`), DT-06 (completar glosario arc42), DT-08 (unificar cálculo de puntuación en GameY)
 |Documentación completa y revisada; un único punto de verdad para el cálculo de XP
 |===
+
+=== Actualizacion de riesgos segun el codigo actual
+
+La documentacion anterior conserva algunas deudas historicas que ya han cambiado en el codigo. En el estado actual, `authMiddleware` si se aplica en la mayoria de rutas sensibles (`/users/*`, `/friends*`, `/move`, `/reset`, `/surrender`, `/history`, `/difficulties`). Por tanto, DT-01 deja de ser una deuda abierta en esos endpoints. Quedan como puntos a revisar:
+
+* `/users/purchase-xp` sigue sin `authMiddleware`; conviene protegerlo y validar la compra en servidor antes de acreditar XP.
+* El middleware comprueba que el JWT sea valido, pero algunas rutas siguen confiando en `username` recibido en body/query. Como mejora, deberian comparar `req.user.username` con el usuario objetivo para evitar operaciones en nombre de otra cuenta.
+* El modo PvP mantiene estado activo en memoria en `users` y `gamey`. Si cualquiera de los dos procesos se reinicia, la partida en curso se pierde aunque el historial de partidas terminadas permanezca.
+* En `gamey`, `create_default_registry()` registra todos los bots, pero `run_bot_server()` construye actualmente el registro solo con `RandomBot` y `ProBot`. Si se quiere que Easy/Medium/Hard ofrezcan todos los bots descritos, conviene usar el registro por defecto en el arranque del servidor.
+
+Con esto, el riesgo principal ya no es "rutas sin JWT" de forma general, sino la autorizacion fina por propietario del recurso y la proteccion completa de operaciones economicas o de XP.

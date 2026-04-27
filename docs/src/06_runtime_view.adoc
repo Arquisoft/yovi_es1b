@@ -103,3 +103,33 @@ Webapp -> Webapp: Actualiza UI (Celdas y ganador)
 Webapp --> Usuario: Muestra resultado final
 deactivate Webapp
 ----
+
+=== Escenario 5: Partida multijugador en tiempo real
+
+El modo multijugador usa Socket.IO para la coordinacion en tiempo real y conserva la validacion de reglas en GameY. El navegador no llama directamente a Rust: se conecta al gateway de `users`, que autentica el socket con JWT y reenvia a GameY solo las operaciones de tablero.
+
+[plantuml,"PVP_Sequence",png]
+----
+actor "Jugador A" as A
+actor "Jugador B" as B
+participant "Webapp" as Webapp
+participant "Users Service\n(Socket.IO)" as Users
+participant "GameY Engine" as Gamey
+
+autonumber
+A -> Webapp: Reta a un amigo conectado
+Webapp -> Users: challenge_player(opponentUsername, boardSize)
+Users -> B: challenge_player(challengeId)
+B -> Users: accept_challenge(challengeId)
+Users -> Gamey: POST /pvp/reset {match_id, size, players}
+Gamey --> Users: board + next_turn
+Users -> A: sync_board(matchId, board, currentTurn)
+Users -> B: sync_board(matchId, board, currentTurn)
+A -> Users: game_move(matchId, cellIndex)
+Users -> Gamey: POST /pvp/move {match_id, player, index}
+Gamey --> Users: board + winner? + next_turn
+Users -> A: sync_board(...)
+Users -> B: sync_board(...)
+----
+
+Si un jugador abandona o pierde la conexion, `socketHandler` marca la partida como abandonada y notifica `player_disconnected` a la sala. El estado PvP activo vive en memoria tanto en `users` (salas y turnos visibles) como en `gamey` (tablero validado), por lo que una caida del proceso obliga a crear una nueva partida.

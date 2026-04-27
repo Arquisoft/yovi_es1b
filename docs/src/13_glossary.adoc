@@ -156,3 +156,25 @@ endif::arc42help[]
 |*mkcert*
 |Herramienta para generar certificados SSL de desarrollo firmados por una CA local de confianza. En YoVi se usa para generar `cert.pem` y `key.pem` que se montan en los contenedores de Webapp (Nginx) y GameY (Rustls). Permite trabajar con HTTPS en entorno local sin warnings del navegador.
 |===
+
+=== Terminos adicionales del estado actual
+
+[cols="e,2e" options="header"]
+|===
+|Termino |Definicion
+
+|*GameProvider*
+|Abstraccion de la webapp para ejecutar una partida sin acoplar la pantalla al modo concreto. `BotStrategy` y `MultiplayerStrategy` implementan esta interfaz para que el flujo contra IA y el flujo PvP compartan contrato.
+
+|*Socket.IO Gateway*
+|Capa de tiempo real implementada en `users/socketHandler.js`. Autentica sockets con JWT, guarda conexiones por usuario, gestiona desafios, salas y eventos de sincronizacion, y delega la validacion de movimientos PvP en GameY.
+
+|*PvpSession*
+|Sesion de partida multijugador en GameY. Se guarda en `pvp_sessions` indexada por `match_id` e incluye el tablero `GameY` y la lista de jugadores. Al finalizar, GameY persiste un registro por participante.
+
+|*match_id*
+|Identificador interno de una partida PvP. Lo genera `users` con `nanoid`, se usa para crear la sala Socket.IO y para localizar la sesion PvP correspondiente en GameY.
+
+|*ALLOWED_ORIGINS / ALLOWED_SOCKET_ORIGINS*
+|Variables de entorno que limitan los origenes aceptados por CORS HTTP y por Socket.IO. Por defecto permiten localhost HTTP/HTTPS y Vite en el puerto 5173.
+|===
