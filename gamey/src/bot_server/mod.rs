@@ -28,6 +28,7 @@ pub mod state;
 pub mod version;
 
 use axum::response::IntoResponse;
+use axum_prometheus::PrometheusMetricLayer;
 use chrono::Utc;
 use futures::stream::StreamExt;
 use mongodb::bson::doc;
@@ -43,7 +44,10 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 pub use version::*;
 
-use crate::bot::{pro_bot::ProBot, random::RandomBot,edge_bot::EdgeBot,attacker_bot::AttackerBot,blocker_bot::BlockerBot, ybot_registry::YBotRegistry};
+use crate::bot::{
+    attacker_bot::AttackerBot, blocker_bot::BlockerBot, edge_bot::EdgeBot, pro_bot::ProBot,
+    random::RandomBot, ybot_registry::YBotRegistry,
+};
 use crate::{BotDifficulty, GameYError, YEN, state::AppState};
 
 // --- ESTRUCTURAS ---
@@ -181,10 +185,17 @@ pub struct ApiDoc;
 // --- ROUTER ---
 
 pub fn create_router(state: AppState) -> axum::Router {
+    // 1. Creamos el manejador de métricas
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+
     axum::Router::new()
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
                 .url("/api-docs/openapi.json", ApiDoc::openapi()),
+        )
+        .route(
+            "/metrics",
+            axum::routing::get(|| async move { metric_handle.render() }),
         )
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento))
@@ -196,6 +207,7 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/pvp/reset", axum::routing::post(reiniciar_juego_pvp))
         .route("/pvp/move", axum::routing::post(realizar_movimiento_pvp))
         .route("/api/play", axum::routing::post(play::play))
+        .layer(prometheus_layer)
         .with_state(state)
 }
 

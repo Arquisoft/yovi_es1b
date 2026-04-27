@@ -30,6 +30,7 @@ jsonwebtoken = "9.3"
 anyhow = "1.0"
 axum = { version = "0.7", features = ["macros"] }
 axum-server = { version = "0.7", features = ["tls-rustls"] }
+axum-prometheus = "0.7"
 clap = { version = "4.0", features = ["derive"] }
 rand = "0.9"
 rustyline = { version = "17.0", features = ["with-file-history"] }

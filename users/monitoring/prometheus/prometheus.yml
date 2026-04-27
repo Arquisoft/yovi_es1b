@@ -1,7 +1,19 @@
 global:
-  scrape_interval: 5s
+  scrape_interval: 5s # 5s para ver gráficas fluidas en las pruebas de carga
 
 scrape_configs:
-  - job_name: 'users-service'
+  # 1. Configuración para el servicio de Usuarios (Node.js)
+  - job_name: "users-service"
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true # Para que Prometheus confíe
     static_configs:
-      - targets: ['users:3000']
+      - targets: ["users:3000"]
+
+  # 2. Configuración para el servicio de Juego (Rust - Gamey)
+  - job_name: "gamey-service"
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
+    static_configs:
+      - targets: ["gamey:3000"] # Puerto 4000 según tu código de integración
