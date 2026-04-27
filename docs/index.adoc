@@ -96,6 +96,9 @@ include::src/11_technical_risks.adoc[]
 // 12. Testing Report
 include::src/12_testing_report.adoc[]
 
+// 13. Grafana y Prometheus
+include::src/13_grafana_prometheuss.adoc[]
+
 <<<<
-// 13. Glossary
-include::src/13_glossary.adoc[]
+// 14. Glossary
+include::src/14_glossary.adoc[]
