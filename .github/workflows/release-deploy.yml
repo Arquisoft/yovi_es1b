@@ -184,15 +184,29 @@ jobs:
             -keyout gamey/certs/key.pem -out gamey/certs/cert.pem \
             -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=localhost"
 
-      - name: Publish to Registry (gamey)
-        uses: elgohr/Publish-Docker-Github-Action@v5
+      - name: Prepare gamey image name
+        id: gamey_image
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          echo "name=ghcr.io/${OWNER}/${REPO}-gamey" >> "$GITHUB_OUTPUT"
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
         with:
-          name: ${{ github.repository_owner }}/${{ github.event.repository.name }}-gamey
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ghcr.io
-          workdir: .
-          dockerfile: gamey/Dockerfile
+
+      - name: Publish to Registry (gamey)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./gamey
+          file: ./gamey/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.gamey_image.outputs.name }}:latest
+            ${{ steps.gamey_image.outputs.name }}:${{ env.IMAGE_TAG }}
 
   deploy:
     name: Deploy over SSH
