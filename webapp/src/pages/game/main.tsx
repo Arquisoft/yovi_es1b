@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 //Internacionalización
 import "../../i18n.ts";
 import i18n from '../../i18n'
@@ -79,6 +80,12 @@ const resolveUserIcon = (rawIcon: string | null | undefined): string | null => {
     path.toLowerCase().includes(iconValue.toLowerCase())
   );
   return match ? match[1] : iconValue;
+};
+
+const paypalOptions = {
+  clientId: "AWhGEvR7eqIk8FKJ_cr3OKDQy6oGHnTX0hh8DpyjQvZda66ciws-WR9tS5jnA_9FdpNY6zVj9bXKfaih",
+  currency: "EUR",
+  intent: "capture", 
 };
 
 const GameApp = () => {
@@ -690,7 +697,9 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
 // Renderizado directo al root
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <GameApp />
+    <PayPalScriptProvider options={paypalOptions}>
+      <GameApp />
+    </PayPalScriptProvider>
   </React.StrictMode>
 );
 

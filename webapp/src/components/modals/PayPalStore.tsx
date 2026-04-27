@@ -1,4 +1,4 @@
-import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
+import { PayPalButtons } from "@paypal/react-paypal-js";
 import ReactDOM from 'react-dom';
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -15,12 +15,6 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
   const dialogRef = useRef<HTMLDialogElement>(null);
   if (!isOpen) return null;
 
-  const paypalOptions = {
-    clientId: "AWhGEvR7eqIk8FKJ_cr3OKDQy6oGHnTX0hh8DpyjQvZda66ciws-WR9tS5jnA_9FdpNY6zVj9bXKfaih",
-    currency: "EUR",
-    intent: "capture",
-    };
-
   return ReactDOM.createPortal(
     <ModalDialog ref={dialogRef} className="modal-backdrop payment-overlay" ariaLabel={t('store.title')} onClose={onClose}>
       <div className="payment-card">
@@ -34,7 +28,6 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
         </div>
 
         <div className="paypal-button-container">
-          <PayPalScriptProvider options={paypalOptions}>
             <PayPalButtons
               style={{ layout: "vertical", color: "gold", shape: "rect", label: "pay" }}
               createOrder={(_data, actions) => {
@@ -77,7 +70,6 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
                 alert(t('store.error'));
               }}
             />
-          </PayPalScriptProvider>
         </div>
         <p className="payment-footer">{t('store.footer')}</p>
       </div>
