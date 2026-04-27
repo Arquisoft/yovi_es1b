@@ -18,7 +18,7 @@ La aplicación debe garantizar la integridad de las reglas del Juego Y y proporc
 * **Arquitectura Multitier:** Separación estricta entre la interfaz (Webapp), la gestión de usuarios (Users Service) y el motor de lógica (GameY Engine).
 * **Gestión de Sesiones:** Autenticación persistente de usuarios mediante JWT (JSON Web Tokens) y almacenamiento en base de datos NoSQL (MongoDB).
 * **Motor de Juego (Kernel):** Integración de un motor lógico desarrollado en Rust para el cálculo de movimientos y validación de estados de victoria.
-* **Inteligencia Artificial:** Implementación de diferentes estrategias de juego para el modo Humano vs Bot.
+* **Modos de juego:** Implementacion de partidas Humano vs Bot y partidas PvP en tiempo real mediante Socket.IO.
 * **Historial de Partidas:** Persistencia de resultados y estadísticas de juego para cada usuario registrado.
 
 === Objetivos de Calidad
