@@ -550,9 +550,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_12_3_tests_de_carga">12.3. 12.3. Tests de Carga</a></li>
 </ul>
 </li>
-<li><a href="#section-monitoring">13. 12.3. Grafana y Prometheus</a>
+<li><a href="#section-monitoring">13. Grafana y Prometheus</a>
 <ul class="sectlevel2">
-<li><a href="#_12_3_1_dashboard_monitorización_global_de_microservicios_yovi">13.1. 12.3.1. Dashboard: Monitorización Global de Microservicios YoVi</a></li>
+<li><a href="#_dashboard_monitorización_global_de_microservicios_yovi">13.1. Dashboard: Monitorización Global de Microservicios YoVi</a></li>
+<li><a href="#_12_3_2_conclusiones">13.2. 12.3.2. Conclusiones</a></li>
 </ul>
 </li>
 <li><a href="#section-glossary">14. Glosario</a>
@@ -4853,13 +4854,13 @@ componente selector de idioma. No se requieren cambios en ningún componente de 
 </div>
 </div>
 <div class="sect1">
-<h2 id="section-monitoring">13. 12.3. Grafana y Prometheus</h2>
+<h2 id="section-monitoring">13. Grafana y Prometheus</h2>
 <div class="sectionbody">
 <div class="paragraph">
 <p>Para la monitorización del lado servidor se han utilizado Prometheus y Grafana de forma centralizada. Prometheus actúa como recolector y almacén de métricas de los dos microservicios principales: el módulo de usuarios (<strong>users-service</strong> en Node.js) y el motor de juego (<strong>gamey-service</strong> en Rust). Grafana consume esos datos y los visualiza en dashboards interactivos.</p>
 </div>
 <div class="sect2">
-<h3 id="_12_3_1_dashboard_monitorización_global_de_microservicios_yovi">13.1. 12.3.1. Dashboard: Monitorización Global de Microservicios YoVi</h3>
+<h3 id="_dashboard_monitorización_global_de_microservicios_yovi">13.1. Dashboard: Monitorización Global de Microservicios YoVi</h3>
 <div class="imageblock text-center">
 <div class="content">
 <img src="./images/13-grafana.png" alt="13 grafana">
@@ -4907,10 +4908,19 @@ componente selector de idioma. No se requieren cambios en ningún componente de 
 <div class="sect3">
 <h4 id="_monitorización_de_servicios">13.1.5. Monitorización de Servicios</h4>
 <div class="paragraph">
-<p>Este panel de líneas permite comparar en tiempo real el tráfico que recibe el **</p>
+<p>Este panel de líneas permite comparar en tiempo real el tráfico que recibe el <strong>gamey-service</strong> frente al <strong>users-service</strong>.</p>
+</div>
+<div class="paragraph">
+<p>Sirve para verificar que la arquitectura de microservicios está equilibrada y que ambos contenedores están reportando métricas correctamente bajo el entorno seguro HTTPS configurado.</p>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_12_3_2_conclusiones">13.2. 12.3.2. Conclusiones</h3>
+<div class="paragraph">
+<p>Los datos obtenidos muestran un ecosistema estable, sin errores de servidor y con tiempos de respuesta extremadamente competitivos. La bajísima latencia del servicio de Rust justifica su elección para tareas de computación intensiva, mientras que la monitorización centralizada valida la robustez de la arquitectura global de YoVi.</p>
 </div>
 <div style="page-break-after: always;"></div>
-</div>
 </div>
 </div>
 </div>
