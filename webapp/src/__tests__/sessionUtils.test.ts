@@ -95,9 +95,19 @@ describe('sessionUtils', () => {
 
     enableGuestSession()
     expect(isGuestSession()).toBe(true)
+    expect(sessionStorage.getItem('username')).toBe('Invitado')
+    expect(getCurrentUser()).toBe('Invitado')
 
     clearGuestSession()
     expect(isGuestSession()).toBe(false)
+    expect(sessionStorage.getItem('username')).toBeNull()
+  })
+
+  test('getCurrentUser recupera usuario invitado si falta username pero existe marca guest', () => {
+    sessionStorage.setItem('yovi_guest', '1')
+
+    expect(getCurrentUser()).toBe('Invitado')
+    expect(sessionStorage.getItem('username')).toBe('Invitado')
   })
 
   test('persistUserSession guarda y limpia los campos opcionales', () => {

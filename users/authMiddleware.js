@@ -6,8 +6,7 @@ if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
 }
 const JWT_SECRET = process.env.JWT_SECRET || 'clave_secreta_super_segura_2026';
 
-const authMiddleware = (req, res, next) => {
-
+const resolveToken = (req) => {
     const authHeader = String(req.headers.authorization || '');
     const bearerToken = authHeader.startsWith('Bearer ') ? authHeader.slice('Bearer '.length).trim() : '';
 
@@ -17,7 +16,11 @@ const authMiddleware = (req, res, next) => {
     console.log(`[CHECK] Ruta: ${safePath} | Cookie: ${cookieToken ? 'SÍ' : 'NO'} | Header: ${bearerToken ? 'SÍ' : 'NO'}`);
 
     
-    const token = req.cookies?.token || bearerToken;
+    return req.cookies?.token || bearerToken;
+};
+
+const authMiddleware = (req, res, next) => {
+    const token = resolveToken(req);
 
     if (!token) {
         return res.status(401).json({ error: 'Acceso denegado. Token no proporcionado.' });
@@ -32,4 +35,20 @@ const authMiddleware = (req, res, next) => {
     }
 };
 
-module.exports = { authMiddleware, JWT_SECRET };
+const optionalAuthMiddleware = (req, res, next) => {
+    const token = resolveToken(req);
+    if (!token) {
+        req.user = null;
+        next();
+        return;
+    }
+
+    try {
+        req.user = jwt.verify(token, JWT_SECRET);
+        next();
+    } catch (_err) {
+        res.status(401).json({ error: 'Token inválido o expirado.' });
+    }
+};
+
+module.exports = { authMiddleware, optionalAuthMiddleware, JWT_SECRET };

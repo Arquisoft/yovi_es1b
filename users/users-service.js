@@ -29,7 +29,7 @@ app.use(metricsMiddleware);
 const bcrypt = require('bcryptjs');
 const saltRounds = 10; // Nivel de seguridad para el hash de la contraseña
 //imports para tokens
-const { authMiddleware, JWT_SECRET } = require('./authMiddleware');
+const { authMiddleware, optionalAuthMiddleware, JWT_SECRET } = require('./authMiddleware');
 const jwt = require('jsonwebtoken');
 
 const cookieParser = require('cookie-parser');
@@ -632,7 +632,7 @@ app.post('/friends/cancel', authMiddleware, async (req, res) => {
 });
 
 // Executes a move in the game
-app.post('/move', authMiddleware, async (req, res) => {
+app.post('/move', optionalAuthMiddleware, async (req, res) => {
     // CORRECCIÓN: Extraer username del body
     const { cellIndex, username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
@@ -674,11 +674,13 @@ app.post('/move', authMiddleware, async (req, res) => {
     const safeUsername = String(username || '').trim();
     const awardedScore = Number(finalScore);
 
-    // 3. OPERACIÓN SEGURA
-    await User.findOneAndUpdate(
-        { username: safeUsername }, // Filtro protegido contra objetos/inyecciones
-        { $inc: { totalScore: awardedScore } }
-    );
+    // Solo acreditamos puntos si el usuario está autenticado y coincide con el body.
+    if (req.user?.username && req.user.username === safeUsername) {
+      await User.findOneAndUpdate(
+          { username: safeUsername }, // Filtro protegido contra objetos/inyecciones
+          { $inc: { totalScore: awardedScore } }
+      );
+    }
 }
 
     //  Respuesta HTTP
@@ -695,7 +697,7 @@ app.post('/move', authMiddleware, async (req, res) => {
 });
 
 //  Endpoint para registrar una rendición (derrota)
-app.post('/surrender',authMiddleware, async (req, res) => {
+app.post('/surrender', optionalAuthMiddleware, async (req, res) => {
   const { username, difficulty, boardSize, boardLabel, locale, resultLabel } = req.body;
 
   try {
@@ -740,7 +742,7 @@ app.post('/surrender',authMiddleware, async (req, res) => {
 
 
 // Resets the game board WITHOUT affecting stats
-app.post('/reset', authMiddleware, async (req, res) => {
+app.post('/reset', optionalAuthMiddleware, async (req, res) => {
   const { size, difficulty, username } = req.body;
 
   try {
@@ -781,7 +783,7 @@ app.post('/reset', authMiddleware, async (req, res) => {
 
 
 // Get available difficulties
-app.get('/difficulties', authMiddleware, async (req, res) => {
+app.get('/difficulties', optionalAuthMiddleware, async (req, res) => {
   try {
     const rustResponse = await fetch(`${GAMEY_URL}/difficulties`);
     if (!rustResponse.ok) {

@@ -15,7 +15,13 @@ export const getAuthHeaders = () => {
  */
 export const getCurrentUser = (): string => {
     const storedUsername = sessionStorage.getItem('username');
-    if (!storedUsername) return '';
+    if (!storedUsername) {
+        if (isGuestSession()) {
+            sessionStorage.setItem('username', GUEST_USERNAME);
+            return GUEST_USERNAME;
+        }
+        return '';
+    }
 
     const normalized = normalizeStorageValue(storedUsername, 64);
     if (!normalized || !USERNAME_PATTERN.test(normalized)) {
@@ -31,6 +37,9 @@ export const getCurrentUser = (): string => {
  */
 export const enableGuestSession = () => {
     sessionStorage.setItem('yovi_guest', '1');
+    if (!sessionStorage.getItem('username')) {
+        sessionStorage.setItem('username', GUEST_USERNAME);
+    }
 };
 
 /**
@@ -44,6 +53,9 @@ export const isGuestSession = (): boolean => {
  * Elimina la marca de invitado.
  */
 export const clearGuestSession = () => {
+    if (sessionStorage.getItem('username') === GUEST_USERNAME) {
+        sessionStorage.removeItem('username');
+    }
     sessionStorage.removeItem('yovi_guest');
 };
 
@@ -57,6 +69,7 @@ export const clearSession = () => {
 };
 
 const USERNAME_PATTERN = /^[\p{L}\p{N}\s._-]{1,64}$/u;
+const GUEST_USERNAME = 'Invitado';
 const STORAGE_VALUE_PATTERN = /^[\p{L}\p{N}\s._-]{1,128}$/u;
 const TOKEN_PATTERN = /^[A-Za-z0-9._~+/=-]{1,4096}$/;
 
