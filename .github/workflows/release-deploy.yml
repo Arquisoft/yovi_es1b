@@ -225,5 +225,10 @@ jobs:
             echo "MONGODB_URI_USERS=${{ secrets.MONGODB_URI_USERS }}" > .env
             echo "MONGODB_URI_GAMEY=${{ secrets.MONGODB_URI_GAMEY }}" >> .env
 
+            mkdir -p certs
+            openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+              -keyout certs/key.pem -out certs/cert.pem \
+              -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=${{ secrets.DEPLOY_HOST }}"
+
             docker compose down
             docker compose up -d --pull always
