@@ -184,18 +184,11 @@ pub struct ApiDoc;
 
 // --- ROUTER ---
 
-pub fn create_router(state: AppState) -> axum::Router {
-    // 1. Creamos el manejador de métricas
-    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
-
+fn base_router(state: AppState) -> axum::Router {
     axum::Router::new()
         .merge(
             utoipa_swagger_ui::SwaggerUi::new("/swagger-ui")
                 .url("/api-docs/openapi.json", ApiDoc::openapi()),
-        )
-        .route(
-            "/metrics",
-            axum::routing::get(|| async move { metric_handle.render() }),
         )
         .route("/status", axum::routing::get(status))
         .route("/execute-move", axum::routing::post(realizar_movimiento))
@@ -207,8 +200,22 @@ pub fn create_router(state: AppState) -> axum::Router {
         .route("/pvp/reset", axum::routing::post(reiniciar_juego_pvp))
         .route("/pvp/move", axum::routing::post(realizar_movimiento_pvp))
         .route("/api/play", axum::routing::post(play::play))
-        .layer(prometheus_layer)
         .with_state(state)
+}
+
+pub fn create_router(state: AppState) -> axum::Router {
+    base_router(state)
+}
+
+fn create_router_with_metrics(state: AppState) -> axum::Router {
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+
+    base_router(state)
+        .route(
+            "/metrics",
+            axum::routing::get(|| async move { metric_handle.render() }),
+        )
+        .layer(prometheus_layer)
 }
 
 // --- HANDLERS (FUSIÓN DIRECTA) ---
@@ -524,7 +531,7 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
         .with_bot(Arc::new(ProBot));
     let state = AppState::new(bots, db);
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
-    let router = create_router(state);
+    let router = create_router_with_metrics(state);
 
     match (
         std::env::var("GAMEY_TLS_CERT_PATH").ok(),
