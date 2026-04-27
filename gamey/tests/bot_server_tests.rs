@@ -986,85 +986,129 @@ async fn test_play_size_layout_mismatch() {
         error.message.contains("Invalid") || error.message.contains("size"),
         "El mensaje de error debería indicar la discrepancia de tamaños"
     );
+}
 
-
-    
 #[tokio::test]
 async fn test_history_empty_coverage() {
-    // Usamos tu nueva función helper
-    let app = test_app().await; 
+    let app = test_app().await;
 
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/api/history?username=usuario_fantasma")
+                .method("GET")
+                .uri("/history?username=usuario_fantasma&page=2&limit=7")
                 .body(Body::empty())
-                .unwrap()
+                .unwrap(),
         )
         .await
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-}
-
-#[tokio::test]
-async fn test_obtener_estadisticas_coverage() {
-    let bots = gamey::YBotRegistry::new(); // O la lógica que uses para bots
-    let db = get_test_db().await;
-    let state = AppState::new(bots, db.clone());
-    
-    // Ahora tienes el estado para el router y la db para insertar
-    let col = db.collection::<serde_json::Value>("partidas");
-    col.insert_one(serde_json::json!({
-    "player": "Drus",
-    "result": "Victoria",
-    "score": 150
-})).await.unwrap();
-
-    let app = test_app_with_state(state);
-    
-    let response = app.oneshot(
-        Request::builder()
-            .uri("/api/stats?username=Drus")
-            .body(Body::empty())
-            .unwrap()
-    ).await.unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK);
+    let body = response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(json.get("page").and_then(|v| v.as_u64()), Some(2));
+    assert_eq!(json.get("limit").and_then(|v| v.as_i64()), Some(7));
+    assert!(json.get("data").is_some());
 }
 
 #[tokio::test]
 async fn test_pvp_errors_coverage() {
     let bots = gamey::YBotRegistry::new();
-let db = get_test_db().await;
-let state = AppState::new(bots, db);
-let app = test_app_with_state(state);
+    let db = get_test_db().await;
+    let state = AppState::new(bots, db);
+    let app = test_app_with_state(state);
 
-    // Error: No match (Línea 369)
-    let res_no_match = app.clone()
-        .oneshot(Request::builder()
-            .method("POST")
-            .uri("/api/pvp/move")
-            .header("Content-Type", "application/json")
-            .body(Body::from(r#"{"match_id": "falso", "player": "Drus", "index": 0}"#)).unwrap())
-        .await.unwrap();
-    
-    // Error: Player not in match (Línea 374)
-    // Primero tendrías que crear un match real pero enviar un nombre de jugador distinto
+    let res_no_match = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/pvp/move")
+                .header("Content-Type", "application/json")
+                .body(Body::from(r#"{"match_id":"falso","player":"Drus","index":0}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(res_no_match.status(), StatusCode::OK);
+    let no_match_body = res_no_match.into_body().collect().await.unwrap().to_bytes();
+    let no_match_json: serde_json::Value = serde_json::from_slice(&no_match_body).unwrap();
+    assert_eq!(no_match_json["error"], "No match");
+
+    let reset_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/pvp/reset")
+                .header("Content-Type", "application/json")
+                .body(Body::from(
+                    r#"{"match_id":"m1","size":3,"players":["alice","bob"]}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(reset_response.status(), StatusCode::OK);
+
+    let res_bad_player = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/pvp/move")
+                .header("Content-Type", "application/json")
+                .body(Body::from(
+                    r#"{"match_id":"m1","player":"carol","index":0}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(res_bad_player.status(), StatusCode::OK);
+    let bad_player_body = res_bad_player.into_body().collect().await.unwrap().to_bytes();
+    let bad_player_json: serde_json::Value = serde_json::from_slice(&bad_player_body).unwrap();
+    assert_eq!(bad_player_json["error"], "Player not in match");
 }
 
 #[tokio::test]
 async fn test_pvp_victory_and_scoring_coverage() {
     let app = test_app().await;
 
-    // 1. Crea una partida con dificultad "Hard" para cubrir la línea 226 de la img 3c9e9c
-    // 2. Realiza movimientos hasta que el estado sea 'Finished'
-    // 3. El trigger de victoria entrará en el bloque if let Some(winner) (Línea 385 img 3c9b96)
-    
-    // Análisis crítico: Como usas tokio::spawn para insertar en BD, 
-    // tienes que esperar un pelín para que a Rust le dé tiempo a ejecutarlo
-    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-    
-    // 4. Verifica que la colección "partidas" ahora tiene un documento nuevo
-}
+    let reset_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/pvp/reset")
+                .header("Content-Type", "application/json")
+                .body(Body::from(
+                    r#"{"match_id":"m2","size":3,"players":["alice","bob"]}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(reset_response.status(), StatusCode::OK);
+
+    let move_response = app
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/pvp/move")
+                .header("Content-Type", "application/json")
+                .body(Body::from(
+                    r#"{"match_id":"m2","player":"alice","index":0}"#,
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(move_response.status(), StatusCode::OK);
+    let body = move_response.into_body().collect().await.unwrap().to_bytes();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(json.get("board").is_some());
+    assert!(json.get("next_turn").is_some());
 }

@@ -421,6 +421,40 @@ fn apply_move(game: &mut GameY, movement: Movement, error_msg: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::Arc;
+
+    struct FixedBot {
+        name: String,
+        difficulty: BotDifficulty,
+        index: u32,
+    }
+
+    impl FixedBot {
+        fn new(name: &str, difficulty: BotDifficulty, index: u32) -> Self {
+            Self {
+                name: name.to_string(),
+                difficulty,
+                index,
+            }
+        }
+    }
+
+    impl YBot for FixedBot {
+        fn name(&self) -> &str {
+            &self.name
+        }
+
+        fn difficulty(&self) -> BotDifficulty {
+            self.difficulty
+        }
+
+        fn choose_move(&self, board: &GameY) -> Option<Coordinates> {
+            Some(Coordinates::from_index(
+                self.index.min(board.total_cells().saturating_sub(1)),
+                board.board_size(),
+            ))
+        }
+    }
 
     #[test]
     fn test_mode_display_computer() {
@@ -618,5 +652,188 @@ mod tests {
     fn test_parse_command_list_bots() {
         let cmd = parse_command("list_bots", 10);
         assert_eq!(cmd, Command::ListBots);
+    }
+
+    #[test]
+    fn test_process_input_toggles_render_flags() {
+        let mut game = GameY::new(3);
+        let mut render_options = RenderOptions::default();
+        let mut bot: Arc<dyn YBot> = Arc::new(FixedBot::new("fixed_easy", BotDifficulty::Easy, 1));
+        let registry = YBotRegistry::new().with_bot(bot.clone());
+        let player = PlayerId::new(0);
+
+        process_input(
+            "show_coords",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+        process_input(
+            "show_idx",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+        process_input(
+            "show_colors",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        assert!(render_options.show_3d_coords);
+        assert!(!render_options.show_idx);
+        assert!(!render_options.show_colors);
+    }
+
+    #[test]
+    fn test_process_input_place_human_mode_does_not_trigger_bot_move() {
+        let mut game = GameY::new(3);
+        let mut render_options = RenderOptions::default();
+        let mut bot: Arc<dyn YBot> = Arc::new(FixedBot::new("fixed_easy", BotDifficulty::Easy, 1));
+        let registry = YBotRegistry::new().with_bot(bot.clone());
+        let player = PlayerId::new(0);
+        let before = game.available_cells().len();
+
+        process_input(
+            "0",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        assert_eq!(game.available_cells().len(), before - 1);
+    }
+
+    #[test]
+    fn test_process_input_place_computer_mode_triggers_bot_move() {
+        let mut game = GameY::new(3);
+        let mut render_options = RenderOptions::default();
+        let mut bot: Arc<dyn YBot> = Arc::new(FixedBot::new("fixed_easy", BotDifficulty::Easy, 1));
+        let registry = YBotRegistry::new().with_bot(bot.clone());
+        let player = PlayerId::new(0);
+        let before = game.available_cells().len();
+
+        process_input(
+            "0",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Computer,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        assert_eq!(game.available_cells().len(), before - 2);
+    }
+
+    #[test]
+    fn test_process_input_change_bot_invalid_difficulty_keeps_current_bot() {
+        let mut game = GameY::new(3);
+        let mut render_options = RenderOptions::default();
+        let mut bot: Arc<dyn YBot> = Arc::new(FixedBot::new("fixed_easy", BotDifficulty::Easy, 1));
+        let registry = YBotRegistry::new().with_bot(bot.clone());
+        let player = PlayerId::new(0);
+
+        process_input(
+            "bot imposible",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        assert_eq!(bot.name(), "fixed_easy");
+    }
+
+    #[test]
+    fn test_process_input_change_bot_without_candidates_keeps_current_bot() {
+        let mut game = GameY::new(3);
+        let mut render_options = RenderOptions::default();
+        let mut bot: Arc<dyn YBot> = Arc::new(FixedBot::new("fixed_easy", BotDifficulty::Easy, 1));
+        let registry = YBotRegistry::new();
+        let player = PlayerId::new(0);
+
+        process_input(
+            "bot hard",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        assert_eq!(bot.name(), "fixed_easy");
+    }
+
+    #[test]
+    fn test_process_input_save_and_load_roundtrip() {
+        let mut game = GameY::new(3);
+        let mut render_options = RenderOptions::default();
+        let mut bot: Arc<dyn YBot> = Arc::new(FixedBot::new("fixed_easy", BotDifficulty::Easy, 1));
+        let registry = YBotRegistry::new().with_bot(bot.clone());
+        let player = PlayerId::new(0);
+
+        process_input(
+            "0",
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        let filename = "cli_test_save_game.json";
+        process_input(
+            &format!("save {}", filename),
+            &mut game,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        let mut game_loaded = GameY::new(6);
+        process_input(
+            &format!("load {}", filename),
+            &mut game_loaded,
+            &player,
+            &mut render_options,
+            Mode::Human,
+            &mut bot,
+            &registry,
+        )
+        .unwrap();
+
+        assert_eq!(game_loaded.board_size(), 3);
+        assert_eq!(game_loaded.available_cells().len(), game.available_cells().len());
+
+        let _ = std::fs::remove_file(filename);
     }
 }

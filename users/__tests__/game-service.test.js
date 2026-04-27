@@ -96,6 +96,23 @@ describe('Game endpoints (proxy a Rust)', () => {
             expect(res.status).toBe(500)
             expect(res.body.error).toContain('network down')
         })
+
+        it('permite modo invitado sin token y no acredita score en base de datos', async () => {
+            mockFetch.mockReturnValue(mockRustResponse({
+                board: { size: 6, layout: '......' },
+                winner: 0,
+                score: 300,
+            }))
+            const updateSpy = vi.spyOn(User, 'findOneAndUpdate').mockResolvedValue({ username: 'Alice' })
+
+            const res = await request(app)
+                .post('/move')
+                .send({ cellIndex: 0, username: 'Alice', difficulty: 'Hard', boardSize: 6 })
+
+            expect(res.status).toBe(200)
+            expect(res.body.score).toBe(300)
+            expect(updateSpy).not.toHaveBeenCalled()
+        })
     })
 
     // ── POST /surrender ────────────────────────
@@ -213,6 +230,15 @@ describe('Game endpoints (proxy a Rust)', () => {
             const res = await withAuthToken(request(app).get('/difficulties'), token)
 
             expect(res.status).toBe(500)
+        })
+
+        it('permite consultar dificultades sin token (modo invitado)', async () => {
+            mockFetch.mockReturnValue(mockRustResponse(['Easy', 'Medium', 'Hard']))
+
+            const res = await request(app).get('/difficulties')
+
+            expect(res.status).toBe(200)
+            expect(res.body).toEqual(['Easy', 'Medium', 'Hard'])
         })
     })
 
