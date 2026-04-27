@@ -43,7 +43,7 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 pub use version::*;
 
-use crate::bot::{pro_bot::ProBot, random::RandomBot, ybot_registry::YBotRegistry};
+use crate::bot::{pro_bot::ProBot, random::RandomBot,edge_bot::EdgeBot,attacker_bot::AttackerBot,blocker_bot::BlockerBot, ybot_registry::YBotRegistry};
 use crate::{BotDifficulty, GameYError, YEN, state::AppState};
 
 // --- ESTRUCTURAS ---
@@ -505,7 +505,10 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
         })?;
     let db = client.database("gamey_db");
     let bots = YBotRegistry::new()
+        .with_bot(Arc::new(AttackerBot))
+        .with_bot(Arc::new(EdgeBot))
         .with_bot(Arc::new(RandomBot))
+        .with_bot(Arc::new(BlockerBot))
         .with_bot(Arc::new(ProBot));
     let state = AppState::new(bots, db);
     let addr = SocketAddr::from(([0, 0, 0, 0], port));
