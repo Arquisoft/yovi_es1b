@@ -30,7 +30,7 @@ Esta estrategia se apoya en cuatro principios:
 
 La aplicación se divide en tres bloques principales:
 
-* **`webapp`**: interfaz pública construida con React y TypeScript. Está organizada como una aplicación multipágina con entradas separadas para inicio, login, registro y juego, lo que hace que cada flujo tenga su propio arranque y su propio contexto visual.
+* **`webapp`**: interfaz pública construida con React y TypeScript. Está organizada como una aplicación multipágina con entradas separadas para inicio, login, gamemode, registro y juego, lo que hace que cada flujo tenga su propio arranque y su propio contexto visual.
 * **`users`**: servicio Node.js/Express que actúa como punto de entrada público para autenticación, perfil, relaciones sociales y parte de la integración con el motor de juego.
 * **`gamey`**: servicio Rust que implementa el motor de juego, los bots y la persistencia del histórico de partidas.
 
@@ -74,7 +74,7 @@ Además, la aplicación incorpora integración con terceros cuando aporta valor 
 
 El despliegue está pensado para ser repetible y predecible. Cada componente se empaqueta en su propio contenedor Docker y el conjunto se coordina con **Docker Compose**. Esto permite levantar la aplicación completa en un entorno homogéneo y reduce el clásico problema de "en mi máquina funciona".
 
-La `webapp` se construye como una imagen multi-stage y en producción se sirve con **Nginx** a partir de los distintos entry points HTML de la MPA (`index.html`, `login.html`, `register.html` y `game.html`), mientras que en desarrollo se ejecuta con Vite. El `try_files` de Nginx actúa solo como respaldo genérico para rutas no resueltas como archivo estático, no como mecanismo principal de navegación. El servicio `users` puede arrancar en HTTPS si existen certificados locales, generados con `mkcert`, lo que nos acerca bastante al comportamiento de un entorno real sin complicar demasiado la puesta en marcha.
+La `webapp` se construye como una imagen multi-stage y en producción se sirve con **Nginx** a partir de los distintos entry points HTML de la MPA (`index.html`, `login.html`, `register.html`, 'gamemode.html' y `game.html`), mientras que en desarrollo se ejecuta con Vite. El `try_files` de Nginx actúa solo como respaldo genérico para rutas no resueltas como archivo estático, no como mecanismo principal de navegación. El servicio `users` puede arrancar en HTTPS si existen certificados locales, generados con `mkcert`, lo que nos acerca bastante al comportamiento de un entorno real sin complicar demasiado la puesta en marcha.
 
 La ventaja de esta decisión es que el sistema queda listo tanto para desarrollo local como para despliegues de evaluación o demostración, con las dependencias ya encapsuladas en sus contenedores.
 

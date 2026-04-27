@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
 
-type GuestAccessReason = 'perfil' | 'historial' | 'amigos';
+type GuestAccessReason = 'perfil' | 'historial' | 'amigos' | 'tienda' | 'modos';
 
 interface GuestAccessModalProps {
   reason: GuestAccessReason | null;

@@ -476,6 +476,14 @@ describe('game main entrypoint', () => {
     await user.click(screen.getByRole('button', { name: /^history$/i }))
     expect(screen.getByTestId('guest-reason').textContent).toBe('historial')
 
+    await user.click(screen.getByRole('button', { name: /score-store/i }))
+    expect(screen.getByTestId('guest-reason').textContent).toBe('tienda')
+    expect(screen.getByTestId('paypal-store').textContent).toContain('false')
+
+    await user.click(screen.getByRole('button', { name: /mode-menu/i }))
+    expect(screen.getByTestId('guest-reason').textContent).toBe('modos')
+    expect(locationReplaceMock).not.toHaveBeenCalled()
+
     await user.click(screen.getByRole('button', { name: /go-login/i }))
     expect((globalThis.location as { href: string }).href).toBe('/login.html')
 
@@ -515,10 +523,15 @@ describe('game main entrypoint', () => {
       (instance.acceptChallenge as ReturnType<typeof vi.fn>).mock.calls.some(([arg]) => arg === 'challenge-1')
     )).toBe(true)
 
-    ;(globalThis.confirm as ReturnType<typeof vi.fn>).mockReturnValueOnce(false)
     await user.click(screen.getByRole('button', { name: /mode-menu/i }))
     expect((globalThis.location as unknown as { replace: any }).replace).not.toHaveBeenCalled()
+    expect(multiplayerInstances.some((instance) =>
+      (instance.surrender as ReturnType<typeof vi.fn>).mock.calls.length > 0
+    )).toBe(false)
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /cancel|cancelar/i }))
+
     await user.click(screen.getByRole('button', { name: /mode-menu/i }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: /aceptar|accept/i }))
     expect(multiplayerInstances.some((instance) =>
       (instance.surrender as ReturnType<typeof vi.fn>).mock.calls.length > 0
     )).toBe(true)

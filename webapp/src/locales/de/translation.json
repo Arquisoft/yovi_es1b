@@ -220,6 +220,8 @@
     "reason_perfil": "Um dein Profil zu sehen, musst du dich anmelden oder registrieren.",
     "reason_historial": "Um den Spielverlauf zu sehen, musst du dich anmelden oder registrieren.",
     "reason_amigos": "Um Freunde hinzuzufügen, musst du dich anmelden oder registrieren.",
+    "reason_tienda": "Um Punkte zu kaufen, musst du dich anmelden oder registrieren.",
+    "reason_modos": "Um den Spielmodus zu wechseln, musst du dich anmelden oder registrieren.",
     "continue_guest": "Als Gast fortfahren"
   },
   "store": {

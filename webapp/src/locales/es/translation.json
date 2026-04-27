@@ -221,6 +221,8 @@
                   "reason_perfil":  "Para ver tu perfil necesitas iniciar sesión o registrarte.",
                   "reason_historial":  "Para consultar el historial necesitas iniciar sesión o registrarte.",
                   "reason_amigos":  "Para añadir amigos necesitas iniciar sesión o registrarte.",
+                  "reason_tienda":  "Para comprar puntos necesitas iniciar sesión o registrarte.",
+                  "reason_modos":  "Para cambiar de modo de juego necesitas iniciar sesión o registrarte.",
                   "continue_guest":  "Seguir como invitado"
               },
     "store":  {

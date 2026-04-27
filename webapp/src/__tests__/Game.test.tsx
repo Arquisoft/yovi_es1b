@@ -84,7 +84,7 @@ describe('Game UI (MPA Ready)', () => {
     fireEvent.click(screen.getByRole('button', { name: /ver perfil/i }))
     expect(props.onViewProfile).toHaveBeenCalled()
 
-    fireEvent.click(screen.getByTitle(/cerrar sesion/i))
+    fireEvent.click(screen.getByTitle(/salir al men|exit to menu/i))
     expect(props.onExit).toHaveBeenCalled()
   })
 

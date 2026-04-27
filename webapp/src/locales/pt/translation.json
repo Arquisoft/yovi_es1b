@@ -220,6 +220,8 @@
     "reason_perfil": "Para ver o teu perfil precisas de iniciar sessão ou registar-te.",
     "reason_historial": "Para consultar o histórico precisas de iniciar sessão ou registar-te.",
     "reason_amigos": "Para adicionar amigos precisas de iniciar sessão ou registar-te.",
+    "reason_tienda": "Para comprar pontos precisas de iniciar sessão ou registar-te.",
+    "reason_modos": "Para mudar o modo de jogo precisas de iniciar sessão ou registar-te.",
     "continue_guest": "Continuar como convidado"
   },
   "store": {

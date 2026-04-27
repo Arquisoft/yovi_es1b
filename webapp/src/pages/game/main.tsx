@@ -20,7 +20,6 @@ import { PayPalStore } from '../../components/modals/PayPalStore';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { MenuBackgroundShell } from '../../components/layout/MenuBackgroundShell';
-import { LanguageModal } from '../../components/modals/LanguageModal';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
@@ -150,7 +149,6 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
-  const [showLanguageScreen, setShowLanguageScreen] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [pendingLeaveAction, setPendingLeaveAction] = useState<'exit' | 'mode' | null>(null);
@@ -548,13 +546,20 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     }}
                     onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
                     onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
-                    openLanguage={() => setShowLanguageScreen(true)}
                     onOpenSettings={() => background.setShowSettings(true)}
                     onOpenTutorial={() => setShowTutorialScreen(true)}
                     onScoreButtonClick={() => {
+                        if (isGuestMode) {
+                            openGuestAccessPrompt('tienda');
+                            return;
+                        }
                         setShowStore(true);
                     }}
                     onGoToModeMenu={() => {
+                        if (isGuestMode) {
+                            openGuestAccessPrompt('modos');
+                            return;
+                        }
                         requestLeave('mode');
                     }}
                 />
@@ -618,11 +623,6 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     winner={winner}
                     score={finalScore}
                     onClose={() => setShowResultModal(false)}
-                />
-
-                <LanguageModal
-                    isOpen={showLanguageScreen}
-                    onClose={() => setShowLanguageScreen(false)}
                 />
 
                 <HistoryModal

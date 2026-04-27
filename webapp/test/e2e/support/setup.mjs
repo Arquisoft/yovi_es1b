@@ -1,6 +1,8 @@
 import { setWorldConstructor, Before, After, setDefaultTimeout } from '@cucumber/cucumber'
 import { chromium } from 'playwright'
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
+
 setDefaultTimeout(120_000)
 
 class CustomWorld {

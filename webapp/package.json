@@ -12,9 +12,9 @@
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest --watch",
     "test:e2e:run": "cucumber-js --import test/e2e/support/setup.mjs --import test/e2e/steps/**/*.mjs test/e2e/features --format progress",
-    "test:e2e": "NODE_TLS_REJECT_UNAUTHORIZED=0 start-server-and-test 'npm run dev' tcp:5173 'npm --prefix ../users start' tcp:3000 'npm run test:e2e:run'",
+    "test:e2e": "cross-env NODE_TLS_REJECT_UNAUTHORIZED=0 start-server-and-test \"npm run dev\" tcp:5173 \"cross-env GAMEY_SERVICE_URL=https://localhost:4000 NODE_TLS_REJECT_UNAUTHORIZED=0 npm --prefix ../users start\" tcp:3000 \"npm run test:e2e:run\"",
     "test:e2e:install-browsers": "npx playwright install",
-    "start:all": "concurrently \"npm run dev\" \"GAMEY_SERVICE_URL=https://localhost:4000 NODE_TLS_REJECT_UNAUTHORIZED=0 npm --prefix ../users start\""
+    "start:all": "concurrently \"npm run dev\" \"cross-env GAMEY_SERVICE_URL=https://localhost:4000 NODE_TLS_REJECT_UNAUTHORIZED=0 npm --prefix ../users start\""
   },
   "dependencies": {
     "@paypal/react-paypal-js": "^9.1.1",
@@ -38,6 +38,7 @@
     "@vitejs/plugin-react": "^5.1.1",
     "@vitest/coverage-v8": "^4.0.16",
     "concurrently": "^8.2.0",
+    "cross-env": "^10.1.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",

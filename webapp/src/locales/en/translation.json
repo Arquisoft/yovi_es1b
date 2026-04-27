@@ -220,6 +220,8 @@
     "reason_perfil": "To view your profile you need to log in or register.",
     "reason_historial": "To view match history you need to log in or register.",
     "reason_amigos": "To add friends you need to log in or register.",
+    "reason_tienda": "To buy points you need to log in or register.",
+    "reason_modos": "To change game mode you need to log in or register.",
     "continue_guest": "Continue as guest"
   },
   "store": {

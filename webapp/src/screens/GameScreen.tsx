@@ -5,7 +5,6 @@ import historyJson from '../assets/buttons/History.json';
 import restartJson from '../assets/buttons/Restart.json';
 import settingsJson from '../assets/buttons/setting.json';
 import logoGameY from '../assets/Logo_GameY.png';
-import languageImg from '../assets/language/idioma.png';
 import settingsImg from '../assets/buttons/configuracion.png';
 import botonRojo from '../assets/buttons/BotonRojo.png';
 import historialImg from '../assets/buttons/Historial.jpg';
@@ -102,7 +101,6 @@ const GameNavbar = ({
   onEndGame,
   onFetchHistory,
   onGoToModeMenu,
-  openLanguage,
   onExit,
   onOpenSettings,
   onOpenTutorial,
@@ -256,19 +254,6 @@ const GameNavbar = ({
         </button>
         <span className="nav-icon-caption">{t('game.history')}</span>
       </div>
-      {openLanguage && (
-        <div className="nav-icon-action">
-          <button
-            className="nav-btn nav-btn-icon-frame nav-btn-with-language"
-            onClick={openLanguage}
-            title={t('common.language')}
-            aria-label={t('common.language_aria')}
-          >
-            <img className="nav-btn-language-img" src={languageImg} alt={t('common.language')} />
-          </button>
-          <span className="nav-icon-caption">{t('common.language')}</span>
-        </div>
-      )}
       {userCanOpenHelp && onOpenTutorial && (
         <div className="nav-icon-action">
           <button
@@ -356,7 +341,6 @@ type GameNavbarProps = {
   onEndGame: () => void;
   onFetchHistory: () => void;
   onGoToModeMenu?: () => void;
-  openLanguage?: () => void;
   onOpenSettings?: () => void;
   onOpenTutorial?: () => void;
   onResetGame: () => void;
@@ -414,7 +398,6 @@ type GameScreenProps = Readonly<{
   onFetchHistory: () => void; // Permite consultar el historial de partidas
   onAddFriend?: () => void; // Abre el panel de amigos
   onViewProfile?: () => void; // Abre el perfil del usuario
-  openLanguage?: () => void; // Abre el selector de idioma
   onOpenSettings?: () => void; // Abre el panel de configuracion
   onOpenTutorial?: () => void; // Abre la pantalla de tutorial
   onScoreButtonClick?: () => void; // Nuevo callback para cuando se hace clic en el puntaje total acumulado
@@ -451,7 +434,6 @@ function GameScreenView({
   onFetchHistory,
   onAddFriend,
   onViewProfile,
-  openLanguage,
   onOpenSettings,
   onOpenTutorial,
   onScoreButtonClick,
@@ -555,7 +537,6 @@ function GameScreenView({
         onFetchHistory={onFetchHistory}
         onGoToModeMenu={onGoToModeMenu}
         onExit={onExit}
-        openLanguage={openLanguage}
         onOpenSettings={onOpenSettings}
         onOpenTutorial={onOpenTutorial}
         onResetGame={onResetGame}
@@ -698,8 +679,8 @@ function GameScreenView({
   );
 }
 
-function GameScreen({ openLanguage, ...props }: GameScreenProps) {
-  return <GameScreenView {...props} openLanguage={openLanguage} />;
+function GameScreen(props: GameScreenProps) {
+  return <GameScreenView {...props} />;
 }
 
 export default GameScreen;
