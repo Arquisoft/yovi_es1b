@@ -42,3 +42,11 @@ El proyecto implementa prácticas de Integración Continua (CI) y Calidad de Có
 
 * **GitHub Actions:** Se utilizan flujos de trabajo automatizados para ejecutar pruebas y verificar la integridad del código en cada *push* o *pull request*.
 * **SonarQube / SonarCloud:** Se integra el análisis estático de código para detectar *bugs*, vulnerabilidades de seguridad y deuda técnica de manera temprana.
+
+==== Estrategias de juego en la webapp
+
+La pantalla de juego no distingue los modos mediante condicionales dispersos, sino mediante estrategias. `BotStrategy` encapsula el flujo clasico contra IA: reset, movimiento, rendicion y temporizador. `MultiplayerStrategy` encapsula sockets, desafios, salas, turnos y sincronizacion del tablero. Ambas implementan `GameProvider`, lo que reduce el acoplamiento de `GameScreen` y facilita extender modos de juego nuevos.
+
+==== Autenticacion HTTP y tiempo real
+
+La autenticacion combina JWT en `sessionStorage` y cookie `token` HTTP-only emitida por `users`. Las peticiones HTTP usan `Authorization: Bearer <token>` y `credentials: include`; los sockets se autentican con el token enviado en `handshake.auth` o con la cookie. Las rutas sensibles de usuarios, amigos, juego e historial usan `authMiddleware`; el login, registro y logout quedan como rutas publicas o de gestion de sesion.
