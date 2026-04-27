@@ -2,11 +2,11 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 
 [[section-monitoring]]
-== 12.3. Grafana y Prometheus
+== Grafana y Prometheus
 
 Para la monitorización del lado servidor se han utilizado Prometheus y Grafana de forma centralizada. Prometheus actúa como recolector y almacén de métricas de los dos microservicios principales: el módulo de usuarios (**users-service** en Node.js) y el motor de juego (**gamey-service** en Rust). Grafana consume esos datos y los visualiza en dashboards interactivos.
 
-=== 12.3.1. Dashboard: Monitorización Global de Microservicios YoVi
+=== Dashboard: Monitorización Global de Microservicios YoVi
 
 image::13-grafana.png[align="center"]
 
