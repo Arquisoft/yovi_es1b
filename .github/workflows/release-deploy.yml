@@ -220,15 +220,21 @@ jobs:
           user: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_KEY }}
           command: |
+            set -e
+
             wget https://raw.githubusercontent.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/master/docker-compose.yml -O docker-compose.yml
 
             echo "MONGODB_URI_USERS=${{ secrets.MONGODB_URI_USERS }}" > .env
             echo "MONGODB_URI_GAMEY=${{ secrets.MONGODB_URI_GAMEY }}" >> .env
 
+            docker rm -f gamey users webapp prometheus grafana || true
+            sudo rm -rf certs
             mkdir -p certs
             openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
               -keyout certs/key.pem -out certs/cert.pem \
               -subj "/C=ES/ST=Asturias/L=Oviedo/O=Uniovi/OU=ASW/CN=${{ secrets.DEPLOY_HOST }}"
+            chmod 600 certs/key.pem
+            chmod 644 certs/cert.pem
 
             docker compose down
             docker compose up -d --pull always

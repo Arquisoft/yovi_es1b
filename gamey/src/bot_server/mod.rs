@@ -137,6 +137,23 @@ fn normalize_history_result(raw: &str) -> &'static str {
     }
 }
 
+fn normalize_history_filter(raw: &str) -> Option<&'static str> {
+    let stripped: String = raw
+        .trim()
+        .chars()
+        .filter(|ch| ch.is_ascii_alphanumeric())
+        .map(|ch| ch.to_ascii_lowercase())
+        .collect();
+
+    match stripped.as_str() {
+        "victoria" | "victory" | "win" | "won" | "ganado" | "youwin" | "hasganado"
+        | "ganhaste" => Some("Victoria"),
+        "derrota" | "defeat" | "loss" | "lose" | "lost" | "perdido" | "youlose"
+        | "hasperdido" | "perdeste" => Some("Derrota"),
+        _ => None,
+    }
+}
+
 fn normalize_history_document(record: &mut serde_json::Value) {
     if let Some(obj) = record.as_object_mut() {
         if let Some(result) = obj.get("result").and_then(|v| v.as_str()) {
@@ -333,7 +350,9 @@ pub async fn obtener_historial(
 
     // Añadimos el filtro de resultado si el frontend lo enví­a
     if let Some(res) = &params.result {
-        filter.insert("result", res);
+        if let Some(normalized_result) = normalize_history_filter(res) {
+            filter.insert("result", normalized_result);
+        }
     }
 
     // 3. Contar el total de documentos usando el filtro final
@@ -573,7 +592,8 @@ pub async fn run_bot_server(port: u16) -> Result<(), GameYError> {
 #[cfg(test)]
 mod tests {
     use super::{
-        normalize_history_document, normalize_history_result, run_bot_server, validate_mongodb_uri,
+        normalize_history_document, normalize_history_filter, normalize_history_result,
+        run_bot_server, validate_mongodb_uri,
     };
 
     #[test]
@@ -588,6 +608,20 @@ mod tests {
         assert_eq!(normalize_history_result("Has perdido"), "Derrota");
         assert_eq!(normalize_history_result("loss"), "Derrota");
         assert_eq!(normalize_history_result("Du hast verloren"), "Derrota");
+    }
+
+    #[test]
+    fn normalize_history_filter_accepts_frontend_values() {
+        assert_eq!(normalize_history_filter("win"), Some("Victoria"));
+        assert_eq!(normalize_history_filter("loss"), Some("Derrota"));
+        assert_eq!(normalize_history_filter("Victoria"), Some("Victoria"));
+        assert_eq!(normalize_history_filter("Derrota"), Some("Derrota"));
+    }
+
+    #[test]
+    fn normalize_history_filter_ignores_unknown_values() {
+        assert_eq!(normalize_history_filter("all"), None);
+        assert_eq!(normalize_history_filter(""), None);
     }
 
     #[test]
