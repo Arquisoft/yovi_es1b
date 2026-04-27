@@ -33,4 +33,9 @@ El percentil 95 de latencia nos indica el tiempo de respuesta máximo por debajo
 El valor registrado durante las pruebas es de **0.00475 ms**. Este resultado es excepcionalmente bajo y demuestra la eficiencia técnica de haber implementado el motor de juego en **Rust (Axum)**, permitiendo procesar movimientos de juego de forma casi instantánea.
 
 ==== Monitorización de Servicios
-Este panel de líneas permite comparar en tiempo real el tráfico que recibe el **
+Este panel de líneas permite comparar en tiempo real el tráfico que recibe el **gamey-service** frente al **users-service**. 
+
+Sirve para verificar que la arquitectura de microservicios está equilibrada y que ambos contenedores están reportando métricas correctamente bajo el entorno seguro HTTPS configurado.
+
+=== 12.3.2. Conclusiones
+Los datos obtenidos muestran un ecosistema estable, sin errores de servidor y con tiempos de respuesta extremadamente competitivos. La bajísima latencia del servicio de Rust justifica su elección para tareas de computación intensiva, mientras que la monitorización centralizada valida la robustez de la arquitectura global de YoVi.
