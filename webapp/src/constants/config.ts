@@ -3,7 +3,7 @@
 // URL del backend. En Docker usamos same-origin y Nginx proxya la API.
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:3000';
 
-// Tiempo lÃ­mite en segundos segÃºn dificultad (Easy=60s, Medium=30s, Hard=15s)
+// Tiempo limite en segundos segun dificultad (Easy=60s, Medium=30s, Hard=15s)
 const TURN_TIME_LIMIT: Record<string, number> = {
   Easy:   60,
   Medium: 30,

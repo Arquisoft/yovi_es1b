@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { MenuBackgroundShell } from '../../components/layout/MenuBackgroundShell';
+import { LanguageModal } from '../../components/modals/LanguageModal';
 import i18n from '../../i18n';
 import { GameModeScreen } from '../../screens/GameModeScreen';
+import { ProfileScreen } from '../../screens/ProfileScreen';
+import { TutorialScreen } from '../../screens/TutorialScreen';
 import { gameService } from '../../services/gameService';
 import type { GameMode } from '../../types/socketEvents';
 
@@ -12,6 +15,9 @@ import '../../css/Log.css';
 import '../../index.css';
 
 export const GameModePage = () => {
+  const [showLanguageScreen, setShowLanguageScreen] = useState(false);
+  const [showProfileScreen, setShowProfileScreen] = useState(false);
+  const [showTutorialScreen, setShowTutorialScreen] = useState(false);
   const languageToI18n: Record<string, string> = {
     Spain: 'es',
     English: 'en',
@@ -66,10 +72,14 @@ export const GameModePage = () => {
 
   return (
     <MenuBackgroundShell>
-      {() => (
+      {(background) => (
         <div className="menu-content">
           <GameModeScreen
             onSelectMode={handleSelectMode}
+            onOpenLanguage={() => setShowLanguageScreen(true)}
+            onOpenProfile={() => setShowProfileScreen(true)}
+            onOpenSettings={() => background.setShowSettings(true)}
+            onOpenTutorial={() => setShowTutorialScreen(true)}
             onLogout={async () => {
               await gameService.logout().catch(() => undefined);
               sessionStorage.clear();
@@ -81,6 +91,19 @@ export const GameModePage = () => {
               localStorage.removeItem('username');
               globalThis.location.href = '/index.html';
             }}
+          />
+          <LanguageModal
+            isOpen={showLanguageScreen}
+            onClose={() => setShowLanguageScreen(false)}
+          />
+          <TutorialScreen
+            isOpen={showTutorialScreen}
+            onClose={() => setShowTutorialScreen(false)}
+          />
+          <ProfileScreen
+            isOpen={showProfileScreen}
+            username={localStorage.getItem('yovi_user') || ''}
+            onClose={() => setShowProfileScreen(false)}
           />
         </div>
       )}

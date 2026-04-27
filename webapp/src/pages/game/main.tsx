@@ -20,6 +20,7 @@ import { PayPalStore } from '../../components/modals/PayPalStore';
 import { useGameLogic } from '../../hooks/useGameLogic';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { MenuBackgroundShell } from '../../components/layout/MenuBackgroundShell';
+import { LanguageModal } from '../../components/modals/LanguageModal';
 import { gameService } from '../../services/gameService';
 import { getBoardDimensionFromSizeChoice } from '../../utils/boardUtils';
 import {TURN_TIME_LIMIT, UI_TO_ENGLISH_DIFFICULTY} from '../../constants/config';
@@ -149,7 +150,10 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
   const [showFriendsMenu, setShowFriendsMenu] = useState(false);
   const [showProfileScreen, setShowProfileScreen] = useState(false);
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
+  const [showLanguageScreen, setShowLanguageScreen] = useState(false);
   const [publicProfileToView, setPublicProfileToView] = useState<string | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [pendingLeaveAction, setPendingLeaveAction] = useState<'exit' | 'mode' | null>(null);
 
   // --- ESTADOS DE HISTORIAL ---
   const [showHistory, setShowHistory] = useState(false);
@@ -400,14 +404,72 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
             }
         };
 
-        const handleHistoryFilterChange = (nextFilter: string) => {
-            setHistoryFilter(nextFilter);
-            void fetchHistory(1, nextFilter);
-        };
+  const handleHistoryFilterChange = (nextFilter: string) => {
+    setHistoryFilter(nextFilter);
+    void fetchHistory(1, nextFilter);
+  };
 
-        const openFriendsMenu = () => {
-            setShowFriendsMenu(true);
-        };
+  const performExit = useCallback(async () => {
+    stopTimer();
+    if (gameMode === 'multiplayer') {
+      void multiplayerStrategyRef.current?.surrender(difficultyChoice || 'Easy');
+    }
+    if (isGuestMode) {
+      clearGuestSession();
+    } else {
+      await gameService.logout().catch(() => undefined);
+    }
+    sessionStorage.clear();
+    localStorage.removeItem('yovi_user');
+    localStorage.removeItem('yovi_friend_code');
+    localStorage.removeItem('yovi_user_icon');
+    localStorage.removeItem('yovi_user_language');
+    localStorage.removeItem('yovi_user_nickname');
+    localStorage.removeItem('username');
+    globalThis.location.href = '/index.html';
+  }, [difficultyChoice, gameMode, isGuestMode, stopTimer]);
+
+  const performGoToModeMenu = useCallback(() => {
+    stopTimer();
+    if (gameMode === 'multiplayer') {
+      void multiplayerStrategyRef.current?.surrender(difficultyChoice || 'Easy');
+    }
+    sessionStorage.setItem('yovi_previous_gamemode', gameMode);
+    globalThis.location.replace('/gamemode.html');
+  }, [difficultyChoice, gameMode, stopTimer]);
+
+  const requestLeave = useCallback((action: 'exit' | 'mode') => {
+    if (winner !== null) {
+      if (action === 'exit') {
+        void performExit();
+      } else {
+        performGoToModeMenu();
+      }
+      return;
+    }
+    setPendingLeaveAction(action);
+    setShowExitConfirm(true);
+  }, [performExit, performGoToModeMenu, winner]);
+
+  const acceptLeave = useCallback(() => {
+    const action = pendingLeaveAction;
+    setShowExitConfirm(false);
+    setPendingLeaveAction(null);
+    if (action === 'exit') {
+      void performExit();
+    } else if (action === 'mode') {
+      performGoToModeMenu();
+    }
+  }, [pendingLeaveAction, performExit, performGoToModeMenu]);
+
+  const cancelLeave = useCallback(() => {
+    setShowExitConfirm(false);
+    setPendingLeaveAction(null);
+  }, []);
+
+  const openFriendsMenu = () => {
+    setShowFriendsMenu(true);
+  };
 
         const openGuestAccessPrompt = (reason: GuestAccessReason) => {
             setGuestAccessReason(reason);
@@ -440,25 +502,7 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     turnTimeLimit={difficultyChoice ? (TURN_TIME_LIMIT[UI_TO_ENGLISH_DIFFICULTY[difficultyChoice] ?? difficultyChoice] ?? null) : null}
                     onCellClick={handleCellClick}
                     onFetchHistory={() => (isGuestMode ? openGuestAccessPrompt('historial') : fetchHistory())}
-                    onExit={async () => {
-                        stopTimer();
-                        if (gameMode === 'multiplayer') {
-                            void multiplayerStrategyRef.current?.surrender(difficultyChoice || 'Easy');
-                        }
-                        if (isGuestMode) {
-                            clearGuestSession();
-                        } else {
-                            await gameService.logout().catch(() => undefined);
-                        }
-                        sessionStorage.clear();
-                        localStorage.removeItem('yovi_user');
-                        localStorage.removeItem('yovi_friend_code');
-                        localStorage.removeItem('yovi_user_icon');
-                        localStorage.removeItem('yovi_user_language');
-                        localStorage.removeItem('yovi_user_nickname');
-                        localStorage.removeItem('username');
-                        globalThis.location.href = '/index.html';
-                    }}
+                    onExit={() => requestLeave('exit')}
                     onChangeDifficulty={(uiDiff: string) => {
                         // 1. Mapa de traducción para el backend
                         const backendMap: Record<string, string> = {
@@ -504,20 +548,32 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     }}
                     onAddFriend={() => (isGuestMode ? openGuestAccessPrompt('amigos') : openFriendsMenu())}
                     onViewProfile={() => (isGuestMode ? openGuestAccessPrompt('perfil') : setShowProfileScreen(true))}
+                    openLanguage={() => setShowLanguageScreen(true)}
                     onOpenSettings={() => background.setShowSettings(true)}
                     onOpenTutorial={() => setShowTutorialScreen(true)}
                     onScoreButtonClick={() => {
                         setShowStore(true);
                     }}
                     onGoToModeMenu={() => {
-                        if (winner === null && !globalThis.confirm(t('game.abandon_confirm'))) return;
-                        if (gameMode === 'multiplayer') {
-                            void multiplayerStrategyRef.current?.surrender(difficultyChoice || 'Easy');
-                        }
-                        sessionStorage.setItem('yovi_previous_gamemode', gameMode);
-                        globalThis.location.replace('/gamemode.html');
+                        requestLeave('mode');
                     }}
                 />
+                {showExitConfirm && (
+                  <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="exit-confirm-title">
+                    <div className="modal-box">
+                      <h3 id="exit-confirm-title">{t('game.exit')}</h3>
+                        <p>{t('game.abandon_confirm')}</p>
+                        <div className="modal-actions">
+                          <button type="button" className="submit-button" onClick={acceptLeave}>
+                            {t('game.accept')}
+                          </button>
+                          <button type="button" className="submit-button" onClick={cancelLeave}>
+                            {t('common.cancel')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                )}
 
                 <PayPalStore
                     isOpen={showStore}
@@ -562,6 +618,11 @@ const GameAppContent = ({ gameMode = 'bot', isGuestMode, storedUsername }: GameA
                     winner={winner}
                     score={finalScore}
                     onClose={() => setShowResultModal(false)}
+                />
+
+                <LanguageModal
+                    isOpen={showLanguageScreen}
+                    onClose={() => setShowLanguageScreen(false)}
                 />
 
                 <HistoryModal

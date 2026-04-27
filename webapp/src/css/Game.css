@@ -7,10 +7,6 @@ body {
   color: #333;
 }
 
-#root {
-  background-color: transparent;
-}
-
 .board-container {
   --glass-border: #1f2937;
   --glass-empty-light: #e7eff9;
@@ -548,6 +544,19 @@ body {
   display: flex;
   gap: 15px;
   align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  flex: 1 1 52rem;
+  min-width: 0;
+}
+
+.nav-center-score {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 1rem;
+  flex: 0 0 auto;
 }
 
 .nav-setup-item {
@@ -558,6 +567,15 @@ body {
 }
 
 .nav-setup-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #f7fbff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.score-caption {
   font-size: 0.72rem;
   font-weight: 800;
   color: #f7fbff;
@@ -886,6 +904,25 @@ body {
 .nav-btn-with-history {
   position: relative;
   overflow: visible;
+}
+
+.nav-btn-with-language {
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-btn-language-img {
+  width: 3.4rem;
+  height: 3.4rem;
+  object-fit: contain;
+  display: block;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.nav-btn-with-language:hover .nav-btn-language-img,
+.nav-btn-with-language:focus-visible .nav-btn-language-img {
+  transform: scale(1.08);
+  filter: brightness(1.08);
 }
 
 .nav-btn-history-hover {
@@ -1436,6 +1473,33 @@ body {
   }
 }
 
+@media (max-width: 1500px) {
+  .game-navbar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.9rem 1.25rem;
+  }
+
+  .nav-center-score {
+    margin: 0;
+  }
+
+  .nav-game-settings {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 1100px) {
+  .nav-game-settings {
+    gap: 0.85rem;
+  }
+
+  .nav-btn-spacer {
+    display: none;
+  }
+}
+
 /* --- RIVAL SLOT STYLES --- */
 
 /* Ícono vacío en multijugador sin rival */
@@ -1683,27 +1747,36 @@ body {
 
 /* Modificamos los estilos de los botones de modo de dificultad y tamaño */
 .dropdown-trigger {
-  background: #334155; /* Igual que nav-btn */
+  background:
+    linear-gradient(180deg, rgba(59, 78, 106, 0.98), rgba(31, 41, 55, 0.98));
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   padding: 8px 16px;
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.24);
+  width: max-content;
+  min-width: max-content;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  white-space: nowrap;
 }
 
 .dropdown-trigger:hover:not(:disabled) {
-  background: #bc84ee; /* Morado suave al pasar el ratón, igual que nav-btn */
+  background: linear-gradient(180deg, #4f46e5, #4338ca);
   transform: translateY(-2px);
-  border-color: white;
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
-.dropdown-trigger:disabled {
-    background: #475569;
+  .dropdown-trigger:disabled {
+    background: linear-gradient(180deg, rgba(71, 85, 105, 0.96), rgba(51, 65, 85, 0.96));
     color: #f8fafc;
-    border-color: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.24);
     cursor: not-allowed;
     box-shadow: none;
   }
@@ -1719,55 +1792,98 @@ body {
     z-index: 30;
     min-width: 100%;
     padding: 0.35rem;
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    border-radius: 8px;
-    background: #f8fafc;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 10px;
+    background:
+      linear-gradient(180deg, rgba(59, 78, 106, 0.98), rgba(31, 41, 55, 0.98));
     box-shadow: 0 12px 28px rgba(15, 23, 42, 0.32);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.35rem;
   }
 
   .dropdown-item {
-    display: block;
+    display: flex;
     width: 100%;
-    min-width: 8rem;
+    min-width: 0;
+    justify-content: center;
     padding: 0.65rem 0.85rem;
     border: 0;
     border-radius: 6px;
-    background: #ffffff;
-    color: #111827;
+    background: rgba(255, 255, 255, 0.12);
+    color: #f8fafc;
     font-size: 0.9rem;
     font-weight: 800;
-    text-align: left;
+    text-align: center;
     cursor: pointer;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
   }
 
   .dropdown-item:hover,
   .dropdown-item:focus-visible {
-    background: #2563eb;
+    background: rgba(79, 70, 229, 0.96);
     color: #ffffff;
     outline: none;
   }
 
+  .dropdown-item:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 0.175rem);
+  }
+
+  .dropdown-trigger-text {
+    display: inline-flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.35rem;
+    line-height: 1.05;
+    white-space: nowrap;
+  }
+
+  .dropdown-trigger-label,
+  .dropdown-trigger-value {
+    display: block;
+  }
+
+  .dropdown-trigger-value {
+    font-size: 0.95em;
+  }
+
+  .dropdown-trigger-arrow {
+    font-size: 0.92rem;
+    line-height: 1;
+    opacity: 0.95;
+    flex: 0 0 auto;
+  }
+
 /* Estilos para el botón de Puntos de XP */
 .score-badge-button {
-  background: #334155; /* igual que nav-btn */
+  background:
+    linear-gradient(180deg, rgba(59, 78, 106, 0.98), rgba(31, 41, 55, 0.98));
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 5px 16px;
   border-radius: 8px;
-  font-size: 0.95rem;
-  font-weight: bold;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.24);
+  width: max-content;
+  min-width: max-content;
+  justify-content: center;
 }
 
 .score-badge-button:hover {
-  background: #bc84ee;
+  background: linear-gradient(180deg, #4f46e5, #4338ca);
   transform: translateY(-2px);
-  border-color: white;
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 .score-star {
@@ -1775,20 +1891,28 @@ body {
   font-size: 1.1rem;
 }
 
+.score-text {
+  font: inherit;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* Estilos para la ventana modal de PayPal */
 .payment-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 248, 255, 0.98));
-  border: 2px solid rgba(37, 99, 235, 0.14);
+  background: linear-gradient(180deg, rgba(255, 243, 179, 0.98), rgba(255, 210, 77, 0.98));
+  border: 2px solid rgba(202, 138, 4, 0.24);
   border-radius: 12px;
   padding: 2rem;
   width: min(92vw, 28rem);
   max-width: 28rem;
   max-height: calc(100vh - 2rem);
   overflow-y: auto;
-  color: #1f2937;
+  color: #4a3600;
   text-align: center;
   position: relative;
-  box-shadow: 0 14px 34px rgba(5, 12, 26, 0.8);
+  box-shadow: 0 14px 34px rgba(106, 72, 0, 0.34);
 }
 
 .payment-close {
@@ -1804,31 +1928,31 @@ body {
 }
 
 .payment-close:hover {
-  color: #dc3545;
+  color: #8a5d00;
 }
 
 .payment-title {
   margin-top: 0;
   font-size: 1.5rem;
   font-weight: bold;
-  color: #111827;
+  color: #5f4300;
 }
 
 .payment-subtitle {
-  color: #4b5563;
+  color: #6b4f00;
   font-size: 0.9rem;
   margin-bottom: 1.5rem;
 }
 
 .payment-item-detail {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.34);
   padding: 1rem;
   border-radius: 8px;
   margin-bottom: 1.5rem;
   font-weight: bold;
   font-size: 1.2rem;
-  color: #020617;
-  border: 1px dashed rgba(2, 6, 23, 0.28);
+  color: #2f2200;
+  border: 1px dashed rgba(202, 138, 4, 0.28);
 }
 
 .paypal-button-container {
@@ -1839,6 +1963,6 @@ body {
 
 .payment-footer {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: #6b4f00;
   margin: 0;
 }

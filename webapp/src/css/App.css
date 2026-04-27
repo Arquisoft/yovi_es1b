@@ -1,18 +1,11 @@
-#root {
-  max-width: none;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  text-align: center;
-}
-
 .App {
   position: relative;
   z-index: 2;
+  width: 100%;
   min-height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
+  text-align: center;
 }
 
 .logo {
@@ -207,7 +200,7 @@
   overflow-y: auto;
   border: 1px solid #eee;
   border-radius: 0.5rem;
-  background: white;
+  background: #fafafa;
 }
 
 .history-table {
@@ -220,14 +213,14 @@
 .history-table th {
   background: #f8f9fa;
   padding: 0.75rem;
-  color: #555;
-  border-bottom: 2px solid #eee;
+  color: #111827;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .history-table td {
   padding: 0.75rem;
   border-bottom: 1px solid #eee;
-  color: #333;
+  color: #111827;
 }
 
 /* Semántica de colores para el historial */
@@ -256,7 +249,7 @@
 
 .history-pagination-info {
   font-weight: 600;
-  color: #333;
+  color: #111827;
 }
 
 
@@ -352,7 +345,7 @@
 .profile-friend-code {
   font-family: 'Courier New', Courier, monospace;
   font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4); /* 40% de opacidad para el toque "clarito" */
+  color: rgba(255, 255, 255, 0.72); /* Más contraste sin perder el tono suave */
   letter-spacing: 1px;
 }
 
@@ -400,7 +393,7 @@
 }
 
 .pending-friend-btn:hover {
-  color: #fff; /* Cambia a blanco al pasar el mouse */
+  color: #f8fafc; /* Cambia a casi blanco al pasar el mouse */
 }
 
 /* Para que el numerito rojo no se vea gigante al lado del link */
@@ -563,26 +556,6 @@
   text-decoration: underline;
 }
 
-.profile-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.7); /* Oscurece todo, incluido el menú de amigos */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000; 
-}
-
-.profile-card {
-  background: #1a1a1a;
-  border: 2px solid #d4ff5e;
-  z-index: 2001;
-}
-
-
 /* --- PERFIL PÚBLICO ESTILO SOCIAL --- */
 
 /* Fondo oscuro que cubre toda la pantalla con desenfoque */
@@ -652,10 +625,10 @@
 
 /* Código de amigo (#...) estilo Discord */
 .profile-friend-code {
-    font-family: 'Courier New', Courier, monospace;
-    color: #888; /* Gris claro traslúcido */
-    font-size: 0.9rem;
-    letter-spacing: 2px;
+  font-family: 'Courier New', Courier, monospace;
+  color: rgba(255, 255, 255, 0.72); /* Más contraste sin perder el tono suave */
+  font-size: 0.9rem;
+  letter-spacing: 2px;
 }
 
 /* Grilla de estadísticas (Victorias, Derrotas, Ratio) */
@@ -687,24 +660,24 @@
 
 /* Etiquetas de estadísticas (Victorias, Derrotas...) */
 .stat-desc {
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    color: #888;
-    letter-spacing: 1px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  letter-spacing: 1px;
 }
 
 /* Botón cerrar del perfil (estilo X del panel social) */
 .profile-close-button {
-    position: absolute;
-    top: 1rem;
-    right: 1.2rem;
-    background: none;
-    border: none;
-    color: #666; /* Gris oscuro por defecto */
-    font-size: 1.8rem;
-    line-height: 1;
-    cursor: pointer;
-    transition: color 0.2s;
+  position: absolute;
+  top: 1rem;
+  right: 1.2rem;
+  background: none;
+  border: none;
+  color: #f8fafc; /* Blanco suave con mejor contraste */
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
 .profile-close-button:hover {

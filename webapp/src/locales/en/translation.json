@@ -95,9 +95,11 @@
     "friends_menu": "Friends menu",
     "friends_menu_short": "Friends",
     "profile": "View profile",
+    "view_profile": "View profile",
     "mode_menu": "Modes",
     "exit": "Back to menu",
     "exit_alt": "Exit to menu",
+    "abandon_confirm": "You will leave to the menu or game mode you chose, and the match will count as a loss. Are you sure?",
     "load_board": "Load the board to start",
     "cell_empty": "empty",
     "cell_blue": "occupied by blue",
@@ -140,8 +142,8 @@
     "next_page": "Next",
     "page_info": "Page {{current}} of {{total}}",
     "back_to_game": "Back to Game",
-    "select_difficulty": "What difficulty do you want to play?",
-    "select_size": "What board size do you want to play?",
+    "select_difficulty": "Choose difficulty",
+    "select_size": "Choose size",
     "player": "Player"
   },
   "profile": {

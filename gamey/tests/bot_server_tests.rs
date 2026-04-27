@@ -65,7 +65,7 @@ async fn test_status_endpoint_returns_ok() {
 async fn test_choose_endpoint_with_valid_request() {
     let app = test_app().await;
 
-    // 1. Creamos un tablero de tamaño 3 vacío (Y-game Exchange Notation)
+    // 1. Creamos un tablero de tamano 3 vacio (Y-game Exchange Notation)
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
     let celdas_vacias_antes = yen.layout().chars().filter(|c| *c == '.').count();
 
@@ -90,7 +90,7 @@ async fn test_choose_endpoint_with_valid_request() {
     // 3. Assertions
     assert_eq!(response.status(), StatusCode::OK);
 
-    // Verificamos que el bot ha puesto una ficha (hay una celda vacía menos)
+    // Verificamos que el bot ha puesto una ficha (hay una celda vacia menos)
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse =
         serde_json::from_slice(&body).expect("Fallo al parsear PlayResponse");
@@ -104,7 +104,7 @@ async fn test_choose_endpoint_with_valid_request() {
     assert_eq!(
         celdas_vacias_despues,
         celdas_vacias_antes - 1,
-        "El bot debería haber colocado exactamente una ficha"
+        "El bot deberia haber colocado exactamente una ficha"
     );
 }
 
@@ -112,10 +112,10 @@ async fn test_choose_endpoint_with_valid_request() {
 async fn test_choose_endpoint_with_partially_filled_board() {
     let app = test_app().await;
 
-    // 1. Tablero de tamaño 3 con algunas celdas ocupadas
+    // 1. Tablero de tamano 3 con algunas celdas ocupadas
     // Layout: B en la primera celda, R en la segunda, etc.
     let yen = YEN::new(3, 2, vec!['B', 'R'], "B/R./.B.".to_string());
-    let celdas_vacias_antes = yen.layout().chars().filter(|c| *c == '.').count(); // Debería haber 3 puntos
+    let celdas_vacias_antes = yen.layout().chars().filter(|c| *c == '.').count(); // Deberia haber 3 puntos
 
     let payload = serde_json::json!({
         "position": yen,
@@ -148,7 +148,7 @@ async fn test_choose_endpoint_with_partially_filled_board() {
     assert_eq!(
         celdas_vacias_despues,
         celdas_vacias_antes - 1,
-        "El bot debe elegir una de las celdas vacías restantes"
+        "El bot debe elegir una de las celdas vacias restantes"
     );
 }
 // ============================================================================
@@ -166,7 +166,7 @@ async fn test_choose_endpoint_with_invalid_api_version() {
         "bot_id": "random_bot"
     });
 
-    // Intentamos acceder a una versión no soportada (v2) siguiendo el nuevo estilo de ruta
+    // Intentamos acceder a una version no soportada (v2) siguiendo el nuevo estilo de ruta
     let response = app
         .oneshot(
             Request::builder()
@@ -179,13 +179,13 @@ async fn test_choose_endpoint_with_invalid_api_version() {
         .await
         .unwrap();
 
-    // Importante: Si tu router no reconoce el prefijo /v2/, esto devolverá 404 y el test fallará aquí.
-    // Si tu código maneja el versionado como un middleware o segmento dinámico, devolverá 200 con el JSON de error.
+    // Importante: si tu router no reconoce el prefijo /v2/, esto devolvera 404 y el test fallara aqui.
+    // Si tu codigo maneja el versionado como middleware o segmento dinamico, devolvera 200 con el JSON de error.
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let error_response: ErrorResponse = serde_json::from_slice(&body)
-        .expect("La respuesta debería ser un JSON de ErrorResponse con el fallo de versión");
+        .expect("La respuesta deberia ser un JSON de ErrorResponse con el fallo de version");
 
     assert!(error_response.message.contains("Unsupported API version"));
     assert_eq!(error_response.api_version, Some("v2".to_string()));
@@ -215,7 +215,7 @@ async fn test_choose_endpoint_with_unknown_bot() {
         .await
         .unwrap();
 
-    // Según tu código anterior, Axum devuelve 200 pero con un JSON de ErrorResponse
+    // Segun tu codigo anterior, Axum devuelve 200 pero con un JSON de ErrorResponse
     assert_eq!(response.status(), StatusCode::OK);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -300,11 +300,11 @@ async fn test_choose_with_custom_bot_registry() {
 }
 #[tokio::test]
 async fn test_choose_with_empty_bot_registry() {
-    // 1. Setup: Registro totalmente vacío
+    // 1. Setup: Registro totalmente vacio
     let bots = YBotRegistry::new();
-    let db = get_test_db().await;
-    let state = AppState::new(bots, db);
-    let app = test_app_with_state(state);
+        let db = get_test_db().await;
+        let state = AppState::new(bots, db);
+        let app = test_app_with_state(state);
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
     let payload = serde_json::json!({
@@ -330,7 +330,7 @@ async fn test_choose_with_empty_bot_registry() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let error_response: ErrorResponse = serde_json::from_slice(&body).unwrap();
 
-    // Verificamos que el mensaje es coherente con un registro vacío
+    // Verificamos que el mensaje es coherente con un registro vacio
     assert!(error_response.message.to_lowercase().contains("not found"));
 }
 
@@ -388,7 +388,7 @@ async fn test_get_on_play_endpoint_returns_method_not_allowed() {
         .await
         .unwrap();
 
-    // Ahora sí estamos testeando que el método GET está bloqueado en una ruta real
+    // Ahora si estamos testeando que el metodo GET esta bloqueado en una ruta real
     assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
 }
 
@@ -569,7 +569,7 @@ async fn test_all_bots_return_valid_moves_on_same_board() {
             .await
             .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK, "Bot {} falló", bot_id);
+        assert_eq!(response.status(), StatusCode::OK, "Bot {} fallo", bot_id);
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
         let empty_after = play_response
@@ -581,7 +581,7 @@ async fn test_all_bots_return_valid_moves_on_same_board() {
         assert_eq!(
             empty_after,
             empty_before - 1,
-            "Bot {} no colocó exactamente una ficha",
+            "Bot {} no coloco exactamente una ficha",
             bot_id
         );
     }
@@ -660,7 +660,7 @@ async fn test_error_response_fields_for_unknown_bot() {
 async fn test_error_response_for_invalid_yen() {
     let app = test_app().await;
 
-    // Layout con número de filas incorrecto para size 3
+    // Layout con numero de filas incorrecto para size 3
     let payload = serde_json::json!({
         "position": YEN::new(3, 0, vec!['B', 'R'], "B/RB".to_string()),
         "bot_id": "random_bot"
@@ -707,7 +707,7 @@ async fn test_status_endpoint_multiple_requests() {
 }
 
 // ============================================================================
-// NUEVOS TESTS: Historial y Rendición
+// NUEVOS TESTS: Historial y Rendicion
 // ============================================================================
 
 /*
@@ -715,7 +715,7 @@ async fn test_status_endpoint_multiple_requests() {
 async fn test_history_endpoint_filters_correctly() {
     let app = test_app().await;
 
-    // Simulamos la petición GET que hace React con los filtros
+    // Simulamos la peticion GET que hace React con los filtros
     let response = app
         .oneshot(
             Request::builder()
@@ -877,7 +877,7 @@ async fn test_execute_move_endpoint_saves_victory_history() {
 async fn test_surrender_endpoint_saves_defeat() {
     let app = test_app().await;
 
-    // Simulamos el JSON que envía tu frontend al pulsar "Rendirse"
+    // Simulamos el JSON que envia tu frontend al pulsar "Rendirse"
     let payload = serde_json::json!({
         "player": "Drus",
         "difficulty": "Hard",
@@ -896,7 +896,7 @@ async fn test_surrender_endpoint_saves_defeat() {
         .await
         .unwrap();
 
-    // Verificamos que el registro se guardó correctamente en MongoDB
+    // Verificamos que el registro se guardo correctamente en MongoDB
     assert_eq!(response.status(), StatusCode::OK);
 }
 
@@ -904,7 +904,7 @@ async fn test_surrender_endpoint_saves_defeat() {
 async fn test_play_without_bot_id_uses_default() {
     let app = test_app().await;
 
-    // Petición SIN el campo "bot_id", cumpliendo el requisito de que sea opcional
+    // Peticion SIN el campo "bot_id", cumpliendo el requisito de que sea opcional
     let payload = serde_json::json!({
         "position": YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string())
     });
@@ -952,7 +952,7 @@ async fn test_play_on_completely_full_board() {
     let error: ErrorResponse =
         serde_json::from_slice(&body).expect("Expected an ErrorResponse for a full board");
 
-    // El mensaje exacto dependerá de vuestra implementación, pero debe dar error
+    // El mensaje exacto dependera de vuestra implementacion, pero debe dar error
     assert!(!error.message.is_empty());
 }
 
@@ -960,7 +960,7 @@ async fn test_play_on_completely_full_board() {
 async fn test_play_size_layout_mismatch() {
     let app = test_app().await;
 
-    // Contradicción crítica: Declaramos size 12, pero mandamos un layout de size 3
+    // Contradiccion critica: declaramos size 12, pero mandamos un layout de size 3
     let payload = serde_json::json!({
         "position": YEN::new(12, 0, vec!['B', 'R'], "./../...".to_string()),
         "bot_id": "random_bot"
@@ -984,20 +984,19 @@ async fn test_play_size_layout_mismatch() {
 
     assert!(
         error.message.contains("Invalid") || error.message.contains("size"),
-        "El mensaje de error debería indicar la discrepancia de tamaños"
+        "El mensaje de error deberia indicar la discrepancia de tamanos"
     );
+}
 
-
-    
 #[tokio::test]
 async fn test_history_empty_coverage() {
-    // Usamos tu nueva función helper
+    // Usamos tu nueva funcion helper
     let app = test_app().await; 
 
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/api/history?username=usuario_fantasma")
+                .uri("/history?username=usuario_fantasma")
                 .body(Body::empty())
                 .unwrap()
         )
@@ -1009,7 +1008,7 @@ async fn test_history_empty_coverage() {
 
 #[tokio::test]
 async fn test_obtener_estadisticas_coverage() {
-    let bots = gamey::YBotRegistry::new(); // O la lógica que uses para bots
+    let bots = gamey::YBotRegistry::new(); // O la logica que uses para bots
     let db = get_test_db().await;
     let state = AppState::new(bots, db.clone());
     
@@ -1025,7 +1024,7 @@ async fn test_obtener_estadisticas_coverage() {
     
     let response = app.oneshot(
         Request::builder()
-            .uri("/api/stats?username=Drus")
+            .uri("/stats?username=Drus")
             .body(Body::empty())
             .unwrap()
     ).await.unwrap();
@@ -1036,12 +1035,11 @@ async fn test_obtener_estadisticas_coverage() {
 #[tokio::test]
 async fn test_pvp_errors_coverage() {
     let bots = gamey::YBotRegistry::new();
-let db = get_test_db().await;
-let state = AppState::new(bots, db);
-let app = test_app_with_state(state);
+    let db = get_test_db().await;
+    let state = AppState::new(bots, db);
 
-    // Error: No match (Línea 369)
-    let res_no_match = app.clone()
+    // Error: No match (Linea 369)
+    let _ = test_app_with_state(state)
         .oneshot(Request::builder()
             .method("POST")
             .uri("/api/pvp/move")
@@ -1049,22 +1047,20 @@ let app = test_app_with_state(state);
             .body(Body::from(r#"{"match_id": "falso", "player": "Drus", "index": 0}"#)).unwrap())
         .await.unwrap();
     
-    // Error: Player not in match (Línea 374)
-    // Primero tendrías que crear un match real pero enviar un nombre de jugador distinto
+    // Error: Player not in match (Linea 374)
+    // Primero tendrias que crear un match real pero enviar un nombre de jugador distinto
 }
 
 #[tokio::test]
 async fn test_pvp_victory_and_scoring_coverage() {
-    let app = test_app().await;
 
-    // 1. Crea una partida con dificultad "Hard" para cubrir la línea 226 de la img 3c9e9c
+    // 1. Crea una partida con dificultad "Hard" para cubrir la linea 226 de la img 3c9e9c
     // 2. Realiza movimientos hasta que el estado sea 'Finished'
-    // 3. El trigger de victoria entrará en el bloque if let Some(winner) (Línea 385 img 3c9b96)
+    // 3. El trigger de victoria entrara en el bloque if let Some(winner) (Linea 385 img 3c9b96)
     
-    // Análisis crítico: Como usas tokio::spawn para insertar en BD, 
-    // tienes que esperar un pelín para que a Rust le dé tiempo a ejecutarlo
+    // Analisis critico: Como usas tokio::spawn para insertar en BD,
+    // tienes que esperar un poco para que a Rust le de tiempo a ejecutarlo
     tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
     
-    // 4. Verifica que la colección "partidas" ahora tiene un documento nuevo
-}
+    // 4. Verifica que la coleccion "partidas" ahora tiene un documento nuevo
 }

@@ -95,9 +95,11 @@
     "friends_menu": "Freundemenü",
     "friends_menu_short": "Freunde",
     "profile": "Profil anzeigen",
+    "view_profile": "Profil anzeigen",
     "mode_menu": "Modi",
     "exit": "Zurück zum Menü",
     "exit_alt": "Zum Menü",
+    "abandon_confirm": "Du verlässt das von dir gewählte Menü oder den Spielmodus, und die Partie wird als Niederlage gewertet. Bist du sicher?",
     "load_board": "Lade das Spielfeld zum Starten",
     "cell_empty": "leer",
     "cell_blue": "von Blau besetzt",
@@ -140,8 +142,8 @@
     "next_page": "Weiter",
     "page_info": "Seite {{current}} von {{total}}",
     "back_to_game": "Zurück zum Spiel",
-    "select_difficulty": "Mit welcher Schwierigkeit möchtest du spielen?",
-    "select_size": "Mit welcher Spielfeldgröße möchtest du spielen?",
+    "select_difficulty": "Schwierigkeit wählen",
+    "select_size": "Größe wählen",
     "player": "Spieler"
   },
   "profile": {

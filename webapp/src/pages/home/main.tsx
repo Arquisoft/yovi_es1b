@@ -17,13 +17,6 @@ const HomeApp = () => {
   const [showTutorialScreen, setShowTutorialScreen] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('yovi_user');
-    if (!storedUser) return;
-    if (window.location.pathname.includes('/gamemode.html')) return;
-    window.location.replace('/gamemode.html');
-  }, []);
-
-  useEffect(() => {
     if (username) {
       localStorage.setItem('yovi_user', username);
     } else if (localStorage.getItem('yovi_session_type') !== 'guest') {

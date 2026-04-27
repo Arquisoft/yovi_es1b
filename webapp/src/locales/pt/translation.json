@@ -95,9 +95,11 @@
     "friends_menu": "Menu de amigos",
     "friends_menu_short": "Amigos",
     "profile": "Ver perfil",
+    "view_profile": "Ver perfil",
     "mode_menu": "Modos",
     "exit": "Voltar ao menu",
     "exit_alt": "Sair para o menu",
+    "abandon_confirm": "Sairás para o menu ou modo de jogo que escolheste, e a partida contará como derrota. Tens a certeza?",
     "load_board": "Carrega o tabuleiro para começar",
     "cell_empty": "vazia",
     "cell_blue": "ocupada pelo azul",
@@ -140,8 +142,8 @@
     "next_page": "Seguinte",
     "page_info": "Página {{current}} de {{total}}",
     "back_to_game": "Voltar ao Jogo",
-    "select_difficulty": "Com que dificuldade queres jogar?",
-    "select_size": "Com que tamanho de tabuleiro queres jogar?",
+    "select_difficulty": "Escolher dificuldade",
+    "select_size": "Escolher tamanho",
     "player": "Jogador"
   },
   "profile": {
