@@ -67,6 +67,7 @@ describe('Game endpoints (proxy a Rust)', () => {
                 score: 0,
             }))
             const updateSpy = vi.spyOn(User, 'findOneAndUpdate').mockResolvedValue({ username: 'Alice' })
+            const aliceToken = generateTestToken({ username: 'Alice', nickname: 'Ali' })
 
             const res = await withAuthToken(request(app)
                 .post('/move')
@@ -75,7 +76,7 @@ describe('Game endpoints (proxy a Rust)', () => {
                     username: ' Alice ',
                     difficulty: 'Difícil',
                     boardSize: 12,
-                }), token)
+                }), aliceToken)
 
             expect(res.status).toBe(200)
             expect(res.body.score).toBe(600)

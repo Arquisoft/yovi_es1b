@@ -38,6 +38,11 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
             <PayPalButtons
               style={{ layout: "vertical", color: "gold", shape: "rect", label: "pay" }}
               createOrder={(_data, actions) => {
+                if (!actions.order) {
+                  alert(t('store.error'));
+                  throw new Error('PayPal actions.order is not available');
+                }
+
                 return actions.order.create({
                   intent: "CAPTURE",
                   purchase_units: [
@@ -52,12 +57,20 @@ export const PayPalStore = ({ isOpen, onClose, onSuccess }: PayPalStoreProps) =>
                 });
               }}
               onApprove={async (_data, actions) => {
-                if (!actions.order) return;
+                if (!actions.order) {
+                  alert(t('store.error'));
+                  return;
+                }
 
-                const captureDetails = await actions.order.capture();
-                console.log("Pago exitoso:", captureDetails?.id ?? "sin id");
-                onSuccess(1000);
-                onClose();
+                try {
+                  const captureDetails = await actions.order.capture();
+                  console.log("Pago exitoso:", captureDetails?.id ?? "sin id");
+                  onSuccess(1000);
+                  onClose();
+                } catch (err) {
+                  console.error("Error capturando el pago de PayPal:", err);
+                  alert(t('store.error'));
+                }
               }}
               onError={(err) => {
                 console.error("Error en PayPal:", err);
