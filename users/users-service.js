@@ -23,7 +23,13 @@ const YAML = require('js-yaml');
 const promBundle = require('express-prom-bundle');
 const { createSocketGateway } = require('./socketHandler');
 
-const metricsMiddleware = promBundle({includeMethod: true});
+const metricsMiddleware = promBundle({
+  includeMethod: true,
+  includePath: true,
+  promClient: {
+    collectDefaultMetrics: {} // activa métricas de CPU, Memoria, etc.
+  }
+});
 app.use(metricsMiddleware);
 
 const bcrypt = require('bcryptjs');
@@ -43,6 +49,7 @@ const generateFriendCode = customAlphabet(alphabet, 6); // Genera algo como "K8S
 const MAX_NICKNAME_LENGTH = 15;
 const { setGlobalDispatcher, Agent } = require('undici');
 
+
 // Esto le dice a Node: "Confía en todos los servidores HTTPS locales aunque no tengan certificado oficial"
 setGlobalDispatcher(new Agent({ connect: { rejectUnauthorized: false } }));
 
@@ -59,7 +66,6 @@ const tokenCookieOptions = {
     sameSite: 'Lax',
     maxAge: 86400000
 };
-
 
   /**
  * Intenta cargar la configuración SSL desde rutas predefinidas.
@@ -867,6 +873,11 @@ app.post('/users/purchase-xp', async (req, res) => {
     console.error("Error en purchase-xp:", e);
     res.status(500).json({ error: "No se pudo procesar la compra." });
   }
+});
+
+app.get('/metrics', async (req, res) => {
+    res.set('Content-Type', promBundle.promClient.register.contentType);
+    res.end(await promBundle.promClient.register.metrics());
 });
 
 
