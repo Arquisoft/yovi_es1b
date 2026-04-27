@@ -41,18 +41,6 @@ Siguiendo el estándar ISO/IEC 25010, se han definido las siguientes metas:
 |Rol |Sujetos |Expectativas
 
 | **Equipo de desarrollo**
-| Diego, Hugo, Nahiara, Eva, Moisés
-| Aplicar buenas prácticas de CI/CD (GitHub Actions) y documentar una arquitectura limpia y mantenible.
-
-| **Usuarios Finales**
-| Jugadores de la comunidad
-| Interfaz intuitiva, respuesta rápida del Bot y seguridad en la gestión de sus perfiles.
-
-| **Cuerpo Docente**
-| Labra Gayo, P. González, I. Cid, D. Martín
-| Cumplimiento de los hitos de entrega, uso correcto de Docker, SonarQube para calidad de código y despliegue funcional en Azure/SSH.
-|===
-| **Equipo de desarrollo**
 | Diego Abeijon, Hugo Tejedor, Nahiara Sanchez, Eva Menéndez, Moisés Montes
 | Integrar correctamente el sistema, documentar la arquitectura (arc42) y superar la evaluación de la asignatura mediante un despliegue exitoso.
 
