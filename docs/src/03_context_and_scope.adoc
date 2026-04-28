@@ -49,6 +49,7 @@ yovi -- atlas : Persistencia
 
 La arquitectura de **YOVI** se define por la interoperabilidad de tres componentes principales aislados, comunicados mediante protocolos REST y orquestados por un entorno de contenedores.
 
+[plantuml, business-context, png]
 ----
 @startuml
 node "Navegador" as browser
