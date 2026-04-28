@@ -737,7 +737,7 @@ For documentation of your own system you use better the <em>plain</em> version.<
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Evaluadores (Profesores)</strong></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Jose Emilio Labra Gayo, Pablo González, Irene Cid Rico, Diego Martín Fernández</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Jose Emilio Labra Gayo, Pablo González, Celia Melendi, Diego Martín Fernández</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Verificar que el despliegue es reproducible, que se respeta la arquitectura propuesta y que la documentación refleja fielmente el sistema construido.</p></td>
 </tr>
 </tbody>
@@ -885,22 +885,15 @@ conventions (e.g. programming or versioning guidelines, documentation or naming 
 <div class="sect1">
 <h2 id="section-context-and-scope">3. Contexto y Alcance</h2>
 <div class="sectionbody">
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<div class="title">Contents</div>
-<p>Context and scope - as the name suggests - delimits your system (i.e. your scope) from all its communication partners
-(neighboring systems and users, i.e. the context of your system). It thereby specifies the external interfaces.</p>
-</div>
-<div class="paragraph">
-<p>If necessary, differentiate the business context (domain specific inputs and outputs) from the technical context (channels, protocols, hardware).</p>
-</div>
-</div>
-</div>
 <div class="sect2">
 <h3 id="_contexto_de_negocio">3.1. Contexto de Negocio</h3>
 <div class="paragraph">
 <p>El sistema <strong>YOVI</strong> es una plataforma de juegos basada en el "Juego Y", diseñada como un ecosistema de microservicios para la competición entre humanos y agentes automáticos (bots) en el ámbito académico de la UniOvi.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/business-context.png" alt="business context" width="683" height="310">
+</div>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -927,6 +920,11 @@ conventions (e.g. programming or versioning guidelines, documentation or naming 
 <td class="tableblock halign-left valign-top"><p class="tableblock">Respuesta con el próximo movimiento calculado por el motor de alto rendimiento en Rust.</p></td>
 </tr>
 <tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>MongoDB Atlas</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Consultas de lectura y comandos de escritura (usuarios, partidas, amigos).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Datos persistidos, histórico de juegos y perfiles actualizados.</p></td>
+</tr>
+<tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Administrador / Alumno</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Despliegue mediante Docker Compose y ejecución de suites de pruebas (<code>npm test</code>, <code>cargo test</code>).</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Logs de contenedores, métricas de rendimiento del motor y documentación técnica generada.</p></td>
@@ -938,6 +936,18 @@ conventions (e.g. programming or versioning guidelines, documentation or naming 
 <h3 id="_contexto_técnico">3.2. Contexto Técnico</h3>
 <div class="paragraph">
 <p>La arquitectura de <strong>YOVI</strong> se define por la interoperabilidad de tres componentes principales aislados, comunicados mediante protocolos REST y orquestados por un entorno de contenedores.</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre>@startuml
+node "Navegador" as browser
+node "Servidor YOVI (Docker)" as docker
+node "MongoDB Atlas (Cloud)" as atlas
+
+browser -- docker : HTTPS / REST (443)
+docker -- atlas : TLS / TCP (27017)
+@enduml</pre>
+</div>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -967,6 +977,11 @@ conventions (e.g. programming or versioning guidelines, documentation or naming 
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Gamey Engine</strong></p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">REST / Rust &amp; Cargo (Puerto 4000)</p></td>
 <td class="tableblock halign-left valign-top"><p class="tableblock">Servicio de lógica de juego encargado de validar movimientos, estados de victoria y ejecución de bots.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><strong>MongoDB Atlas</strong></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Protocolo MongoDB (TLS)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Clúster gestionado en la nube que aloja bases de datos independientes para cada servicio.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><strong>Infraestructura</strong></p></td>
@@ -1273,91 +1288,8 @@ Refer to details in the following sections.</p>
 <div class="sect1">
 <h2 id="section-building-block-view">5. Vista de Bloques de Construcción</h2>
 <div class="sectionbody">
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<div class="title">Content</div>
-<p>The building block view shows the static decomposition of the system into building blocks (modules, components, subsystems, classes, interfaces, packages, libraries, frameworks, layers, partitions, tiers, functions, macros, operations, data structures, &#8230;&#8203;) as well as their dependencies (relationships, associations, &#8230;&#8203;)</p>
-</div>
-<div class="paragraph">
-<p>This view is mandatory for every architecture documentation.
-In analogy to a house this is the <em>floor plan</em>.</p>
-</div>
-<div class="paragraph">
-<div class="title">Motivation</div>
-<p>Maintain an overview of your source code by making its structure understandable through
-abstraction.</p>
-</div>
-<div class="paragraph">
-<p>This allows you to communicate with your stakeholder on an abstract level without disclosing implementation details.</p>
-</div>
-<div class="paragraph">
-<div class="title">Form</div>
-<p>The building block view is a hierarchical collection of black boxes and white boxes
-(see figure below) and their descriptions.</p>
-</div>
-<div class="imageblock">
-<div class="content">
-<img src="./images/05_building_blocks-EN.png" alt="Hierarchy of building blocks">
-</div>
-</div>
-<div class="paragraph">
-<p><strong>Level 1</strong> is the white box description of the overall system together with black
-box descriptions of all contained building blocks.</p>
-</div>
-<div class="paragraph">
-<p><strong>Level 2</strong> zooms into some building blocks of level 1.
-Thus it contains the white box description of selected building blocks of level 1, together with black box descriptions of their internal building blocks.</p>
-</div>
-<div class="paragraph">
-<p><strong>Level 3</strong> zooms into selected building blocks of level 2, and so on.</p>
-</div>
-<div class="paragraph">
-<div class="title">Further Information</div>
-<p>See <a href="https://docs.arc42.org/section-5/">Building Block View</a> in the arc42 documentation.</p>
-</div>
-</div>
-</div>
 <div class="sect2">
 <h3 id="_caja_blanca_del_sistema_general">5.1. Caja Blanca del Sistema General</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<p>Here you describe the decomposition of the overall system using the following white box template. It contains</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>an overview diagram</p>
-</li>
-<li>
-<p>a motivation for the decomposition</p>
-</li>
-<li>
-<p>black box descriptions of the contained building blocks. For these we offer you alternatives:</p>
-<div class="ulist">
-<ul>
-<li>
-<p>use <em>one</em> table for a short and pragmatic overview of all contained building blocks and their interfaces</p>
-</li>
-<li>
-<p>use a list of black box descriptions of the building blocks according to the black box template (see below).
-Depending on your choice of tool this list could be sub-chapters (in text files), sub-pages (in a Wiki) or nested elements (in a modeling tool).</p>
-</li>
-</ul>
-</div>
-</li>
-<li>
-<p>(optional:) important interfaces, that are not explained in the black box templates of a building block, but are very important for understanding the white box.
-Since there are so many ways to specify interfaces why do not provide a specific template for them.
- In the worst case you have to specify and describe syntax, semantics, protocols, error handling,
- restrictions, versions, qualities, necessary compatibilities and many things more.
-In the best case you will get away with examples or simple signatures.</p>
-</li>
-</ul>
-</div>
-</div>
-</div>
 <div class="imageblock text-center">
 <div class="content">
 <img src="./images/5_1-building_block.png" alt="5 1 building block">
@@ -1606,18 +1538,6 @@ construcción del tablero, garantizando acceso O(1) durante el juego.</p>
 </div>
 <div class="sect2">
 <h3 id="_nivel_2">5.2. Nivel 2</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<p>Here you can specify the inner structure of (some) building blocks from level 1 as white boxes.</p>
-</div>
-<div class="paragraph">
-<p>You have to decide which building blocks of your system are important enough to justify such a detailed description.
-Please prefer relevance over completeness. Specify important, surprising, risky, complex or volatile building blocks.
-Leave out normal, simple, boring or standardized parts of your system</p>
-</div>
-</div>
-</div>
 <div class="sect3">
 <h4 id="_white_box_webapp">5.2.1. White Box <em>Webapp</em></h4>
 <div class="imageblock text-center">
@@ -1826,8 +1746,7 @@ peticiones de juego a Gamey mediante <code>fetch</code> nativo.</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>authMiddleware.js</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">Middleware de verificación JWT implementado y disponible. Actualmente importado pero
-no aplicado como middleware en ninguna ruta (deuda técnica DT-01).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Middleware de verificación JWT implementado y disponible. El middleware JWT esta aplicado en la mayoria de rutas sensibles, pero es mejorable (deuda técnica DT-01).</p></td>
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>models/user.js</code></p></td>
@@ -1855,17 +1774,6 @@ disponibilidad del Users Service.</p></td>
 </div>
 <div class="sect2">
 <h3 id="_nivel_3">5.3. Nivel 3</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<p>Here you can specify the inner structure of (some) building blocks from level 2 as white boxes.</p>
-</div>
-<div class="paragraph">
-<p>When you need more detailed levels of your architecture please copy this
-part of arc42 for additional levels.</p>
-</div>
-</div>
-</div>
 <div class="sect3">
 <h4 id="_white_box_probot_attackerbot_bot">5.3.1. White Box <em>ProBot / AttackerBot (bot/)</em></h4>
 <div class="paragraph">
@@ -2113,7 +2021,7 @@ tamaño o pulsar reiniciar.</p></td>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/Game_Init_Sequence.png" alt="Game Init Sequence" width="719" height="363">
+<img src="./images/Game_Init_Sequence.png" alt="Game Init Sequence" width="1024" height="471">
 </div>
 </div>
 </div>
@@ -2134,7 +2042,7 @@ tamaño o pulsar reiniciar.</p></td>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/Game_Move_Sequence.png" alt="Game Move Sequence" width="913" height="515">
+<img src="./images/Game_Move_Sequence.png" alt="Game Move Sequence" width="1269" height="667">
 </div>
 </div>
 </div>
@@ -2158,95 +2066,15 @@ tamaño o pulsar reiniciar.</p></td>
 <div class="sect1">
 <h2 id="section-deployment-view">7. Vista de despliegue</h2>
 <div class="sectionbody">
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<div class="title">Content</div>
-<p>The deployment view describes:</p>
-</div>
-<div class="olist arabic">
-<ol class="arabic">
-<li>
-<p>technical infrastructure used to execute your system, with infrastructure elements like geographical locations, environments, computers, processors, channels and net topologies as well as other infrastructure elements and</p>
-</li>
-<li>
-<p>mapping of (software) building blocks to that infrastructure elements.</p>
-</li>
-</ol>
-</div>
-<div class="paragraph">
-<p>Often systems are executed in different environments, e.g. development environment, test environment, production environment. In such cases you should document all relevant environments.</p>
-</div>
-<div class="paragraph">
-<p>Especially document a deployment view if your software is executed as distributed system with more than one computer, processor, server or container or when you design and construct your own hardware processors and chips.</p>
-</div>
-<div class="paragraph">
-<p>From a software perspective it is sufficient to capture only those elements of an infrastructure that are needed to show a deployment of your building blocks. Hardware architects can go beyond that and describe an infrastructure to any level of detail they need to capture.</p>
-</div>
-<div class="paragraph">
-<div class="title">Motivation</div>
-<p>Software does not run without hardware.
-This underlying infrastructure can and will influence a system and/or some
-cross-cutting concepts. Therefore, there is a need to know the infrastructure.</p>
-</div>
-<div class="paragraph">
-<div class="title">Form</div>
-<p>Maybe a highest level deployment diagram is already contained in section 3.2. as
-technical context with your own infrastructure as ONE black box. In this section one can
-zoom into this black box using additional deployment diagrams:</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>UML offers deployment diagrams to express that view. Use it, probably with nested diagrams,
-when your infrastructure is more complex.</p>
-</li>
-<li>
-<p>When your (hardware) stakeholders prefer other kinds of diagrams rather than a deployment diagram, let them use any kind that is able to show nodes and channels of the infrastructure.</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<div class="title">Further Information</div>
-<p>See <a href="https://docs.arc42.org/section-7/">Deployment View</a> in the arc42 documentation.</p>
-</div>
-</div>
-</div>
 <div class="sect2">
 <h3 id="_infraestructura_de_nivel_1">7.1. Infraestructura de Nivel 1</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<p>Describe (usually in a combination of diagrams, tables, and text):</p>
-</div>
-<div class="ulist">
-<ul>
-<li>
-<p>distribution of a system to multiple locations, environments, computers, processors, .., as well as physical connections between them</p>
-</li>
-<li>
-<p>important justifications or motivations for this deployment structure</p>
-</li>
-<li>
-<p>quality and/or performance features of this infrastructure</p>
-</li>
-<li>
-<p>mapping of software artifacts to elements of this infrastructure</p>
-</li>
-</ul>
-</div>
-<div class="paragraph">
-<p>For multiple environments or alternative deployments please copy and adapt this section of arc42 for all relevant environments.</p>
-</div>
-</div>
-</div>
 <div class="paragraph">
 <p>En este apartado se describe la infraestructura global de <strong>YOVI</strong>, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto (Node.js y Rust)
 y la persistencia de datos.</p>
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/deployment-diagram.png" alt="deployment diagram" width="1684" height="375">
+<img src="./images/deployment-diagram.png" alt="deployment diagram" width="1598" height="390">
 </div>
 </div>
 <div class="dlist">
@@ -2308,16 +2136,6 @@ Así, una parte se encarga de la web y los usuarios (Node.js) y otra exclusivame
 </div>
 <div class="sect2">
 <h3 id="_infraestructura_de_nivel_2">7.2. Infraestructura de Nivel 2</h3>
-<div class="sidebarblock arc42help">
-<div class="content">
-<div class="paragraph">
-<p>Here you can include the internal structure of (some) infrastructure elements from level 1.</p>
-</div>
-<div class="paragraph">
-<p>Please copy the structure from level 1 for each selected element.</p>
-</div>
-</div>
-</div>
 <div class="sect3">
 <h4 id="_servidor_en_la_nube_docker_host">7.2.1. Servidor en la Nube (Docker Host)</h4>
 <div class="paragraph">
@@ -2325,7 +2143,7 @@ Así, una parte se encarga de la web y los usuarios (Node.js) y otra exclusivame
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-server.png" alt="level2 server" width="720" height="372">
+<img src="./images/level2-server.png" alt="level2 server" width="663" height="425">
 </div>
 </div>
 <div class="paragraph">
@@ -2355,12 +2173,12 @@ Al acceder a la web, el navegador descarga la aplicación de React, que se ejecu
 </div>
 <div class="imageblock">
 <div class="content">
-<img src="./images/level2-db.png" alt="level2 db" width="525" height="386">
+<img src="./images/level2-db.png" alt="level2 db" width="775" height="304">
 </div>
 </div>
 <div class="paragraph">
 <p><strong>Explicación:</strong>
-Se utiliza un motor de base de datos MongoDB que organiza la información en colecciones independientes: los perfiles de usuario (gestionados por Node.js) y el historial de juegos (registrado por Rust). Mediante un volumen persistente de Docker, los datos se sincronizan directamente con el disco duro del servidor. Esto garantiza que, aunque el contenedor de la base de datos se detenga o se actualice, la información de las partidas y las cuentas de usuario permanezca segura y disponible, funcionando como un almacenamiento externo permanente.</p>
+Se utiliza el servicio gestionado MongoDB Atlas, organizando la información en dos bases de datos independientes (users_db y gamey_db) para cumplir con el patrón Database-per-Service. Al ser un servicio SaaS (Software as a Service), la persistencia, las copias de seguridad y la seguridad de los datos están delegadas al proveedor cloud, eliminando la dependencia de volúmenes locales en nuestro servidor y garantizando que los datos no se pierdan al reiniciar o eliminar los contenedores de Docker.</p>
 </div>
 </div>
 </div>
