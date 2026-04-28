@@ -921,13 +921,20 @@ app.post('/api/play', async (req, res) => {
     });
 
     if (!rustResponse.ok) {
-            const errorText = await rustResponse.text();
-            console.error("Rust devolvió un error:", errorText);
-            return res.status(rustResponse.status).json({ 
-                error: "El motor de juego rechazó la petición", 
-                details: errorText 
-            });
-        }
+      const errorText = await rustResponse.text();
+      
+      // 1. Sanitizamos el texto eliminando saltos de línea y retornos de carro
+      // Esto evita que un atacante inyecte nuevas líneas en el log
+      const sanitizedError = errorText.replace(/[\n\r]/g, ' '); 
+      
+      // 2. Logueamos la versión limpia
+      console.error("Rust devolvió un error:", sanitizedError);
+
+      return res.status(rustResponse.status).json({
+          error: "El motor de juego rechazó la petición",
+          details: errorText // Aquí sí puedes enviar el original al cliente si quieres
+      });
+    }
 
     const data = await rustResponse.json();
     res.json(data);
