@@ -5,14 +5,24 @@
 
 El sistema **YOVI** es una plataforma de juegos basada en el "Juego Y", diseñada como un ecosistema de microservicios para la competición entre humanos y agentes automáticos (bots) en el ámbito académico de la UniOvi.
 
-[mermaid]
-....
-graph LR
-    User((Usuario / Jugador)) -- "Jugar, Amigos, XP" --> YOVI[("Sistema YOVI")]
-    Bots((Bots / Externos)) -- "Protocolo YEN" --> YOVI
-    Admin((Administrador)) -- "Métricas / Logs" --> YOVI
-    YOVI -- "Persistencia de datos" --> Atlas["MongoDB Atlas (Cloud)"]
-....
+[plantuml, business-context, png]
+----
+@startuml
+left to right direction
+skinparam actorStyle awesome
+
+actor "Usuario" as user
+actor "Bots Externos" as bots
+actor "Administrador" as admin
+component "Sistema YOVI" as yovi
+database "MongoDB Atlas" as atlas
+
+user -- yovi : Jugar / Registro
+bots -- yovi : Protocolo YEN
+admin -- yovi : Gestión
+yovi -- atlas : Persistencia
+@enduml
+----
 
 
 |===
@@ -39,30 +49,16 @@ graph LR
 
 La arquitectura de **YOVI** se define por la interoperabilidad de tres componentes principales aislados, comunicados mediante protocolos REST y orquestados por un entorno de contenedores.
 
-[mermaid]
-....
-graph TD
-    subgraph "Entorno Cliente"
-        Browser["Navegador (React App)"]
-    end
+----
+@startuml
+node "Navegador" as browser
+node "Servidor YOVI (Docker)" as docker
+node "MongoDB Atlas (Cloud)" as atlas
 
-    subgraph "Infraestructura Local / Cloud (Docker)"
-        Gateway["Nginx / Proxy"]
-        Services["Microservicios YOVI (Node/Rust)"]
-    end
-
-    subgraph "Persistencia Externa (Cloud)"
-        AtlasDB["MongoDB Atlas Cluster"]
-        DB_Users[(DB Users)]
-        DB_Gamey[(DB Gamey)]
-    end
-
-    Browser -- "HTTPS (80/443)" --> Gateway
-    Gateway -- "Internal Network" --> Services
-    Services -- "Mongoose / TLS (27017)" --> AtlasDB
-    AtlasDB -.-> DB_Users
-    AtlasDB -.-> DB_Gamey
-....
+browser -- docker : HTTPS / REST (443)
+docker -- atlas : TLS / TCP (27017)
+@enduml
+----
 
 |===
 |Interfaz |Canal / Protocolo |Descripción
