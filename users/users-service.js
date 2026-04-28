@@ -59,7 +59,7 @@ const dns = require('node:dns');
 dns.setDefaultResultOrder('ipv4first');
 
 // URL del servicio de Rust (GameY); se inyecta desde docker-compose o se usa localhost por defecto
-const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://gamey:4000';
+const GAMEY_URL = process.env.GAMEY_SERVICE_URL || 'https://gamey:3000';
 const tokenCookieOptions = {
     httpOnly: true,
     secure: process.env.COOKIE_SECURE === 'true',
@@ -906,6 +906,54 @@ if (require.main === module) {
     console.log(`🚀 User Service (${protocol}) escuchando en el puerto ${port}`);
   });
 }
+
+app.post('/api/play', async (req, res) => {
+  const { position, bot_id } = req.body;
+
+  try {
+    const rustResponse = await fetch(`${GAMEY_URL}/api/play`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ position, bot_id }),
+      dispatcher: new Agent({
+        connect: { rejectUnauthorized: false, timeout: 60000 }
+      })
+    });
+
+    if (!rustResponse.ok) {
+            const errorText = await rustResponse.text();
+            console.error("Rust devolvió un error:", errorText);
+            return res.status(rustResponse.status).json({ 
+                error: "El motor de juego rechazó la petición", 
+                details: errorText 
+            });
+        }
+
+    const data = await rustResponse.json();
+    res.json(data);
+
+  } catch (e) {
+    console.error("Fallo detallado en /api/play:", e);
+    res.status(500).json({ error: 'Error comunicando con el motor de juego' });
+  }
+});
+
+
+app.get('/api/bots', async (req, res) => {
+  try {
+    const rustResponse = await fetch(`${GAMEY_URL}/api/bots`, {
+      method: 'GET',
+      dispatcher: new Agent({
+        connect: { rejectUnauthorized: false }
+      })
+    });
+    const data = await rustResponse.json();
+    res.json(data);
+  } catch (e) {
+    console.error("Fallo detallado en /api/bots:", e);
+    res.status(500).json({ error: 'No se pudo obtener la lista de bots' });
+  }
+});
 
 // En lugar de module.exports = { app, loadSSLConfig };
 // Hacemos esto para no romper los tests existentes:

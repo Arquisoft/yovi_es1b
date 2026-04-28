@@ -10,7 +10,6 @@ use mongodb::Client;
 use std::sync::Arc;
 use tower::ServiceExt;
 
-
 /// Helper para obtener una base de datos de prueba (local/falsa)
 /// Esto permite que el struct AppState se cree correctamente
 async fn get_test_db() -> mongodb::Database {
@@ -71,7 +70,7 @@ async fn test_choose_endpoint_with_valid_request() {
 
     // 2. Preparamos el payload con el formato nuevo que espera tu API
     let payload = serde_json::json!({
-        "position": yen,
+        "position": yen.layout(),
         "bot_id": "random_bot"
     });
 
@@ -95,12 +94,8 @@ async fn test_choose_endpoint_with_valid_request() {
     let play_response: PlayResponse =
         serde_json::from_slice(&body).expect("Fallo al parsear PlayResponse");
 
-    let celdas_vacias_despues = play_response
-        .position
-        .layout()
-        .chars()
-        .filter(|c| *c == '.')
-        .count();
+    let celdas_vacias_despues = play_response.position.chars().filter(|c| *c == '.').count();
+
     assert_eq!(
         celdas_vacias_despues,
         celdas_vacias_antes - 1,
@@ -118,7 +113,7 @@ async fn test_choose_endpoint_with_partially_filled_board() {
     let celdas_vacias_antes = yen.layout().chars().filter(|c| *c == '.').count(); // Debería haber 3 puntos
 
     let payload = serde_json::json!({
-        "position": yen,
+        "position": yen.layout(),
         "bot_id": "random_bot"
     });
 
@@ -139,12 +134,7 @@ async fn test_choose_endpoint_with_partially_filled_board() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
 
-    let celdas_vacias_despues = play_response
-        .position
-        .layout()
-        .chars()
-        .filter(|c| *c == '.')
-        .count();
+    let celdas_vacias_despues = play_response.position.chars().filter(|c| *c == '.').count();
     assert_eq!(
         celdas_vacias_despues,
         celdas_vacias_antes - 1,
@@ -199,7 +189,7 @@ async fn test_choose_endpoint_with_unknown_bot() {
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
 
     let payload = serde_json::json!({
-        "position": yen,
+        "position": yen.layout(),
         "bot_id": "unknown_bot"
     });
 
@@ -280,7 +270,7 @@ async fn test_choose_with_custom_bot_registry() {
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
     let payload = serde_json::json!({
-        "position": yen,
+        "position": yen.layout(),
         "bot_id": "random_bot"
     });
 
@@ -308,7 +298,7 @@ async fn test_choose_with_empty_bot_registry() {
 
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
     let payload = serde_json::json!({
-        "position": yen,
+        "position": yen.layout(),
         "bot_id": "random_bot"
     });
 
@@ -401,7 +391,7 @@ async fn test_choose_with_size_1_board() {
     let app = test_app().await;
 
     let payload = serde_json::json!({
-        "position": YEN::new(1, 0, vec!['B', 'R'], ".".to_string()),
+        "position": ".",
         "bot_id": "random_bot"
     });
 
@@ -420,8 +410,9 @@ async fn test_choose_with_size_1_board() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    assert!(!play_response.position.layout().contains('.'));
-    assert_eq!(play_response.position.size(), 1);
+    assert!(!play_response.position.contains('.'));
+    let size_detectado = play_response.position.split('/').count();
+    assert_eq!(size_detectado, 1);
 }
 
 #[tokio::test]
@@ -429,7 +420,7 @@ async fn test_choose_with_nearly_full_board() {
     let app = test_app().await;
 
     let payload = serde_json::json!({
-        "position": YEN::new(3, 2, vec!['B', 'R'], "B/BR/BB.".to_string()),
+        "position": "B/BR/BB.",
         "bot_id": "random_bot"
     });
 
@@ -448,8 +439,9 @@ async fn test_choose_with_nearly_full_board() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    assert!(!play_response.position.layout().contains('.'));
-    assert_eq!(play_response.position.size(), 3);
+    assert!(!play_response.position.contains('.'));
+    let size_detectado = play_response.position.split('/').count();
+    assert_eq!(size_detectado, 3);
 }
 
 // ============================================================================
@@ -470,7 +462,7 @@ async fn test_choose_with_blocker_bot() {
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
     let empty_before = yen.layout().chars().filter(|c| *c == '.').count();
 
-    let payload = serde_json::json!({ "position": yen, "bot_id": "blocker_bot" });
+    let payload = serde_json::json!({ "position": yen.layout(), "bot_id": "blocker_bot" });
 
     let response = app
         .oneshot(
@@ -487,12 +479,7 @@ async fn test_choose_with_blocker_bot() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    let empty_after = play_response
-        .position
-        .layout()
-        .chars()
-        .filter(|c| *c == '.')
-        .count();
+    let empty_after = play_response.position.chars().filter(|c| *c == '.').count();
     assert_eq!(empty_after, empty_before - 1);
 }
 
@@ -510,7 +497,7 @@ async fn test_choose_with_pro_bot() {
     let yen = YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string());
     let empty_before = yen.layout().chars().filter(|c| *c == '.').count();
 
-    let payload = serde_json::json!({ "position": yen, "bot_id": "pro_bot" });
+    let payload = serde_json::json!({ "position": yen.layout(), "bot_id": "pro_bot" });
 
     let response = app
         .oneshot(
@@ -527,12 +514,7 @@ async fn test_choose_with_pro_bot() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    let empty_after = play_response
-        .position
-        .layout()
-        .chars()
-        .filter(|c| *c == '.')
-        .count();
+    let empty_after = play_response.position.chars().filter(|c| *c == '.').count();
     assert_eq!(empty_after, empty_before - 1);
 }
 
@@ -555,7 +537,7 @@ async fn test_all_bots_return_valid_moves_on_same_board() {
         let state = AppState::new(registry, db);
         let app = test_app_with_state(state);
 
-        let payload = serde_json::json!({ "position": yen, "bot_id": bot_id });
+        let payload = serde_json::json!({ "position": yen.layout(), "bot_id": bot_id });
 
         let response = app
             .oneshot(
@@ -572,12 +554,7 @@ async fn test_all_bots_return_valid_moves_on_same_board() {
         assert_eq!(response.status(), StatusCode::OK, "Bot {} falló", bot_id);
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-        let empty_after = play_response
-            .position
-            .layout()
-            .chars()
-            .filter(|c| *c == '.')
-            .count();
+        let empty_after = play_response.position.chars().filter(|c| *c == '.').count();
         assert_eq!(
             empty_after,
             empty_before - 1,
@@ -598,7 +575,7 @@ async fn test_choose_with_player_1_turn() {
     let yen = YEN::new(3, 1, vec!['B', 'R'], "B/../...".to_string());
     let empty_before = yen.layout().chars().filter(|c| *c == '.').count();
 
-    let payload = serde_json::json!({ "position": yen, "bot_id": "random_bot" });
+    let payload = serde_json::json!({ "position": yen.layout(), "bot_id": "random_bot" });
 
     let response = app
         .oneshot(
@@ -615,12 +592,7 @@ async fn test_choose_with_player_1_turn() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let play_response: PlayResponse = serde_json::from_slice(&body).unwrap();
-    let empty_after = play_response
-        .position
-        .layout()
-        .chars()
-        .filter(|c| *c == '.')
-        .count();
+    let empty_after = play_response.position.chars().filter(|c| *c == '.').count();
     assert_eq!(empty_after, empty_before - 1);
 }
 
@@ -633,7 +605,7 @@ async fn test_error_response_fields_for_unknown_bot() {
     let app = test_app().await;
 
     let payload = serde_json::json!({
-        "position": YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string()),
+        "position": "not_a_valid_yen_format",
         "bot_id": "nonexistent_bot"
     });
 
@@ -653,7 +625,7 @@ async fn test_error_response_fields_for_unknown_bot() {
     let error: ErrorResponse = serde_json::from_slice(&body).unwrap();
 
     assert_eq!(error.bot_id, Some("nonexistent_bot".to_string()));
-    assert!(error.message.contains("Bot not found"));
+    assert!(error.message.contains("Bot no encontrado"));
 }
 
 #[tokio::test]
@@ -662,7 +634,7 @@ async fn test_error_response_for_invalid_yen() {
 
     // Layout con número de filas incorrecto para size 3
     let payload = serde_json::json!({
-        "position": YEN::new(3, 0, vec!['B', 'R'], "B/RB".to_string()),
+        "position": "not_a_valid_yen_format",
         "bot_id": "random_bot"
     });
 
@@ -906,7 +878,7 @@ async fn test_play_without_bot_id_uses_default() {
 
     // Petición SIN el campo "bot_id", cumpliendo el requisito de que sea opcional
     let payload = serde_json::json!({
-        "position": YEN::new(3, 0, vec!['B', 'R'], "./../...".to_string())
+        "position": "./../..."
     });
 
     let response = app
@@ -931,7 +903,7 @@ async fn test_play_on_completely_full_board() {
 
     // Tablero size 3 completamente lleno, no hay movimientos posibles
     let payload = serde_json::json!({
-        "position": YEN::new(3, 0, vec!['B', 'R'], "B/BR/RBB".to_string()),
+        "position": "B/BR/RBB",
         "bot_id": "random_bot"
     });
 
@@ -962,7 +934,7 @@ async fn test_play_size_layout_mismatch() {
 
     // Contradicción crítica: Declaramos size 12, pero mandamos un layout de size 3
     let payload = serde_json::json!({
-        "position": YEN::new(12, 0, vec!['B', 'R'], "./../...".to_string()),
+        "position": "B/R",
         "bot_id": "random_bot"
     });
 
@@ -1025,7 +997,9 @@ async fn test_pvp_errors_coverage() {
                 .method("POST")
                 .uri("/pvp/move")
                 .header("Content-Type", "application/json")
-                .body(Body::from(r#"{"match_id":"falso","player":"Drus","index":0}"#))
+                .body(Body::from(
+                    r#"{"match_id":"falso","player":"Drus","index":0}"#,
+                ))
                 .unwrap(),
         )
         .await
@@ -1067,7 +1041,12 @@ async fn test_pvp_errors_coverage() {
         .unwrap();
 
     assert_eq!(res_bad_player.status(), StatusCode::OK);
-    let bad_player_body = res_bad_player.into_body().collect().await.unwrap().to_bytes();
+    let bad_player_body = res_bad_player
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let bad_player_json: serde_json::Value = serde_json::from_slice(&bad_player_body).unwrap();
     assert_eq!(bad_player_json["error"], "Player not in match");
 }
@@ -1107,7 +1086,12 @@ async fn test_pvp_victory_and_scoring_coverage() {
         .unwrap();
 
     assert_eq!(move_response.status(), StatusCode::OK);
-    let body = move_response.into_body().collect().await.unwrap().to_bytes();
+    let body = move_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
     assert!(json.get("board").is_some());
     assert!(json.get("next_turn").is_some());

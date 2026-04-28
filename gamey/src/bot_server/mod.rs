@@ -168,7 +168,7 @@ fn empty_history_response(page: u64, limit: i64) -> axum::Json<serde_json::Value
 
 #[derive(utoipa::OpenApi)]
 #[openapi(
-    paths(play::play),
+    paths(play::play, play::list_bots),
     components(schemas(
         play::PlayRequest,
         play::PlayResponse,
@@ -200,6 +200,7 @@ fn base_router(state: AppState) -> axum::Router {
         .route("/pvp/reset", axum::routing::post(reiniciar_juego_pvp))
         .route("/pvp/move", axum::routing::post(realizar_movimiento_pvp))
         .route("/api/play", axum::routing::post(play::play))
+        .route("/api/bots", axum::routing::get(play::list_bots))
         .with_state(state)
 }
 

@@ -1,13 +1,15 @@
 openapi: 3.0.0
 info:
-  title: User Service API
-  version: 1.0.0
-  description: API for managing users
+  title: User Service API - YOVI
+  version: 1.1.0
+  description: API para la gestión de usuarios e integración con el motor de juego Juego Y.
 paths:
   /createuser:
     post:
-      summary: Creates a new user
-      description: Creates a new user with the given username.
+      summary: Registra un nuevo usuario
+      description: Crea una cuenta de usuario con contraseña cifrada y genera un FriendCode.
+      tags:
+        - Usuarios
       requestBody:
         required: true
         content:
@@ -16,27 +18,30 @@ paths:
               type: object
               required:
                 - username
+                - password
+                - nickname
               properties:
                 username:
                   type: string
                   example: "testuser"
+                password:
+                  type: string
+                  example: "password123"
+                nickname:
+                  type: string
+                  example: "JugadorPro"
       responses:
-        '200':
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "Hello testuser! welcome to the course!"
-        '400':
-          description: Error creating user
-  /loginuser:
+        "200":
+          description: Usuario creado exitosamente.
+        "400":
+          description: Datos de entrada inválidos.
+
+  /login:
     post:
-      summary: Logs in an existing user
-      description: Logs in a user with the given username.
+      summary: Inicia sesión
+      description: Autentica al usuario y devuelve un token JWT.
+      tags:
+        - Usuarios
       requestBody:
         required: true
         content:
@@ -45,20 +50,75 @@ paths:
               type: object
               required:
                 - username
+                - password
               properties:
                 username:
                   type: string
                   example: "testuser"
+                password:
+                  type: string
+                  example: "password123"
       responses:
-        '200':
-          description: User logged in successfully
+        "200":
+          description: Login exitoso.
+        "401":
+          description: Credenciales incorrectas.
+
+  /api/play:
+    post:
+      summary: Jugar contra la IA (Endpoint para Bots)
+      description: |
+        Este método permite que un bot externo juegue contra el sistema YOVI. 
+        Recibe la posición actual en notación YEN y devuelve la acción realizada por la IA.
+      tags:
+        - Bot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - position
+              properties:
+                position:
+                  type: string
+                  description: "Estado del tablero en notación YEN."
+                  example: "B/BR/.R."
+                bot_id:
+                  type: string
+                  description: "Identificador del bot (opcional)."
+                  example: "pro_bot"
+      responses:
+        "200":
+          description: Movimiento calculado exitosamente.
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  message:
+                  action:
                     type: string
-                    example: "Welcome back testuser!"
-        '400':
-          description: Error logging in user
+                    description: "La acción realizada (coordenadas o regla del pastel)."
+                    example: "move(1,2,0)"
+                  position:
+                    type: string
+                    description: "Nueva posición del tablero en notación YEN."
+                    example: "B/BR/RR."
+        "400":
+          description: Formato YEN inválido.
+
+  /api/bots:
+    get:
+      tags:
+        - Bot
+      summary: Lista los bots disponibles
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
