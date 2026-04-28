@@ -62,15 +62,21 @@ El motor de Rust mantiene un **estado persistente** mediante un `AppState` que u
 ----
 actor Usuario
 participant "Webapp (React)" as Webapp
-participant "GameY Engine (Rust)" as Gamey
+participant "Users Service (Node)" as Users
+participant "Gamey Engine (Rust)" as Gamey
 
 Usuario -> Webapp: Selecciona Tamaño y Dificultad
 activate Webapp
-Webapp -> Gamey: POST /reset {size, difficulty}
+Webapp -> Users: POST /reset {size, difficulty} (JWT)
+activate Users
+note right of Users: Valida sesión y \nredirige petición a Gamey
+Users -> Gamey: POST /reset {username, size, difficulty}
 activate Gamey
-note right of Gamey: 1. Reinicia instancia GameY\n2. Filtra bots por dificultad\n3. Fija **active_bot** en AppState
-Gamey --> Webapp: 200 OK (Tablero listo)
+note right of Gamey: 1. Reinicia instancia GameY\n2. Filtra bots por nivel\n3. Fija **active_bot**
+Gamey --> Users: 200 OK (Tablero inicial)
 deactivate Gamey
+Users --> Webapp: 200 OK (Sesión de juego creada)
+deactivate Users
 Webapp --> Usuario: Renderiza tablero vacío
 deactivate Webapp
 ----
@@ -85,20 +91,31 @@ Este escenario ilustra el ciclo de vida de un movimiento. El motor de Rust calcu
 ----
 actor Usuario
 participant "Webapp (React)" as Webapp
-participant "GameY Engine (Rust)" as Gamey
-database "MongoDB" as DB
+participant "Users Service (Node)" as Users
+participant "Gamey Engine (Rust)" as Gamey
+database "MongoDB Atlas (Cloud)" as Atlas
 
 Usuario -> Webapp: Selecciona celda del tablero
 activate Webapp
-Webapp -> Gamey: POST /execute-move {index}
+Webapp -> Users: POST /move {index} (JWT)
+activate Users
+Users -> Gamey: POST /execute-move {index, username}
 activate Gamey
-note right of Gamey: 1. Procesa mov. humano\n2. Ejecuta estrategia de IA activa\n3. Verifica condición de victoria
+note right of Gamey: 1. Procesa mov. humano\n2. Ejecuta IA activa\n3. Verifica victoria
+
 alt Si la partida termina (Winner != null)
-    Gamey -> DB: insert_one(PartidaRecord)
-    note right of DB: Almacena fecha, oponente,\ndificultad y resultado
+    Gamey -> Atlas: insert_one(PartidaRecord)
+    note right of Atlas: Persistencia en clúster externo
+    Gamey --> Users: WinnerData + YEN State
+    Users -> Atlas: updateOne({username}, {$inc: {totalScore: XP}})
+    note right of Atlas: Incremento atómico de XP
+else Partida continúa
+    Gamey --> Users: 200 OK (Estado YEN)
 end
-Gamey --> Webapp: 200 OK (Estado YEN + Winner ID)
 deactivate Gamey
+
+Users --> Webapp: 200 OK (Estado actualizado + Winner?)
+deactivate Users
 Webapp -> Webapp: Actualiza UI (Celdas y ganador)
 Webapp --> Usuario: Muestra resultado final
 deactivate Webapp

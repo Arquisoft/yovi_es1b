@@ -5,60 +5,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 == Vista de despliegue
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-.Content
-The deployment view describes:
-
- 1. technical infrastructure used to execute your system, with infrastructure elements like geographical locations, environments, computers, processors, channels and net topologies as well as other infrastructure elements and
-
-2. mapping of (software) building blocks to that infrastructure elements.
-
-Often systems are executed in different environments, e.g. development environment, test environment, production environment. In such cases you should document all relevant environments.
-
-Especially document a deployment view if your software is executed as distributed system with more than one computer, processor, server or container or when you design and construct your own hardware processors and chips.
-
-From a software perspective it is sufficient to capture only those elements of an infrastructure that are needed to show a deployment of your building blocks. Hardware architects can go beyond that and describe an infrastructure to any level of detail they need to capture.
-
-.Motivation
-Software does not run without hardware.
-This underlying infrastructure can and will influence a system and/or some
-cross-cutting concepts. Therefore, there is a need to know the infrastructure.
-
-.Form
-
-Maybe a highest level deployment diagram is already contained in section 3.2. as
-technical context with your own infrastructure as ONE black box. In this section one can
-zoom into this black box using additional deployment diagrams:
-
-* UML offers deployment diagrams to express that view. Use it, probably with nested diagrams,
-when your infrastructure is more complex.
-* When your (hardware) stakeholders prefer other kinds of diagrams rather than a deployment diagram, let them use any kind that is able to show nodes and channels of the infrastructure.
-
-
-.Further Information
-
-See https://docs.arc42.org/section-7/[Deployment View] in the arc42 documentation.
-
-****
-endif::arc42help[]
-
 === Infraestructura de Nivel 1
-
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Describe (usually in a combination of diagrams, tables, and text):
-
-* distribution of a system to multiple locations, environments, computers, processors, .., as well as physical connections between them
-* important justifications or motivations for this deployment structure
-* quality and/or performance features of this infrastructure
-* mapping of software artifacts to elements of this infrastructure
-
-For multiple environments or alternative deployments please copy and adapt this section of arc42 for all relevant environments.
-****
-endif::arc42help[]
 
 En este apartado se describe la infraestructura global de **YOVI**, destacando el uso de contenedores para gestionar la heterogeneidad tecnológica del proyecto (Node.js y Rust)
 y la persistencia de datos.
@@ -73,32 +20,27 @@ node "<<device>>\nCliente (Navegador)" as pc {
     artifact "<<artifact>>\nYOVI Frontend (React/TS)" as frontend
 }
 
-node "<<device>>\nBot Externo" as bot_node {
-    artifact "<<artifact>>\nBot Client" as bot_app
-}
-
 node "<<device>>\nServidor Cloud (Docker Host)" as cloud {
-    
-    node "<<device>>\nContenedor Web App" as docker_node {
-        artifact "<<artifact>>\nBackend Server (Node.js)" as node_app
+    node "<<device>>\nContenedor Nginx" as nginx {
+        artifact "<<artifact>>\nStatic Files"
     }
-    
-    node "<<device>>\nContenedor Game Logic" as docker_rust {
+    node "<<device>>\nContenedor Users" as docker_node {
+        artifact "<<artifact>>\nBackend (Node.js)" as node_app
+    }
+    node "<<device>>\nContenedor Gamey" as docker_rust {
         artifact "<<artifact>>\nLogic Service (Rust)" as rust_app
     }
-    
-    node "<<device>>\nDB Server (MongoDB)" as db_node {
-        database "<<database>>\nUsers Collection" as db_users
-        database "<<database>>\nPartidas Collection" as db_games
-    }
 }
 
-' Relaciones de comunicación
+node "<<service>>\nMongoDB Atlas (Cloud Cluster)" as atlas <<cloud>> {
+    database "users_db" as db_users
+    database "gamey_db" as db_games
+}
+
 frontend -- node_app : HTTPS / JSON
-bot_app -- node_app : API REST / YEN
 node_app -- rust_app : HTTP / JSON (Interno)
-node_app --> db_users : TCP/IP (Gestión Usuarios)
-rust_app --> db_games : TCP/IP (Guardado Partidas)
+node_app --> db_users : TLS Connection
+rust_app --> db_games : TLS Connection
 @enduml
 ----
 
@@ -127,15 +69,6 @@ Mapeo de piezas a la infraestructura::
 
 === Infraestructura de Nivel 2
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-Here you can include the internal structure of (some) infrastructure elements from level 1.
-
-Please copy the structure from level 1 for each selected element.
-****
-endif::arc42help[]
-
 ==== Servidor en la Nube (Docker Host)
 
 Es el servidor principal donde ocurre todo lo relativo al backend.
@@ -143,22 +76,20 @@ Es el servidor principal donde ocurre todo lo relativo al backend.
 [plantuml, level2-server, png]
 ----
 @startuml
-node "Servidor Cloud" {
-    node "Red Interna de Docker" {
-        component "Backend (Node.js)" as node
-        component "Motor de Juego (Rust)" as rust
-        database "MongoDB" as db {
-            artifact "Colección: Users" as u_coll
-            artifact "Colección: Partidas" as p_coll
-        }
+node "Servidor Cloud (Docker Host)" {
+    node "Red Interna (monitor-net)" {
+        component "Nginx (Proxy)" as nginx
+        component "Users Service (Node.js)" as node
+        component "Gamey Engine (Rust)" as rust
     }
 }
 
-' Flujos de datos internos
-node -> rust : 1. Solicita Movimiento / Historial
-rust --> p_coll : 2. Guarda / Lee Partidas
-node --> u_coll : 3. Valida Sesión de Usuario
+cloud "MongoDB Atlas" as atlas
 
+nginx -down-> node : Proxy Pass
+node -right-> rust : REST API (Internal)
+node -down-> atlas : TLS (Users Auth & Social)
+rust -down-> atlas : TLS (Games History)
 @enduml
 ----
 
@@ -207,24 +138,22 @@ Es el lugar donde se almacena la información. De esta manera no se perderá la 
 [plantuml, level2-db, png]
 ----
 @startuml
-skinparam componentStyle rectangle
-
-node "Contenedor de Datos" {
-    database "MongoDB" as store {
-        folder "gamey_db" {
-            [Colección: Users] as users
-            [Colección: Partidas] as games
+node "MongoDB Atlas (SaaS)" <<Managed Service>> {
+    database "Cluster0" {
+        database "users_db" {
+            [Colección: users]
+            [Colección: friendships]
+        }
+        database "gamey_db" {
+            [Colección: partidas]
         }
     }
-    storage "Volumen de Docker (Disco Host)" as disk
 }
-
-store -down-> disk : Guardado permanente
 @enduml
 ----
 
 **Explicación:**
-Se utiliza un motor de base de datos MongoDB que organiza la información en colecciones independientes: los perfiles de usuario (gestionados por Node.js) y el historial de juegos (registrado por Rust). Mediante un volumen persistente de Docker, los datos se sincronizan directamente con el disco duro del servidor. Esto garantiza que, aunque el contenedor de la base de datos se detenga o se actualice, la información de las partidas y las cuentas de usuario permanezca segura y disponible, funcionando como un almacenamiento externo permanente.
+Se utiliza el servicio gestionado MongoDB Atlas, organizando la información en dos bases de datos independientes (users_db y gamey_db) para cumplir con el patrón Database-per-Service. Al ser un servicio SaaS (Software as a Service), la persistencia, las copias de seguridad y la seguridad de los datos están delegadas al proveedor cloud, eliminando la dependencia de volúmenes locales en nuestro servidor y garantizando que los datos no se pierdan al reiniciar o eliminar los contenedores de Docker.
 
 === Detalles actuales de despliegue local
 

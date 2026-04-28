@@ -61,6 +61,6 @@ Siguiendo el estándar ISO/IEC 25010, se han definido las siguientes metas:
 | Una experiencia de juego fluida, poder jugar contra la máquina o un amigo sin que la aplicación se cierre inesperadamente.
 
 | **Evaluadores (Profesores)**
-| Jose Emilio Labra Gayo, Pablo González, Irene Cid Rico, Diego Martín Fernández
+| Jose Emilio Labra Gayo, Pablo González, Celia Melendi, Diego Martín Fernández
 | Verificar que el despliegue es reproducible, que se respeta la arquitectura propuesta y que la documentación refleja fielmente el sistema construido.
 |===

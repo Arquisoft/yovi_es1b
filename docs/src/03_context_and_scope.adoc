@@ -1,20 +1,19 @@
 [[section-context-and-scope]]
 == Contexto y Alcance
 
-ifdef::arc42help[]
-[role="arc42help"]
-****
-.Contents
-Context and scope - as the name suggests - delimits your system (i.e. your scope) from all its communication partners
-(neighboring systems and users, i.e. the context of your system). It thereby specifies the external interfaces.
-
-If necessary, differentiate the business context (domain specific inputs and outputs) from the technical context (channels, protocols, hardware).
-****
-endif::arc42help[]
-
 === Contexto de Negocio
 
 El sistema **YOVI** es una plataforma de juegos basada en el "Juego Y", diseñada como un ecosistema de microservicios para la competición entre humanos y agentes automáticos (bots) en el ámbito académico de la UniOvi.
+
+[mermaid]
+....
+graph LR
+    User((Usuario / Jugador)) -- "Jugar, Amigos, XP" --> YOVI[("Sistema YOVI")]
+    Bots((Bots / Externos)) -- "Protocolo YEN" --> YOVI
+    Admin((Administrador)) -- "Métricas / Logs" --> YOVI
+    YOVI -- "Persistencia de datos" --> Atlas["MongoDB Atlas (Cloud)"]
+....
+
 
 |===
 |Socio de comunicación |Entradas |Salidas
@@ -27,6 +26,10 @@ El sistema **YOVI** es una plataforma de juegos basada en el "Juego Y", diseñad
 |Peticiones HTTP enviando el estado del tablero en notación **YEN** o **YGN**.
 |Respuesta con el próximo movimiento calculado por el motor de alto rendimiento en Rust.
 
+|**MongoDB Atlas**
+|Consultas de lectura y comandos de escritura (usuarios, partidas, amigos).
+|Datos persistidos, histórico de juegos y perfiles actualizados.
+
 |**Administrador / Alumno**
 |Despliegue mediante Docker Compose y ejecución de suites de pruebas (`npm test`, `cargo test`).
 |Logs de contenedores, métricas de rendimiento del motor y documentación técnica generada.
@@ -36,7 +39,30 @@ El sistema **YOVI** es una plataforma de juegos basada en el "Juego Y", diseñad
 
 La arquitectura de **YOVI** se define por la interoperabilidad de tres componentes principales aislados, comunicados mediante protocolos REST y orquestados por un entorno de contenedores.
 
+[mermaid]
+....
+graph TD
+    subgraph "Entorno Cliente"
+        Browser["Navegador (React App)"]
+    end
 
+    subgraph "Infraestructura Local / Cloud (Docker)"
+        Gateway["Nginx / Proxy"]
+        Services["Microservicios YOVI (Node/Rust)"]
+    end
+
+    subgraph "Persistencia Externa (Cloud)"
+        AtlasDB["MongoDB Atlas Cluster"]
+        DB_Users[(DB Users)]
+        DB_Gamey[(DB Gamey)]
+    end
+
+    Browser -- "HTTPS (80/443)" --> Gateway
+    Gateway -- "Internal Network" --> Services
+    Services -- "Mongoose / TLS (27017)" --> AtlasDB
+    AtlasDB -.-> DB_Users
+    AtlasDB -.-> DB_Gamey
+....
 
 |===
 |Interfaz |Canal / Protocolo |Descripción
@@ -52,6 +78,10 @@ La arquitectura de **YOVI** se define por la interoperabilidad de tres component
 |**Gamey Engine**
 |REST / Rust & Cargo (Puerto 4000)
 |Servicio de lógica de juego encargado de validar movimientos, estados de victoria y ejecución de bots.
+
+|**MongoDB Atlas**
+|Protocolo MongoDB (TLS)
+|Clúster gestionado en la nube que aloja bases de datos independientes para cada servicio.
 
 |**Infraestructura**
 |Docker / Docker Compose
