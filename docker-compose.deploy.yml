@@ -1,0 +1,56 @@
+services:
+  users:
+    container_name: users
+    image: ghcr.io/arquisoft/yovi_es1b-users:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - MONGODB_URI_USERS=${MONGODB_URI_USERS}
+      - GAMEY_SERVICE_URL=https://gamey:3000
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-https://localhost,http://localhost,https://localhost:5173,http://localhost:5173}
+      - NODE_TLS_REJECT_UNAUTHORIZED=0
+    volumes:
+      - ./certs:/certs:ro
+    networks:
+      - monitor-net
+
+  webapp:
+    container_name: webapp
+    image: ghcr.io/arquisoft/yovi_es1b-webapp:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - users
+      - gamey
+    networks:
+      - monitor-net
+
+  gamey:
+    container_name: gamey
+    image: ghcr.io/arquisoft/yovi_es1b-gamey:latest
+    ports:
+      - "4000:3000"
+    command: ["./gamey", "--mode", "server", "--port", "3000"]
+    environment:
+      - MONGODB_URI=${MONGODB_URI_GAMEY}
+      - GAMEY_TLS_CERT_PATH=/certs/cert.pem
+      - GAMEY_TLS_KEY_PATH=/certs/key.pem
+    volumes:
+      - ./certs:/certs:ro
+    networks:
+      - monitor-net
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    ports:
+      - "9091:3000"
+    networks:
+      - monitor-net
+
+networks:
+  monitor-net:
+    driver: bridge
