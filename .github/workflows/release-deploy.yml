@@ -239,4 +239,4 @@ jobs:
 
             docker compose down
             docker compose pull
-            docker compose up -d --no-build
+            docker compose up -d --no-build && echo "Despliegue finalizado con éxito" && exit 0
