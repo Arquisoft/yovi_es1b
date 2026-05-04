@@ -8,7 +8,7 @@
 This project is a template with some basic functionality for the ASW labs.
 
 La aplicación se puede ver en el siguiente enlace: https://158.158.9.72/
-API: https://localhost:3000/api-docs
+API: https://158.158.9.72:3000/api-docs
 
 Acceso a la API: https://158.158.9.72:4000/swagger-ui
 # Contributors
